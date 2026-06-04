@@ -1767,7 +1767,7 @@ function TelaPublica() {
   const cells=[]; for(let i=0;i<inicioGrid;i++)cells.push(null); for(let d=1;d<=diasNoMes;d++)cells.push(d);
   const navMes=(dir)=>setMesCal(({a,m})=>{ let nm=m+dir,na=a; if(nm>11){nm=0;na++;} if(nm<0){nm=11;na--;} return {a:na,m:nm}; });
   return (
-    <div style={{ minHeight:"100vh", background:C.bg }}>
+    <div style={{ minHeight:"100vh", background:C.bg }} translate="no" lang="pt-BR">
       {mostrarLogin&&<ModalLogin onSuccess={()=>setMostrarLogin(false)} onClose={()=>setMostrarLogin(false)} />}
       <header style={{ background:C.headerBg, borderBottom:C.headerBorder, padding:"0 20px", display:"flex", alignItems:"center", justifyContent:"space-between", height:56, position:"sticky", top:0, zIndex:100, boxShadow:"0 1px 6px rgba(0,0,0,.06)" }}>
         <div style={{ display:"flex", alignItems:"center", gap:10 }}><Logo size={34} /><div><p style={{ fontSize:13, fontWeight:800, color:C.navy }}>Reserva de Salas</p><p style={{ fontSize:10, color:C.textMuted }}>Colégio Arena</p></div></div>
@@ -1857,7 +1857,7 @@ export default function App() {
   return (
     <ThemeCtx.Provider value={{dark,toggle}}>
       <GlobalStyle dark={dark} />
-      <div style={{ minHeight:"100vh", background:C.bg }}>
+      <div style={{ minHeight:"100vh", background:C.bg }} translate="no" lang="pt-BR">
         <header style={{ background:C.headerBg, borderBottom:C.headerBorder, padding:"0 24px", display:"flex", alignItems:"center", justifyContent:"space-between", height:58, position:"sticky", top:0, zIndex:100, boxShadow:"0 1px 6px rgba(15,32,68,.07)" }}>
           <div style={{ display:"flex", alignItems:"center", gap:16 }}>
             <div style={{ display:"flex", alignItems:"center", gap:10 }}><Logo size={36} /><div><p style={{ fontSize:13, fontWeight:800, color:C.navy }}>Reserva de Salas e Equipamentos</p><p style={{ fontSize:10, color:C.textMuted }}>Colégio Arena</p></div></div>
