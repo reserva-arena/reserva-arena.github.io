@@ -900,6 +900,77 @@ function ProfessorView({ usuario }) {
 
       {/* Card de agendamentos com calendário */}
       <div style={{ background:C.surface, borderRadius:14, marginBottom:20, border:`1px solid ${C.border}`, overflow:"hidden", boxShadow:C.cardShadow }}>
+        {diaMesSel ? (
+          /* ══ VISÃO DE DIA — substitui o calendário ao clicar ══ */
+          <div className="fade-in">
+            {/* Header verde do dia */}
+            <div style={{ background:"#1a6b47", padding:"14px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:10, flexWrap:"wrap" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                <button onClick={()=>setDiaMesSel(null)} style={{ background:"rgba(255,255,255,.18)", border:"1px solid rgba(255,255,255,.3)", borderRadius:8, color:"#fff", fontSize:12, fontWeight:700, padding:"6px 12px", cursor:"pointer" }}>‹ Voltar</button>
+                <div>
+                  <p style={{ fontSize:10, fontWeight:700, color:"rgba(255,255,255,.65)", textTransform:"uppercase", letterSpacing:".5px" }}>Agendamentos do dia</p>
+                  <p style={{ fontSize:16, fontWeight:800, color:"#fff" }}>{(()=>{ const [ano,m,dia]=diaMesSel.split("-"); const nd=["Dom.","Seg.","Ter.","Qua.","Qui.","Sex.","Sáb."][new Date(Date.UTC(+ano,+m-1,+dia)).getUTCDay()]; return `${nd} ${dia}/${m}/${ano}`; })()}</p>
+                </div>
+              </div>
+              <div style={{ display:"flex", gap:4 }}>
+                <button onClick={()=>setDiaMesSel(addDays(diaMesSel,-1))} style={{ background:"rgba(255,255,255,.15)", border:"1px solid rgba(255,255,255,.25)", borderRadius:7, color:"#fff", fontSize:15, width:32, height:32, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>‹</button>
+                <button onClick={()=>setDiaMesSel(addDays(diaMesSel,1))} style={{ background:"rgba(255,255,255,.15)", border:"1px solid rgba(255,255,255,.25)", borderRadius:7, color:"#fff", fontSize:15, width:32, height:32, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>›</button>
+              </div>
+            </div>
+            {/* Corpo */}
+            <div style={{ padding:"14px 16px" }}>
+              {(()=>{
+                const todasFonteDia=(filtroGrade==="meus"
+                  ?todasReservas.filter(r=>r?.professor&&r.professorId===usuario.uid&&r?.status!=="recusado")
+                  :todasReservas.filter(r=>r?.professor&&r?.status!=="recusado")
+                ).filter(r=>!filtroEspacoGrade||r.espaco===filtroEspacoGrade);
+                const rsDia=todasFonteDia.filter(r=>r.data===diaMesSel).sort((a,b)=>a.horario>b.horario?1:-1);
+                const meusDia=rsDia.filter(r=>r.professorId===usuario.uid);
+                return (<>
+                  {/* Resumo */}
+                  {rsDia.length>0&&(
+                    <div style={{ display:"flex", gap:8, marginBottom:12, flexWrap:"wrap" }}>
+                      <span style={{ fontSize:11, fontWeight:700, background:C.greenBg, color:C.green, border:`1px solid ${C.greenBorder}`, borderRadius:20, padding:"3px 10px" }}>{meusDia.length} meu{meusDia.length!==1?"s":""}</span>
+                      {rsDia.length>meusDia.length&&<span style={{ fontSize:11, fontWeight:700, background:C.bg, color:C.textMid, border:`1px solid ${C.border}`, borderRadius:20, padding:"3px 10px" }}>{rsDia.length} no total</span>}
+                    </div>
+                  )}
+                  {/* Lista */}
+                  {rsDia.length===0 ? (
+                    <div style={{ textAlign:"center", padding:"20px 0 12px" }}>
+                      <p style={{ fontSize:32, marginBottom:8 }}>🗓️</p>
+                      <p style={{ fontSize:14, fontWeight:700, color:C.navy, marginBottom:4 }}>Dia livre!</p>
+                      <p style={{ fontSize:12, color:C.textMuted }}>Nenhum agendamento neste dia.</p>
+                    </div>
+                  ) : (
+                    <div style={{ display:"grid", gap:5, marginBottom:14 }}>
+                      {rsDia.map((r,ri)=>{ const isMeu=r.professorId===usuario.uid; const isPend=r.status==="pendente"; return (
+                        <div key={r.id||ri} style={{ display:"flex", gap:10, alignItems:"center", padding:"8px 12px", borderRadius:9, background:isMeu?(isPend?C.amberBg:C.greenBg):C.bg, border:`1px solid ${isMeu?(isPend?C.amberBorder:C.greenBorder):C.borderLight}`, borderLeft:`3px solid ${isMeu?(isPend?C.amber:C.green):C.borderLight}` }}>
+                          <span style={{ fontFamily:"'DM Mono',monospace", fontWeight:800, fontSize:12, minWidth:40, color:isMeu?(isPend?C.amber:C.green):C.textMid }}>{r.horario}</span>
+                          <span style={{ fontWeight:700, fontSize:13, flex:1, color:C.navy, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{r.espaco}</span>
+                          <span style={{ fontSize:11, color:C.textMuted }}>{r.turma}</span>
+                          {!isMeu&&filtroGrade==="todos"&&<span style={{ fontSize:10, color:C.textMuted, fontStyle:"italic" }}>{r.professor.split(" ")[0]}</span>}
+                          {isMeu&&isPend&&<span style={{ fontSize:10, fontWeight:700, background:C.amberBg, border:`1px solid ${C.amberBorder}`, color:C.amber, borderRadius:8, padding:"1px 6px" }}>⏳</span>}
+                        </div>
+                      ); })}
+                    </div>
+                  )}
+                  {/* Botão de agendar — só para dias futuros */}
+                  {diaMesSel>=hoje&&(
+                    <div style={{ borderTop:`1px solid ${C.borderLight}`, paddingTop:14, marginTop:4 }}>
+                      <p style={{ fontSize:12, color:C.textMuted, marginBottom:10 }}>Quer agendar um espaço neste dia?</p>
+                      <button onClick={()=>{ setDataSel(diaMesSel); setDiaMesSel(null); setBlocos([blocoVazio()]); setTimeout(()=>document.getElementById("seletor-espaco")?.scrollIntoView({behavior:"smooth",block:"center"}),120); }} style={{ width:"100%", padding:"13px", borderRadius:10, border:"none", background:"#1a6b47", color:"#fff", fontWeight:800, fontSize:14, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8, boxShadow:"0 4px 12px rgba(26,107,71,.3)", transition:"opacity .15s" }}
+                        onMouseEnter={e=>e.currentTarget.style.opacity=".9"}
+                        onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
+                        + Agendar neste dia
+                      </button>
+                    </div>
+                  )}
+                </>);
+              })()}
+            </div>
+          </div>
+        ) : (
+        <>
         {/* Header verde — só a faixa do topo */}
         <div style={{ background:"#1a6b47", padding:"12px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:8 }}>
           <div>
@@ -1091,6 +1162,8 @@ function ProfessorView({ usuario }) {
           );
         })()}
         </div>{/* fim corpo branco */}
+        </>
+        )}{/* fim diaMesSel ternário */}
       </div>
 
       {/* Meus próximos */}
