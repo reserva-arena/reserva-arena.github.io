@@ -1024,6 +1024,12 @@ function ProfessorView({ usuario }) {
               ))}
             </div>
 
+            {/* Meus / Todos */}
+            <div style={{ display:"flex", background:"rgba(0,0,0,.18)", borderRadius:8, padding:2 }}>
+              {[{id:"meus",label:"Meus"},{id:"todos",label:"Todos"}].map(op=>(
+                <button key={op.id} onClick={()=>setFiltroGrade(op.id)} style={{ padding:"5px 11px", borderRadius:6, border:"none", background:filtroGrade===op.id?"#fff":"transparent", color:filtroGrade===op.id?"#1a6b47":"rgba(255,255,255,.85)", fontWeight:700, fontSize:12, cursor:"pointer" }}>{op.label}</button>
+              ))}
+            </div>
             {/* Espaço */}
             <select value={filtroEspacoGrade} onChange={e=>setFiltroEspacoGrade(e.target.value)} style={{ background:"rgba(255,255,255,.12)", border:"1px solid rgba(255,255,255,.2)", borderRadius:7, color:"#fff", fontWeight:600, fontSize:11.5, cursor:"pointer", outline:"none", padding:"5px 8px", maxWidth:150 }}>
               <option value="" style={{ background:"#1a6b47" }}>Espaços</option>
