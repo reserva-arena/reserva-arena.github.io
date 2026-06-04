@@ -977,7 +977,7 @@ function ProfessorView({ usuario }) {
         <div style={{ background:"#1a6b47", padding:"10px 14px", display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:8 }}>
           {/* Linha 1: label + pendentes + modo calendário/agenda */}
           <div style={{ display:"flex", alignItems:"center", gap:10, width:"100%", flexWrap:"wrap" }}>
-            <p style={{ fontSize:11, fontWeight:700, color:"rgba(255,255,255,.75)", textTransform:"uppercase", letterSpacing:".5px" }}>Agendamentos</p>
+
             {pendentes.length>0&&<span style={{ fontSize:11, background:"rgba(255,255,255,.15)", border:"1px solid rgba(255,255,255,.25)", borderRadius:20, padding:"2px 9px", color:"#fff" }}>⚠️ {pendentes.length} pendente{pendentes.length!==1?"s":""}</span>}
             <div style={{ marginLeft:"auto", display:"flex", background:"rgba(0,0,0,.18)", borderRadius:8, padding:2 }}>
               {[{id:"calendario",label:"📅 Calendário"},{id:"agenda",label:"☰ Agenda"}].map(op=>(
@@ -996,7 +996,7 @@ function ProfessorView({ usuario }) {
                     <p style={{ fontSize:12, fontWeight:700, color:"#fff" }}>{(()=>{ const fim=addDays(semanaInicio,4); const [,ma,da]=semanaInicio.split("-"); const [,mb,db]=fim.split("-"); return ma===mb?`${da}–${db}/${mb}/${semanaInicio.split("-")[0]}`:`${da}/${ma} – ${db}/${mb}`; })()}</p>
                   </div>
                   <button onClick={()=>setSemanaInicio(s=>addDays(s,7))} style={{ background:"rgba(255,255,255,.15)", border:"1px solid rgba(255,255,255,.25)", borderRadius:7, color:"#fff", fontSize:15, width:30, height:30, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>›</button>
-                  <button onClick={()=>setSemanaInicio(getSegunda(fmt(today)))} style={{ background:"rgba(255,255,255,.12)", border:"1px solid rgba(255,255,255,.2)", borderRadius:7, color:"rgba(255,255,255,.85)", fontSize:11, fontWeight:700, padding:"4px 10px", cursor:"pointer" }}>Hoje</button>
+
                 </div>
               )}
               <div style={{ display:"flex", background:"rgba(0,0,0,.18)", borderRadius:8, padding:2 }}>
