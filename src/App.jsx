@@ -733,35 +733,106 @@ function BlocoAgendamento({ idx, espaco, data, bloco, onChange, onRemove, ocupad
 
 function ModalResumo({ espaco, data, blocos, onConfirmar, onCancelar, salvando, C }) {
   const [ano,mes,dia]=data.split("-"); const dataFmt=`${dia}/${mes}/${ano}`;
+  const [ciente, setCiente] = React.useState(false);
+
+  // Detecta urgência (< 24h) por bloco
+  const agora = new Date();
+  const dow = new Date(Date.UTC(+ano,+mes-1,+dia)).getUTCDay();
+  const isFimSemana = dow===0||dow===6;
+
+  const blocosUrgentes = blocos.filter(b=>{
+    try {
+      const [h,m]=b.horario.split(":").map(Number);
+      const ev=new Date(data+"T00:00:00"); ev.setHours(h,m);
+      const diff=(ev-agora)/3600000;
+      return diff>0&&diff<24;
+    } catch { return false; }
+  });
+
+  const precisaCiencia = blocosUrgentes.length>0||isFimSemana;
+
   return (
     <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.6)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000, padding:"1rem" }}>
-      <div className="fade-in" style={{ background:C.surface, borderRadius:16, padding:28, width:"100%", maxWidth:480, maxHeight:"90vh", overflowY:"auto", boxShadow:"0 24px 60px rgba(0,0,0,.3)" }}>
+      <div className="fade-in" style={{ background:C.surface, borderRadius:16, padding:28, width:"100%", maxWidth:500, maxHeight:"90vh", overflowY:"auto", boxShadow:"0 24px 60px rgba(0,0,0,.3)" }}>
+
+        {/* Cabeçalho */}
         <div style={{ textAlign:"center", marginBottom:20 }}>
-          <div style={{ width:52, height:52, borderRadius:"50%", background:"#e2f4ea", display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, margin:"0 auto 12px" }}>📋</div>
-          <h3 style={{ fontSize:17, fontWeight:800, color:C.navy }}>Confirmar agendamentos</h3>
-          <p style={{ fontSize:13, color:C.textMuted, marginTop:4 }}>Revise antes de salvar</p>
+          <div style={{ width:52, height:52, borderRadius:"50%", background:precisaCiencia?"#fff7ed":"#e2f4ea", display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, margin:"0 auto 12px" }}>{precisaCiencia?"⚠️":"📋"}</div>
+          <h3 style={{ fontSize:17, fontWeight:800, color:C.navy }}>Revisar agendamento</h3>
+          <p style={{ fontSize:13, color:C.textMuted, marginTop:4 }}>Confira os dados antes de confirmar</p>
         </div>
-        <div style={{ background:C.bg, borderRadius:10, padding:"12px 16px", marginBottom:16 }}>
-          <p style={{ fontSize:12, fontWeight:700, color:C.textMuted, textTransform:"uppercase", marginBottom:4 }}>Local e data</p>
+
+        {/* Alerta de urgência / fim de semana */}
+        {precisaCiencia&&(
+          <div style={{ background:"#fff7ed", border:"1.5px solid #fed7aa", borderRadius:12, padding:"14px 16px", marginBottom:16 }}>
+            <p style={{ fontSize:13, fontWeight:800, color:"#7c2d12", marginBottom:6 }}>
+              {isFimSemana ? "⚠️ Agendamento em fim de semana" : "⚠️ Agendamento com menos de 24 horas"}
+            </p>
+            {isFimSemana&&(
+              <p style={{ fontSize:12.5, color:"#92400e", lineHeight:1.55, marginBottom:8 }}>
+                Este agendamento foi feito para um <strong>sábado ou domingo</strong>. Ele ficará com status <strong>pendente</strong> até que o administrador aprove. Você só poderá utilizar o espaço após a confirmação.
+              </p>
+            )}
+            {blocosUrgentes.length>0&&(
+              <p style={{ fontSize:12.5, color:"#92400e", lineHeight:1.55, marginBottom:8 }}>
+                {isFimSemana?"Além disso, um":"Um"} ou mais horários ocorrem em <strong>menos de 24 horas</strong>. O agendamento será registrado como <strong>pendente</strong>, mas <strong>você precisa entrar em contato com a administração</strong> (pessoalmente ou pelo WhatsApp/e-mail do colégio) para confirmar a disponibilidade e garantir o uso do espaço.
+              </p>
+            )}
+            <p style={{ fontSize:12, color:"#92400e", fontStyle:"italic" }}>
+              Sem a aprovação do administrador, o espaço não estará garantido.
+            </p>
+          </div>
+        )}
+
+        {/* Local e data */}
+        <div style={{ background:C.bg, borderRadius:10, padding:"12px 16px", marginBottom:12 }}>
+          <p style={{ fontSize:11, fontWeight:700, color:C.textMuted, textTransform:"uppercase", letterSpacing:".5px", marginBottom:6 }}>Local e data</p>
           <p style={{ fontSize:14, fontWeight:700, color:C.navy }}>📍 {espaco}</p>
-          <p style={{ fontSize:13, color:C.textMid, marginTop:2 }}>📅 {dataFmt}</p>
+          <p style={{ fontSize:13, color:C.textMid, marginTop:2 }}>📅 {dataFmt}{isFimSemana?" · "+["Dom","","","","","","Sáb"][dow]:""}</p>
         </div>
-        <div style={{ display:"grid", gap:8, marginBottom:20 }}>
-          {blocos.map((b,i)=>(
-            <div key={i} style={{ display:"flex", gap:12, alignItems:"flex-start", padding:"10px 14px", background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, borderLeft:`3px solid #40b07a` }}>
-              <span style={{ fontFamily:"'DM Mono',monospace", fontWeight:800, color:"#40b07a", fontSize:13, minWidth:42 }}>{b.horario}</span>
-              <div>
-                <p style={{ fontSize:13, fontWeight:700, color:C.navy }}>{b.turma}</p>
-                <p style={{ fontSize:12, color:C.textMuted, marginTop:2 }}>{b.conteudo}</p>
-                {b.paginas&&<p style={{ fontSize:11, color:C.textMuted }}>📖 {b.paginas}</p>}
-                {b.laboratorista==="Sim"&&<p style={{ fontSize:11, color:C.textMuted }}>🔬 Com laboratorista</p>}
+
+        {/* Lista de blocos */}
+        <div style={{ display:"grid", gap:8, marginBottom:precisaCiencia?16:20 }}>
+          {blocos.map((b,i)=>{
+            const isUrg=blocosUrgentes.includes(b);
+            return (
+              <div key={i} style={{ display:"flex", gap:12, alignItems:"flex-start", padding:"10px 14px", background:C.surface, border:`1px solid ${isUrg?"#fed7aa":C.border}`, borderRadius:8, borderLeft:`3px solid ${isUrg?"#f97316":"#40b07a"}` }}>
+                <div style={{ minWidth:42 }}>
+                  <span style={{ fontFamily:"'DM Mono',monospace", fontWeight:800, color:isUrg?"#c2410c":"#40b07a", fontSize:13 }}>{b.horario}</span>
+                  {isUrg&&<p style={{ fontSize:9, fontWeight:700, color:"#c2410c", marginTop:1 }}>urgente</p>}
+                </div>
+                <div>
+                  <p style={{ fontSize:13, fontWeight:700, color:C.navy }}>{b.turma}</p>
+                  <p style={{ fontSize:12, color:C.textMuted, marginTop:2 }}>{b.conteudo}</p>
+                  {b.paginas&&<p style={{ fontSize:11, color:C.textMuted }}>📖 {b.paginas}</p>}
+                  {b.laboratorista==="Sim"&&<p style={{ fontSize:11, color:C.textMuted }}>🔬 Com laboratorista</p>}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
+
+        {/* Checkbox de ciência */}
+        {precisaCiencia&&(
+          <label style={{ display:"flex", alignItems:"flex-start", gap:10, marginBottom:18, cursor:"pointer", padding:"12px 14px", background:ciente?"#e2f4ea":"#f8faf8", border:`1.5px solid ${ciente?"#6ee7a0":"#c7dfd4"}`, borderRadius:10, transition:"all .2s" }}>
+            <input type="checkbox" checked={ciente} onChange={e=>setCiente(e.target.checked)} style={{ width:18, height:18, marginTop:1, accentColor:"#1a6b47", flexShrink:0, cursor:"pointer" }} />
+            <span style={{ fontSize:12.5, color:C.navy, lineHeight:1.55, fontWeight:ciente?700:400 }}>
+              {blocosUrgentes.length>0&&isFimSemana
+                ? "Estou ciente de que este agendamento ficará pendente por ser em fim de semana e ter menos de 24 horas de antecedência. Entrarei em contato com a administração para confirmar o uso do espaço."
+                : isFimSemana
+                  ? "Estou ciente de que agendamentos em fim de semana ficam pendentes até aprovação do administrador, e que o espaço só estará garantido após a confirmação."
+                  : "Estou ciente de que este agendamento tem menos de 24 horas de antecedência, ficará como pendente e precisarei contatar a administração para confirmar o uso do espaço."
+              }
+            </span>
+          </label>
+        )}
+
+        {/* Botões */}
         <div style={{ display:"flex", gap:10 }}>
-          <button onClick={onCancelar} style={{ flex:1, padding:"10px", borderRadius:8, border:`1.5px solid ${C.border}`, background:"transparent", color:C.textMid, fontWeight:700, cursor:"pointer", fontSize:13 }}>Revisar</button>
-          <button onClick={onConfirmar} disabled={salvando} style={{ flex:2, padding:"10px", borderRadius:8, border:"none", background:"#40b07a", color:"#fff", fontWeight:800, cursor:"pointer", fontSize:13.5 }}>{salvando?"Salvando...":"✓ Confirmar "+blocos.length+" agendamento"+(blocos.length>1?"s":"")}</button>
+          <button onClick={onCancelar} style={{ flex:1, padding:"11px", borderRadius:8, border:`1.5px solid ${C.border}`, background:"transparent", color:C.textMid, fontWeight:700, cursor:"pointer", fontSize:13 }}>← Revisar</button>
+          <button onClick={onConfirmar} disabled={salvando||(precisaCiencia&&!ciente)} style={{ flex:2, padding:"11px", borderRadius:8, border:"none", background:(precisaCiencia&&!ciente)?"#c7dfd4":"#1a6b47", color:"#fff", fontWeight:800, cursor:(precisaCiencia&&!ciente)?"not-allowed":"pointer", fontSize:13.5, transition:"background .2s" }}>
+            {salvando?"Salvando...":`✓ Confirmar ${blocos.length} agendamento${blocos.length>1?"s":""}`}
+          </button>
         </div>
       </div>
     </div>
