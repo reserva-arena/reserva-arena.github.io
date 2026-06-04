@@ -887,31 +887,32 @@ function ProfessorView({ usuario }) {
       {mostrarResumo&&<ModalResumo espaco={espacoSel} data={dataSel} blocos={blocos} onConfirmar={handleSalvar} onCancelar={()=>setMostrarResumo(false)} salvando={salvando} C={C} />}
 
       {/* Card de agendamentos com calendário */}
-      <div style={{ background:`linear-gradient(135deg,#1a6b47,#0f4c2b)`, borderRadius:14, padding:"16px 18px", marginBottom:20, color:"#fff" }}>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10, flexWrap:"wrap", gap:6 }}>
+      <div style={{ background:C.surface, borderRadius:14, marginBottom:20, border:`1px solid ${C.border}`, overflow:"hidden", boxShadow:C.cardShadow }}>
+        {/* Header verde — só a faixa do topo */}
+        <div style={{ background:"#1a6b47", padding:"12px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:8 }}>
           <div>
-            <p style={{ fontSize:11, fontWeight:700, opacity:.75, textTransform:"uppercase", letterSpacing:".5px", marginBottom:2 }}>Agendamentos</p>
-            {pendentes.length>0&&<span style={{ fontSize:11, background:"rgba(255,255,255,.2)", borderRadius:20, padding:"2px 9px" }}>⚠️ {pendentes.length} pendente{pendentes.length!==1?"s":""}</span>}
+            <p style={{ fontSize:11, fontWeight:700, color:"rgba(255,255,255,.75)", textTransform:"uppercase", letterSpacing:".5px" }}>Agendamentos</p>
+            {pendentes.length>0&&<span style={{ fontSize:11, background:"rgba(255,255,255,.15)", border:"1px solid rgba(255,255,255,.25)", borderRadius:20, padding:"2px 9px", color:"#fff" }}>⚠️ {pendentes.length} pendente{pendentes.length!==1?"s":""}</span>}
           </div>
           <div style={{ display:"flex", gap:6, alignItems:"center", flexWrap:"wrap" }}>
-            <div style={{ display:"flex", background:"rgba(0,0,0,.2)", borderRadius:8, padding:2, alignItems:"center" }}>
-              <select value={filtroEspacoGrade} onChange={e=>setFiltroEspacoGrade(e.target.value)} style={{ background:"transparent", border:"none", color:"rgba(255,255,255,.85)", fontWeight:700, fontSize:11.5, cursor:"pointer", outline:"none", padding:"4px 6px", borderRadius:6, maxWidth:130 }}>
-                <option value="" style={{ background:"#40b07a" }}>Todos espaços</option>
-                {ESPACOS.map(e=><option key={e.id} value={e.nome} style={{ background:"#40b07a" }}>{e.nome}</option>)}
-              </select>
-            </div>
-            <div style={{ display:"flex", background:"rgba(0,0,0,.2)", borderRadius:8, padding:2 }}>
+            <select value={filtroEspacoGrade} onChange={e=>setFiltroEspacoGrade(e.target.value)} style={{ background:"rgba(255,255,255,.12)", border:"1px solid rgba(255,255,255,.2)", borderRadius:7, color:"#fff", fontWeight:600, fontSize:11.5, cursor:"pointer", outline:"none", padding:"5px 8px", maxWidth:130 }}>
+              <option value="" style={{ background:"#1a6b47" }}>Todos espaços</option>
+              {ESPACOS.map(e=><option key={e.id} value={e.nome} style={{ background:"#1a6b47" }}>{e.nome}</option>)}
+            </select>
+            <div style={{ display:"flex", background:"rgba(0,0,0,.18)", borderRadius:8, padding:2 }}>
               {[{id:"semana",label:"Semana"},{id:"mes",label:"Mês"}].map(op=>(
-                <button key={op.id} onClick={()=>setModoVisu(op.id)} style={{ padding:"5px 11px", borderRadius:6, border:"none", background:modoVisu===op.id?"#fff":"transparent", color:modoVisu===op.id?"#40b07a":"rgba(255,255,255,.8)", fontWeight:700, fontSize:12, cursor:"pointer" }}>{op.label}</button>
+                <button key={op.id} onClick={()=>setModoVisu(op.id)} style={{ padding:"5px 11px", borderRadius:6, border:"none", background:modoVisu===op.id?"#fff":"transparent", color:modoVisu===op.id?"#1a6b47":"rgba(255,255,255,.85)", fontWeight:700, fontSize:12, cursor:"pointer" }}>{op.label}</button>
               ))}
             </div>
-            <div style={{ display:"flex", background:"rgba(0,0,0,.2)", borderRadius:8, padding:2 }}>
+            <div style={{ display:"flex", background:"rgba(0,0,0,.18)", borderRadius:8, padding:2 }}>
               {[{id:"meus",label:"Só meus"},{id:"todos",label:"Todos"}].map(op=>(
-                <button key={op.id} onClick={()=>setFiltroGrade(op.id)} style={{ padding:"5px 11px", borderRadius:6, border:"none", background:filtroGrade===op.id?"#fff":"transparent", color:filtroGrade===op.id?"#40b07a":"rgba(255,255,255,.8)", fontWeight:700, fontSize:12, cursor:"pointer" }}>{op.label}</button>
+                <button key={op.id} onClick={()=>setFiltroGrade(op.id)} style={{ padding:"5px 11px", borderRadius:6, border:"none", background:filtroGrade===op.id?"#fff":"transparent", color:filtroGrade===op.id?"#1a6b47":"rgba(255,255,255,.85)", fontWeight:700, fontSize:12, cursor:"pointer" }}>{op.label}</button>
               ))}
             </div>
           </div>
         </div>
+        {/* Corpo branco */}
+        <div style={{ padding:"14px 16px" }}>
 
         {/* Modo SEMANA */}
         {modoVisu==="semana"&&(()=>{
@@ -934,19 +935,19 @@ function ProfessorView({ usuario }) {
                   const [,,dia]=d.split("-"); const isHoje=d===hoje; const isSel=d===diaMesSel;
                   const rsDodia=fonte.filter(r=>r.data===d).sort((a,b)=>a.horario>b.horario?1:-1);
                   return (
-                    <div key={d} onClick={()=>setDiaMesSel(isSel?null:d)} style={{ background:isSel?"rgba(255,255,255,.35)":isHoje?"rgba(255,255,255,.22)":"rgba(255,255,255,.1)", borderRadius:10, padding:"8px 6px", minHeight:80, cursor:"pointer", transition:"background .15s" }}>
+                    <div key={d} onClick={()=>setDiaMesSel(isSel?null:d)} style={{ background:isSel?C.greenBg:isHoje?"rgba(26,107,71,.06)":C.bg, border:`1px solid ${isSel?C.greenBorder:isHoje?C.blueMid:C.borderLight}`, borderRadius:10, padding:"8px 6px", minHeight:80, cursor:"pointer", transition:"all .15s" }}>
                       <div style={{ textAlign:"center", marginBottom:6 }}>
-                        <p style={{ fontSize:9.5, fontWeight:700, opacity:.75, textTransform:"uppercase" }}>{nomesDia[i]}</p>
-                        <p style={{ fontSize:16, fontWeight:900, lineHeight:1 }}>{dia}</p>
-                        {isHoje&&<div style={{ width:4, height:4, borderRadius:"50%", background:"#fff", margin:"3px auto 0" }} />}
+                        <p style={{ fontSize:9.5, fontWeight:700, color:C.textMuted, textTransform:"uppercase" }}>{nomesDia[i]}</p>
+                        <p style={{ fontSize:16, fontWeight:900, lineHeight:1, color:isHoje?C.blueMid:C.navy }}>{dia}</p>
+                        {isHoje&&<div style={{ width:4, height:4, borderRadius:"50%", background:C.blueMid, margin:"3px auto 0" }} />}
                       </div>
-                      {rsDodia.length===0 ? <p style={{ fontSize:9, opacity:.4, textAlign:"center", marginTop:4 }}>—</p> : (
+                      {rsDodia.length===0 ? <p style={{ fontSize:9, color:C.textMuted, opacity:.5, textAlign:"center", marginTop:4 }}>—</p> : (
                         <div style={{ display:"grid", gap:3 }}>
-                          {rsDodia.map(r=>{ const isMeu=r.professorId===usuario.uid; const bg=isMeu?(r.status==="confirmado"?"rgba(74,222,128,.28)":"rgba(251,191,36,.28)"):"rgba(255,255,255,.13)"; return (
-                            <div key={r.id||r.horario} title={`${r.professor} · ${r.espaco} · ${r.turma}`} style={{ background:bg, borderRadius:5, padding:"3px 5px", borderLeft:isMeu?"2px solid rgba(255,255,255,.6)":"2px solid rgba(255,255,255,.2)" }}>
-                              <p style={{ fontSize:9.5, fontWeight:800, fontFamily:"'DM Mono',monospace", opacity:.95 }}>{r.horario}</p>
-                              <p style={{ fontSize:9, fontWeight:700, opacity:.9, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{r.espaco.split(" ")[0]}</p>
-                              <p style={{ fontSize:8.5, opacity:.75, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{filtroGrade==="todos"&&!isMeu?r.professor.split(" ")[0]:r.turma}</p>
+                          {rsDodia.map(r=>{ const isMeu=r.professorId===usuario.uid; const isPend=r.status==="pendente"; return (
+                            <div key={r.id||r.horario} style={{ background:isMeu?(isPend?C.amberBg:C.greenBg):"rgba(26,107,71,.06)", borderRadius:5, padding:"3px 5px", borderLeft:`2px solid ${isMeu?(isPend?C.amberBorder:C.greenBorder):C.borderLight}` }}>
+                              <p style={{ fontSize:9.5, fontWeight:800, fontFamily:"'DM Mono',monospace", color:isMeu?(isPend?C.amber:C.green):C.textMid }}>{r.horario}</p>
+                              <p style={{ fontSize:9, fontWeight:700, color:C.navy, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{r.espaco.split(" ")[0]}</p>
+                              <p style={{ fontSize:8.5, color:C.textMuted, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{filtroGrade==="todos"&&!isMeu?r.professor.split(" ")[0]:r.turma}</p>
                             </div>
                           ); })}
                         </div>
@@ -956,50 +957,46 @@ function ProfessorView({ usuario }) {
                 })}
               </div>
               {diaMesSel&&diasSemana.includes(diaMesSel)&&(
-                <div className="fade-in" style={{ marginTop:10, background:"rgba(255,255,255,.12)", borderRadius:10, padding:"12px 14px" }}>
-                  <p style={{ fontSize:12, fontWeight:700, opacity:.8, marginBottom:8 }}>{diaMesSel.split("-").reverse().join("/")}</p>
-                  {(porDataSemana[diaMesSel]||[]).length===0 ? <p style={{ fontSize:12, opacity:.7, marginBottom:10 }}>🎉 Nenhum agendamento neste dia.</p> : (
+                <div className="fade-in" style={{ marginTop:10, background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, padding:"12px 14px" }}>
+                  <p style={{ fontSize:12, fontWeight:700, color:C.navy, marginBottom:8 }}>{diaMesSel.split("-").reverse().join("/")}</p>
+                  {(porDataSemana[diaMesSel]||[]).length===0 ? <p style={{ fontSize:12, color:C.textMuted, marginBottom:10 }}>🎉 Nenhum agendamento neste dia.</p> : (
                     <div style={{ display:"grid", gap:4, marginBottom:10 }}>
                       {(porDataSemana[diaMesSel]||[]).sort((a,b)=>a.horario>b.horario?1:-1).map((r,ri)=>{ const isMeu=r.professorId===usuario.uid; return (
-                        <div key={r.id||ri} style={{ display:"flex", gap:8, alignItems:"center", padding:"5px 8px", borderRadius:7, background:isMeu?"rgba(74,222,128,.2)":"rgba(255,255,255,.1)", borderLeft:isMeu?"2px solid rgba(74,222,128,.8)":"2px solid rgba(255,255,255,.3)" }}>
-                          <span style={{ fontFamily:"'DM Mono',monospace", fontWeight:800, fontSize:11, minWidth:38 }}>{r.horario}</span>
-                          <span style={{ fontWeight:700, fontSize:11, flex:1, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{r.espaco}</span>
-                          <span style={{ fontSize:10, opacity:.8 }}>{r.turma}</span>
-                          {filtroGrade==="todos"&&<span style={{ fontSize:10, opacity:.7 }}>{r.professor.split(" ")[0]}</span>}
+                        <div key={r.id||ri} style={{ display:"flex", gap:8, alignItems:"center", padding:"6px 10px", borderRadius:7, background:isMeu?C.greenBg:C.surface, border:`1px solid ${isMeu?C.greenBorder:C.borderLight}`, borderLeft:`3px solid ${isMeu?C.green:C.borderLight}` }}>
+                          <span style={{ fontFamily:"'DM Mono',monospace", fontWeight:800, fontSize:11, minWidth:38, color:C.blueMid }}>{r.horario}</span>
+                          <span style={{ fontWeight:700, fontSize:11, flex:1, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", color:C.navy }}>{r.espaco}</span>
+                          <span style={{ fontSize:10, color:C.textMuted }}>{r.turma}</span>
+                          {filtroGrade==="todos"&&<span style={{ fontSize:10, color:C.textMuted }}>{r.professor.split(" ")[0]}</span>}
                         </div>
                       ); })}
                     </div>
                   )}
                   {diaMesSel>=hoje&&(
-                    <div style={{ borderTop:"1px solid rgba(255,255,255,.15)", paddingTop:10, marginTop:4 }}>
+                    <div style={{ borderTop:`1px solid ${C.borderLight}`, paddingTop:10, marginTop:4 }}>
                       {!espacoSel ? (
                         <div>
-                          <p style={{ fontSize:12, fontWeight:700, opacity:.85, marginBottom:8 }}>Deseja agendar neste dia? Selecione o espaço:</p>
+                          <p style={{ fontSize:12, fontWeight:700, color:C.navy, marginBottom:8 }}>Agendar neste dia — selecione o espaço:</p>
                           <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-                            <select defaultValue="" onChange={e=>{ if(!e.target.value) return; setDiaMesSel(null); setDataSel(diaMesSel); setEspacoSel(e.target.value); setTimeout(()=>document.getElementById("seletor-espaco")?.scrollIntoView({behavior:"smooth"}),100); }} style={{ flex:1, padding:"8px 10px", borderRadius:8, border:"1px solid rgba(255,255,255,.3)", background:"rgba(255,255,255,.15)", color:"#fff", fontWeight:600, fontSize:12.5, cursor:"pointer", outline:"none", minWidth:180 }}>
-                              <option value="" style={{ background:"#40b07a" }}>Selecione o espaço...</option>
-                              <optgroup label="🏛️ Espaços" style={{ background:"#40b07a" }}>{ESPACOS.filter(e=>e.tipo==="espaco").map(e=><option key={e.id} value={e.nome} style={{ background:"#40b07a" }}>{e.nome}</option>)}</optgroup>
-                              <optgroup label="🔬 Laboratórios" style={{ background:"#40b07a" }}>{ESPACOS.filter(e=>e.tipo==="laboratorio").map(e=><option key={e.id} value={e.nome} style={{ background:"#40b07a" }}>{e.nome}</option>)}</optgroup>
-                              <optgroup label="💻 Equipamentos" style={{ background:"#40b07a" }}>{ESPACOS.filter(e=>e.tipo==="equipamento").map(e=><option key={e.id} value={e.nome} style={{ background:"#40b07a" }}>{e.nome}</option>)}</optgroup>
+                            <select defaultValue="" onChange={e=>{ if(!e.target.value) return; setDiaMesSel(null); setDataSel(diaMesSel); setEspacoSel(e.target.value); setTimeout(()=>document.getElementById("seletor-espaco")?.scrollIntoView({behavior:"smooth"}),100); }} style={{ flex:1, padding:"8px 10px", borderRadius:8, border:`1px solid ${C.border}`, background:C.surface, color:C.navy, fontWeight:600, fontSize:12.5, cursor:"pointer", outline:"none", minWidth:180 }}>
+                              <option value="">Selecione o espaço...</option>
+                              <optgroup label="🏛️ Espaços">{ESPACOS.filter(e=>e.tipo==="espaco").map(e=><option key={e.id} value={e.nome}>{e.nome}</option>)}</optgroup>
+                              <optgroup label="🔬 Laboratórios">{ESPACOS.filter(e=>e.tipo==="laboratorio").map(e=><option key={e.id} value={e.nome}>{e.nome}</option>)}</optgroup>
+                              <optgroup label="💻 Equipamentos">{ESPACOS.filter(e=>e.tipo==="equipamento").map(e=><option key={e.id} value={e.nome}>{e.nome}</option>)}</optgroup>
                             </select>
-                            <button onClick={()=>setDiaMesSel(null)} style={{ padding:"8px 14px", borderRadius:8, border:"1px solid rgba(255,255,255,.3)", background:"transparent", color:"#fff", fontWeight:700, fontSize:12, cursor:"pointer" }}>Fechar</button>
                           </div>
                         </div>
                       ) : (
                         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, flexWrap:"wrap" }}>
-                          <p style={{ fontSize:12, fontWeight:700, opacity:.85 }}>Agendar em <strong>{espacoSel}</strong> neste dia?</p>
-                          <div style={{ display:"flex", gap:8 }}>
-                            <button onClick={()=>{ setDataSel(diaMesSel); setDiaMesSel(null); setBlocos([blocoVazio()]); setTimeout(()=>document.getElementById("seletor-espaco")?.scrollIntoView({behavior:"smooth"}),100); }} style={{ padding:"7px 14px", borderRadius:8, border:"none", background:"#fff", color:"#40b07a", fontWeight:800, fontSize:12, cursor:"pointer" }}>Sim ✓</button>
-                            <button onClick={()=>setDiaMesSel(null)} style={{ padding:"7px 12px", borderRadius:8, border:"1px solid rgba(255,255,255,.3)", background:"transparent", color:"#fff", fontWeight:700, fontSize:12, cursor:"pointer" }}>Fechar</button>
-                          </div>
+                          <p style={{ fontSize:12, fontWeight:700, color:C.navy }}>Agendar em <strong>{espacoSel}</strong> neste dia?</p>
+                          <button onClick={()=>{ setDataSel(diaMesSel); setDiaMesSel(null); setBlocos([blocoVazio()]); setTimeout(()=>document.getElementById("seletor-espaco")?.scrollIntoView({behavior:"smooth"}),100); }} style={{ padding:"7px 14px", borderRadius:8, border:"none", background:"#1a6b47", color:"#fff", fontWeight:800, fontSize:12, cursor:"pointer" }}>Sim ✓</button>
                         </div>
                       )}
                     </div>
                   )}
                 </div>
               )}
-              {fonte.length===0&&<p style={{ fontSize:13, opacity:.7, textAlign:"center", marginTop:8 }}>Nenhum agendamento esta semana</p>}
-              <p style={{ fontSize:10, opacity:.6, textAlign:"right", marginTop:6 }}>Clique no dia para detalhes</p>
+              {fonte.length===0&&<p style={{ fontSize:13, color:C.textMuted, textAlign:"center", marginTop:8 }}>Nenhum agendamento esta semana</p>}
+              <p style={{ fontSize:10, color:C.textMuted, opacity:.7, textAlign:"right", marginTop:6 }}>Clique no dia para detalhes</p>
             </div>
           );
         })()}
@@ -1018,9 +1015,9 @@ function ProfessorView({ usuario }) {
           const cells=[]; for(let i=0;i<inicioGrid;i++)cells.push(null); for(let d=1;d<=diasNoMes;d++)cells.push(d);
           return (
             <div>
-              <p style={{ fontSize:13, fontWeight:800, textAlign:"center", marginBottom:8, opacity:.9 }}>{nomeMes} {ano}</p>
+              <p style={{ fontSize:13, fontWeight:800, textAlign:"center", marginBottom:8, color:C.navy }}>{nomeMes} {ano}</p>
               <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", marginBottom:4 }}>
-                {["D","S","T","Q","Q","S","S"].map((n,i)=><div key={i} style={{ textAlign:"center", fontSize:9.5, fontWeight:700, opacity:.6, padding:"2px 0" }}>{n}</div>)}
+                {["D","S","T","Q","Q","S","S"].map((n,i)=><div key={i} style={{ textAlign:"center", fontSize:9.5, fontWeight:700, color:C.textMuted, padding:"2px 0" }}>{n}</div>)}
               </div>
               <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:2 }}>
                 {cells.map((d,i)=>{
@@ -1031,15 +1028,15 @@ function ProfessorView({ usuario }) {
                   const isSel=dateStr===diaMesSel;
                   const rs=porDataMes[dateStr]||[];
                   return (
-                    <button key={i} onClick={()=>setDiaMesSel(isSel?null:dateStr)} style={{ borderRadius:8, border:"none", cursor:"pointer", background:isSel?"rgba(255,255,255,.35)":isHoje?"rgba(255,255,255,.2)":"transparent", color:isPast?"rgba(255,255,255,.35)":"#fff", transition:"all .15s", display:"flex", flexDirection:"column", alignItems:"center", padding:"6px 3px", gap:2, minHeight:52 }}>
-                      <span style={{ fontWeight:isHoje||isSel?900:500, fontSize:13, lineHeight:1 }}>{d}</span>
+                    <button key={i} onClick={()=>setDiaMesSel(isSel?null:dateStr)} style={{ borderRadius:8, border:`1px solid ${isSel?C.greenBorder:isHoje?C.blueMid:C.borderLight}`, cursor:"pointer", background:isSel?C.greenBg:isHoje?"rgba(26,107,71,.05)":C.surface, transition:"all .15s", display:"flex", flexDirection:"column", alignItems:"center", padding:"6px 3px", gap:2, minHeight:52 }}>
+                      <span style={{ fontWeight:isHoje||isSel?900:500, fontSize:13, lineHeight:1, color:isPast?C.textMuted:isHoje?C.blueMid:C.navy }}>{d}</span>
                       {rs.length>0&&(
                         <div style={{ display:"grid", gap:1, width:"100%" }}>
                           {[...new Map(rs.map(r=>[r.professorId,r])).values()].slice(0,2).map(r=>{
                             const isMeu=r.professorId===usuario.uid;
-                            return <div key={r.professorId} style={{ background:isMeu?"rgba(74,222,128,.35)":"rgba(255,255,255,.18)", borderRadius:3, padding:"1px 3px", overflow:"hidden" }}><p style={{ fontSize:7.5, fontWeight:800, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", textAlign:"center", opacity:.95 }}>{r.professor.split(" ")[0]}</p></div>;
+                            return <div key={r.professorId} style={{ background:isMeu?C.greenBg:"rgba(26,107,71,.06)", border:`1px solid ${isMeu?C.greenBorder:C.borderLight}`, borderRadius:3, padding:"1px 3px", overflow:"hidden" }}><p style={{ fontSize:7.5, fontWeight:800, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", textAlign:"center", color:isMeu?C.green:C.textMid }}>{r.professor.split(" ")[0]}</p></div>;
                           })}
-                          {[...new Map(rs.map(r=>[r.professorId,r])).values()].length>2&&<p style={{ fontSize:7, opacity:.6, textAlign:"center" }}>+{[...new Map(rs.map(r=>[r.professorId,r])).values()].length-2}</p>}
+                          {[...new Map(rs.map(r=>[r.professorId,r])).values()].length>2&&<p style={{ fontSize:7, color:C.textMuted, textAlign:"center" }}>+{[...new Map(rs.map(r=>[r.professorId,r])).values()].length-2}</p>}
                         </div>
                       )}
                     </button>
@@ -1047,43 +1044,41 @@ function ProfessorView({ usuario }) {
                 })}
               </div>
               {diaMesSel&&(
-                <div className="fade-in" style={{ marginTop:12, background:"rgba(255,255,255,.12)", borderRadius:10, padding:"12px 14px" }}>
-                  <p style={{ fontSize:12, fontWeight:700, opacity:.8, marginBottom:8 }}>{diaMesSel.split("-").reverse().join("/")}</p>
-                  {(porDataMes[diaMesSel]||[]).length===0 ? <p style={{ fontSize:12, opacity:.7, marginBottom:10 }}>🎉 Nenhum agendamento neste dia.</p> : (
+                <div className="fade-in" style={{ marginTop:12, background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, padding:"12px 14px" }}>
+                  <p style={{ fontSize:12, fontWeight:700, color:C.navy, marginBottom:8 }}>{diaMesSel.split("-").reverse().join("/")}</p>
+                  {(porDataMes[diaMesSel]||[]).length===0 ? <p style={{ fontSize:12, color:C.textMuted, marginBottom:10 }}>🎉 Nenhum agendamento neste dia.</p> : (
                     <div style={{ display:"grid", gap:4, marginBottom:10 }}>
                       {(porDataMes[diaMesSel]||[]).sort((a,b)=>a.horario>b.horario?1:-1).map((r,ri)=>{ const isMeu=r.professorId===usuario.uid; return (
-                        <div key={r.id||ri} style={{ display:"flex", gap:8, alignItems:"center", padding:"5px 8px", borderRadius:7, background:isMeu?"rgba(74,222,128,.2)":"rgba(255,255,255,.1)", borderLeft:isMeu?"2px solid rgba(74,222,128,.8)":"2px solid rgba(255,255,255,.3)" }}>
-                          <span style={{ fontFamily:"'DM Mono',monospace", fontWeight:800, fontSize:11, minWidth:38 }}>{r.horario}</span>
-                          <span style={{ fontWeight:700, fontSize:11, flex:1, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{r.espaco}</span>
-                          <span style={{ fontSize:10, opacity:.8 }}>{r.turma}</span>
-                          {filtroGrade==="todos"&&<span style={{ fontSize:10, opacity:.7 }}>{r.professor.split(" ")[0]}</span>}
+                        <div key={r.id||ri} style={{ display:"flex", gap:8, alignItems:"center", padding:"6px 10px", borderRadius:7, background:isMeu?C.greenBg:C.surface, border:`1px solid ${isMeu?C.greenBorder:C.borderLight}`, borderLeft:`3px solid ${isMeu?C.green:C.borderLight}` }}>
+                          <span style={{ fontFamily:"'DM Mono',monospace", fontWeight:800, fontSize:11, minWidth:38, color:C.blueMid }}>{r.horario}</span>
+                          <span style={{ fontWeight:700, fontSize:11, flex:1, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", color:C.navy }}>{r.espaco}</span>
+                          <span style={{ fontSize:10, color:C.textMuted }}>{r.turma}</span>
+                          {filtroGrade==="todos"&&<span style={{ fontSize:10, color:C.textMuted }}>{r.professor.split(" ")[0]}</span>}
                         </div>
                       ); })}
                     </div>
                   )}
                   {diaMesSel>=hoje&&(
-                    <div style={{ borderTop:"1px solid rgba(255,255,255,.15)", paddingTop:10, marginTop:4 }}>
-                      <p style={{ fontSize:12, fontWeight:700, opacity:.85, marginBottom:8 }}>Deseja agendar neste dia? Selecione o espaço:</p>
-                      <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-                        <select defaultValue="" onChange={e=>{ if (!e.target.value) return; setDiaMesSel(null); setDataSel(diaMesSel); setEspacoSel(e.target.value); setTimeout(()=>document.getElementById("seletor-espaco")?.scrollIntoView({behavior:"smooth"}),100); }} style={{ flex:1, padding:"8px 10px", borderRadius:8, border:"1px solid rgba(255,255,255,.3)", background:"rgba(255,255,255,.15)", color:"#fff", fontWeight:600, fontSize:12.5, cursor:"pointer", outline:"none", minWidth:180 }}>
-                          <option value="" style={{ background:"#40b07a" }}>Selecione o espaço...</option>
-                          <optgroup label="🏛️ Espaços" style={{ background:"#40b07a" }}>{ESPACOS.filter(e=>e.tipo==="espaco").map(e=><option key={e.id} value={e.nome} style={{ background:"#40b07a" }}>{e.nome}</option>)}</optgroup>
-                          <optgroup label="🔬 Laboratórios" style={{ background:"#40b07a" }}>{ESPACOS.filter(e=>e.tipo==="laboratorio").map(e=><option key={e.id} value={e.nome} style={{ background:"#40b07a" }}>{e.nome}</option>)}</optgroup>
-                          <optgroup label="💻 Equipamentos" style={{ background:"#40b07a" }}>{ESPACOS.filter(e=>e.tipo==="equipamento").map(e=><option key={e.id} value={e.nome} style={{ background:"#40b07a" }}>{e.nome}</option>)}</optgroup>
-                        </select>
-                        <button onClick={()=>setDiaMesSel(null)} style={{ padding:"8px 14px", borderRadius:8, border:"1px solid rgba(255,255,255,.3)", background:"transparent", color:"#fff", fontWeight:700, fontSize:12, cursor:"pointer" }}>Fechar</button>
-                      </div>
+                    <div style={{ borderTop:`1px solid ${C.borderLight}`, paddingTop:10, marginTop:4 }}>
+                      <p style={{ fontSize:12, fontWeight:700, color:C.navy, marginBottom:8 }}>Agendar neste dia — selecione o espaço:</p>
+                      <select defaultValue="" onChange={e=>{ if (!e.target.value) return; setDiaMesSel(null); setDataSel(diaMesSel); setEspacoSel(e.target.value); setTimeout(()=>document.getElementById("seletor-espaco")?.scrollIntoView({behavior:"smooth"}),100); }} style={{ width:"100%", padding:"8px 10px", borderRadius:8, border:`1px solid ${C.border}`, background:C.surface, color:C.navy, fontWeight:600, fontSize:12.5, cursor:"pointer", outline:"none" }}>
+                        <option value="">Selecione o espaço...</option>
+                        <optgroup label="🏛️ Espaços">{ESPACOS.filter(e=>e.tipo==="espaco").map(e=><option key={e.id} value={e.nome}>{e.nome}</option>)}</optgroup>
+                        <optgroup label="🔬 Laboratórios">{ESPACOS.filter(e=>e.tipo==="laboratorio").map(e=><option key={e.id} value={e.nome}>{e.nome}</option>)}</optgroup>
+                        <optgroup label="💻 Equipamentos">{ESPACOS.filter(e=>e.tipo==="equipamento").map(e=><option key={e.id} value={e.nome}>{e.nome}</option>)}</optgroup>
+                      </select>
                     </div>
                   )}
                 </div>
               )}
               <div style={{ display:"flex", gap:12, marginTop:10, flexWrap:"wrap", alignItems:"center" }}>
-                <div style={{ display:"flex", alignItems:"center", gap:5 }}><div style={{ width:14, height:10, borderRadius:3, background:"rgba(74,222,128,.35)" }} /><span style={{ fontSize:10, opacity:.8 }}>Meus</span></div>
-                <span style={{ fontSize:10, opacity:.6, marginLeft:"auto" }}>Clique no dia para detalhes</span>
+                <div style={{ display:"flex", alignItems:"center", gap:5 }}><div style={{ width:14, height:10, borderRadius:3, background:C.greenBg, border:`1px solid ${C.greenBorder}` }} /><span style={{ fontSize:10, color:C.textMuted }}>Meus</span></div>
+                <span style={{ fontSize:10, color:C.textMuted, marginLeft:"auto" }}>Clique no dia para detalhes</span>
               </div>
             </div>
           );
         })()}
+        </div>{/* fim corpo branco */}
       </div>
 
       {/* Meus próximos */}
