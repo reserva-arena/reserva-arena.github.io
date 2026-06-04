@@ -743,9 +743,11 @@ function ModalResumo({ espaco, data, blocos, onConfirmar, onCancelar, salvando, 
   const blocosUrgentes = blocos.filter(b=>{
     try {
       const [h,m]=b.horario.split(":").map(Number);
-      const ev=new Date(data+"T00:00:00"); ev.setHours(h,m);
+      // Monta a data do evento na timezone local
+      const ev=new Date(+ano, +mes-1, +dia, h, m, 0, 0);
       const diff=(ev-agora)/3600000;
-      return diff>0&&diff<24;
+      // Urgente: horário já passou hoje OU ocorre em menos de 24h
+      return diff<24;
     } catch { return false; }
   });
 
@@ -895,7 +897,7 @@ function ProfessorView({ usuario }) {
   };
   const todosValidos = blocos.every(blocoValido);
 
-  const isUrgente=(data,horario)=>{ try { const [h,m]=horario.split(":").map(Number); const ev=new Date(data+"T00:00:00"); ev.setHours(h,m); const diff=(ev-new Date())/3600000; return diff>0&&diff<24; } catch { return false; } };
+  const isUrgente=(data,horario)=>{ try { const [ano2,mes2,dia2]=data.split("-").map(Number); const [h,m]=horario.split(":").map(Number); const ev=new Date(ano2,mes2-1,dia2,h,m,0,0); const diff=(ev-new Date())/3600000; return diff<24; } catch { return false; } };
 
   const handleSalvar=async()=>{
     setSalvando(true); setErro("");
