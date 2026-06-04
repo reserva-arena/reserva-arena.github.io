@@ -1482,99 +1482,122 @@ function AdminView() {
       ══════════════════════════════════════════════ */}
       {modoVisu==="calendario"&&(
         <div className="fade-in">
-          {/* Cabeçalho do mês */}
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14, flexWrap:"wrap", gap:10 }}>
-            <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-              <button onClick={()=>navMes(-1)} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, width:34, height:34, cursor:"pointer", color:C.textMid, fontSize:16, display:"flex", alignItems:"center", justifyContent:"center" }}>‹</button>
-              <div style={{ textAlign:"center", minWidth:130 }}>
-                <p style={{ fontSize:18, fontWeight:800, color:C.navy }}>{nomeMes} {mesCal.a}</p>
-                <p style={{ fontSize:11, color:C.textMuted }}>{filtradas.filter(r=>r.status!=="recusado"&&r.data.startsWith(`${mesCal.a}-${String(mesCal.m+1).padStart(2,"0")}`)).length} agendamentos neste mês</p>
-              </div>
-              <button onClick={()=>navMes(1)} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, width:34, height:34, cursor:"pointer", color:C.textMid, fontSize:16, display:"flex", alignItems:"center", justifyContent:"center" }}>›</button>
-            </div>
-            <button onClick={()=>{ const d=new Date(); setMesCal({a:d.getFullYear(),m:d.getMonth()}); setDiaSel(null); }} style={{ background:C.surface, border:`1.5px solid ${C.border}`, borderRadius:8, color:C.blueMid, fontSize:12, fontWeight:700, padding:"6px 14px", cursor:"pointer" }}>Hoje</button>
-          </div>
-
-          <div style={{ background:C.surface, borderRadius:16, border:`1px solid ${C.border}`, overflow:"hidden", boxShadow:C.cardShadow }}>
-            {/* Dias da semana */}
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", borderBottom:`2px solid ${C.border}` }}>
-              {["Dom.","Seg.","Ter.","Qua.","Qui.","Sexta","Sáb."].map((d,i)=>(
-                <div key={d} style={{ padding:"10px 0", textAlign:"center", fontSize:11, fontWeight:700, color:i===0||i===6?"#ef4444":C.textMuted, letterSpacing:".3px", textTransform:"uppercase" }}>{d}</div>
-              ))}
-            </div>
-            {/* Células */}
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)" }}>
-              {cells.map((d,i)=>{
-                if (!d) return <div key={i} style={{ minHeight:90, borderRight:`1px solid ${C.borderLight}`, borderBottom:`1px solid ${C.borderLight}` }} />;
-                const dateStr=`${mesCal.a}-${String(mesCal.m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-                const isPast=dateStr<hoje, isHoje=dateStr===hoje, isSel=dateStr===diaSel;
-                const rsdia=porDataCal[dateStr]||[];
-                const urgDia=rsdia.filter(isUrgente);
-                const pendDia=rsdia.filter(r=>r.status==="pendente"&&!isUrgente(r));
-                const confDia=rsdia.filter(r=>r.status==="confirmado");
-                const dow=new Date(Date.UTC(mesCal.a,mesCal.m,d)).getUTCDay();
-                const isFimSemana=dow===0||dow===6;
-                return (
-                  <div key={i} onClick={()=>setDiaSel(isSel?null:dateStr)} style={{ minHeight:90, borderRight:`1px solid ${C.borderLight}`, borderBottom:`1px solid ${C.borderLight}`, padding:"6px 8px", cursor:"pointer", background:isSel?"rgba(13,158,120,.08)":isHoje?"rgba(13,158,120,.04)":isPast?"rgba(0,0,0,.015)":"transparent", transition:"background .15s", position:"relative" }}>
-                    {/* Número do dia */}
-                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:4 }}>
-                      <span style={{ fontSize:13.5, fontWeight:isHoje?900:500, color:isSel?"#0d9e78":isHoje?"#0d9e78":isPast?C.textMuted:isFimSemana?"#ef4444":C.navy, width:26, height:26, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", background:isHoje?"rgba(13,158,120,.15)":"transparent" }}>{d}</span>
-                      {rsdia.length>0&&<span style={{ fontSize:10, fontWeight:700, color:urgDia.length>0?"#c2410c":pendDia.length>0?C.amber:C.green, background:urgDia.length>0?"#fff7ed":pendDia.length>0?C.amberBg:C.greenBg, borderRadius:8, padding:"1px 5px" }}>{rsdia.length}</span>}
-                    </div>
-                    {/* Chips de reservas */}
-                    <div style={{ display:"flex", flexDirection:"column", gap:2 }}>
-                      {urgDia.slice(0,2).map(r=>(
-                        <div key={r.id} style={{ background:"#fff7ed", border:"1px solid #f97316", borderRadius:4, padding:"2px 5px", fontSize:9.5, fontWeight:700, color:"#c2410c", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
-                          ⚡ {r.horario} {r.professor.split(" ")[0]}
-                        </div>
-                      ))}
-                      {pendDia.slice(0,1).map(r=>(
-                        <div key={r.id} title={`⏳ ${r.horario} | ${r.espaco} | ${r.professor}`} style={{ background:C.amberBg, border:`1px solid ${C.amberBorder}`, borderRadius:4, padding:"2px 5px", fontSize:9.5, fontWeight:700, color:C.amber, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", cursor:"pointer" }} onClick={(e)=>{e.stopPropagation();setDiaSel(dateStr);}}>
-                          ⏳ {r.horario} {r.espaco.split(" ")[0]}
-                        </div>
-                      ))}
-                      {confDia.slice(0,2).map(r=>(
-                        <div key={r.id} title={`✅ ${r.horario} | ${r.espaco} | ${r.professor} | ${r.turma}`} style={{ background:C.greenBg, border:`1px solid ${C.greenBorder}`, borderRadius:4, padding:"2px 5px", fontSize:9.5, fontWeight:600, color:C.green, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", cursor:"pointer" }} onClick={(e)=>{e.stopPropagation();setDiaSel(dateStr);}}>
-                          {r.horario} {r.espaco.split(" ")[0]}
-                        </div>
-                      ))}
-                      {rsdia.length>3&&<div title={rsdia.slice(3).map(r=>`${r.horario} | ${r.espaco} | ${r.professor.split(" ")[0]}`).join("\n")} style={{ fontSize:9, color:C.blueMid, fontWeight:700, paddingLeft:2, cursor:"pointer" }} onClick={(e)=>{e.stopPropagation();setDiaSel(dateStr);}}>+{rsdia.length-3} mais ↓</div>}
-                    </div>
+          {/* ── VISÃO DE DIA (substitui o calendário quando um dia é selecionado) ── */}
+          {diaSel ? (
+            <div className="fade-in">
+              {/* Header do dia */}
+              <div style={{ background:`linear-gradient(135deg,#0d9e78,#0a7a5e)`, borderRadius:14, padding:"16px 20px", marginBottom:16, display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, flexWrap:"wrap", boxShadow:"0 4px 16px rgba(13,158,120,.25)" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:14 }}>
+                  <button onClick={()=>setDiaSel(null)} style={{ background:"rgba(255,255,255,.2)", border:"1px solid rgba(255,255,255,.35)", borderRadius:9, color:"#fff", fontSize:13, fontWeight:800, padding:"7px 14px", cursor:"pointer", display:"flex", alignItems:"center", gap:6, whiteSpace:"nowrap" }}>‹ Voltar ao mês</button>
+                  <div>
+                    <p style={{ fontSize:11, color:"rgba(255,255,255,.75)", fontWeight:700, textTransform:"uppercase", letterSpacing:".5px", marginBottom:2 }}>Agendamentos do dia</p>
+                    <p style={{ fontSize:18, fontWeight:800, color:"#fff" }}>📅 {(()=>{ const [ano,mes,dia]=diaSel.split("-"); const nomeDia=["Dom.","Seg.","Ter.","Qua.","Qui.","Sex.","Sáb."][new Date(Date.UTC(+ano,+mes-1,+dia)).getUTCDay()]; return `${nomeDia} ${dia}/${mes}/${ano}`; })()}</p>
                   </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Legenda */}
-          <div style={{ display:"flex", gap:16, marginTop:10, flexWrap:"wrap", alignItems:"center" }}>
-            {[{label:"Urgente",bg:"#fff7ed",border:"#f97316",c:"#c2410c"},{label:"Pendente",bg:C.amberBg,border:C.amberBorder,c:C.amber},{label:"Confirmado",bg:C.greenBg,border:C.greenBorder,c:C.green}].map(l=>(
-              <div key={l.label} style={{ display:"flex", alignItems:"center", gap:5 }}>
-                <div style={{ width:14, height:14, borderRadius:3, background:l.bg, border:`1.5px solid ${l.border}` }} />
-                <span style={{ fontSize:11.5, color:C.textMuted, fontWeight:600 }}>{l.label}</span>
-              </div>
-            ))}
-            <span style={{ marginLeft:"auto", fontSize:11, color:C.textMuted }}>Clique no dia para ver detalhes</span>
-          </div>
-
-          {/* Painel lateral do dia selecionado */}
-          {diaSel&&(
-            <div className="fade-in" style={{ marginTop:16, background:C.surface, borderRadius:14, border:`1px solid ${C.border}`, overflow:"hidden", boxShadow:C.cardShadow }}>
-              <div style={{ background:`linear-gradient(135deg,#0d9e78,#0a7a5e)`, padding:"12px 18px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                <div>
-                  <p style={{ fontSize:11, color:"rgba(255,255,255,.75)", fontWeight:700, textTransform:"uppercase", letterSpacing:".5px" }}>Agendamentos do dia</p>
-                  <p style={{ fontSize:16, fontWeight:800, color:"#fff", marginTop:2 }}>📅 {diaSel.split("-").reverse().join("/")}</p>
                 </div>
-                <button onClick={()=>setDiaSel(null)} style={{ background:"rgba(255,255,255,.2)", border:"none", borderRadius:8, color:"#fff", fontSize:13, fontWeight:700, padding:"5px 12px", cursor:"pointer" }}>✕ Fechar</button>
+                <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                  {(porDataCal[diaSel]||[]).length>0&&<span style={{ background:"rgba(255,255,255,.2)", border:"1px solid rgba(255,255,255,.3)", borderRadius:20, padding:"4px 12px", fontSize:13, fontWeight:800, color:"#fff" }}>{(porDataCal[diaSel]||[]).length} agendamento{(porDataCal[diaSel]||[]).length!==1?"s":""}</span>}
+                  {/* Navegação entre dias */}
+                  <div style={{ display:"flex", gap:4 }}>
+                    <button onClick={()=>setDiaSel(addDays(diaSel,-1))} style={{ background:"rgba(255,255,255,.15)", border:"1px solid rgba(255,255,255,.3)", borderRadius:8, color:"#fff", fontSize:15, fontWeight:800, width:34, height:34, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>‹</button>
+                    <button onClick={()=>setDiaSel(addDays(diaSel,1))} style={{ background:"rgba(255,255,255,.15)", border:"1px solid rgba(255,255,255,.3)", borderRadius:8, color:"#fff", fontSize:15, fontWeight:800, width:34, height:34, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>›</button>
+                  </div>
+                </div>
               </div>
-              <div style={{ padding:"14px 18px" }}>
+              {/* Lista de reservas do dia */}
+              <div style={{ background:C.surface, borderRadius:14, border:`1px solid ${C.border}`, overflow:"hidden", boxShadow:C.cardShadow }}>
                 {(porDataCal[diaSel]||[]).length===0 ? (
-                  <p style={{ fontSize:13, color:C.textMuted, textAlign:"center", padding:"16px 0" }}>🎉 Nenhum agendamento neste dia.</p>
+                  <div style={{ padding:"48px 24px", textAlign:"center" }}>
+                    <div style={{ fontSize:40, marginBottom:12 }}>🎉</div>
+                    <p style={{ fontSize:16, fontWeight:700, color:C.navy, marginBottom:6 }}>Dia livre!</p>
+                    <p style={{ fontSize:13, color:C.textMuted }}>Nenhum agendamento neste dia.</p>
+                  </div>
                 ) : (
-                  [...(porDataCal[diaSel]||[])].sort((a,b)=>a.horario>b.horario?1:-1).map(r=><ReservaRow key={r.id} r={r} />)
+                  <div style={{ padding:"16px 18px", display:"grid", gap:6 }}>
+                    {[...(porDataCal[diaSel]||[])].sort((a,b)=>a.horario>b.horario?1:-1).map(r=><ReservaRow key={r.id} r={r} />)}
+                  </div>
                 )}
               </div>
             </div>
+          ) : (
+            <>
+              {/* Cabeçalho do mês */}
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14, flexWrap:"wrap", gap:10 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                  <button onClick={()=>navMes(-1)} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, width:34, height:34, cursor:"pointer", color:C.textMid, fontSize:16, display:"flex", alignItems:"center", justifyContent:"center" }}>‹</button>
+                  <div style={{ textAlign:"center", minWidth:130 }}>
+                    <p style={{ fontSize:18, fontWeight:800, color:C.navy }}>{nomeMes} {mesCal.a}</p>
+                    <p style={{ fontSize:11, color:C.textMuted }}>{filtradas.filter(r=>r.status!=="recusado"&&r.data.startsWith(`${mesCal.a}-${String(mesCal.m+1).padStart(2,"0")}`)).length} agendamentos neste mês</p>
+                  </div>
+                  <button onClick={()=>navMes(1)} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, width:34, height:34, cursor:"pointer", color:C.textMid, fontSize:16, display:"flex", alignItems:"center", justifyContent:"center" }}>›</button>
+                </div>
+                <button onClick={()=>{ const d=new Date(); setMesCal({a:d.getFullYear(),m:d.getMonth()}); setDiaSel(null); }} style={{ background:C.surface, border:`1.5px solid ${C.border}`, borderRadius:8, color:C.blueMid, fontSize:12, fontWeight:700, padding:"6px 14px", cursor:"pointer" }}>Hoje</button>
+              </div>
+
+              <div style={{ background:C.surface, borderRadius:16, border:`1px solid ${C.border}`, overflow:"hidden", boxShadow:C.cardShadow }}>
+                {/* Dias da semana */}
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", borderBottom:`2px solid ${C.border}` }}>
+                  {["Dom.","Seg.","Ter.","Qua.","Qui.","Sexta","Sáb."].map((d,i)=>(
+                    <div key={d} style={{ padding:"10px 0", textAlign:"center", fontSize:11, fontWeight:700, color:i===0||i===6?"#ef4444":C.textMuted, letterSpacing:".3px", textTransform:"uppercase" }}>{d}</div>
+                  ))}
+                </div>
+                {/* Células */}
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)" }}>
+                  {cells.map((d,i)=>{
+                    if (!d) return <div key={i} style={{ minHeight:90, borderRight:`1px solid ${C.borderLight}`, borderBottom:`1px solid ${C.borderLight}` }} />;
+                    const dateStr=`${mesCal.a}-${String(mesCal.m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+                    const isPast=dateStr<hoje, isHoje=dateStr===hoje;
+                    const rsdia=porDataCal[dateStr]||[];
+                    const urgDia=rsdia.filter(isUrgente);
+                    const pendDia=rsdia.filter(r=>r.status==="pendente"&&!isUrgente(r));
+                    const confDia=rsdia.filter(r=>r.status==="confirmado");
+                    const dow=new Date(Date.UTC(mesCal.a,mesCal.m,d)).getUTCDay();
+                    const isFimSemana=dow===0||dow===6;
+                    return (
+                      <div key={i} onClick={()=>setDiaSel(dateStr)} style={{ minHeight:90, borderRight:`1px solid ${C.borderLight}`, borderBottom:`1px solid ${C.borderLight}`, padding:"6px 8px", cursor:"pointer", background:isHoje?"rgba(13,158,120,.04)":isPast?"rgba(0,0,0,.015)":"transparent", transition:"background .15s", position:"relative" }}
+                        onMouseEnter={e=>e.currentTarget.style.background=isHoje?"rgba(13,158,120,.1)":isPast?"rgba(0,0,0,.03)":"rgba(13,158,120,.05)"}
+                        onMouseLeave={e=>e.currentTarget.style.background=isHoje?"rgba(13,158,120,.04)":isPast?"rgba(0,0,0,.015)":"transparent"}
+                      >
+                        {/* Número do dia */}
+                        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:4 }}>
+                          <span style={{ fontSize:13.5, fontWeight:isHoje?900:500, color:isHoje?"#0d9e78":isPast?C.textMuted:isFimSemana?"#ef4444":C.navy, width:26, height:26, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", background:isHoje?"rgba(13,158,120,.15)":"transparent" }}>{d}</span>
+                          {rsdia.length>0&&<span style={{ fontSize:10, fontWeight:700, color:urgDia.length>0?"#c2410c":pendDia.length>0?C.amber:C.green, background:urgDia.length>0?"#fff7ed":pendDia.length>0?C.amberBg:C.greenBg, borderRadius:8, padding:"1px 5px" }}>{rsdia.length}</span>}
+                        </div>
+                        {/* Chips de reservas */}
+                        <div style={{ display:"flex", flexDirection:"column", gap:2 }}>
+                          {urgDia.slice(0,2).map(r=>(
+                            <div key={r.id} style={{ background:"#fff7ed", border:"1px solid #f97316", borderRadius:4, padding:"2px 5px", fontSize:9.5, fontWeight:700, color:"#c2410c", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                              ⚡ {r.horario} {r.professor.split(" ")[0]}
+                            </div>
+                          ))}
+                          {pendDia.slice(0,1).map(r=>(
+                            <div key={r.id} style={{ background:C.amberBg, border:`1px solid ${C.amberBorder}`, borderRadius:4, padding:"2px 5px", fontSize:9.5, fontWeight:700, color:C.amber, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                              ⏳ {r.horario} {r.espaco.split(" ")[0]}
+                            </div>
+                          ))}
+                          {confDia.slice(0,2).map(r=>(
+                            <div key={r.id} style={{ background:C.greenBg, border:`1px solid ${C.greenBorder}`, borderRadius:4, padding:"2px 5px", fontSize:9.5, fontWeight:600, color:C.green, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                              {r.horario} {r.espaco.split(" ")[0]}
+                            </div>
+                          ))}
+                          {rsdia.length>3&&<div style={{ fontSize:9, color:C.blueMid, fontWeight:700, paddingLeft:2 }}>+{rsdia.length-3} mais ↓</div>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Legenda */}
+              <div style={{ display:"flex", gap:16, marginTop:10, flexWrap:"wrap", alignItems:"center" }}>
+                {[{label:"Urgente",bg:"#fff7ed",border:"#f97316",c:"#c2410c"},{label:"Pendente",bg:C.amberBg,border:C.amberBorder,c:C.amber},{label:"Confirmado",bg:C.greenBg,border:C.greenBorder,c:C.green}].map(l=>(
+                  <div key={l.label} style={{ display:"flex", alignItems:"center", gap:5 }}>
+                    <div style={{ width:14, height:14, borderRadius:3, background:l.bg, border:`1.5px solid ${l.border}` }} />
+                    <span style={{ fontSize:11.5, color:C.textMuted, fontWeight:600 }}>{l.label}</span>
+                  </div>
+                ))}
+                <span style={{ marginLeft:"auto", fontSize:11, color:C.textMuted }}>Clique no dia para ver detalhes</span>
+              </div>
+            </>
           )}
         </div>
       )}
