@@ -900,6 +900,40 @@ function ProfessorView({ usuario }) {
       {editando&&<ModalEdicao reserva={editando} isAdmin={false} onClose={()=>setEditando(null)} onSave={()=>setEditando(null)} />}
       {mostrarResumo&&<ModalResumo espaco={espacoSel} data={dataSel} blocos={blocos} onConfirmar={handleSalvar} onCancelar={()=>setMostrarResumo(false)} salvando={salvando} C={C} />}
 
+      {/* ── Boas-vindas ── */}
+      {(()=>{
+        const hr=new Date().getHours();
+        const saudacao=hr<12?"Bom dia":"hr"<18?"Boa tarde":"Boa noite";
+        const primeiroNome=usuario.nome?.split(" ")[0]||"Professor";
+        return (
+          <div style={{ marginBottom:18, display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:10 }}>
+            <div>
+              <p style={{ fontSize:20, fontWeight:800, color:C.navy }}>{hr<12?"Bom dia":hr<18?"Boa tarde":"Boa noite"}, {primeiroNome}! 👋</p>
+              <p style={{ fontSize:13, color:C.textMuted, marginTop:2 }}>Veja seus agendamentos ou reserve um espaço abaixo.</p>
+            </div>
+            {pendentes.length>0&&(
+              <div style={{ background:C.amberBg, border:`1px solid ${C.amberBorder}`, borderRadius:10, padding:"8px 14px", display:"flex", alignItems:"center", gap:8 }}>
+                <span style={{ fontSize:18 }}>⏳</span>
+                <div>
+                  <p style={{ fontSize:12, fontWeight:800, color:C.amber }}>{pendentes.length} agendamento{pendentes.length!==1?"s":""} pendente{pendentes.length!==1?"s":""}</p>
+                  <p style={{ fontSize:11, color:C.amber, opacity:.8 }}>Aguardando aprovação</p>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* Toggle Calendário/Agenda + label acima do card */}
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
+        <p style={{ fontSize:13, fontWeight:700, color:C.textMid }}>Agendamentos</p>
+        <div style={{ display:"flex", background:C.surface, border:`1px solid ${C.border}`, borderRadius:9, padding:2, gap:1 }}>
+          {[{id:"calendario",label:"📅 Calendário"},{id:"agenda",label:"☰ Agenda"}].map(op=>(
+            <button key={op.id} onClick={()=>setModoCard(op.id)} style={{ padding:"5px 13px", borderRadius:7, border:"none", background:modoCard===op.id?"#1a6b47":"transparent", color:modoCard===op.id?"#fff":C.textMid, fontWeight:700, fontSize:12, cursor:"pointer", transition:"all .15s" }}>{op.label}</button>
+          ))}
+        </div>
+      </div>
+
       {/* Card de agendamentos com calendário */}
       <div style={{ background:C.surface, borderRadius:14, marginBottom:20, border:`1px solid ${C.border}`, overflow:"hidden", boxShadow:C.cardShadow }}>
         {diaMesSel ? (
