@@ -94,6 +94,23 @@ function GlobalStyle({ dark }) {
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
     [data-replit-badge], #replit-badge { display:none !important; }
     iframe[src*="replit"] { display:none !important; }
+    .semana-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:6px; }
+    .banner-prof { display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:10px 14px; background:#1a6b47; }
+    .banner-prof-nav { display:flex; align-items:center; gap:6px; }
+    .prof-card { padding:14px 16px; }
+    @media (max-width:600px) {
+      .semana-grid { display:flex; gap:8px; overflow-x:auto; padding-bottom:6px; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; }
+      .semana-grid::-webkit-scrollbar { height:3px; }
+      .semana-grid::-webkit-scrollbar-thumb { background:${C.border}; border-radius:3px; }
+      .semana-dia { min-width:140px !important; max-width:140px !important; scroll-snap-align:start; flex-shrink:0; }
+      .banner-prof { gap:6px; padding:8px 10px; }
+      .banner-prof-nav p { font-size:11px !important; min-width:58px !important; }
+      .prof-card { padding:10px 10px; }
+      .prof-toggle-row { flex-wrap:nowrap !important; overflow-x:auto; gap:5px !important; }
+    }
+    @media (max-width:400px) {
+      .semana-dia { min-width:120px !important; max-width:120px !important; }
+    }
   `}} />;
 }
 
@@ -1009,12 +1026,14 @@ function ProfessorView({ usuario }) {
         <>
         {/* Banner verde — navegação e filtros, só aparece no modo calendário */}
         {modoCard==="calendario"&&(
-          <div style={{ background:"#1a6b47", padding:"10px 14px", display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+          <div className="banner-prof">
             {/* Navegação semana */}
             {modoVisu==="semana"&&(<>
-              <button onClick={()=>setSemanaInicio(s=>addDays(s,-7))} style={{ background:"rgba(255,255,255,.15)", border:"1px solid rgba(255,255,255,.25)", borderRadius:7, color:"#fff", fontSize:15, width:30, height:30, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>‹</button>
-              <p style={{ fontSize:12, fontWeight:700, color:"#fff", minWidth:72, textAlign:"center" }}>{(()=>{ const fim=addDays(semanaInicio,4); const [,ma,da]=semanaInicio.split("-"); const [,mb,db]=fim.split("-"); return ma===mb?`${da}–${db}/${mb}`:`${da}/${ma}–${db}/${mb}`; })()}</p>
-              <button onClick={()=>setSemanaInicio(s=>addDays(s,7))} style={{ background:"rgba(255,255,255,.15)", border:"1px solid rgba(255,255,255,.25)", borderRadius:7, color:"#fff", fontSize:15, width:30, height:30, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>›</button>
+              <div className="banner-prof-nav">
+                <button onClick={()=>setSemanaInicio(s=>addDays(s,-7))} style={{ background:"rgba(255,255,255,.15)", border:"1px solid rgba(255,255,255,.25)", borderRadius:7, color:"#fff", fontSize:15, width:30, height:30, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>‹</button>
+                <p style={{ fontSize:12, fontWeight:700, color:"#fff", minWidth:72, textAlign:"center" }}>{(()=>{ const fim=addDays(semanaInicio,4); const [,ma,da]=semanaInicio.split("-"); const [,mb,db]=fim.split("-"); return ma===mb?`${da}–${db}/${mb}`:`${da}/${ma}–${db}/${mb}`; })()}</p>
+                <button onClick={()=>setSemanaInicio(s=>addDays(s,7))} style={{ background:"rgba(255,255,255,.15)", border:"1px solid rgba(255,255,255,.25)", borderRadius:7, color:"#fff", fontSize:15, width:30, height:30, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>›</button>
+              </div>
               <div style={{ width:1, height:20, background:"rgba(255,255,255,.2)", margin:"0 2px", flexShrink:0 }} />
             </>)}
             {/* Semana / Mês */}
@@ -1038,7 +1057,7 @@ function ProfessorView({ usuario }) {
           </div>
         )}
         {/* Corpo branco */}
-        <div style={{ padding:"14px 16px" }}>
+        <div className="prof-card">
 
         {/* Modo CALENDÁRIO */}
         {modoCard==="calendario"&&modoVisu==="semana"&&(()=>{
@@ -1052,24 +1071,24 @@ function ProfessorView({ usuario }) {
           todasFonte.forEach(r=>{ if(!porDataSemana[r.data])porDataSemana[r.data]=[]; porDataSemana[r.data].push(r); });
           return (
             <div>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:6 }}>
+              <div className="semana-grid">
                 {diasSemana.map((d,i)=>{
                   const [,,dia]=d.split("-"); const isHoje=d===hoje; const isSel=d===diaMesSel;
                   const rsDodia=fonte.filter(r=>r.data===d).sort((a,b)=>a.horario>b.horario?1:-1);
                   return (
-                    <div key={d} onClick={()=>setDiaMesSel(isSel?null:d)} style={{ background:isSel?C.greenBg:isHoje?"rgba(26,107,71,.06)":C.bg, border:`1px solid ${isSel?C.greenBorder:isHoje?C.blueMid:C.borderLight}`, borderRadius:10, padding:"8px 6px", minHeight:80, cursor:"pointer", transition:"all .15s" }}>
+                    <div key={d} className="semana-dia" onClick={()=>setDiaMesSel(isSel?null:d)} style={{ background:isSel?C.greenBg:isHoje?"rgba(26,107,71,.06)":C.bg, border:`1px solid ${isSel?C.greenBorder:isHoje?C.blueMid:C.borderLight}`, borderRadius:10, padding:"10px 8px", minHeight:80, cursor:"pointer", transition:"all .15s", flex:"1 1 0" }}>
                       <div style={{ textAlign:"center", marginBottom:6 }}>
-                        <p style={{ fontSize:9.5, fontWeight:700, color:C.textMuted, textTransform:"uppercase" }}>{nomesDia[i]}</p>
-                        <p style={{ fontSize:16, fontWeight:900, lineHeight:1, color:isHoje?C.blueMid:C.navy }}>{dia}</p>
+                        <p style={{ fontSize:10, fontWeight:700, color:C.textMuted, textTransform:"uppercase", letterSpacing:".3px" }}>{nomesDia[i]}</p>
+                        <p style={{ fontSize:18, fontWeight:900, lineHeight:1, color:isHoje?C.blueMid:C.navy }}>{dia}</p>
                         {isHoje&&<div style={{ width:4, height:4, borderRadius:"50%", background:C.blueMid, margin:"3px auto 0" }} />}
                       </div>
                       {rsDodia.length===0 ? <p style={{ fontSize:9, color:C.textMuted, opacity:.5, textAlign:"center", marginTop:4 }}>—</p> : (
                         <div style={{ display:"grid", gap:3 }}>
                           {rsDodia.map(r=>{ const isMeu=r.professorId===usuario.uid; const isPend=r.status==="pendente"; return (
                             <div key={r.id||r.horario} style={{ background:isMeu?(isPend?C.amberBg:C.greenBg):"rgba(26,107,71,.06)", borderRadius:5, padding:"3px 5px", borderLeft:`2px solid ${isMeu?(isPend?C.amberBorder:C.greenBorder):C.borderLight}` }}>
-                              <p style={{ fontSize:9.5, fontWeight:800, fontFamily:"'DM Mono',monospace", color:isMeu?(isPend?C.amber:C.green):C.textMid }}>{r.horario}</p>
-                              <p style={{ fontSize:9, fontWeight:700, color:C.navy, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{r.espaco.split(" ")[0]}</p>
-                              <p style={{ fontSize:8.5, color:C.textMuted, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{filtroGrade==="todos"&&!isMeu?r.professor.split(" ")[0]:r.turma}</p>
+                              <p style={{ fontSize:11, fontWeight:800, fontFamily:"'DM Mono',monospace", color:isMeu?(isPend?C.amber:C.green):C.textMid }}>{r.horario}</p>
+                              <p style={{ fontSize:11, fontWeight:700, color:C.navy, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{r.espaco.split(" ")[0]}</p>
+                              <p style={{ fontSize:10, color:C.textMuted, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{filtroGrade==="todos"&&!isMeu?r.professor.split(" ")[0]:r.turma}</p>
                             </div>
                           ); })}
                         </div>
