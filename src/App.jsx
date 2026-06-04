@@ -1538,7 +1538,26 @@ function AdminView() {
                           {r.horario} {r.espaco.split(" ")[0]}
                         </div>
                       ))}
-                      {rsdia.length>3&&<div style={{ fontSize:9, color:C.textMuted, paddingLeft:2 }}>+{rsdia.length-3} mais</div>}
+                      {rsdia.length>3&&(()=>{
+                        const extras=rsdia.slice(3);
+                        const [hov,setHov]=React.useState(false);
+                        return (
+                          <div style={{ position:"relative" }} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}>
+                            <div style={{ fontSize:9, color:C.blueMid, fontWeight:700, paddingLeft:2, cursor:"pointer", textDecoration:"underline" }}>+{rsdia.length-3} mais</div>
+                            {hov&&(
+                              <div style={{ position:"absolute", zIndex:300, top:"100%", left:0, minWidth:180, background:C.surface, border:`1.5px solid ${C.border}`, borderRadius:9, padding:"8px 10px", boxShadow:"0 8px 24px rgba(0,0,0,.18)" }}>
+                                {extras.map(r=>(
+                                  <div key={r.id} style={{ display:"flex", gap:6, alignItems:"center", padding:"3px 0", borderBottom:`1px solid ${C.borderLight}` }}>
+                                    <span style={{ fontFamily:"'DM Mono',monospace", fontSize:10, fontWeight:800, color:C.blueMid, minWidth:36 }}>{r.horario}</span>
+                                    <span style={{ fontSize:10, fontWeight:700, color:C.navy, flex:1, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{r.espaco.split(" ")[0]}</span>
+                                    <span style={{ fontSize:9, color:C.textMuted }}>{r.professor.split(" ")[0]}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 );
