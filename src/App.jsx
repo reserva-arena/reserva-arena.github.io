@@ -39,7 +39,7 @@ const TURMAS = (() => {
   return t;
 })();
 const today = new Date();
-const fmt = (d) => d.toISOString().split("T")[0];
+const fmt = (d) => { const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,"0"), dd=String(d.getDate()).padStart(2,"0"); return `${y}-${m}-${dd}`; };
 const ADMIN_EMAIL = "luciano.galdino@colegioarena.com.br";
 
 const LIGHT = {
@@ -899,7 +899,7 @@ function ProfessorView({ usuario }) {
   const todosValidos = blocos.every(blocoValido);
 
   const isUrgente=(data,horario)=>{ try { const [ano2,mes2,dia2]=data.split("-").map(Number); const [h,m]=horario.split(":").map(Number); const ev=new Date(ano2,mes2-1,dia2,h,m,0,0); const diff=(ev-new Date())/3600000; return diff<24; } catch { return false; } };
-  const isDiaUrgente=(data)=>{ try { const [a2,m2,d2]=data.split("-").map(Number); const ev=new Date(a2,m2-1,d2,23,59,59); return (ev-new Date())/3600000<24; } catch { return false; } };
+  const isDiaUrgente=(data)=>{ try { const [a2,m2,d2]=data.split("-").map(Number); const ev=new Date(a2,m2-1,d2,23,59,59); const diff=(ev-new Date())/3600000; return diff>=0&&diff<24; } catch { return false; } };
   const agendarDia=(data)=>{ if(isDiaUrgente(data)){ setAlertaUrgente(data); } else { setDataSel(data); setBlocos([blocoVazio()]); setTimeout(()=>document.getElementById("seletor-espaco")?.scrollIntoView({behavior:"smooth",block:"center"}),120); } };
 
   const handleSalvar=async()=>{
