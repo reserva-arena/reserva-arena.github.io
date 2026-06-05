@@ -1103,6 +1103,16 @@ function ProfessorView({ usuario }) {
                 <button onClick={()=>setDiaMesSel(addDays(diaMesSel,1))} style={{ background:"rgba(255,255,255,.15)", border:"1px solid rgba(255,255,255,.25)", borderRadius:7, color:"#fff", fontSize:15, width:32, height:32, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>›</button>
               </div>
             </div>
+            {/* Banner urgente — logo abaixo do header verde */}
+            {eDiaUrgente(diaMesSel)&&(
+              <div style={{ background:"#fff7ed", borderBottom:"2px solid #f97316", padding:"10px 16px", display:"flex", alignItems:"center", gap:10 }}>
+                <span style={{ fontSize:20, flexShrink:0 }}>⚠️</span>
+                <div>
+                  <p style={{ fontSize:12.5, fontWeight:800, color:"#92400e" }}>Menos de 24h de antecedência</p>
+                  <p style={{ fontSize:12, color:"#78350f", lineHeight:1.4 }}>Agendamentos neste dia ficam <strong>pendentes</strong> até aprovação. Contate a administração para garantir o espaço.</p>
+                </div>
+              </div>
+            )}
             {/* Corpo */}
             <div style={{ padding:"14px 16px" }}>
               {(()=>{
@@ -1143,14 +1153,7 @@ function ProfessorView({ usuario }) {
                   {/* Botão de agendar — só para dias futuros */}
                   {diaMesSel>=hoje&&(
                     <div style={{ borderTop:`1px solid ${C.borderLight}`, paddingTop:14, marginTop:4 }}>
-                      {eDiaUrgente(diaMesSel)&&(
-                        <div style={{ background:"#fff7ed", border:"1.5px solid #f97316", borderRadius:10, padding:"12px 14px", marginBottom:12 }}>
-                          <p style={{ fontSize:13, fontWeight:800, color:"#92400e", marginBottom:4 }}>⚠️ Agendamento no mesmo dia</p>
-                          <p style={{ fontSize:12.5, color:"#78350f", lineHeight:1.55 }}>
-                            Agendamentos feitos no mesmo dia ficam <strong>pendentes</strong> até o administrador aprovar. Contate a administração para garantir o uso do espaço.
-                          </p>
-                        </div>
-                      )}
+
                       <button onClick={()=>{ setDiaMesSel(null); setDataSel(diaMesSel); setBlocos([blocoVazio()]); setTimeout(()=>document.getElementById("seletor-espaco")?.scrollIntoView({behavior:"smooth",block:"center"}),120); }} style={{ width:"100%", padding:"13px", borderRadius:10, border:"none", background:eDiaUrgente(diaMesSel)?"#d97706":"#1a6b47", color:"#fff", fontWeight:800, fontSize:14, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8, boxShadow:`0 4px 12px rgba(${diaMesSel===hoje?"217,119,6":"26,107,71"},.35)`, transition:"opacity .15s" }}
                         onMouseEnter={e=>e.currentTarget.style.opacity=".9"}
                         onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
