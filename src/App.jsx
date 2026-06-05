@@ -1396,7 +1396,6 @@ function ProfessorView({ usuario }) {
                 </div>
               )}
               <div style={{ display:"flex", gap:12, marginTop:10, flexWrap:"wrap", alignItems:"center" }}>
-                <div style={{ display:"flex", alignItems:"center", gap:5 }}><div style={{ width:14, height:10, borderRadius:3, background:C.greenBg, border:`1px solid ${C.greenBorder}` }} /><span style={{ fontSize:10, color:C.textMuted }}>Meus</span></div>
                 <span style={{ fontSize:10, color:C.textMuted, marginLeft:"auto" }}>Clique no dia para detalhes</span>
               </div>
             </div>
@@ -1421,16 +1420,16 @@ function ProfessorView({ usuario }) {
               {filtroGrade==="todos"&&(
                 <div style={{ display:"flex", gap:8, alignItems:"center", marginLeft:"auto" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:4 }}>
-                    <div style={{ width:10, height:10, borderRadius:2, background:C.greenBg, border:`1.5px solid ${C.greenBorder}` }} />
+                    <div style={{ width:10, height:10, borderRadius:2, background:"#e2f4ea", border:"1.5px solid #6ee7a0" }} />
                     <span style={{ fontSize:10, color:"rgba(255,255,255,.9)", fontWeight:700 }}>Meus</span>
                   </div>
                   <div style={{ display:"flex", alignItems:"center", gap:4 }}>
-                    <div style={{ width:10, height:10, borderRadius:2, background:"rgba(255,255,255,.15)", border:"1.5px solid rgba(255,255,255,.3)" }} />
+                    <div style={{ width:10, height:10, borderRadius:2, background:"rgba(255,255,255,.85)", border:"1.5px solid #c7dfd4" }} />
                     <span style={{ fontSize:10, color:"rgba(255,255,255,.9)", fontWeight:700 }}>Outros</span>
                   </div>
                   <div style={{ display:"flex", alignItems:"center", gap:4 }}>
-                    <span style={{ fontSize:10 }}>⏳</span>
-                    <span style={{ fontSize:10, color:"rgba(255,255,255,.9)", fontWeight:700 }}>Pendente</span>
+                    <div style={{ width:10, height:10, borderRadius:2, background:"#fff7ed", border:"1.5px solid #fed7aa" }} />
+                    <span style={{ fontSize:10, color:"rgba(255,255,255,.9)", fontWeight:700 }}>⏳ Pend.</span>
                   </div>
                 </div>
               )}
