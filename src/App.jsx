@@ -925,7 +925,7 @@ function ProfessorView({ usuario }) {
   };
 
   const resetForm=()=>{ setEspacoSel(""); setDataSel(""); setBlocos([blocoVazio()]); setSucesso(null); setErro(""); };
-  const hoje = fmt(today);
+  const hoje = fmt(new Date());
 
   const semanaReservas = useMemo(()=>{
     const seg=getSegunda(hoje); const dias=Array.from({length:5},(_,i)=>addDays(seg,i));
