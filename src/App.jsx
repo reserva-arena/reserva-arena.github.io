@@ -1435,13 +1435,22 @@ function ProfessorView({ usuario }) {
       {/* Calendário mensal de seleção */}
       {espacoSel&&!dataSel&&(
         <div className="fade-in" style={{ marginTop:14 }}>
-          <CalendarioMensal reservasPorData={reservasPorData} onSelectDia={(d)=>{ const [a2,m2,d2]=d.split("-").map(Number); const ev=new Date(a2,m2-1,d2,23,59,59); const diff=(ev-new Date())/3600000; if(diff<24){ setAlertaUrgente(d); } else { setDataSel(d); setBlocos([blocoVazio()]); } }} dataSelecionada={dataSel} />
+          <CalendarioMensal reservasPorData={reservasPorData} onSelectDia={(d)=>agendarDia(d)} dataSelecionada={dataSel} />
         </div>
       )}
 
       {/* Formulário multi-agendamento */}
       {espacoSel&&dataSel&&(
         <div className="fade-in" style={{ marginTop:14 }}>
+          {isDiaUrgente(dataSel)&&(
+            <div style={{ background:"#fff7ed", border:"1.5px solid #f97316", borderRadius:10, padding:"10px 14px", marginBottom:12, display:"flex", gap:10, alignItems:"flex-start" }}>
+              <span style={{ fontSize:18, flexShrink:0 }}>⚠️</span>
+              <div>
+                <p style={{ fontSize:12.5, fontWeight:800, color:"#92400e", marginBottom:3 }}>Agendamento de curto prazo — menos de 24h</p>
+                <p style={{ fontSize:12, color:"#78350f", lineHeight:1.5 }}>Este agendamento ficará <strong>pendente</strong> até aprovação do administrador. Contate a administração do colégio para garantir o uso do espaço.</p>
+              </div>
+            </div>
+          )}
           <div style={{ background:`linear-gradient(135deg,#1a6b47,#0f4c2b)`, padding:"12px 16px", borderRadius:12, display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
             <div>
               <p style={{ fontSize:11, color:"rgba(255,255,255,.75)", fontWeight:700, textTransform:"uppercase", letterSpacing:".5px", marginBottom:2 }}>Agendando em</p>
