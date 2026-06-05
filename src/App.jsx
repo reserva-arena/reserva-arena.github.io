@@ -926,6 +926,7 @@ function ProfessorView({ usuario }) {
 
   const resetForm=()=>{ setEspacoSel(""); setDataSel(""); setBlocos([blocoVazio()]); setSucesso(null); setErro(""); };
   const hoje = fmt(new Date());
+  const eDiaUrgente=(data)=>{ try { const [a,m,d]=data.split("-").map(Number); const fimDia=new Date(a,m-1,d,23,59,59); const diff=(fimDia-new Date())/3600000; return diff>=0&&diff<24; } catch { return false; } };
 
   const semanaReservas = useMemo(()=>{
     const seg=getSegunda(hoje); const dias=Array.from({length:5},(_,i)=>addDays(seg,i));
@@ -1142,7 +1143,7 @@ function ProfessorView({ usuario }) {
                   {/* Botão de agendar — só para dias futuros */}
                   {diaMesSel>=hoje&&(
                     <div style={{ borderTop:`1px solid ${C.borderLight}`, paddingTop:14, marginTop:4 }}>
-                      {diaMesSel===hoje&&(
+                      {eDiaUrgente(diaMesSel)&&(
                         <div style={{ background:"#fff7ed", border:"1.5px solid #f97316", borderRadius:10, padding:"12px 14px", marginBottom:12 }}>
                           <p style={{ fontSize:13, fontWeight:800, color:"#92400e", marginBottom:4 }}>⚠️ Agendamento no mesmo dia</p>
                           <p style={{ fontSize:12.5, color:"#78350f", lineHeight:1.55 }}>
@@ -1150,7 +1151,7 @@ function ProfessorView({ usuario }) {
                           </p>
                         </div>
                       )}
-                      <button onClick={()=>{ setDiaMesSel(null); setDataSel(diaMesSel); setBlocos([blocoVazio()]); setTimeout(()=>document.getElementById("seletor-espaco")?.scrollIntoView({behavior:"smooth",block:"center"}),120); }} style={{ width:"100%", padding:"13px", borderRadius:10, border:"none", background:diaMesSel===hoje?"#d97706":"#1a6b47", color:"#fff", fontWeight:800, fontSize:14, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8, boxShadow:`0 4px 12px rgba(${diaMesSel===hoje?"217,119,6":"26,107,71"},.3)`, transition:"opacity .15s" }}
+                      <button onClick={()=>{ setDiaMesSel(null); setDataSel(diaMesSel); setBlocos([blocoVazio()]); setTimeout(()=>document.getElementById("seletor-espaco")?.scrollIntoView({behavior:"smooth",block:"center"}),120); }} style={{ width:"100%", padding:"13px", borderRadius:10, border:"none", background:eDiaUrgente(diaMesSel)?"#d97706":"#1a6b47", color:"#fff", fontWeight:800, fontSize:14, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8, boxShadow:`0 4px 12px rgba(${diaMesSel===hoje?"217,119,6":"26,107,71"},.35)`, transition:"opacity .15s" }}
                         onMouseEnter={e=>e.currentTarget.style.opacity=".9"}
                         onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
                         {diaMesSel===hoje?"⚠️ Agendar mesmo assim":"+ Agendar neste dia"}
@@ -1449,9 +1450,9 @@ function ProfessorView({ usuario }) {
       {/* Formulário multi-agendamento */}
       {espacoSel&&dataSel&&(
         <div className="fade-in" style={{ marginTop:14 }}>
-          {dataSel===hoje&&(
+          {eDiaUrgente(dataSel)&&(
             <div style={{ background:"#fff7ed", border:"2px solid #f97316", borderRadius:10, padding:"14px 16px", marginBottom:14 }}>
-              <p style={{ fontSize:14, fontWeight:800, color:"#92400e", marginBottom:6 }}>⚠️ Agendamento no mesmo dia</p>
+              <p style={{ fontSize:14, fontWeight:800, color:"#92400e", marginBottom:6 }}>⚠️ Menos de 24h de antecedência</p>
               <p style={{ fontSize:13, color:"#78350f", lineHeight:1.6 }}>
                 Este agendamento ficará <strong>pendente</strong> até o administrador aprovar. O espaço <strong>não estará garantido</strong> sem confirmação. Contate a administração do colégio para confirmar o uso.
               </p>
