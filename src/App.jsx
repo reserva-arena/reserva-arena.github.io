@@ -1142,18 +1142,18 @@ function ProfessorView({ usuario }) {
                   {/* Botão de agendar — só para dias futuros */}
                   {diaMesSel>=hoje&&(
                     <div style={{ borderTop:`1px solid ${C.borderLight}`, paddingTop:14, marginTop:4 }}>
-                      {isDiaUrgente(diaMesSel)&&(
+                      {diaMesSel===hoje&&(
                         <div style={{ background:"#fff7ed", border:"1.5px solid #f97316", borderRadius:10, padding:"12px 14px", marginBottom:12 }}>
-                          <p style={{ fontSize:13, fontWeight:800, color:"#92400e", marginBottom:4 }}>⚠️ Menos de 24h de antecedência</p>
+                          <p style={{ fontSize:13, fontWeight:800, color:"#92400e", marginBottom:4 }}>⚠️ Agendamento no mesmo dia</p>
                           <p style={{ fontSize:12.5, color:"#78350f", lineHeight:1.55 }}>
-                            Se agendar, ficará <strong>pendente</strong> até o administrador aprovar. O espaço <strong>não estará garantido</strong> sem a confirmação. Contate a administração do colégio para garantir o uso.
+                            Agendamentos feitos no mesmo dia ficam <strong>pendentes</strong> até o administrador aprovar. Contate a administração para garantir o uso do espaço.
                           </p>
                         </div>
                       )}
-                      <button onClick={()=>{ setDiaMesSel(null); setDataSel(diaMesSel); setBlocos([blocoVazio()]); setTimeout(()=>document.getElementById("seletor-espaco")?.scrollIntoView({behavior:"smooth",block:"center"}),120); }} style={{ width:"100%", padding:"13px", borderRadius:10, border:"none", background:isDiaUrgente(diaMesSel)?"#d97706":"#1a6b47", color:"#fff", fontWeight:800, fontSize:14, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8, boxShadow:`0 4px 12px rgba(${isDiaUrgente(diaMesSel)?"217,119,6":"26,107,71"},.3)`, transition:"opacity .15s" }}
+                      <button onClick={()=>{ setDiaMesSel(null); setDataSel(diaMesSel); setBlocos([blocoVazio()]); setTimeout(()=>document.getElementById("seletor-espaco")?.scrollIntoView({behavior:"smooth",block:"center"}),120); }} style={{ width:"100%", padding:"13px", borderRadius:10, border:"none", background:diaMesSel===hoje?"#d97706":"#1a6b47", color:"#fff", fontWeight:800, fontSize:14, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8, boxShadow:`0 4px 12px rgba(${diaMesSel===hoje?"217,119,6":"26,107,71"},.3)`, transition:"opacity .15s" }}
                         onMouseEnter={e=>e.currentTarget.style.opacity=".9"}
                         onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
-                        {isDiaUrgente(diaMesSel)?"⚠️ Agendar mesmo assim":"+ Agendar neste dia"}
+                        {diaMesSel===hoje?"⚠️ Agendar mesmo assim":"+ Agendar neste dia"}
                       </button>
                     </div>
                   )}
