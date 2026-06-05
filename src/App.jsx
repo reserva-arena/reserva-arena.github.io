@@ -767,21 +767,21 @@ function ModalResumo({ espaco, data, blocos, onConfirmar, onCancelar, salvando, 
         {/* Alerta de urgência / fim de semana */}
         {precisaCiencia&&(
           <div style={{ background:"#fff7ed", border:"1.5px solid #fed7aa", borderRadius:12, padding:"14px 16px", marginBottom:16 }}>
-            <p style={{ fontSize:13, fontWeight:800, color:"#7c2d12", marginBottom:6 }}>
-              {isFimSemana ? "⚠️ Agendamento em fim de semana" : "⚠️ Agendamento com menos de 24 horas"}
+            <p style={{ fontSize:12.5, fontWeight:800, color:"#7c2d12", marginBottom:5 }}>
+              {isFimSemana ? "⚠️ Agendamento em fim de semana" : "⚠️ Menos de 24h de antecedência"}
             </p>
             {isFimSemana&&(
-              <p style={{ fontSize:12.5, color:"#92400e", lineHeight:1.55, marginBottom:8 }}>
-                Este agendamento foi feito para um <strong>sábado ou domingo</strong>. Ele ficará com status <strong>pendente</strong> até que o administrador aprove. Você só poderá utilizar o espaço após a confirmação.
+              <p style={{ fontSize:12, color:"#92400e", lineHeight:1.5, marginBottom:6 }}>
+                Fim de semana — ficará <strong>pendente</strong> até aprovação do administrador.
               </p>
             )}
             {blocosUrgentes.length>0&&(
-              <p style={{ fontSize:12.5, color:"#92400e", lineHeight:1.55, marginBottom:8 }}>
-                {isFimSemana?"Além disso, um":"Um"} ou mais horários ocorrem em <strong>menos de 24 horas</strong>. O agendamento será registrado como <strong>pendente</strong>, mas <strong>você precisa entrar em contato com a administração</strong> (pessoalmente ou pelo WhatsApp/e-mail do colégio) para confirmar a disponibilidade e garantir o uso do espaço.
+              <p style={{ fontSize:12, color:"#92400e", lineHeight:1.5, marginBottom:6 }}>
+                {isFimSemana?"Além disso, c":"C"}ontate a administração para confirmar o uso do espaço.
               </p>
             )}
-            <p style={{ fontSize:12, color:"#92400e", fontStyle:"italic" }}>
-              Sem a aprovação do administrador, o espaço não estará garantido.
+            <p style={{ fontSize:11.5, color:"#92400e", fontStyle:"italic" }}>
+              Sem aprovação, o espaço não estará garantido.
             </p>
           </div>
         )}
@@ -818,7 +818,7 @@ function ModalResumo({ espaco, data, blocos, onConfirmar, onCancelar, salvando, 
         {precisaCiencia&&(
           <label style={{ display:"flex", alignItems:"flex-start", gap:10, marginBottom:18, cursor:"pointer", padding:"12px 14px", background:ciente?"#e2f4ea":"#f8faf8", border:`1.5px solid ${ciente?"#6ee7a0":"#c7dfd4"}`, borderRadius:10, transition:"all .2s" }}>
             <input type="checkbox" checked={ciente} onChange={e=>setCiente(e.target.checked)} style={{ width:18, height:18, marginTop:1, accentColor:"#1a6b47", flexShrink:0, cursor:"pointer" }} />
-            <span style={{ fontSize:12.5, color:C.navy, lineHeight:1.55, fontWeight:ciente?700:400 }}>
+            <span style={{ fontSize:12, color:C.navy, lineHeight:1.5, fontWeight:ciente?700:400 }}>
               {blocosUrgentes.length>0&&isFimSemana
                 ? "Estou ciente de que este agendamento ficará pendente por ser em fim de semana e ter menos de 24 horas de antecedência. Entrarei em contato com a administração para confirmar o uso do espaço."
                 : isFimSemana
@@ -855,6 +855,7 @@ function ProfessorView({ usuario }) {
   const [modoCard, setModoCard]   = useState("calendario");
   const [semanaInicio, setSemanaInicio] = useState(()=>getSegunda(fmt(today)));
   const [diaMesSel, setDiaMesSel] = useState(null);
+  const [alertaUrgente, setAlertaUrgente] = useState(null); // data string | null
   const [salvando, setSalvando]   = useState(false);
   const [sucesso, setSucesso]     = useState(null); // null | {status:"confirmado"|"pendente", motivo:"urgente"|"fimSemana"|null}
   const [erro, setErro]           = useState("");
@@ -1024,6 +1025,27 @@ function ProfessorView({ usuario }) {
     <div style={{ maxWidth:700, margin:"0 auto", padding:"16px 16px 60px" }}>
       {editando&&<ModalEdicao reserva={editando} isAdmin={false} onClose={()=>setEditando(null)} onSave={()=>setEditando(null)} />}
       {mostrarResumo&&<ModalResumo espaco={espacoSel} data={dataSel} blocos={blocos} onConfirmar={handleSalvar} onCancelar={()=>setMostrarResumo(false)} salvando={salvando} C={C} />}
+      {alertaUrgente&&(
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.55)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000, padding:"1rem" }}>
+          <div className="fade-in" style={{ background:"#fff", borderRadius:16, padding:"28px 24px", width:"100%", maxWidth:420, boxShadow:"0 24px 60px rgba(0,0,0,.25)" }}>
+            <div style={{ textAlign:"center", marginBottom:16 }}>
+              <div style={{ fontSize:36, marginBottom:10 }}>⚠️</div>
+              <h3 style={{ fontSize:16, fontWeight:800, color:"#92400e", marginBottom:8 }}>Agendamento de curto prazo</h3>
+              <p style={{ fontSize:13, color:"#78350f", lineHeight:1.6 }}>
+                Este dia tem menos de <strong>24 horas</strong> de antecedência. O agendamento será salvo como <strong>pendente</strong> e <strong>não estará confirmado</strong> até a aprovação do administrador.
+              </p>
+              <p style={{ fontSize:12.5, color:"#92400e", marginTop:10, lineHeight:1.55 }}>
+                Após agendar, entre em contato com a administração do colégio para garantir o uso do espaço.
+              </p>
+              <p style={{ fontSize:12, color:"#b45309", fontStyle:"italic", marginTop:8 }}>Deseja continuar mesmo assim?</p>
+            </div>
+            <div style={{ display:"flex", gap:10 }}>
+              <button onClick={()=>setAlertaUrgente(null)} style={{ flex:1, padding:"11px", borderRadius:8, border:"1.5px solid #c7dfd4", background:"transparent", color:"#132318", fontWeight:700, fontSize:13, cursor:"pointer" }}>← Cancelar</button>
+              <button onClick={()=>{ setDataSel(alertaUrgente); setBlocos([blocoVazio()]); setAlertaUrgente(null); setTimeout(()=>document.getElementById("seletor-espaco")?.scrollIntoView({behavior:"smooth",block:"center"}),120); }} style={{ flex:1, padding:"11px", borderRadius:8, border:"none", background:"#1a6b47", color:"#fff", fontWeight:800, fontSize:13, cursor:"pointer" }}>Sim, continuar →</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Boas-vindas ── */}
       {(()=>{
@@ -1411,7 +1433,7 @@ function ProfessorView({ usuario }) {
       {/* Calendário mensal de seleção */}
       {espacoSel&&!dataSel&&(
         <div className="fade-in" style={{ marginTop:14 }}>
-          <CalendarioMensal reservasPorData={reservasPorData} onSelectDia={(d)=>{ setDataSel(d); setBlocos([blocoVazio()]); }} dataSelecionada={dataSel} />
+          <CalendarioMensal reservasPorData={reservasPorData} onSelectDia={(d)=>{ const [a2,m2,d2]=d.split("-").map(Number); const ev=new Date(a2,m2-1,d2,23,59,59); const diff=(ev-new Date())/3600000; if(diff<24){ setAlertaUrgente(d); } else { setDataSel(d); setBlocos([blocoVazio()]); } }} dataSelecionada={dataSel} />
         </div>
       )}
 
