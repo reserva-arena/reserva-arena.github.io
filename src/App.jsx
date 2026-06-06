@@ -495,10 +495,11 @@ function CalMensalAdmin({ reservas, filtroEspaco, hoje, C, onNovaReserva }) {
           const pendDia=rsdia.filter(r=>r.status==="pendente"&&!isUrgente2(r));
           const confDia=rsdia.filter(r=>r.status==="confirmado");
           const dow=new Date(Date.UTC(mesCal.a,mesCal.m,d)).getUTCDay();
+          const naoLetivoCal=!isDiaLetivo(dateStr)&&!isPast&&dow!==0&&dow!==6;
           return (
-            <div key={i} onClick={()=>setDiaSel(isSel?null:dateStr)} style={{ minHeight:80, borderRight:`1px solid ${C.borderLight}`, borderBottom:`1px solid ${C.borderLight}`, padding:"5px 6px", cursor:"pointer", background:isSel?"rgba(26,107,71,.08)":isHoje?"rgba(26,107,71,.04)":isPast?"rgba(0,0,0,.015)":"transparent", transition:"background .15s" }}>
+            <div key={i} onClick={()=>setDiaSel(isSel?null:dateStr)} style={{ minHeight:80, borderRight:`1px solid ${C.borderLight}`, borderBottom:`1px solid ${C.borderLight}`, padding:"5px 6px", cursor:"pointer", background:isSel?"rgba(26,107,71,.08)":isHoje?"rgba(26,107,71,.04)":naoLetivoCal?"rgba(239,68,68,.04)":isPast?"rgba(0,0,0,.015)":"transparent", transition:"background .15s" }}>
               <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:3 }}>
-                <span style={{ fontSize:13, fontWeight:isHoje?900:500, color:isSel?"#40b07a":isHoje?"#40b07a":isPast?C.textMuted:dow===0||dow===6?"#ef4444":C.navy, width:24,height:24,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",background:isHoje?"rgba(26,107,71,.15)":"transparent" }}>{d}</span>
+                <span style={{ fontSize:13, fontWeight:isHoje?900:500, color:isSel?"#40b07a":isHoje?"#40b07a":isPast?C.textMuted:naoLetivoCal?"#ef4444":dow===0||dow===6?"#ef4444":C.navy, width:24,height:24,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",background:isHoje?"rgba(26,107,71,.15)":naoLetivoCal?"rgba(239,68,68,.12)":"transparent" }}>{d}</span>
                 {rsdia.length>0&&<span style={{ fontSize:9.5, fontWeight:700, color:urgDia.length>0?"#c2410c":pendDia.length>0?C.amber:C.green, background:urgDia.length>0?"#fff7ed":pendDia.length>0?C.amberBg:C.greenBg, borderRadius:6, padding:"1px 4px" }}>{rsdia.length}</span>}
               </div>
               <div style={{ display:"flex", flexDirection:"column", gap:2 }}>
@@ -2071,12 +2072,16 @@ function AdminView() {
                 const confDia=rsdia.filter(r=>r.status==="confirmado");
                 const dow=new Date(Date.UTC(mesCal.a,mesCal.m,d)).getUTCDay();
                 const isFimSemana=dow===0||dow===6;
+                const naoLetivoAdmin=!isDiaLetivo(dateStr)&&!isPast&&!isFimSemana;
                 return (
-                  <div key={i} onClick={()=>setDiaSel(isSel?null:dateStr)} style={{ minHeight:90, borderRight:`1px solid ${C.borderLight}`, borderBottom:`1px solid ${C.borderLight}`, padding:"6px 8px", cursor:"pointer", background:isSel?"rgba(26,107,71,.08)":isHoje?"rgba(26,107,71,.04)":isPast?"rgba(0,0,0,.015)":"transparent", transition:"background .15s", position:"relative" }}>
+                  <div key={i} onClick={()=>setDiaSel(isSel?null:dateStr)} style={{ minHeight:90, borderRight:`1px solid ${C.borderLight}`, borderBottom:`1px solid ${C.borderLight}`, padding:"6px 8px", cursor:"pointer", background:isSel?"rgba(26,107,71,.08)":isHoje?"rgba(26,107,71,.04)":naoLetivoAdmin?"rgba(239,68,68,.04)":isPast?"rgba(0,0,0,.015)":"transparent", transition:"background .15s", position:"relative" }}>
                     {/* Número do dia */}
                     <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:4 }}>
-                      <span style={{ fontSize:13.5, fontWeight:isHoje?900:500, color:isSel?"#40b07a":isHoje?"#40b07a":isPast?C.textMuted:isFimSemana?"#ef4444":C.navy, width:26, height:26, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", background:isHoje?"rgba(26,107,71,.15)":"transparent" }}>{d}</span>
-                      {rsdia.length>0&&<span style={{ fontSize:10, fontWeight:700, color:urgDia.length>0?"#c2410c":pendDia.length>0?C.amber:C.green, background:urgDia.length>0?"#fff7ed":pendDia.length>0?C.amberBg:C.greenBg, borderRadius:8, padding:"1px 5px" }}>{rsdia.length}</span>}
+                      <span style={{ fontSize:13.5, fontWeight:isHoje?900:500, color:isSel?"#40b07a":isHoje?"#40b07a":isPast?C.textMuted:naoLetivoAdmin?"#ef4444":isFimSemana?"#ef4444":C.navy, width:26, height:26, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", background:isHoje?"rgba(26,107,71,.15)":naoLetivoAdmin?"rgba(239,68,68,.12)":"transparent" }}>{d}</span>
+                      <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:1 }}>
+                        {naoLetivoAdmin&&<span style={{ fontSize:8, fontWeight:700, color:"#ef4444", background:"rgba(239,68,68,.1)", borderRadius:4, padding:"1px 4px", lineHeight:1.2 }}>não letivo</span>}
+                        {rsdia.length>0&&<span style={{ fontSize:10, fontWeight:700, color:urgDia.length>0?"#c2410c":pendDia.length>0?C.amber:C.green, background:urgDia.length>0?"#fff7ed":pendDia.length>0?C.amberBg:C.greenBg, borderRadius:8, padding:"1px 5px" }}>{rsdia.length}</span>}
+                      </div>
                     </div>
                     {/* Chips de reservas */}
                     <div style={{ display:"flex", flexDirection:"column", gap:2 }}>
