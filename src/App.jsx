@@ -836,7 +836,7 @@ function ModalResumo({ espaco, data, blocos, onConfirmar, onCancelar, salvando, 
       const dowAgora=agora.getDay(); const horaAgora=agora.getHours()+agora.getMinutes()/60;
       const semTE=(dowAgora===5&&horaAgora>=17)||(dowAgora===6)||(dowAgora===0&&horaAgora<7);
       const dowAlvo=new Date(+ano,+mes-1,+dia).getDay();
-      if(semTE&&dowAlvo>=1&&dowAlvo<=5&&diff>0) return true;
+      if(semTE&&diff>0&&diasLetivosAte(`${ano}-${String(mes).padStart(2,"0")}-${String(dia).padStart(2,"0")}`)<1) return true;
       return false;
     } catch { return false; }
   });
@@ -1002,9 +1002,7 @@ function ProfessorView({ usuario }) {
       // Condição 2: agendado durante período sem T.E.
       const dowAgora=agora.getDay(); const horaAgora=agora.getHours()+agora.getMinutes()/60;
       const semTE=(dowAgora===5&&horaAgora>=17)||(dowAgora===6)||(dowAgora===0&&horaAgora<7);
-      const dowAlvo=new Date(ano2,mes2-1,dia2).getDay();
-      const diaUtilAlvo=dowAlvo>=1&&dowAlvo<=5;
-      if(semTE&&diaUtilAlvo) return true;
+      if(semTE&&diasLetivosAte(data)<1) return true;
       // Condição 3: menos de 1 dia letivo até o agendamento
       if(isDiaLetivo(data)&&diasLetivosAte(data)<1) return true;
       return false;
@@ -1051,14 +1049,12 @@ function ProfessorView({ usuario }) {
       if(diff<=0) return false; // já passou
       // Condição 1: menos de 24h até o primeiro horário do dia
       if(diff<24) return true;
-      // Condição 2: agendado durante período sem T.E.
-      // (após 17h sexta até 07h segunda)
+      // Condição 2: agendado durante fim de semana sem T.E., mas APENAS para o próximo dia letivo
+      // (após 17h sexta até 07h segunda — só alerta para o dia imediatamente seguinte)
       const dowAgora=agora.getDay();
       const horaAgora=agora.getHours()+agora.getMinutes()/60;
       const semTE=(dowAgora===5&&horaAgora>=17)||(dowAgora===6)||(dowAgora===0&&horaAgora<7);
-      const dowAlvo=new Date(a,m-1,d).getDay();
-      const diaUtilAlvo=dowAlvo>=1&&dowAlvo<=5;
-      if(semTE&&diaUtilAlvo) return true;
+      if(semTE&&diasLetivosAte(data)<1) return true;
       // Condição 3: menos de 1 dia letivo entre agora e o agendamento
       if(isDiaLetivoParaTurma(data,blocos.map(b=>b.turma).find(t=>t)||"")&&diasLetivosAte(data)<1) return true;
       return false;
