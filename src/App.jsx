@@ -1481,8 +1481,8 @@ function ProfessorView({ usuario }) {
                   // CORREÇÃO: usa diaMesSel diretamente — sem desestruturação inválida
                   const isSel=dateStr===diaMesSel;
                   const rs=porDataMes[dateStr]||[];
+                  const naoLetivoMes=!isDiaLetivo(dateStr)&&!isPast;
                   return (
-                      {(()=>{ const naoLetivoMes=!isDiaLetivo(dateStr)&&!isPast; return (
                     <button key={i} onClick={()=>setDiaMesSel(isSel?null:dateStr)} style={{ borderRadius:8, border:`1px solid ${isSel?C.greenBorder:isHoje?C.blueMid:naoLetivoMes?"#fca5a5":C.borderLight}`, cursor:"pointer", background:isSel?C.greenBg:isHoje?"rgba(26,107,71,.05)":naoLetivoMes?"rgba(239,68,68,.05)":C.surface, transition:"all .15s", display:"flex", flexDirection:"column", alignItems:"center", padding:"6px 3px", gap:2, minHeight:52 }}>
                       <span style={{ fontWeight:isHoje||isSel?900:500, fontSize:13, lineHeight:1, color:isPast?C.textMuted:isHoje?C.blueMid:naoLetivoMes?"#ef4444":C.navy }}>{d}</span>
                       {naoLetivoMes&&<span style={{ fontSize:7, fontWeight:700, color:"#ef4444", lineHeight:1 }}>não letivo</span>}
@@ -1496,7 +1496,6 @@ function ProfessorView({ usuario }) {
                         </div>
                       )}
                     </button>
-                    ); })()}
                   );
                 })}
               </div>
