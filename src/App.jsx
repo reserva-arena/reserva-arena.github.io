@@ -1252,7 +1252,7 @@ function ProfessorView({ usuario }) {
       )}
 
       {/* Card de agendamentos com calendário — só na tab Meus Agendamentos */}
-      {abaProf==="agendamentos"&&(<div style={{ background:C.surface, borderRadius:14, marginBottom:20, border:`1px solid ${C.border}`, overflow:"hidden", boxShadow:C.cardShadow }}>)
+      {abaProf==="agendamentos"&&(<div style={{ background:C.surface, borderRadius:14, marginBottom:20, border:`1px solid ${C.border}`, overflow:"hidden", boxShadow:C.cardShadow }}>
         {diaMesSel ? (
           /* ══ VISÃO DE DIA — substitui o calendário ao clicar ══ */
           <div className="fade-in">
@@ -1706,7 +1706,7 @@ function ProfessorView({ usuario }) {
       )}
 
       {/* ══ TAB AGENDAR: seletor de espaço + formulário ══ */}
-      {{abaProf==="agendar"&&(<div id="seletor-espaco" style={{ marginBottom:espacoSel?14:0 }}>
+      {abaProf==="agendar"&&(<div id="seletor-espaco" style={{ marginBottom:espacoSel?14:0 }}>
         {!espacoSel ? (
           <Field label="Selecione o espaço / equipamento" required>
             <select defaultValue="" onChange={e=>e.target.value&&setEspacoSel(e.target.value)} style={{...inp,cursor:"pointer",fontSize:14}}>
