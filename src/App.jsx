@@ -63,6 +63,8 @@ const DIAS_NAO_LETIVOS = new Set([
   "2026-06-30", // Fim do 1º semestre
   // Julho (férias inteiras)
   ...Array.from({length:31},(_,i)=>`2026-07-${String(i+1).padStart(2,"0")}`),
+  // Agosto
+  "2026-08-07", // Independência do Brasil (dia útil - sexta-feira)
   // Outubro
   "2026-10-12", // Padroeira do Brasil / Dia das Crianças
   "2026-10-13", // Recesso Dia do Professor
@@ -88,6 +90,19 @@ const isDiaLetivo=(data)=>{
   if(DIAS_NAO_LETIVOS.has(data)) return false;
   // Fora do período letivo (antes de 19/01 ou depois de 10/12)
   if(data<"2026-01-19"||data>"2026-12-10") return false;
+  return true;
+};
+
+// Dias não letivos apenas para Anos Iniciais (1º ao 5º ano)
+const DIAS_NAO_LETIVOS_INICIAIS = new Set([
+  "2026-06-19", // Recesso organização Festa Junina (só Anos Iniciais 1º–5º)
+]);
+
+// Verifica se o dia é letivo considerando a turma (alguns dias bloqueiam só Anos Iniciais)
+const isDiaLetivoParaTurma=(data, turma)=>{
+  if(!isDiaLetivo(data)) return false;
+  const anoTurma=parseInt(turma);
+  if(anoTurma>=1&&anoTurma<=5&&DIAS_NAO_LETIVOS_INICIAIS.has(data)) return false;
   return true;
 };
 
@@ -997,7 +1012,7 @@ function ProfessorView({ usuario }) {
   };
   const isDiaUrgente=(data)=>{ try { const [a2,m2,d2]=data.split("-").map(Number); const ev=new Date(a2,m2-1,d2,23,59,59); const diff=(ev-new Date())/3600000; return diff>=0&&diff<24; } catch { return false; } };
   const agendarDia=(data)=>{ 
-    if(!isDiaLetivo(data)){ alert("⚠️ Este dia é não letivo (feriado, recesso ou férias) e não pode ser agendado."); return; }
+    const turmaSel=blocos[0]?.turma||""; if(!isDiaLetivoParaTurma(data,turmaSel)){ alert("⚠️ Este dia é não letivo para a turma selecionada (feriado, recesso ou férias) e não pode ser agendado."); return; }
     setDataSel(data); setBlocos([blocoVazio()]); setTimeout(()=>document.getElementById("seletor-espaco")?.scrollIntoView({behavior:"smooth",block:"center"}),120); 
   };
 
@@ -1045,7 +1060,7 @@ function ProfessorView({ usuario }) {
       const diaUtilAlvo=dowAlvo>=1&&dowAlvo<=5;
       if(semTE&&diaUtilAlvo) return true;
       // Condição 3: menos de 1 dia letivo entre agora e o agendamento
-      if(isDiaLetivo(data)&&diasLetivosAte(data)<1) return true;
+      if(isDiaLetivoParaTurma(data,blocos.map(b=>b.turma).find(t=>t)||"")||isDiaLetivo(data))if(diasLetivosAte(data)<1) return true;
       return false;
     } catch { return false; } 
   };
@@ -1483,11 +1498,17 @@ function ProfessorView({ usuario }) {
                   const isSel=dateStr===diaMesSel;
                   const rs=porDataMes[dateStr]||[];
                   const dowMes=new Date(+ano,+mes-1,+d).getDay();
-                  const naoLetivoMes=!isDiaLetivo(dateStr)&&!isPast&&dowMes!==0&&dowMes!==6;
+                  const dowMes=new Date(+ano,+mes-1,+d).getDay();
+                  const isFimSemMes=dowMes===0||dowMes===6;
+                  const mesInteiroBloqueado=Array.from({length:28},(_,i)=>i+1).every(dd=>DIAS_NAO_LETIVOS.has(`${ano}-${String(mes+1).padStart(2,"0")}-${String(dd).padStart(2,"0")}`));
+                  const naoLetivoMes=!isDiaLetivo(dateStr)&&!isPast&&(!isFimSemMes||mesInteiroBloqueado);
+                  const borderColor=isSel?C.greenBorder:isHoje?C.blueMid:isPast?"#e2e8f0":naoLetivoMes?"#fca5a5":C.borderLight;
+                  const bgColor=isSel?C.greenBg:isHoje?"rgba(26,107,71,.05)":isPast?"rgba(0,0,0,.018)":naoLetivoMes?"rgba(239,68,68,.05)":C.surface;
                   return (
-                    <button key={i} onClick={()=>setDiaMesSel(isSel?null:dateStr)} style={{ borderRadius:8, border:`1px solid ${isSel?C.greenBorder:isHoje?C.blueMid:naoLetivoMes?"#fca5a5":C.borderLight}`, cursor:"pointer", background:isSel?C.greenBg:isHoje?"rgba(26,107,71,.05)":naoLetivoMes?"rgba(239,68,68,.05)":C.surface, transition:"all .15s", display:"flex", flexDirection:"column", alignItems:"center", padding:"6px 3px", gap:2, minHeight:52 }}>
-                      <span style={{ fontWeight:isHoje||isSel?900:500, fontSize:13, lineHeight:1, color:isPast?C.textMuted:isHoje?C.blueMid:naoLetivoMes?"#ef4444":C.navy }}>{d}</span>
+                    <button key={i} onClick={()=>setDiaMesSel(isSel?null:dateStr)} style={{ borderRadius:8, border:`1px solid ${borderColor}`, cursor:"pointer", background:bgColor, transition:"all .15s", display:"flex", flexDirection:"column", alignItems:"center", padding:"6px 3px", gap:2, minHeight:52 }}>
+                      <span style={{ fontWeight:isHoje||isSel?900:500, fontSize:13, lineHeight:1, color:isPast?"#b0bec5":isHoje?C.blueMid:naoLetivoMes?"#ef4444":C.navy }}>{d}</span>
                       {naoLetivoMes&&<span style={{ fontSize:7, fontWeight:700, color:"#ef4444", lineHeight:1 }}>não letivo</span>}
+                      {isPast&&!isSel&&<span style={{ fontSize:7, fontWeight:600, color:"#b0bec5", lineHeight:1 }}>histórico</span>}
                       {rs.length>0&&(
                         <div style={{ display:"grid", gap:1, width:"100%" }}>
                           {[...new Map(rs.map(r=>[r.professorId,r])).values()].slice(0,2).map(r=>{
