@@ -1377,11 +1377,14 @@ function ProfessorView({ usuario }) {
                   const ehMeuLocal=(r)=>r.professorId===usuario.uid||r.professor===usuario.nome;
                   return (
                     <div key={d} className="semana-dia" onClick={()=>setDiaMesSel(isSel?null:d)} style={{ background:isSel?C.greenBg:isHoje?"rgba(26,107,71,.06)":C.bg, border:`1px solid ${isSel?C.greenBorder:isHoje?C.blueMid:C.borderLight}`, borderRadius:10, padding:"10px 8px", minHeight:80, cursor:"pointer", transition:"all .15s", flex:"1 1 0" }}>
-                      <div style={{ textAlign:"center", marginBottom:6 }}>
-                        <p style={{ fontSize:10, fontWeight:700, color:C.textMuted, textTransform:"uppercase", letterSpacing:".3px" }}>{nomesDia[i]}</p>
-                        <p style={{ fontSize:18, fontWeight:900, lineHeight:1, color:isHoje?C.blueMid:C.navy }}>{dia}</p>
-                        {isHoje&&<div style={{ width:4, height:4, borderRadius:"50%", background:C.blueMid, margin:"3px auto 0" }} />}
+                      {(()=>{ const naoLetivo=!isDiaLetivo(d)&&d>=hoje; return (
+                      <div style={{ textAlign:"center", marginBottom:6, background:naoLetivo?"rgba(239,68,68,.07)":"transparent", borderRadius:6, padding:naoLetivo?"2px 0":"0" }}>
+                        <p style={{ fontSize:10, fontWeight:700, color:naoLetivo?"#ef4444":C.textMuted, textTransform:"uppercase", letterSpacing:".3px" }}>{nomesDia[i]}</p>
+                        <p style={{ fontSize:18, fontWeight:900, lineHeight:1, color:isHoje?C.blueMid:naoLetivo?"#ef4444":C.navy }}>{dia}</p>
+                        {isHoje&&!naoLetivo&&<div style={{ width:4, height:4, borderRadius:"50%", background:C.blueMid, margin:"3px auto 0" }} />}
+                        {naoLetivo&&<p style={{ fontSize:8, fontWeight:700, color:"#ef4444", marginTop:2, lineHeight:1 }}>não letivo</p>}
                       </div>
+                      ); })()}
                       {rsDodia.length===0 ? <p style={{ fontSize:9, color:C.textMuted, opacity:.5, textAlign:"center", marginTop:4 }}>—</p> : (
                         <div style={{ display:"grid", gap:3 }}>
                           {rsDodia.map(r=>{ const isMeu=ehMeuLocal(r); const isPend=r.status==="pendente"; return (
@@ -1473,8 +1476,10 @@ function ProfessorView({ usuario }) {
                   const isSel=dateStr===diaMesSel;
                   const rs=porDataMes[dateStr]||[];
                   return (
-                    <button key={i} onClick={()=>setDiaMesSel(isSel?null:dateStr)} style={{ borderRadius:8, border:`1px solid ${isSel?C.greenBorder:isHoje?C.blueMid:C.borderLight}`, cursor:"pointer", background:isSel?C.greenBg:isHoje?"rgba(26,107,71,.05)":C.surface, transition:"all .15s", display:"flex", flexDirection:"column", alignItems:"center", padding:"6px 3px", gap:2, minHeight:52 }}>
-                      <span style={{ fontWeight:isHoje||isSel?900:500, fontSize:13, lineHeight:1, color:isPast?C.textMuted:isHoje?C.blueMid:C.navy }}>{d}</span>
+                      {(()=>{ const naoLetivoMes=!isDiaLetivo(dateStr)&&!isPast; return (
+                    <button key={i} onClick={()=>setDiaMesSel(isSel?null:dateStr)} style={{ borderRadius:8, border:`1px solid ${isSel?C.greenBorder:isHoje?C.blueMid:naoLetivoMes?"#fca5a5":C.borderLight}`, cursor:"pointer", background:isSel?C.greenBg:isHoje?"rgba(26,107,71,.05)":naoLetivoMes?"rgba(239,68,68,.05)":C.surface, transition:"all .15s", display:"flex", flexDirection:"column", alignItems:"center", padding:"6px 3px", gap:2, minHeight:52 }}>
+                      <span style={{ fontWeight:isHoje||isSel?900:500, fontSize:13, lineHeight:1, color:isPast?C.textMuted:isHoje?C.blueMid:naoLetivoMes?"#ef4444":C.navy }}>{d}</span>
+                      {naoLetivoMes&&<span style={{ fontSize:7, fontWeight:700, color:"#ef4444", lineHeight:1 }}>não letivo</span>}
                       {rs.length>0&&(
                         <div style={{ display:"grid", gap:1, width:"100%" }}>
                           {[...new Map(rs.map(r=>[r.professorId,r])).values()].slice(0,2).map(r=>{
@@ -1485,6 +1490,7 @@ function ProfessorView({ usuario }) {
                         </div>
                       )}
                     </button>
+                    ); })()}
                   );
                 })}
               </div>
