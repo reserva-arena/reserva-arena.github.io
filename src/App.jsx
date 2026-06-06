@@ -1060,7 +1060,7 @@ function ProfessorView({ usuario }) {
       const diaUtilAlvo=dowAlvo>=1&&dowAlvo<=5;
       if(semTE&&diaUtilAlvo) return true;
       // Condição 3: menos de 1 dia letivo entre agora e o agendamento
-      if(isDiaLetivoParaTurma(data,blocos.map(b=>b.turma).find(t=>t)||"")||isDiaLetivo(data))if(diasLetivosAte(data)<1) return true;
+      if(isDiaLetivoParaTurma(data,blocos.map(b=>b.turma).find(t=>t)||"")&&diasLetivosAte(data)<1) return true;
       return false;
     } catch { return false; } 
   };
@@ -1497,7 +1497,6 @@ function ProfessorView({ usuario }) {
                   // CORREÇÃO: usa diaMesSel diretamente — sem desestruturação inválida
                   const isSel=dateStr===diaMesSel;
                   const rs=porDataMes[dateStr]||[];
-                  const dowMes=new Date(+ano,+mes-1,+d).getDay();
                   const dowMes=new Date(+ano,+mes-1,+d).getDay();
                   const isFimSemMes=dowMes===0||dowMes===6;
                   const mesInteiroBloqueado=Array.from({length:28},(_,i)=>i+1).every(dd=>DIAS_NAO_LETIVOS.has(`${ano}-${String(mes+1).padStart(2,"0")}-${String(dd).padStart(2,"0")}`));
