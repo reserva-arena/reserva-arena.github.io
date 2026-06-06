@@ -39,6 +39,75 @@ const TURMAS = (() => {
   return t;
 })();
 const today = new Date();
+
+// Dias NÃO letivos do Colégio Arena 2026
+const DIAS_NAO_LETIVOS = new Set([
+  // Janeiro
+  "2026-01-01", // Ano Novo
+  // Fevereiro
+  "2026-02-16", // Recesso Carnaval
+  "2026-02-17", // Carnaval
+  "2026-02-18", // Recesso Carnaval
+  // Abril
+  "2026-04-02", // Quinta-feira Santa
+  "2026-04-03", // Sexta-feira Santa
+  "2026-04-20", // Recesso
+  "2026-04-21", // Tiradentes
+  // Maio
+  "2026-05-01", // Dia do Trabalho
+  // Junho
+  "2026-06-04", // Corpus Christi
+  "2026-06-05", // Recesso (emenda Corpus Christi)
+  "2026-06-19", // Recesso organização festa junina
+  "2026-06-20", // Festa Junina
+  "2026-06-30", // Fim do 1º semestre
+  // Julho (férias inteiras)
+  ...Array.from({length:31},(_,i)=>`2026-07-${String(i+1).padStart(2,"0")}`),
+  // Outubro
+  "2026-10-12", // Padroeira do Brasil / Dia das Crianças
+  "2026-10-13", // Recesso Dia do Professor
+  "2026-10-24", // Aniversário de Goiânia
+  // Novembro
+  "2026-11-02", // Finados
+  "2026-11-15", // Proclamação da República
+  "2026-11-20", // Zumbi e Consciência Negra
+  "2026-11-27", // Recesso organização Festival
+  "2026-11-28", // Festival Arena
+  // Dezembro
+  "2026-12-25", // Natal
+]);
+
+const isDiaLetivo=(data)=>{
+  if (!data) return false;
+  const [a,m,d]=data.split("-").map(Number);
+  const dt=new Date(a,m-1,d);
+  const dow=dt.getDay();
+  // Fim de semana nunca é dia letivo
+  if(dow===0||dow===6) return false;
+  // Verificar se está na lista de não letivos
+  if(DIAS_NAO_LETIVOS.has(data)) return false;
+  // Fora do período letivo (antes de 19/01 ou depois de 10/12)
+  if(data<"2026-01-19"||data>"2026-12-10") return false;
+  return true;
+};
+
+// Conta dias letivos úteis entre agora e a data/hora do agendamento
+const diasLetivosAte=(dataStr)=>{
+  const agora=new Date();
+  const [a,m,d]=dataStr.split("-").map(Number);
+  const alvo=new Date(a,m-1,d,7,10,0);
+  let count=0;
+  const cur=new Date(agora);
+  cur.setHours(0,0,0,0);
+  const fim=new Date(alvo);
+  fim.setHours(0,0,0,0);
+  while(cur<fim){
+    const ds=`${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,"0")}-${String(cur.getDate()).padStart(2,"0")}`;
+    if(isDiaLetivo(ds)) count++;
+    cur.setDate(cur.getDate()+1);
+  }
+  return count;
+};
 const fmt = (d) => { const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,"0"), dd=String(d.getDate()).padStart(2,"0"); return `${y}-${m}-${dd}`; };
 const ADMIN_EMAIL = "luciano.galdino@colegioarena.com.br";
 
@@ -676,7 +745,7 @@ function CalendarioMensal({ reservasPorData, onSelectDia, dataSelecionada }) {
             const temReserva=reservasPorData?.[dateStr]?.length>0;
             const dow=new Date(Date.UTC(mes.a,mes.m,d)).getUTCDay(), isFimSemana=dow===0||dow===6;
             return (
-              <button key={i} onClick={()=>!isPast&&onSelectDia(dateStr)} disabled={isPast} style={{ aspectRatio:"1", borderRadius:8, border:"none", cursor:isPast?"not-allowed":"pointer", background:isSel?"#40b07a":isHoje?"rgba(26,107,71,.12)":"transparent", color:isSel?"#fff":isPast?"#cbd5e1":isFimSemana?"#ef4444":C.navy, fontWeight:isHoje||isSel?800:500, fontSize:13.5, position:"relative", transition:"all .15s", opacity:isPast?.4:1 }}>
+              <button key={i} onClick={()=>!isPast&&isDiaLetivo(dateStr)&&onSelectDia(dateStr)} disabled={isPast||!isDiaLetivo(dateStr)} title={!isDiaLetivo(dateStr)&&!isPast?"Dia não letivo":""} style={{ aspectRatio:"1", borderRadius:8, border:"none", cursor:(isPast||!isDiaLetivo(dateStr))?"not-allowed":"pointer", background:isSel?"#40b07a":isHoje?"rgba(26,107,71,.12)":!isDiaLetivo(dateStr)&&!isPast?"rgba(239,68,68,.08)":"transparent", color:isSel?"#fff":isPast?"#cbd5e1":!isDiaLetivo(dateStr)?"#fca5a5":isFimSemana?"#ef4444":C.navy, fontWeight:isHoje||isSel?800:500, fontSize:13.5, position:"relative", transition:"all .15s", opacity:isPast?.4:1 }}>
                 {d}
                 {temReserva&&!isSel&&<div style={{ position:"absolute", bottom:3, left:"50%", transform:"translateX(-50%)", width:4, height:4, borderRadius:"50%", background:"#40b07a" }} />}
               </button>
@@ -743,11 +812,16 @@ function ModalResumo({ espaco, data, blocos, onConfirmar, onCancelar, salvando, 
   const blocosUrgentes = blocos.filter(b=>{
     try {
       const [h,m]=b.horario.split(":").map(Number);
-      // Monta a data do evento na timezone local
       const ev=new Date(+ano, +mes-1, +dia, h, m, 0, 0);
       const diff=(ev-agora)/3600000;
-      // Urgente: horário já passou hoje OU ocorre em menos de 24h
-      return diff<24;
+      // Condição 1: menos de 24h
+      if(diff<24&&diff>0) return true;
+      // Condição 2: agendado durante período sem T.E.
+      const dowAgora=agora.getDay(); const horaAgora=agora.getHours()+agora.getMinutes()/60;
+      const semTE=(dowAgora===5&&horaAgora>=17)||(dowAgora===6)||(dowAgora===0&&horaAgora<7);
+      const dowAlvo=new Date(+ano,+mes-1,+dia).getDay();
+      if(semTE&&dowAlvo>=1&&dowAlvo<=5&&diff>0) return true;
+      return false;
     } catch { return false; }
   });
 
@@ -768,11 +842,11 @@ function ModalResumo({ espaco, data, blocos, onConfirmar, onCancelar, salvando, 
         {precisaCiencia&&(
           <div style={{ background:"#fff7ed", border:"1.5px solid #fed7aa", borderRadius:10, padding:"10px 14px", marginBottom:12 }}>
             <p style={{ fontSize:12.5, fontWeight:800, color:"#7c2d12", marginBottom:5 }}>
-              {isFimSemana ? "⚠️ Agendamento em fim de semana" : "⚠️ Menos de 24h de antecedência"}
+              {isFimSemana ? "⚠️ Agendamento feito fora do horário do T.E." : "⚠️ Menos de 24h de antecedência"}
             </p>
             {isFimSemana&&(
               <p style={{ fontSize:12, color:"#92400e", lineHeight:1.5, marginBottom:6 }}>
-                Fim de semana — ficará <strong>pendente</strong> até aprovação do administrador.
+                Este agendamento foi feito <strong>após 17h de sexta ou durante o fim de semana</strong>, quando o T.E. não está disponível para organizar o espaço ou equipamento. O agendamento ficará <strong>pendente</strong> até aprovação.
               </p>
             )}
             {blocosUrgentes.length>0&&(
@@ -898,7 +972,27 @@ function ProfessorView({ usuario }) {
   };
   const todosValidos = blocos.every(blocoValido);
 
-  const isUrgente=(data,horario)=>{ try { const [ano2,mes2,dia2]=data.split("-").map(Number); const [h,m]=horario.split(":").map(Number); const ev=new Date(ano2,mes2-1,dia2,h,m,0,0); const diff=(ev-new Date())/3600000; return diff<24; } catch { return false; } };
+  const isUrgente=(data,horario)=>{ 
+    try { 
+      const agora=new Date();
+      const [ano2,mes2,dia2]=data.split("-").map(Number); 
+      const [h,m]=horario.split(":").map(Number); 
+      const ev=new Date(ano2,mes2-1,dia2,h,m,0,0); 
+      const diff=(ev-agora)/3600000;
+      if(diff<=0) return false;
+      // Condição 1: menos de 24h
+      if(diff<24) return true;
+      // Condição 2: agendado durante período sem T.E.
+      const dowAgora=agora.getDay(); const horaAgora=agora.getHours()+agora.getMinutes()/60;
+      const semTE=(dowAgora===5&&horaAgora>=17)||(dowAgora===6)||(dowAgora===0&&horaAgora<7);
+      const dowAlvo=new Date(ano2,mes2-1,dia2).getDay();
+      const diaUtilAlvo=dowAlvo>=1&&dowAlvo<=5;
+      if(semTE&&diaUtilAlvo) return true;
+      // Condição 3: menos de 1 dia letivo até o agendamento
+      if(isDiaLetivo(data)&&diasLetivosAte(data)<1) return true;
+      return false;
+    } catch { return false; } 
+  };
   const isDiaUrgente=(data)=>{ try { const [a2,m2,d2]=data.split("-").map(Number); const ev=new Date(a2,m2-1,d2,23,59,59); const diff=(ev-new Date())/3600000; return diff>=0&&diff<24; } catch { return false; } };
   const agendarDia=(data)=>{ setDataSel(data); setBlocos([blocoVazio()]); setTimeout(()=>document.getElementById("seletor-espaco")?.scrollIntoView({behavior:"smooth",block:"center"}),120); };
 
@@ -928,7 +1022,28 @@ function ProfessorView({ usuario }) {
   const hoje = fmt(new Date());
   const nomeProf=(nome)=>{ if(!nome) return ""; const p=nome.trim().split(" ").filter(Boolean); if(p.length===1) return p[0]; const ult=p[p.length-1]; return p[0]+" "+ult[0].toUpperCase()+"."; };
   const fmtTurma=(t)=>{ if(!t) return ""; return t.replace(/º Ano /g,"º").replace(/ª Ano /g,"ª"); };
-  const eDiaUrgente=(data)=>{ try { const [a,m,d]=data.split("-").map(Number); const primeirHorario=new Date(a,m-1,d,7,10,0); const diff=(primeirHorario-new Date())/3600000; return diff>0&&diff<24; } catch { return false; } };
+  const eDiaUrgente=(data)=>{ 
+    try { 
+      const agora=new Date();
+      const [a,m,d]=data.split("-").map(Number); 
+      const primeirHorario=new Date(a,m-1,d,7,10,0); 
+      const diff=(primeirHorario-agora)/3600000;
+      if(diff<=0) return false; // já passou
+      // Condição 1: menos de 24h até o primeiro horário do dia
+      if(diff<24) return true;
+      // Condição 2: agendado durante período sem T.E.
+      // (após 17h sexta até 07h segunda)
+      const dowAgora=agora.getDay();
+      const horaAgora=agora.getHours()+agora.getMinutes()/60;
+      const semTE=(dowAgora===5&&horaAgora>=17)||(dowAgora===6)||(dowAgora===0&&horaAgora<7);
+      const dowAlvo=new Date(a,m-1,d).getDay();
+      const diaUtilAlvo=dowAlvo>=1&&dowAlvo<=5;
+      if(semTE&&diaUtilAlvo) return true;
+      // Condição 3: menos de 1 dia letivo entre agora e o agendamento
+      if(isDiaLetivo(data)&&diasLetivosAte(data)<1) return true;
+      return false;
+    } catch { return false; } 
+  };
 
   const semanaReservas = useMemo(()=>{
     const seg=getSegunda(hoje); const dias=Array.from({length:5},(_,i)=>addDays(seg,i));
