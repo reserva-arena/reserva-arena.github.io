@@ -1846,6 +1846,7 @@ function AdminView() {
 
   // Aba dentro da visão agenda
   const [abaAdmin,setAbaAdmin] = useState("reservas"); // reservas | turma | usuarios
+  const [mostrarHistorico,setMostrarHistorico] = useState(false);
 
   const [editandoReserva,setEditandoReserva] = useState(null);
 
