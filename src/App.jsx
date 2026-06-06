@@ -1411,7 +1411,7 @@ function ProfessorView({ usuario }) {
                   const rsDodia=fonte.filter(r=>r.data===d).sort((a,b)=>a.horario>b.horario?1:-1);
                   const ehMeuLocal=(r)=>r.professorId===usuario.uid||r.professor===usuario.nome;
                   return (
-                    <div key={d} className="semana-dia" onClick={()=>setDiaMesSel(isSel?null:d)} style={{ background:isSel?C.greenBg:isHoje?"rgba(26,107,71,.06)":C.bg, border:`1px solid ${isSel?C.greenBorder:isHoje?C.blueMid:C.borderLight}`, borderRadius:10, padding:"10px 8px", minHeight:80, cursor:"pointer", transition:"all .15s", flex:"1 1 0" }}>
+                    <div key={d} className="semana-dia" onClick={()=>setDiaMesSel(isSel?null:d)} style={{ background:isSel?C.greenBg:isHoje?"rgba(26,107,71,.06)":(()=>{ const dowD2=new Date(d).getDay(); return !isDiaLetivo(d)&&d>=hoje&&dowD2!==0&&dowD2!==6?"rgba(239,68,68,.04)":C.bg; })(), border:`1px solid ${isSel?C.greenBorder:isHoje?C.blueMid:C.borderLight}`, borderRadius:10, padding:"10px 8px", minHeight:80, cursor:"pointer", transition:"all .15s", flex:"1 1 0" }}>
                       {(()=>{ const dowD=new Date(d).getDay(); const naoLetivo=!isDiaLetivo(d)&&d>=hoje&&dowD!==0&&dowD!==6; return (
                       <div style={{ textAlign:"center", marginBottom:6, background:naoLetivo?"rgba(239,68,68,.07)":"transparent", borderRadius:6, padding:naoLetivo?"2px 0":"0" }}>
                         <p style={{ fontSize:10, fontWeight:700, color:naoLetivo?"#ef4444":C.textMuted, textTransform:"uppercase", letterSpacing:".3px" }}>{nomesDia[i]}</p>
