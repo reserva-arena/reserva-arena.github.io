@@ -217,9 +217,13 @@ function Avatar({ nome, size=36, variant="blue" }) {
 }
 
 function Badge({ status }) {
-  const cfg = { confirmado:{bg:"#e2f4ea",c:"#0f4c2b",label:"Confirmado"}, pendente:{bg:"#fff7ed",c:"#7c2d12",label:"Pendente"}, recusado:{bg:"#fef2f2",c:"#7f1d1d",label:"Recusado"} };
+  const cfg = {
+    confirmado:{bg:"#1a6b47",c:"#fff",label:"Confirmado"},
+    pendente:  {bg:"#d97706",c:"#fff",label:"Pendente"},
+    recusado:  {bg:"#dc2626",c:"#fff",label:"Recusado"},
+  };
   const s = cfg[status]||cfg.pendente;
-  return <span style={{ background:s.bg, color:s.c, fontSize:11, fontWeight:700, padding:"3px 9px", borderRadius:20, whiteSpace:"nowrap" }}>{s.label}</span>;
+  return <span style={{ background:s.bg, color:s.c, fontSize:11, fontWeight:700, padding:"3px 10px", borderRadius:20, whiteSpace:"nowrap" }}>{s.label}</span>;
 }
 
 function Btn({ children, onClick, disabled, variant="primary", size="md", style={}, className="" }) {
@@ -1084,19 +1088,10 @@ function ProfessorView({ usuario }) {
 
   const RRow=({r})=>{
     const isMeuR=r.professorId===usuario.uid;
-    const isConf=r.status==="confirmado";
     const isPend=r.status==="pendente";
-    const isRec=r.status==="recusado";
-    // Cores por status — meus ficam mais vibrantes, outros mais suaves
-    const bgR=isMeuR
-      ?(isConf?"rgba(226,244,234,.7)":isPend?"rgba(255,247,237,.85)":"rgba(254,242,242,.7)")
-      :(isConf?"rgba(226,244,234,.3)":isPend?"rgba(255,247,237,.4)":"rgba(254,242,242,.3)");
-    const borderR=isConf?C.greenBorder:isPend?C.amberBorder:C.redBorder;
-    const borderLeft=isConf?"#1a6b47":isPend?C.amber:C.red;
-    const horarioColor=isConf?C.green:isPend?C.amber:C.red;
     return (
-    <div className="row-hover" style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 12px", borderRadius:8, background:bgR, border:`1px solid ${borderR}`, marginBottom:4, borderLeft:`4px solid ${borderLeft}` }}>
-      <span style={{ fontSize:13, fontFamily:"'DM Mono',monospace", fontWeight:800, color:horarioColor, minWidth:42, flexShrink:0 }}>{r.horario}</span>
+    <div className="row-hover" style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 12px", borderRadius:8, background:C.surface, border:`1px solid ${C.border}`, marginBottom:4, borderLeft:`4px solid ${isMeuR?(isPend?C.amber:C.green):"#cbd5e1"}` }}>
+      <span style={{ fontSize:13, fontFamily:"'DM Mono',monospace", fontWeight:800, color:isMeuR?(isPend?C.amber:C.green):"#64748b", minWidth:42, flexShrink:0 }}>{r.horario}</span>
       <div style={{ width:1, height:32, background:C.borderLight, flexShrink:0 }} />
       <div style={{ flex:1, minWidth:0 }}>
         <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap", marginBottom:2 }}>
