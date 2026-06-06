@@ -64,7 +64,7 @@ const DIAS_NAO_LETIVOS = new Set([
   // Julho (férias inteiras)
   ...Array.from({length:31},(_,i)=>`2026-07-${String(i+1).padStart(2,"0")}`),
   // Agosto
-  "2026-08-07", // Independência do Brasil (dia útil - sexta-feira)
+  "2026-09-07", // Independência do Brasil (dia útil - segunda-feira)
   // Outubro
   "2026-10-12", // Padroeira do Brasil / Dia das Crianças
   "2026-10-13", // Recesso Dia do Professor
