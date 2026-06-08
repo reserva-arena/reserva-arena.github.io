@@ -950,61 +950,20 @@ function ModalAgendar({ usuario, onClose, dataInicial="" }) {
   const keyRef = useRef(0);
   const blocoVazio = () => ({ _key:++keyRef.current, horario:"", turma:"", conteudo:"", paginas:"", laboratorista:"", quantidade:1 });
   const [blocos, setBlocos] = useState(()=>[blocoVazio()]);
-
   const [todasReservas, setTodasReservas] = useState([]);
   useEffect(()=>onSnapshot(collection(db,"reservas"),snap=>
     setTodasReservas(snap.docs.map(d=>d.data()).filter(r=>r&&r.professor&&r.data&&r.horario))
   ),[]);
   const reservasPorData = {};
   todasReservas.filter(r=>r?.espaco===espacoSel&&r?.status!=="recusado").forEach(r=>{ if(!reservasPorData[r.data])reservasPorData[r.data]=[]; reservasPorData[r.data].push(r); });
-
   const hoje = fmt(new Date());
   const onChange=(i,k,v)=>setBlocos(bs=>bs.map((b,idx)=>idx===i?{...b,[k]:v}:b));
   const onRemove=(i)=>setBlocos(bs=>bs.filter((_,idx)=>idx!==i));
   const addBloco=()=>setBlocos(bs=>[...bs,blocoVazio()]);
-
-  const blocoValido=(b)=>{
-    if (!b) return false;
-    const eo=ESPACOS.find(e=>e.nome===espacoSel);
-    if (!b.horario||!b.turma||!b.conteudo) return false;
-    if (eo?.tipo==="laboratorio"&&!b.laboratorista) return false;
-    return true;
-  };
+  const blocoValido=(b)=>{ if (!b) return false; const eo=ESPACOS.find(e=>e.nome===espacoSel); if (!b.horario||!b.turma||!b.conteudo) return false; if (eo?.tipo==="laboratorio"&&!b.laboratorista) return false; return true; };
   const todosValidos = blocos.every(blocoValido);
-
-  const isUrgente=(data,horario)=>{
-    try {
-      const agora=new Date();
-      const [ano2,mes2,dia2]=data.split("-").map(Number);
-      const [h,m]=horario.split(":").map(Number);
-      const ev=new Date(ano2,mes2-1,dia2,h,m,0,0);
-      const diff=(ev-agora)/3600000;
-      if(diff<=0) return false;
-      if(diff<24) return true;
-      const dowAgora=agora.getDay(); const horaAgora=agora.getHours()+agora.getMinutes()/60;
-      const semTE=(dowAgora===5&&horaAgora>=17)||(dowAgora===6)||(dowAgora===0&&horaAgora<7);
-      if(semTE&&diasLetivosAte(data)<1) return true;
-      if(isDiaLetivo(data)&&diasLetivosAte(data)<1) return true;
-      return false;
-    } catch { return false; }
-  };
-
-  const eDiaUrgente=(data)=>{
-    try {
-      const agora=new Date();
-      const [a,m,d]=data.split("-").map(Number);
-      const primeirHorario=new Date(a,m-1,d,7,10,0);
-      const diff=(primeirHorario-agora)/3600000;
-      if(diff<=0) return false;
-      if(diff<24) return true;
-      const dowAgora=agora.getDay(); const horaAgora=agora.getHours()+agora.getMinutes()/60;
-      const semTE=(dowAgora===5&&horaAgora>=17)||(dowAgora===6)||(dowAgora===0&&horaAgora<7);
-      if(semTE&&diasLetivosAte(data)<1) return true;
-      if(isDiaLetivo(data)&&diasLetivosAte(data)<1) return true;
-      return false;
-    } catch { return false; }
-  };
-
+  const isUrgente=(data,horario)=>{ try { const agora=new Date(); const [ano2,mes2,dia2]=data.split("-").map(Number); const [h,m]=horario.split(":").map(Number); const ev=new Date(ano2,mes2-1,dia2,h,m,0,0); const diff=(ev-agora)/3600000; if(diff<=0) return false; if(diff<24) return true; const dowAgora=agora.getDay(); const horaAgora=agora.getHours()+agora.getMinutes()/60; const semTE=(dowAgora===5&&horaAgora>=17)||(dowAgora===6)||(dowAgora===0&&horaAgora<7); if(semTE&&diasLetivosAte(data)<1) return true; if(isDiaLetivo(data)&&diasLetivosAte(data)<1) return true; return false; } catch { return false; } };
+  const eDiaUrgente=(data)=>{ try { const agora=new Date(); const [a,m,d]=data.split("-").map(Number); const primeirHorario=new Date(a,m-1,d,7,10,0); const diff=(primeirHorario-agora)/3600000; if(diff<=0) return false; if(diff<24) return true; const dowAgora=agora.getDay(); const horaAgora=agora.getHours()+agora.getMinutes()/60; const semTE=(dowAgora===5&&horaAgora>=17)||(dowAgora===6)||(dowAgora===0&&horaAgora<7); if(semTE&&diasLetivosAte(data)<1) return true; if(isDiaLetivo(data)&&diasLetivosAte(data)<1) return true; return false; } catch { return false; } };
   const handleSalvar=async()=>{
     setSalvando(true); setErro("");
     try {
@@ -1027,38 +986,28 @@ function ModalAgendar({ usuario, onClose, dataInicial="" }) {
     } catch { setErro("Erro ao salvar. Tente novamente."); setSalvando(false); setMostrarResumo(false); }
     finally { setSalvando(false); }
   };
-
   const titulos = ["Selecione o espaco", "Selecione a data", "Preencha os horarios"];
-
   return (
     <div style={{ position:"fixed", inset:0, zIndex:1100, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
       <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,.5)" }} />
       <div className="fade-in" style={{ position:"relative", background:C.surface, borderRadius:"20px 20px 0 0", width:"100%", maxWidth:600, maxHeight:"92vh", overflowY:"auto", boxShadow:"0 -8px 40px rgba(0,0,0,.25)", paddingBottom:"env(safe-area-inset-bottom,0px)" }}>
-
         {sucesso ? (
           <div style={{ padding:"28px 20px" }}>
             {sucesso.status==="confirmado" ? (
               <div style={{ textAlign:"center" }}>
                 <div style={{ width:64,height:64,borderRadius:"50%",background:"#1a6b47",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,margin:"0 auto 16px" }}>+</div>
-                <h3 style={{ fontSize:20, fontWeight:800, color:C.green, marginBottom:8 }}>
-                  {blocos.length>1?`${blocos.length} agendamentos confirmados!`:"Agendamento confirmado!"}
-                </h3>
-                <p style={{ fontSize:13, color:C.green, marginBottom:4 }}>📍 {espacoSel}</p>
-                <p style={{ fontSize:13, color:C.green, marginBottom:16 }}>📅 {dataSel.split("-").reverse().join("/")}</p>
-                {blocos.map((b,i)=><p key={i} style={{ fontSize:12, color:C.green, opacity:.8 }}>🕐 {b.horario} · {b.turma}</p>)}
+                <h3 style={{ fontSize:20, fontWeight:800, color:C.green, marginBottom:8 }}>{blocos.length>1?`${blocos.length} agendamentos confirmados!`:"Agendamento confirmado!"}</h3>
+                <p style={{ fontSize:13, color:C.green, marginBottom:4 }}>Espaco: {espacoSel}</p>
+                <p style={{ fontSize:13, color:C.green, marginBottom:16 }}>Data: {dataSel.split("-").reverse().join("/")}</p>
+                {blocos.map((b,i)=><p key={i} style={{ fontSize:12, color:C.green, opacity:.8 }}>{b.horario} - {b.turma}</p>)}
                 <button onClick={onClose} style={{ marginTop:24, padding:"12px 28px", borderRadius:10, border:"none", background:"#1a6b47", color:"#fff", fontWeight:800, fontSize:14, cursor:"pointer", width:"100%" }}>Fechar</button>
               </div>
             ) : (
               <div>
                 <div style={{ background:C.amberBg, border:`1.5px solid ${C.amberBorder}`, borderRadius:12, padding:"20px", marginBottom:16, textAlign:"center" }}>
-                  <div style={{ fontSize:36, marginBottom:8 }}>⏳</div>
+                  <div style={{ fontSize:36, marginBottom:8 }}>...</div>
                   <h3 style={{ fontSize:17, fontWeight:800, color:C.amber }}>Agendamento pendente</h3>
-                  <p style={{ fontSize:12.5, color:C.amber, marginTop:4 }}>
-                    {sucesso.motivo==="fimSemana"?"Agendamento em fim de semana":sucesso.motivo==="urgente"?"Menos de 24h de antecedencia":"Fim de semana e menos de 24h"}
-                  </p>
-                  <p style={{ fontSize:12, color:"#92400e", marginTop:10, lineHeight:1.5 }}>
-                    Contate o T.E. (Tecnologia Educacional) para garantir que o espaco estara disponivel.
-                  </p>
+                  <p style={{ fontSize:12, color:"#92400e", marginTop:10, lineHeight:1.5 }}>Contate o T.E. para garantir disponibilidade.</p>
                 </div>
                 <button onClick={onClose} style={{ padding:"12px", borderRadius:10, border:`1.5px solid ${C.border}`, background:C.surface, color:C.navy, fontWeight:700, cursor:"pointer", fontSize:14, width:"100%" }}>Fechar</button>
               </div>
@@ -1069,36 +1018,26 @@ function ModalAgendar({ usuario, onClose, dataInicial="" }) {
             <div style={{ position:"sticky", top:0, background:C.surface, zIndex:10, borderBottom:`1px solid ${C.borderLight}` }}>
               <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"16px 20px 12px" }}>
                 <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-                  {step>1&&!dataInicial&&(
-                    <button onClick={()=>{setStep(s=>s-1);if(step===3){setDataSel("");setBlocos([blocoVazio()]);}if(step===2)setEspacoSel("");}} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:8, width:32, height:32, cursor:"pointer", color:C.textMid, fontSize:15, display:"flex", alignItems:"center", justifyContent:"center" }}>‹</button>
-                  )}
-                  {step>1&&dataInicial&&step>2&&(
-                    <button onClick={()=>{setStep(2);setDataSel(dataInicial);setBlocos([blocoVazio()]);}} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:8, width:32, height:32, cursor:"pointer", color:C.textMid, fontSize:15, display:"flex", alignItems:"center", justifyContent:"center" }}>‹</button>
-                  )}
+                  {step>1&&!dataInicial&&(<button onClick={()=>{setStep(s=>s-1);if(step===3){setDataSel("");setBlocos([blocoVazio()]);}if(step===2)setEspacoSel("");}} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:8, width:32, height:32, cursor:"pointer", color:C.textMid, fontSize:15, display:"flex", alignItems:"center", justifyContent:"center" }}>-</button>)}
+                  {step>1&&dataInicial&&step>2&&(<button onClick={()=>{setStep(2);setDataSel(dataInicial);setBlocos([blocoVazio()]);}} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:8, width:32, height:32, cursor:"pointer", color:C.textMid, fontSize:15, display:"flex", alignItems:"center", justifyContent:"center" }}>-</button>)}
                   <div>
-                    <p style={{ fontSize:11, color:C.textMuted, fontWeight:700, textTransform:"uppercase", letterSpacing:".4px" }}>Novo agendamento · Passo {step}/3</p>
+                    <p style={{ fontSize:11, color:C.textMuted, fontWeight:700, textTransform:"uppercase", letterSpacing:".4px" }}>Novo agendamento - Passo {step}/3</p>
                     <p style={{ fontSize:15, fontWeight:800, color:C.navy }}>{titulos[step-1]}</p>
                   </div>
                 </div>
-                <button onClick={onClose} style={{ background:"none", border:"none", fontSize:22, cursor:"pointer", color:C.textMuted, lineHeight:1 }}>✕</button>
+                <button onClick={onClose} style={{ background:"none", border:"none", fontSize:22, cursor:"pointer", color:C.textMuted, lineHeight:1 }}>X</button>
               </div>
               <div style={{ display:"flex", gap:4, padding:"0 20px 12px" }}>
-                {[1,2,3].map(s=>(
-                  <div key={s} style={{ flex:1, height:3, borderRadius:2, background:step>=s?"#40b07a":C.borderLight, transition:"background .3s" }} />
-                ))}
+                {[1,2,3].map(s=>(<div key={s} style={{ flex:1, height:3, borderRadius:2, background:step>=s?"#40b07a":C.borderLight, transition:"background .3s" }} />))}
               </div>
             </div>
-
             <div style={{ padding:"16px 20px 24px" }}>
               {erro&&<div style={{ marginBottom:14 }}><Alert type="error">{erro}</Alert></div>}
-
               {step===1&&(
                 <div className="fade-in">
                   {["espaco","laboratorio","equipamento"].map(tipo=>(
                     <div key={tipo} style={{ marginBottom:14 }}>
-                      <p style={{ fontSize:11, fontWeight:700, color:C.textMuted, textTransform:"uppercase", letterSpacing:".4px", marginBottom:8 }}>
-                        {tipo==="espaco"?"Espacos":tipo==="laboratorio"?"Laboratorios":"Equipamentos"}
-                      </p>
+                      <p style={{ fontSize:11, fontWeight:700, color:C.textMuted, textTransform:"uppercase", letterSpacing:".4px", marginBottom:8 }}>{tipo==="espaco"?"Espacos":tipo==="laboratorio"?"Laboratorios":"Equipamentos"}</p>
                       <div style={{ display:"grid", gap:8 }}>
                         {ESPACOS.filter(e=>e.tipo===tipo).map(e=>(
                           <button key={e.id} onClick={()=>{setEspacoSel(e.nome);setStep(2);}} style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 16px", borderRadius:10, border:`1.5px solid ${C.border}`, background:C.surface, cursor:"pointer", textAlign:"left", transition:"all .15s" }}
@@ -1114,7 +1053,6 @@ function ModalAgendar({ usuario, onClose, dataInicial="" }) {
                   ))}
                 </div>
               )}
-
               {step===2&&(
                 <div className="fade-in">
                   <div style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", background:C.greenBg, borderRadius:10, marginBottom:16, border:`1px solid ${C.greenBorder}` }}>
@@ -1122,43 +1060,25 @@ function ModalAgendar({ usuario, onClose, dataInicial="" }) {
                     <span style={{ fontSize:13, fontWeight:700, color:C.green }}>{espacoSel}</span>
                     {!dataInicial&&<button onClick={()=>{setEspacoSel("");setStep(1);}} style={{ marginLeft:"auto", background:"none", border:"none", color:C.textMuted, cursor:"pointer", fontSize:12 }}>Trocar</button>}
                   </div>
-                  <CalendarioMensal
-                    reservasPorData={reservasPorData}
-                    onSelectDia={(d)=>{
-                      if(!isDiaLetivo(d)){alert("Este dia e nao letivo e nao pode ser agendado.");return;}
-                      setDataSel(d);setStep(3);setBlocos([blocoVazio()]);
-                    }}
-                    dataSelecionada={dataSel}
-                  />
+                  <CalendarioMensal reservasPorData={reservasPorData} onSelectDia={(d)=>{ if(!isDiaLetivo(d)){alert("Este dia nao letivo.");return;} setDataSel(d);setStep(3);setBlocos([blocoVazio()]); }} dataSelecionada={dataSel} />
                 </div>
               )}
-
               {step===3&&(
                 <div className="fade-in">
                   <div style={{ background:`linear-gradient(135deg,#1a6b47,#0f4c2b)`, padding:"10px 14px", borderRadius:10, marginBottom:14 }}>
                     <p style={{ fontSize:11, color:"rgba(255,255,255,.7)", fontWeight:700, textTransform:"uppercase", letterSpacing:".4px", marginBottom:2 }}>Agendando em</p>
-                    <p style={{ fontSize:14, fontWeight:800, color:"#fff" }}>{tipoIcon(ESPACOS.find(e=>e.nome===espacoSel)?.tipo)} {espacoSel} · {dataSel.split("-").reverse().join("/")}</p>
+                    <p style={{ fontSize:14, fontWeight:800, color:"#fff" }}>{tipoIcon(ESPACOS.find(e=>e.nome===espacoSel)?.tipo)} {espacoSel} - {dataSel.split("-").reverse().join("/")}</p>
                   </div>
-
                   {eDiaUrgente(dataSel)&&(
                     <div style={{ background:"#fff7ed", border:"1.5px solid #f97316", borderRadius:10, padding:"10px 14px", marginBottom:14 }}>
-                      <p style={{ fontSize:12.5, fontWeight:800, color:"#92400e" }}>⚠️ Menos de 24h de antecedencia</p>
-                      <p style={{ fontSize:12, color:"#78350f", marginTop:4, lineHeight:1.5 }}>Contate o T.E. para garantir que o espaco estara disponivel.</p>
+                      <p style={{ fontSize:12.5, fontWeight:800, color:"#92400e" }}>Menos de 24h de antecedencia</p>
+                      <p style={{ fontSize:12, color:"#78350f", marginTop:4, lineHeight:1.5 }}>Contate o T.E. para garantir disponibilidade.</p>
                     </div>
                   )}
-
                   <div style={{ display:"grid", gap:12 }}>
-                    {blocos.map((b,i)=>(
-                      <BlocoAgendamento key={b._key||i} idx={i} espaco={espacoSel} data={dataSel} bloco={b} onChange={onChange} onRemove={onRemove} ocupadosGlobal={blocos} C={C} inp={inp} sel={{...inp,cursor:"pointer"}} />
-                    ))}
+                    {blocos.map((b,i)=>(<BlocoAgendamento key={b._key||i} idx={i} espaco={espacoSel} data={dataSel} bloco={b} onChange={onChange} onRemove={onRemove} ocupadosGlobal={blocos} C={C} inp={inp} sel={{...inp,cursor:"pointer"}} />))}
                   </div>
-
-                  {blocos.length<HORARIOS.length&&(
-                    <button onClick={addBloco} disabled={!blocoValido(blocos[blocos.length-1])} style={{ width:"100%", marginTop:10, padding:"11px", borderRadius:10, border:`2px dashed ${!blocoValido(blocos[blocos.length-1])?"#cbd5e1":"#40b07a"}`, background:"transparent", color:!blocoValido(blocos[blocos.length-1])?C.textMuted:"#40b07a", fontWeight:700, fontSize:13, cursor:!blocoValido(blocos[blocos.length-1])?"not-allowed":"pointer" }}>
-                      + Agendar outra turma neste dia
-                    </button>
-                  )}
-
+                  {blocos.length<HORARIOS.length&&(<button onClick={addBloco} disabled={!blocoValido(blocos[blocos.length-1])} style={{ width:"100%", marginTop:10, padding:"11px", borderRadius:10, border:`2px dashed ${!blocoValido(blocos[blocos.length-1])?"#cbd5e1":"#40b07a"}`, background:"transparent", color:!blocoValido(blocos[blocos.length-1])?C.textMuted:"#40b07a", fontWeight:700, fontSize:13, cursor:!blocoValido(blocos[blocos.length-1])?"not-allowed":"pointer" }}>+ Agendar outra turma neste dia</button>)}
                   <button onClick={()=>setMostrarResumo(true)} disabled={!todosValidos} style={{ width:"100%", marginTop:14, padding:"14px", borderRadius:12, border:"none", background:todosValidos?"#40b07a":"#cbd5e1", color:todosValidos?"#fff":"#94a3b8", fontWeight:800, fontSize:15, cursor:todosValidos?"pointer":"not-allowed", boxShadow:todosValidos?"0 4px 14px rgba(26,107,71,.35)":"none" }}>
                     {todosValidos?`Confirmar ${blocos.length} agendamento${blocos.length>1?"s":""}`:"Preencha todos os campos"}
                   </button>
@@ -1168,18 +1088,7 @@ function ModalAgendar({ usuario, onClose, dataInicial="" }) {
           </>
         )}
       </div>
-
-      {mostrarResumo&&(
-        <ModalResumo
-          espaco={espacoSel}
-          data={dataSel}
-          blocos={blocos}
-          onConfirmar={handleSalvar}
-          onCancelar={()=>setMostrarResumo(false)}
-          salvando={salvando}
-          C={C}
-        />
-      )}
+      {mostrarResumo&&(<ModalResumo espaco={espacoSel} data={dataSel} blocos={blocos} onConfirmar={handleSalvar} onCancelar={()=>setMostrarResumo(false)} salvando={salvando} C={C} />)}
     </div>
   );
 }
@@ -1205,8 +1114,6 @@ function ProfessorView({ usuario }) {
   const [sucesso, setSucesso]     = useState(null); // null | {status:"confirmado"|"pendente", motivo:"urgente"|"fimSemana"|null}
   const [erro, setErro]           = useState("");
 
-  const [modalAgendar, setModalAgendar] = useState(false);
-  const [dataModalAgendar, setDataModalAgendar] = useState("");
   const keyRef = useRef(0);
   const blocoVazio = () => ({ _key:++keyRef.current, horario:"", turma:"", conteudo:"", paginas:"", laboratorista:"", quantidade:1 });
   const [blocos, setBlocos] = useState(()=>[blocoVazio()]);
@@ -1265,8 +1172,8 @@ function ProfessorView({ usuario }) {
     } catch { return false; } 
   };
   const isDiaUrgente=(data)=>{ try { const [a2,m2,d2]=data.split("-").map(Number); const ev=new Date(a2,m2-1,d2,23,59,59); const diff=(ev-new Date())/3600000; return diff>=0&&diff<24; } catch { return false; } };
-  const agendarDia=(data)=>{ 
-    if(!isDiaLetivo(data)){ alert("Este dia e nao letivo e nao pode ser agendado."); return; }
+  const agendarDia=(data)=>{
+    if(!isDiaLetivo(data)){ alert("Este dia nao e letivo e nao pode ser agendado."); return; }
     setDataModalAgendar(data); setModalAgendar(true);
   };
 
@@ -1432,7 +1339,6 @@ function ProfessorView({ usuario }) {
       {editando&&<ModalEdicao reserva={editando} isAdmin={false} onClose={()=>setEditando(null)} onSave={()=>setEditando(null)} />}
       {mostrarResumo&&<ModalResumo espaco={espacoSel} data={dataSel} blocos={blocos} onConfirmar={handleSalvar} onCancelar={()=>setMostrarResumo(false)} salvando={salvando} C={C} />}
       {modalAgendar&&<ModalAgendar usuario={usuario} onClose={()=>{setModalAgendar(false);setDataModalAgendar("");}} dataInicial={dataModalAgendar} />}
-
       {alertaUrgente&&(
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.55)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000, padding:"1rem" }}>
           <div className="fade-in" style={{ background:"#fff", borderRadius:16, padding:"28px 24px", width:"100%", maxWidth:420, boxShadow:"0 24px 60px rgba(0,0,0,.25)" }}>
@@ -2024,7 +1930,6 @@ function ProfessorView({ usuario }) {
       )}
     </div>
 
-      {/* Botao flutuante Agendar */}
       {!modalAgendar&&(
         <button onClick={()=>{setModalAgendar(true);setDataModalAgendar("");}} style={{ position:"fixed", bottom:28, right:28, zIndex:1000, display:"flex", alignItems:"center", gap:8, padding:"14px 20px", borderRadius:28, background:"#1a6b47", color:"#fff", fontWeight:800, fontSize:14, border:"none", cursor:"pointer", boxShadow:"0 6px 20px rgba(26,107,71,.45)", transition:"all .2s cubic-bezier(.34,1.56,.64,1)" }}
           onMouseEnter={e=>{e.currentTarget.style.transform="scale(1.06)";e.currentTarget.style.boxShadow="0 8px 28px rgba(26,107,71,.55)";}}
