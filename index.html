@@ -373,7 +373,7 @@ function renderApp(){
     ${modalAgendarHTML()}
     ${modalGerenciarHTML()}
     ${isAdmin?"":fabHTML()}
-    <button onclick="toggleDark()" style="position:fixed;bottom:${isAdmin?28:90}px;right:28px;z-index:998;width:52px;height:52px;border-radius:50%;background:${_dark?"#f1f5f9":"#0f172a"};color:${_dark?"#0f172a":"#f1f5f9"};border:none;cursor:pointer;font-size:22px;box-shadow:0 6px 20px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center">${_dark?"☀️":"🌙"}</button>
+<!-- DarkToggle removido do float — está no header -->
   </div>`;
   isAdmin?bindAdmin():bindProf();
 }
@@ -403,25 +403,23 @@ function renderProfessorView(){
 
   // Card principal
   html+=`<div style="background:${c.surface};border-radius:14px;border:1px solid ${c.border};overflow:hidden;margin-bottom:20px">`;
-  // Toggle principal Ver / Agendar
-  html+=`<div style="display:flex;gap:8px;align-items:center;padding:14px 14px 0;flex-wrap:wrap">
+  // Barra única: Ver | Agendar | Calendário | Agenda
+  html+=`<div style="display:flex;gap:6px;align-items:center;padding:14px 14px 0;flex-wrap:wrap">
     <div style="display:flex;background:${c.bg};border-radius:10px;padding:3px;border:1px solid ${c.border};gap:2px">
-      <button onclick="pSetModoProf('ver')" style="padding:8px 20px;border-radius:8px;border:none;background:${_P.modoProf==='ver'?c.navy:'transparent'};color:${_P.modoProf==='ver'?'#fff':c.textMuted};font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">📅 Ver agendamentos</button>
-      <button onclick="pSetModoProf('agendar')" style="padding:8px 20px;border-radius:8px;border:none;background:${_P.modoProf==='agendar'?'#1a6b47':'transparent'};color:${_P.modoProf==='agendar'?'#fff':c.textMuted};font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">＋ Agendar</button>
+      <button onclick="pSetModoProf('ver')" style="padding:7px 16px;border-radius:8px;border:none;background:${_P.modoProf==='ver'?c.navy:'transparent'};color:${_P.modoProf==='ver'?'#fff':c.textMuted};font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">📅 Ver</button>
+      <button onclick="pSetModoProf('agendar')" style="padding:7px 16px;border-radius:8px;border:none;background:${_P.modoProf==='agendar'?'#1a6b47':'transparent'};color:${_P.modoProf==='agendar'?'#fff':c.textMuted};font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">＋ Agendar</button>
     </div>
+    ${_P.modoProf==='ver'?`<div style="display:flex;background:${c.bg};border-radius:10px;padding:3px;border:1px solid ${c.border};gap:2px">
+      ${[{id:"calendario",l:"🗓 Calendário"},{id:"lista",l:"☰ Agenda"}].map(o=>`<button onclick="pSetModo('${o.id}')" style="padding:7px 16px;border-radius:8px;border:none;background:${_P.modoCard===o.id?c.navy:'transparent'};color:${_P.modoCard===o.id?'#fff':c.textMuted};font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">${o.l}</button>`).join("")}
+    </div>`:''}
   </div>`;
 
-  // Se modo Agendar, mostrar fluxo inline
+  // Modo Agendar inline
   if(_P.modoProf==="agendar"){
     html+=renderProfAgendar();
     html+=`</div>`;
     return html;
-  }
-
-  // Tabs Ver
-  html+=`<div style="display:flex;gap:2px;background:${c.bg};border-radius:8px;padding:3px;border:1px solid ${c.border};margin:10px 14px 0;width:fit-content">
-    ${[{id:"calendario",l:"📅 Calendário"},{id:"lista",l:"☰ Agendamentos"}].map(o=>`<button onclick="pSetModo('${o.id}')" style="${btn(_P.modoCard===o.id?"navy":"ghost","","sm")};padding:6px 14px">${o.l}</button>`).join("")}
-  </div>`;
+  }`;
 
   if(_P.modoCard==="calendario"){
     // Banner verde
@@ -645,7 +643,7 @@ window.cancelarR=async id=>{if(!confirm("Cancelar esta reserva?"))return;await d
 // ════════════════════════════════════════════════════════════════════════════
 // FAB + MODAL AGENDAR
 // ════════════════════════════════════════════════════════════════════════════
-function fabHTML(){return`<button onclick="abrirModalAgendar()" style="display:flex;position:fixed;bottom:28px;right:28px;z-index:999;width:56px;height:56px;border-radius:50%;background:#1a6b47;color:#fff;border:none;cursor:pointer;font-size:28px;align-items:center;justify-content:center;box-shadow:0 6px 20px rgba(26,107,71,.45)">+</button>`;}
+function fabHTML(){return'';} // FAB removido — usa tab Agendar
 
 function modalAgendarHTML(){const c=C();return`<div id="mod-ag" style="display:none;position:fixed;inset:0;z-index:1100;align-items:flex-end;justify-content:center"><div onclick="fecharModalAgendar()" style="position:absolute;inset:0;background:rgba(0,0,0,.5)"></div><div id="mod-ag-inner" style="position:relative;background:${c.surface};border-radius:20px 20px 0 0;width:100%;max-width:600px;max-height:92vh;overflow-y:auto;box-shadow:0 -8px 40px rgba(0,0,0,.25)"><div id="mod-ag-body"></div></div></div>`;}
 
