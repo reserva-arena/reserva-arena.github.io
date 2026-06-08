@@ -488,7 +488,7 @@ function CalMensalAdmin({ reservas, filtroEspaco, hoje, C, onNovaReserva }) {
 
   return (
     <div>
-      {/* Header navegação mês */}
+      
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 16px", borderBottom:`1px solid ${C.border}` }}>
         <button onClick={()=>navMes(-1)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:8, width:32, height:32, cursor:"pointer", color:C.textMid, fontSize:15, display:"flex", alignItems:"center", justifyContent:"center" }}>‹</button>
         <div style={{ textAlign:"center" }}>
@@ -497,13 +497,13 @@ function CalMensalAdmin({ reservas, filtroEspaco, hoje, C, onNovaReserva }) {
         </div>
         <button onClick={()=>navMes(1)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:8, width:32, height:32, cursor:"pointer", color:C.textMid, fontSize:15, display:"flex", alignItems:"center", justifyContent:"center" }}>›</button>
       </div>
-      {/* Cabeçalho dias */}
+      
       <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", background:C.bg, borderBottom:`1px solid ${C.border}` }}>
         {["Dom.","Seg.","Ter.","Qua.","Qui.","Sexta","Sáb."].map((d,i)=>(
           <div key={d} style={{ padding:"8px 0", textAlign:"center", fontSize:10.5, fontWeight:700, color:i===0||i===6?"#ef4444":C.textMuted, textTransform:"uppercase", letterSpacing:".3px" }}>{d}</div>
         ))}
       </div>
-      {/* Grid dias */}
+      
       <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)" }}>
         {cells.map((d,i)=>{
           if (!d) return <div key={i} style={{ minHeight:80, borderRight:`1px solid ${C.borderLight}`, borderBottom:`1px solid ${C.borderLight}`, background:C.bg }} />;
@@ -531,7 +531,7 @@ function CalMensalAdmin({ reservas, filtroEspaco, hoje, C, onNovaReserva }) {
           );
         })}
       </div>
-      {/* Detalhe do dia selecionado */}
+      
       {diaSel&&(
         <div style={{ borderTop:`2px solid ${C.border}`, padding:"14px 16px", background:C.bg }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
@@ -629,7 +629,7 @@ function CalendarioSemanal({ onNovaReserva }) {
           ))}
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
-          {/* Toggle Semana / Mês - só aparece no modo grade por dia */}
+          
           <div style={{ display:"flex", background:C.bg, borderRadius:8, padding:2, border:`1px solid ${C.border}` }}>
             {[{id:"semana",label:"Semana"},{id:"mes",label:"Mês"}].map(op=>(
               <button key={op.id} onClick={()=>setModoPeriodo(op.id)} style={{ padding:"5px 14px", borderRadius:6, border:"none", background:modoPeriodo===op.id?C.navy:"transparent", color:modoPeriodo===op.id?"#fff":C.textMuted, fontWeight:700, fontSize:12.5, cursor:"pointer", transition:"all .15s" }}>{op.label}</button>
@@ -794,7 +794,7 @@ function BlocoAgendamento({ idx, espaco, data, bloco, onChange, onRemove, ocupad
       </div>
       <div style={{ display:"grid", gap:13 }}>
         <Field label="Horário" required>
-          {/* CORREÇÃO: excluirId="" explícito + b?.horario com optional chaining */}
+          
           <HorariosOcupados
             espaco={espaco}
             data={data}
@@ -852,14 +852,14 @@ function ModalResumo({ espaco, data, blocos, onConfirmar, onCancelar, salvando, 
     <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.6)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000, padding:"1rem" }}>
       <div className="fade-in" style={{ background:C.surface, borderRadius:16, padding:28, width:"100%", maxWidth:500, maxHeight:"90vh", overflowY:"auto", boxShadow:"0 24px 60px rgba(0,0,0,.3)" }}>
 
-        {/* Cabeçalho */}
+        
         <div style={{ textAlign:"center", marginBottom:20 }}>
           <div style={{ width:52, height:52, borderRadius:"50%", background:precisaCiencia?"#fff7ed":"#e2f4ea", display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, margin:"0 auto 12px" }}>{precisaCiencia?"⚠️":"📋"}</div>
           <h3 style={{ fontSize:17, fontWeight:800, color:C.navy }}>Revisar agendamento</h3>
           <p style={{ fontSize:13, color:C.textMuted, marginTop:4 }}>Confira os dados antes de confirmar</p>
         </div>
 
-        {/* Alerta de urgência / fim de semana */}
+        
         {precisaCiencia&&(
           <div style={{ background:"#fff7ed", border:"1.5px solid #fed7aa", borderRadius:10, padding:"10px 14px", marginBottom:12 }}>
             <p style={{ fontSize:12.5, fontWeight:800, color:"#7c2d12", marginBottom:5 }}>
@@ -881,14 +881,14 @@ function ModalResumo({ espaco, data, blocos, onConfirmar, onCancelar, salvando, 
           </div>
         )}
 
-        {/* Local e data */}
+        
         <div style={{ background:C.bg, borderRadius:10, padding:"12px 16px", marginBottom:12 }}>
           <p style={{ fontSize:11, fontWeight:700, color:C.textMuted, textTransform:"uppercase", letterSpacing:".5px", marginBottom:6 }}>Local e data</p>
           <p style={{ fontSize:14, fontWeight:700, color:C.navy }}>📍 {espaco}</p>
           <p style={{ fontSize:13, color:C.textMid, marginTop:2 }}>📅 {dataFmt}{isFimSemana?" · "+["Dom","","","","","","Sáb"][dow]:""}</p>
         </div>
 
-        {/* Lista de blocos */}
+        
         <div style={{ display:"grid", gap:8, marginBottom:precisaCiencia?16:20 }}>
           {blocos.map((b,i)=>{
             const isUrg=blocosUrgentes.includes(b);
@@ -909,7 +909,7 @@ function ModalResumo({ espaco, data, blocos, onConfirmar, onCancelar, salvando, 
           })}
         </div>
 
-        {/* Checkbox de ciência */}
+        
         {precisaCiencia&&(
           <label style={{ display:"flex", alignItems:"flex-start", gap:10, marginBottom:18, cursor:"pointer", padding:"12px 14px", background:ciente?"#e2f4ea":"#f8faf8", border:`1.5px solid ${ciente?"#6ee7a0":"#c7dfd4"}`, borderRadius:10, transition:"all .2s" }}>
             <input type="checkbox" checked={ciente} onChange={e=>setCiente(e.target.checked)} style={{ width:18, height:18, marginTop:1, accentColor:"#1a6b47", flexShrink:0, cursor:"pointer" }} />
@@ -924,7 +924,7 @@ function ModalResumo({ espaco, data, blocos, onConfirmar, onCancelar, salvando, 
           </label>
         )}
 
-        {/* Botões */}
+        
         <div style={{ display:"flex", gap:10 }}>
           <button onClick={onCancelar} style={{ flex:1, padding:"11px", borderRadius:8, border:`1.5px solid ${C.border}`, background:"transparent", color:C.textMid, fontWeight:700, cursor:"pointer", fontSize:13 }}>← Revisar</button>
           <button onClick={onConfirmar} disabled={salvando||(precisaCiencia&&!ciente)} style={{ flex:2, padding:"11px", borderRadius:8, border:"none", background:(precisaCiencia&&!ciente)?"#c7dfd4":"#1a6b47", color:"#fff", fontWeight:800, cursor:(precisaCiencia&&!ciente)?"not-allowed":"pointer", fontSize:13.5, transition:"background .2s" }}>
@@ -1138,7 +1138,7 @@ function ProfessorView({ usuario }) {
     <div style={{ maxWidth:600, margin:"0 auto", padding:"24px 16px" }}>
       {sucesso.status==="pendente" ? (
         <div className="fade-in">
-          {/* Card âmbar - pendente */}
+          
           <div style={{ background:C.amberBg, border:`1.5px solid ${C.amberBorder}`, borderRadius:16, padding:"28px 24px", marginBottom:16 }}>
             <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom:16 }}>
               <div style={{ width:52,height:52,borderRadius:"50%",background:"#f97316",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0 }}>⏳</div>
@@ -1203,7 +1203,7 @@ function ProfessorView({ usuario }) {
         </div>
       )}
 
-      {/* -- Boas-vindas -- */}
+      
       {(()=>{
         const hr=new Date().getHours();
         const saudacao=hr<12?"Bom dia":"hr"<18?"Boa tarde":"Boa noite";
@@ -1229,7 +1229,7 @@ function ProfessorView({ usuario }) {
         );
       })()}
 
-      {/* Toggle Calendário/Agenda + label acima do card */}
+      
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
         <p style={{ fontSize:13, fontWeight:700, color:C.textMid }}>Agendamentos</p>
         <div style={{ display:"flex", background:C.surface, border:`1px solid ${C.border}`, borderRadius:9, padding:2, gap:1 }}>
@@ -1239,12 +1239,12 @@ function ProfessorView({ usuario }) {
         </div>
       </div>
 
-      {/* Card de agendamentos com calendário */}
+      
       <div style={{ background:C.surface, borderRadius:14, marginBottom:20, border:`1px solid ${C.border}`, overflow:"hidden", boxShadow:C.cardShadow }}>
         {diaMesSel ? (
           /* == VISÃO DE DIA - substitui o calendário ao clicar == */
           <div className="fade-in">
-            {/* Header verde do dia */}
+            
             <div style={{ background:"#1a6b47", padding:"14px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:10, flexWrap:"wrap" }}>
               <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                 <button onClick={()=>setDiaMesSel(null)} style={{ background:"rgba(255,255,255,.18)", border:"1px solid rgba(255,255,255,.3)", borderRadius:8, color:"#fff", fontSize:12, fontWeight:700, padding:"6px 12px", cursor:"pointer" }}>‹ Voltar</button>
@@ -1258,7 +1258,7 @@ function ProfessorView({ usuario }) {
                 <button onClick={()=>setDiaMesSel(addDays(diaMesSel,1))} style={{ background:"rgba(255,255,255,.15)", border:"1px solid rgba(255,255,255,.25)", borderRadius:7, color:"#fff", fontSize:15, width:32, height:32, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>›</button>
               </div>
             </div>
-            {/* Banner urgente - logo abaixo do header verde */}
+            
 {(()=>{
               const [_a,_m,_d]=diaMesSel.split("-").map(Number);
               const dowSel=new Date(_a,_m-1,_d).getDay();
@@ -1283,7 +1283,7 @@ function ProfessorView({ usuario }) {
                 </div>
               );
             })()}
-            {/* Corpo */}
+            
             <div style={{ padding:"14px 16px" }}>
               {(()=>{
                 const todasFonteDia=(filtroGrade==="meus"
@@ -1293,14 +1293,14 @@ function ProfessorView({ usuario }) {
                 const rsDia=todasFonteDia.filter(r=>r.data===diaMesSel).sort((a,b)=>a.horario>b.horario?1:-1);
                 const meusDia=rsDia.filter(r=>r.professorId===usuario.uid);
                 return (<>
-                  {/* Resumo */}
+                  
                   {rsDia.length>0&&(
                     <div style={{ display:"flex", gap:8, marginBottom:12, flexWrap:"wrap" }}>
                       <span style={{ fontSize:11, fontWeight:700, background:C.greenBg, color:C.green, border:`1px solid ${C.greenBorder}`, borderRadius:20, padding:"3px 10px" }}>{meusDia.length} meu{meusDia.length!==1?"s":""}</span>
                       {rsDia.length>meusDia.length&&<span style={{ fontSize:11, fontWeight:700, background:C.bg, color:C.textMid, border:`1px solid ${C.border}`, borderRadius:20, padding:"3px 10px" }}>{rsDia.length} no total</span>}
                     </div>
                   )}
-                  {/* Lista */}
+                  
                   {rsDia.length===0 ? (
                     <div style={{ textAlign:"center", padding:"20px 0 12px" }}>
                       <p style={{ fontSize:32, marginBottom:8 }}>🗓️</p>
@@ -1320,7 +1320,7 @@ function ProfessorView({ usuario }) {
                       ); })}
                     </div>
                   )}
-                  {/* Botão de agendar - só para dias futuros */}
+                  
                   {diaMesSel>=hoje&&(
                     <div style={{ borderTop:`1px solid ${C.borderLight}`, paddingTop:14, marginTop:4 }}>
 
@@ -1340,10 +1340,10 @@ function ProfessorView({ usuario }) {
           </div>
         ) : (
         <>
-        {/* Banner verde - navegação e filtros, só aparece no modo calendário */}
+        
         {modoCard==="calendario"&&(
           <div className="banner-prof">
-            {/* Navegação semana */}
+            
             {modoVisu==="semana"&&(<>
               <div className="banner-prof-nav">
                 <button onClick={()=>setSemanaInicio(s=>addDays(s,-7))} style={{ background:"rgba(255,255,255,.15)", border:"1px solid rgba(255,255,255,.25)", borderRadius:7, color:"#fff", fontSize:15, width:30, height:30, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>‹</button>
@@ -1352,24 +1352,24 @@ function ProfessorView({ usuario }) {
               </div>
               <div style={{ width:1, height:20, background:"rgba(255,255,255,.2)", margin:"0 2px", flexShrink:0 }} />
             </>)}
-            {/* Semana / Mês */}
+            
             <div style={{ display:"flex", background:"rgba(0,0,0,.18)", borderRadius:8, padding:2 }}>
               {[{id:"semana",label:"Semana"},{id:"mes",label:"Mês"}].map(op=>(
                 <button key={op.id} onClick={()=>setModoVisu(op.id)} style={{ padding:"5px 11px", borderRadius:6, border:"none", background:modoVisu===op.id?"#fff":"transparent", color:modoVisu===op.id?"#1a6b47":"rgba(255,255,255,.85)", fontWeight:700, fontSize:12, cursor:"pointer" }}>{op.label}</button>
               ))}
             </div>
-            {/* Meus / Todos */}
+            
             <div style={{ display:"flex", background:"rgba(0,0,0,.18)", borderRadius:8, padding:2 }}>
               {[{id:"meus",label:"Meus"},{id:"todos",label:"Todos"}].map(op=>(
                 <button key={op.id} onClick={()=>setFiltroGrade(op.id)} style={{ padding:"5px 11px", borderRadius:6, border:"none", background:filtroGrade===op.id?"#fff":"transparent", color:filtroGrade===op.id?"#1a6b47":"rgba(255,255,255,.85)", fontWeight:700, fontSize:12, cursor:"pointer" }}>{op.label}</button>
               ))}
             </div>
-            {/* Espaço */}
+            
             <select value={filtroEspacoGrade} onChange={e=>setFiltroEspacoGrade(e.target.value)} style={{ background:"rgba(255,255,255,.12)", border:"1px solid rgba(255,255,255,.2)", borderRadius:7, color:"#fff", fontWeight:600, fontSize:11.5, cursor:"pointer", outline:"none", padding:"5px 8px", maxWidth:150 }}>
               <option value="" style={{ background:"#1a6b47" }}>Espaços</option>
               {ESPACOS.map(e=><option key={e.id} value={e.nome} style={{ background:"#1a6b47" }}>{e.nome}</option>)}
             </select>
-            {/* Legenda - linha separada quando Todos */}
+            
             {filtroGrade==="todos"&&(
               <div style={{ width:"100%", display:"flex", gap:14, alignItems:"center" }}>
                 <span style={{ fontSize:11, color:"rgba(255,255,255,.65)" }}>Legenda:</span>
@@ -1389,10 +1389,10 @@ function ProfessorView({ usuario }) {
             )}
           </div>
         )}
-        {/* Corpo branco */}
+        
         <div className="prof-card">
 
-        {/* Modo CALENDÁRIO */}
+        
         {modoCard==="calendario"&&modoVisu==="semana"&&(()=>{
           const diasSemana=Array.from({length:5},(_,i)=>addDays(semanaInicio,i)); const nomesDia=["Seg.","Ter.","Qua.","Qui.","Sex."];
           const ehMeu=(r)=>r.professorId===usuario.uid||r.professor===usuario.nome;
@@ -1483,7 +1483,7 @@ function ProfessorView({ usuario }) {
           );
         })()}
 
-        {/* Modo MÊS */}
+        
         {modoCard==="calendario"&&modoVisu==="mes"&&(()=>{
           // CORREÇÃO: guarda r?.professor + NÃO desestrutura no .map() (era o bug principal)
           const ehMeuMes=(r)=>r.professorId===usuario.uid||r.professor===usuario.nome;
@@ -1574,10 +1574,10 @@ function ProfessorView({ usuario }) {
           );
         })()}
 
-        {/* Modo AGENDA */}
+        
         {modoCard==="agenda"&&(
           <div className="fade-in">
-            {/* Filtros da agenda */}
+            
             <div style={{ display:"flex", gap:8, flexWrap:"wrap", alignItems:"center", padding:"10px 14px", background:"#1a6b47", borderBottom:`1px solid ${C.border}`, marginBottom:14, borderRadius:"10px 10px 0 0" }}>
               <div style={{ display:"flex", background:"rgba(0,0,0,.2)", borderRadius:8, padding:2 }}>
                 {[{id:"meus",label:"Meus"},{id:"todos",label:"Todos"}].map(op=>(
@@ -1610,7 +1610,7 @@ function ProfessorView({ usuario }) {
               <p style={{ fontSize:13, color:C.textMuted, textAlign:"center", padding:"24px 0" }}>Nenhum agendamento encontrado.</p>
             ):(
               <>
-                {/* Seção de pendentes no topo */}
+                
                 {pendentes.length>0&&(
                   <div style={{ background:C.amberBg, border:`1.5px solid ${C.amberBorder}`, borderRadius:12, padding:"14px 16px", marginBottom:16 }}>
                     <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
@@ -1658,13 +1658,14 @@ function ProfessorView({ usuario }) {
             )}
           </div>
         )}
-        </div>{/* fim corpo branco */}
+        </div>
         </>
-        )}{/* fim diaMesSel ternário */}
+        )}
       </div>
 
       </div>
 
+      
       {modoCard==="calendario"&&futuras.length>0&&(
         <div style={{ marginBottom:20, background:C.surface, borderRadius:12, border:`1px solid ${C.border}`, overflow:"hidden" }}>
           <div style={{ padding:"10px 16px", borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
@@ -1692,7 +1693,7 @@ function ProfessorView({ usuario }) {
         </div>
       )}
 
-      {/* Seletor de espaço */}
+      
       <div id="seletor-espaco" style={{ marginBottom:espacoSel?14:0 }}>
         {!espacoSel ? (
           <Field label="Selecione o espaço / equipamento" required>
@@ -1712,14 +1713,14 @@ function ProfessorView({ usuario }) {
         )}
       </div>
 
-      {/* Calendário mensal de seleção */}
+      
       {espacoSel&&!dataSel&&(
         <div className="fade-in" style={{ marginTop:14 }}>
           <CalendarioMensal reservasPorData={reservasPorData} onSelectDia={(d)=>agendarDia(d)} dataSelecionada={dataSel} />
         </div>
       )}
 
-      {/* Formulário multi-agendamento */}
+      
       {espacoSel&&dataSel&&(
         <div className="fade-in" style={{ marginTop:14 }}>
           {eDiaUrgente(dataSel)&&(
@@ -1998,7 +1999,7 @@ function AdminView() {
     <div style={{ maxWidth:1040, margin:"0 auto", padding:"24px 16px" }}>
       {editandoReserva&&<ModalEdicao reserva={editandoReserva} isAdmin onClose={()=>setEditandoReserva(null)} onSave={()=>setEditandoReserva(null)} />}
 
-      {/* Header */}
+      
       <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", flexWrap:"wrap", gap:12, marginBottom:20 }}>
         <div>
           <h1 style={{ fontSize:22, fontWeight:800, color:C.navy }}>Painel Administrativo</h1>
@@ -2006,7 +2007,7 @@ function AdminView() {
             {carregando?"Carregando...":`${reservas.length} reserva${reservas.length!==1?"s":""} · ${usuarios.length} professor${usuarios.length!==1?"es":""} ativos`}
           </p>
         </div>
-        {/* Toggle Calendário / Agenda - no header */}
+        
         <div style={{ display:"flex", background:C.surface, borderRadius:10, padding:3, border:`1px solid ${C.border}`, gap:2, alignSelf:"center" }}>
           {[{id:"calendario",label:"📅 Calendário"},{id:"agenda",label:"☰ Agenda"}].map(op=>(
             <button key={op.id} onClick={()=>setModoVisu(op.id)} style={{ padding:"7px 20px", borderRadius:8, border:"none", background:modoVisu===op.id?C.navy:"transparent", color:modoVisu===op.id?"#fff":C.textMuted, fontWeight:700, fontSize:13, cursor:"pointer", transition:"all .15s" }}>{op.label}</button>
@@ -2014,7 +2015,7 @@ function AdminView() {
         </div>
       </div>
 
-      {/* Banner urgentes */}
+      
       {urgentes.length>0&&(
         <div style={{ background:"linear-gradient(135deg,#f97316,#ea580c)", borderRadius:14, padding:"14px 18px", marginBottom:18, display:"flex", alignItems:"center", gap:14, boxShadow:"0 4px 16px rgba(249,115,22,.3)" }}>
           <div style={{ width:44,height:44,borderRadius:12,background:"rgba(255,255,255,.2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0 }}>⚡</div>
@@ -2028,7 +2029,7 @@ function AdminView() {
         </div>
       )}
 
-      {/* KPIs */}
+      
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))", gap:10, marginBottom:20 }}>
         {kpis.map(k=>(
           <div key={k.label} className="kpi-hover" style={{ background:k.bg, borderRadius:12, padding:"14px 16px" }}>
@@ -2038,7 +2039,7 @@ function AdminView() {
         ))}
       </div>
 
-      {/* -- FILTROS (sempre visíveis) -- */}
+      
       <div style={{ background:C.surface, borderRadius:12, border:`1px solid ${C.border}`, padding:"12px 16px", marginBottom:20 }}>
         <div style={{ display:"flex", gap:8, flexWrap:"wrap", alignItems:"center" }}>
           <span style={{ fontSize:11, fontWeight:700, color:C.textMuted, textTransform:"uppercase", letterSpacing:".4px", whiteSpace:"nowrap" }}>Filtrar:</span>
@@ -2080,12 +2081,10 @@ function AdminView() {
         </div>
       </div>
 
-      {/* ==============================================
-          MODO CALENDÁRIO (default)
-      ============================================== */}
+      
       {modoVisu==="calendario"&&(
         <div className="fade-in">
-          {/* Cabeçalho do mês */}
+          
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14, flexWrap:"wrap", gap:10 }}>
             <div style={{ display:"flex", alignItems:"center", gap:10 }}>
               <button onClick={()=>navMes(-1)} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, width:34, height:34, cursor:"pointer", color:C.textMid, fontSize:16, display:"flex", alignItems:"center", justifyContent:"center" }}>‹</button>
@@ -2099,13 +2098,13 @@ function AdminView() {
           </div>
 
           <div style={{ background:C.surface, borderRadius:16, border:`1px solid ${C.border}`, overflow:"hidden", boxShadow:C.cardShadow }}>
-            {/* Dias da semana */}
+            
             <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", borderBottom:`2px solid ${C.border}` }}>
               {["Dom.","Seg.","Ter.","Qua.","Qui.","Sexta","Sáb."].map((d,i)=>(
                 <div key={d} style={{ padding:"10px 0", textAlign:"center", fontSize:11, fontWeight:700, color:i===0||i===6?"#ef4444":C.textMuted, letterSpacing:".3px", textTransform:"uppercase" }}>{d}</div>
               ))}
             </div>
-            {/* Células */}
+            
             <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)" }}>
               {cells.map((d,i)=>{
                 if (!d) return <div key={i} style={{ minHeight:90, borderRight:`1px solid ${C.borderLight}`, borderBottom:`1px solid ${C.borderLight}` }} />;
@@ -2120,7 +2119,7 @@ function AdminView() {
                 const naoLetivoAdmin=!isDiaLetivo(dateStr)&&!isPast&&!isFimSemana;
                 return (
                   <div key={i} onClick={()=>setDiaSel(isSel?null:dateStr)} style={{ minHeight:90, borderRight:`1px solid ${C.borderLight}`, borderBottom:`1px solid ${C.borderLight}`, padding:"6px 8px", cursor:"pointer", background:isSel?"rgba(26,107,71,.08)":isHoje?"rgba(26,107,71,.04)":naoLetivoAdmin?"rgba(239,68,68,.04)":isPast?"rgba(0,0,0,.015)":"transparent", transition:"background .15s", position:"relative" }}>
-                    {/* Número do dia */}
+                    
                     <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:4 }}>
                       <span style={{ fontSize:13.5, fontWeight:isHoje?900:500, color:isSel?"#40b07a":isHoje?"#40b07a":isPast?C.textMuted:naoLetivoAdmin?"#ef4444":isFimSemana?"#ef4444":C.navy, width:26, height:26, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", background:isHoje?"rgba(26,107,71,.15)":naoLetivoAdmin?"rgba(239,68,68,.12)":"transparent" }}>{d}</span>
                       <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:1 }}>
@@ -2128,7 +2127,7 @@ function AdminView() {
                         {rsdia.length>0&&<span style={{ fontSize:10, fontWeight:700, color:urgDia.length>0?"#c2410c":pendDia.length>0?C.amber:C.green, background:urgDia.length>0?"#fff7ed":pendDia.length>0?C.amberBg:C.greenBg, borderRadius:8, padding:"1px 5px" }}>{rsdia.length}</span>}
                       </div>
                     </div>
-                    {/* Chips de reservas */}
+                    
                     <div style={{ display:"flex", flexDirection:"column", gap:2 }}>
                       {urgDia.slice(0,2).map(r=>(
                         <div key={r.id} style={{ background:"#fff7ed", border:"1px solid #f97316", borderRadius:4, padding:"2px 5px", fontSize:9.5, fontWeight:700, color:"#c2410c", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
@@ -2153,7 +2152,7 @@ function AdminView() {
             </div>
           </div>
 
-          {/* Legenda */}
+          
           <div style={{ display:"flex", gap:16, marginTop:10, flexWrap:"wrap", alignItems:"center" }}>
             {[{label:"Urgente",bg:"#fff7ed",border:"#f97316",c:"#c2410c"},{label:"Pendente",bg:C.amberBg,border:C.amberBorder,c:C.amber},{label:"Confirmado",bg:C.greenBg,border:C.greenBorder,c:C.green}].map(l=>(
               <div key={l.label} style={{ display:"flex", alignItems:"center", gap:5 }}>
@@ -2164,7 +2163,7 @@ function AdminView() {
             <span style={{ marginLeft:"auto", fontSize:11, color:C.textMuted }}>Clique no dia para ver detalhes</span>
           </div>
 
-          {/* Painel lateral do dia selecionado */}
+          
           {diaSel&&(
             <div className="fade-in" style={{ marginTop:16, background:C.surface, borderRadius:14, border:`1px solid ${C.border}`, overflow:"hidden", boxShadow:C.cardShadow }}>
               <div style={{ background:`linear-gradient(135deg,#1a6b47,#0f4c2b)`, padding:"12px 18px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
@@ -2186,19 +2185,17 @@ function AdminView() {
         </div>
       )}
 
-      {/* ==============================================
-          MODO AGENDA (lista)
-      ============================================== */}
+      
       {modoVisu==="agenda"&&(
         <div className="fade-in">
-          {/* Sub-abas */}
+          
           <div style={{ display:"flex", gap:2, marginBottom:18, background:C.surface, borderRadius:10, padding:4, border:`1px solid ${C.border}`, width:"fit-content" }}>
             {[{id:"reservas",label:"📋 Reservas"},{id:"espacos",label:"🏛️ Por Espaço"},{id:"turma",label:"🎓 Por Turma"}].map(t=>(
               <button key={t.id} onClick={()=>setAbaAdmin(t.id)} style={{ padding:"7px 15px", borderRadius:7, border:"none", background:abaAdmin===t.id?C.navy:"transparent", color:abaAdmin===t.id?"#fff":C.textMuted, fontSize:12.5, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", transition:"all .15s" }}>{t.label}</button>
             ))}
           </div>
 
-          {/* Sub-aba: Reservas */}
+          
           {abaAdmin==="reservas"&&(
             <div>
               {urgentes.length>0&&!(filtroStatus&&filtroStatus!=="pendente")&&(
@@ -2259,7 +2256,7 @@ function AdminView() {
             </div>
           )}
 
-          {/* Sub-aba: Por Espaço */}
+          
           {abaAdmin==="espacos"&&(
             <div>
               {ESPACOS.filter(esp=>!filtroEspaco||esp.nome===filtroEspaco).map(esp=>{
@@ -2302,7 +2299,7 @@ function AdminView() {
             </div>
           )}
 
-          {/* Sub-aba: Por Turma */}
+          
           {abaAdmin==="turma"&&(
             <div>
               {Object.keys(turmasMap).length===0&&<p style={{ textAlign:"center",padding:"32px",color:C.textMuted,fontSize:13 }}>Nenhuma reserva encontrada.</p>}
