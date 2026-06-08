@@ -628,8 +628,8 @@ function renderProfAgendar(){
     const eo=ESPACOS.find(e=>e.nome===m.espaco);
     const bVal=b=>b.horario&&b.turma&&b.conteudo&&(eo?.tipo!=="laboratorio"||b.laboratorista);
     const ultVal=bVal(ult),todosVal=m.blocos.every(bVal);
-    if(m.blocos.length<HORARIOS.length)html+=`<button onclick="maAddBloco()" ${!ultVal?"disabled":""} style="${btn(ultVal?"success":"ghost",!ultVal)};width:100%;margin-top:10px;padding:11px;border:2px dashed ${ultVal?"#40b07a":"#cbd5e1"}">+ Agendar outra turma neste dia</button>`;
-    html+=`<button onclick="maConfirmar()" ${!todosVal?"disabled":""} style="${btn("success",!todosVal)};width:100%;margin-top:14px;padding:14px;font-size:15px;border-radius:12px">${todosVal?`Confirmar ${m.blocos.length} agendamento${m.blocos.length>1?"s":""}`:"Preencha todos os campos"}</button>`;
+    if(m.blocos.length<HORARIOS.length)html+=`<button id="btn-add-inline" onclick="maAddBloco()" ${!ultVal?"disabled":""} style="${btn(ultVal?"success":"ghost",!ultVal)};width:100%;margin-top:10px;padding:11px;border:2px dashed ${ultVal?"#40b07a":"#cbd5e1"}">+ Agendar outra turma neste dia</button>`;
+    html+=`<button id="btn-conf-inline" onclick="maConfirmar()" ${!todosVal?"disabled":""} style="${btn("success",!todosVal)};width:100%;margin-top:14px;padding:14px;font-size:15px;border-radius:12px">${todosVal?`Confirmar ${m.blocos.length} agendamento${m.blocos.length>1?"s":""}`:"Preencha todos os campos"}</button>`;
   }
 
   html+=`</div>`;
@@ -764,11 +764,11 @@ function maBlocoHTML(b,i){
     </div>
     <div style="display:grid;gap:13px">
       <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Horário *</label>${slots}</div>
-      ${isEquip?`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Quantidade (máx ${eo.estoque}) *</label><br><input type="number" min="1" max="${eo.estoque}" value="${b.quantidade||1}" onchange="maSetBloco(${i},'quantidade',this.value)" style="${inp()};width:140px;margin-top:5px"></div>`:""}
+      ${isEquip?`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Quantidade (máx ${eo.estoque}) *</label><br><input type="number" min="1" max="${eo.estoque}" value="${b.quantidade||1}" oninput="maSetBlocoRe(${i},'quantidade',this.value)" style="${inp()};width:140px;margin-top:5px"></div>`:""}
       ${isLab?`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Laboratorista? *</label><div style="display:flex;gap:20px;margin-top:4px">${["Sim","Não"].map(op=>`<label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13.5px"><input type="radio" name="lab${i}" value="${op}" ${b.laboratorista===op?"checked":""} onchange="maSetBloco(${i},'laboratorista','${op}')">${op}</label>`).join("")}</div></div>`:""}
-      <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Turma *</label><br><select onchange="maSetBloco(${i},'turma',this.value)" style="${sel()};margin-top:5px"><option value="">Selecione...</option><optgroup label="Anos Iniciais">${TURMAS.filter(t=>parseInt(t)<=5).map(t=>`<option ${b.turma===t?"selected":""}>${t}</option>`).join("")}</optgroup><optgroup label="Anos Finais">${TURMAS.filter(t=>parseInt(t)>=6).map(t=>`<option ${b.turma===t?"selected":""}>${t}</option>`).join("")}</optgroup></select></div>
-      <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Conteúdo da Aula *</label><br><textarea onchange="maSetBloco(${i},'conteudo',this.value)" rows="2" placeholder="Descreva o conteúdo..." style="${inp()};resize:vertical;line-height:1.6;margin-top:5px">${b.conteudo}</textarea></div>
-      <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Páginas do Livro</label><br><input value="${b.paginas}" onchange="maSetBloco(${i},'paginas',this.value)" placeholder="Ex: pp. 45-62" style="${inp()};margin-top:5px"></div>
+      <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Turma *</label><br><select onchange="maSetBlocoRe(${i},'turma',this.value)" style="${sel()};margin-top:5px"><option value="">Selecione...</option><optgroup label="Anos Iniciais">${TURMAS.filter(t=>parseInt(t)<=5).map(t=>`<option ${b.turma===t?"selected":""}>${t}</option>`).join("")}</optgroup><optgroup label="Anos Finais">${TURMAS.filter(t=>parseInt(t)>=6).map(t=>`<option ${b.turma===t?"selected":""}>${t}</option>`).join("")}</optgroup></select></div>
+      <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Conteúdo da Aula *</label><br><textarea oninput="maSetBlocoRe(${i},'conteudo',this.value)" rows="2" placeholder="Descreva o conteúdo..." style="${inp()};resize:vertical;line-height:1.6;margin-top:5px">${b.conteudo}</textarea></div>
+      <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Páginas do Livro</label><br><input value="${b.paginas}" oninput="maSetBlocoRe(${i},'paginas',this.value)" placeholder="Ex: pp. 45-62" style="${inp()};margin-top:5px"></div>
     </div>
   </div>`;
 }
@@ -804,6 +804,19 @@ window.maEspaco=v=>{
 window.maBack=()=>{if(_MA.step===3){_MA.data="";_MA.blocos=[bVazio()];}else if(_MA.step===2)_MA.espaco="";_MA.step--;if(_P.modoProf==="agendar"){re();}else{renderMA();}};
 window.maSetHorario=(i,h)=>{_MA.blocos[i].horario=h;if(_P.modoProf==="agendar"){re();}else{renderMA();}};
 window.maSetBloco=(i,k,v)=>{_MA.blocos[i][k]=v;};
+window.maSetBlocoRe=(i,k,v)=>{
+  _MA.blocos[i][k]=v;
+  // Revalidar sem re-renderizar tudo — só atualizar botões de confirmar
+  const eo=ESPACOS.find(e=>e.nome===_MA.espaco);
+  const bVal=b=>b.horario&&b.turma&&b.conteudo&&(eo?.tipo!=="laboratorio"||b.laboratorista);
+  const todosVal=_MA.blocos.every(bVal);
+  const ultVal=bVal(_MA.blocos[_MA.blocos.length-1]);
+  // Atualizar botão confirmar
+  const btnConf=document.getElementById("btn-conf-inline");
+  if(btnConf){btnConf.disabled=!todosVal;btnConf.style.background=todosVal?"#40b07a":"#cbd5e1";btnConf.style.color=todosVal?"#fff":"#94a3b8";btnConf.textContent=todosVal?`Confirmar ${_MA.blocos.length} agendamento${_MA.blocos.length>1?"s":""}`:"Preencha todos os campos";}
+  const btnAdd=document.getElementById("btn-add-inline");
+  if(btnAdd){btnAdd.disabled=!ultVal;btnAdd.style.borderColor=ultVal?"#40b07a":"#cbd5e1";btnAdd.style.color=ultVal?"#40b07a":"#cbd5e1";}
+};
 window.maAddBloco=()=>{_MA.blocos.push(bVazio());if(_P.modoProf==="agendar"){re();}else{renderMA();}};
 window.maRemBloco=i=>{_MA.blocos.splice(i,1);if(_P.modoProf==="agendar"){re();}else{renderMA();}};
 window.maConfirmar=()=>{_MA.resumo=true;if(_P.modoProf==="agendar"){re();}else{renderMA();}};
