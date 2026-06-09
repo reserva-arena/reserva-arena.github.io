@@ -492,13 +492,13 @@ window.doSignOut=()=>signOut(auth);
 window.selecionarData=function(data){
   if(!isDiaLetivo(data)){alert("Este dia não é letivo.");return;}
   _MA.data=data;
-  // Se espaço já escolhido, vai para step 3; senão step 1 para escolher espaço
   if(_MA.espaco){
     _MA.step=3;
     _MA.blocos=[bVazio()];
   } else {
     _MA.step=1;
   }
+  console.log("[selecionarData] data="+data+" espaco="+_MA.espaco+" step="+_MA.step);
   if(_P.modoProf==="agendar"){re();}else{renderMA();}
 };
 window.navCalAgendar=function(dir){
@@ -1064,13 +1064,13 @@ function renderMAResumo(){
 
 window.maEspaco=v=>{
   _MA.espaco = (typeof v==="number"||(!isNaN(v)&&v!=="")) ? ESPACOS[parseInt(v)].nome : v;
-  // Se data já definida (veio do clique no dia), vai direto para step 3
   if(_MA.data){
     _MA.step=3;
     _MA.blocos=[bVazio()];
   } else {
-    _MA.step=2; // vai para calendário escolher data
+    _MA.step=2;
   }
+  console.log("[maEspaco] espaco="+_MA.espaco+" data="+_MA.data+" step="+_MA.step);
   if(_P.modoProf==="agendar"){re();}else{renderMA();}
 };
 window.maBack=()=>{
