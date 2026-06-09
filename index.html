@@ -435,6 +435,10 @@ function renderApp(){
   isAdmin?bindAdmin():bindProf();
 }
 window.doSignOut=()=>signOut(auth);
+window.maVoltarRevisao=()=>{
+  _MA.resumo=false;
+  if(_P.modoProf==="agendar"){re();}else{renderMA();}
+};
 window.setBibAV=v=>{_MA.bibAV=v;atualizarBotoesAgendar();re();};
 window.irInicio=()=>{
   _P.modoProf="ver";_P.modoCard="calendario";_P.modoVisu="semana";
@@ -948,7 +952,7 @@ function renderMAResumo(){
   });
   html+=`</div>`;
   if(precisaCiencia)html+=`<label style="display:flex;align-items:flex-start;gap:10px;margin-bottom:18px;cursor:pointer;padding:12px 14px;background:${c.surface};border:1.5px solid ${c.border};border-radius:10px"><input type="checkbox" id="chk-ciente" onchange="cienteChanged(this.checked)" style="width:18px;height:18px;margin-top:1px;accent-color:#1a6b47;flex-shrink:0;cursor:pointer"><span style="font-size:12px;color:${c.navy};line-height:1.5">${fimSem?"Estou ciente: agendamento em fim de semana fica pendente até aprovação do administrador.":"Estou ciente de que este agendamento tem menos de 24h. Entrarei em contato com o T.E. para garantir disponibilidade."}</span></label>`;
-  html+=`<div style="display:flex;gap:10px"><button onclick="_MA.resumo=false;renderMA()" style="${btn("ghost")};flex:1;padding:11px">← Revisar</button><button id="btn-conf" onclick="if(!this.disabled)maSalvar()" style="flex:2;padding:11px;font-size:13.5px;border-radius:8px;border:none;font-weight:700;font-family:inherit;cursor:${precisaCiencia?'not-allowed':'pointer'};background:${precisaCiencia?'#cbd5e1':'#1a6b47'};color:${precisaCiencia?'#94a3b8':'#fff'}" ${precisaCiencia?"data-needs-ciente=true":""}>${m.salvando?"Salvando...":"✓ Confirmar"}</button></div></div>`;
+  html+=`<div style="display:flex;gap:10px"><button onclick="maVoltarRevisao()" style="${btn("ghost")};flex:1;padding:11px">✏️ Editar</button><button id="btn-conf" onclick="if(!this.disabled)maSalvar()" style="flex:2;padding:11px;font-size:13.5px;border-radius:8px;border:none;font-weight:700;font-family:inherit;cursor:${precisaCiencia?'not-allowed':'pointer'};background:${precisaCiencia?'#cbd5e1':'#1a6b47'};color:${precisaCiencia?'#94a3b8':'#fff'}" ${precisaCiencia?"data-needs-ciente=true":""}>${m.salvando?"Salvando...":"✓ Confirmar"}</button></div></div>`;
   return html;
 }
 
@@ -1009,7 +1013,8 @@ window.maAddBloco=()=>{_MA.blocos.push(bVazio());if(_P.modoProf==="agendar"){re(
 window.maRemBloco=i=>{_MA.blocos.splice(i,1);if(_P.modoProf==="agendar"){re();}else{renderMA();}};
 window.maConfirmar=()=>{_MA.resumo=true;if(_P.modoProf==="agendar"){re();}else{renderMA();}};
 window.maSalvar=async()=>{
-  _MA.salvando=true;_MA.erro="";renderMA();
+  _MA.salvando=true;_MA.erro="";
+  if(_P.modoProf==="agendar"){re();}else{renderMA();}
   const{espaco,data,blocos}=_MA;
   try{
     for(const b of blocos){
@@ -1026,6 +1031,28 @@ window.maSalvar=async()=>{
       const st=(urg||dow===0||dow===6)?"pendente":"confirmado";
       if(st==="pendente")algPend=true;
       await addDoc(collection(db,"reservas"),{professor:_usuario.nome,professorId:_usuario.uid,professorEmail:_usuario.email,turma:b.turma,espaco,data,horario:b.horario,conteudo:b.conteudo,paginas:b.paginas||"",laboratorista:b.laboratorista||"",quantidade:eo?.tipo==="equipamento"?Number(b.quantidade):null,status:st,criadoEm:Timestamp.now(),precisaFoto:b.precisaFoto||false,observacoes:b.observacoes||"",localMontagem:b.localMontagem||"",microfones:Number(b.microfones)||0,caixasom:Number(b.caixasom)||0,projetor:Number(b.projetor)||0});
+    }
+    // Biblioteca + bibAV=true: criar reserva de A/V no mesmo horário
+    if(espaco==="Biblioteca"&&_MA.bibAV===true){
+      for(const b of blocos){
+        const avSnap=await getDocs(query(collection(db,"reservas"),where("espaco","==","Áudio/Visual"),where("data","==",data),where("horario","==",b.horario)));
+        const avOcup=avSnap.docs.find(d=>d.data()?.status!=="recusado");
+        if(!avOcup){
+          const[a,m,d2]=data.split("-").map(Number);
+          const dow=new Date(Date.UTC(a,m-1,d2)).getUTCDay();
+          const urg=isUrgente(data,b.horario);
+          const st=(urg||dow===0||dow===6)?"pendente":"confirmado";
+          await addDoc(collection(db,"reservas"),{
+            professor:_usuario.nome,professorId:_usuario.uid,professorEmail:_usuario.email,
+            turma:b.turma,espaco:"Áudio/Visual",data,horario:b.horario,
+            conteudo:"A/V vinculado à Biblioteca — "+b.conteudo,
+            localMontagem:"Biblioteca",observacoes:"Agendado automaticamente junto com a Biblioteca",
+            status:st,criadoEm:Timestamp.now(),
+            precisaFoto:false,paginas:"",laboratorista:"",quantidade:null,
+            microfones:0,caixasom:0,projetor:0
+          });
+        }
+      }
     }
     _MA.sucesso=algPend?"pendente":"confirmado";_MA.salvando=false;if(_P.modoProf==="agendar"){re();}else{renderMA();};
   }catch(e){_MA.erro="Erro ao salvar. Tente novamente.";_MA.salvando=false;_MA.resumo=false;if(_P.modoProf==="agendar"){re();}else{renderMA();};}
@@ -1256,7 +1283,7 @@ function renderAdminView(){
     }
 
     if(_A.aba==="fotos"){
-      const comFoto=filtradas.filter(r=>r.precisaFoto&&(_A.historico||r.data>=h)).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
+      const comFoto=_todas.filter(r=>r.precisaFoto&&r.status!=="recusado"&&(_A.historico||r.data>=h)).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
       if(!comFoto.length)html+=`<div style="text-align:center;padding:32px;color:${c.textMuted}"><p style="font-size:28px">📷</p><p style="margin-top:8px">Nenhuma solicitação de foto.</p></div>`;
       else{
         const pd={};comFoto.forEach(r=>{if(!pd[r.data])pd[r.data]=[];pd[r.data].push(r);});
@@ -1305,6 +1332,8 @@ function admRow(r,showDate=false){
       <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
         ${badge(r.status)}
         ${urg&&r.status==="pendente"?`<span style="font-size:10.5px;font-weight:800;background:#fff7ed;color:#c2410c;border:1.5px solid #f97316;padding:1px 8px;border-radius:10px">⚡ URGENTE</span>`:""}
+        ${r.precisaFoto?`<span style="font-size:10.5px;font-weight:800;background:#f5f3ff;color:#7c3aed;border:1.5px solid #ddd6fe;padding:1px 8px;border-radius:10px">📸 Foto</span>`:""}
+        ${r.espaco==="Áudio/Visual"||r.observacoes?.includes("automaticamente")?`<span style="font-size:10.5px;font-weight:800;background:#f0f9ff;color:#0369a1;border:1.5px solid #bae6fd;padding:1px 8px;border-radius:10px">🎙️ A/V</span>`:""}
         ${r.conteudo?`<span style="font-size:11.5px;color:${c.textMuted};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px">${r.conteudo}</span>`:""}
         ${ex?`<span style="font-size:11px;color:${c.textMuted};background:${c.bg};padding:1px 7px;border-radius:10px;border:1px solid ${c.border}">${ex}</span>`:""}
       </div>
