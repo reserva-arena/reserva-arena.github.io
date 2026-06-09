@@ -407,15 +407,16 @@ function renderProfessorView(){
   const c=C(),h=fmtHoje();
   if(!_P.semIni)_P.semIni=getSegunda(h);
   if(!_P.mesCal){const d=new Date();_P.mesCal={a:d.getFullYear(),m:d.getMonth()};}
-  const futuras=_minhas.filter(r=>r.data>=h&&r.status!=="recusado");
-  const passadas=_minhas.filter(r=>r.data<h&&r.status!=="recusado").reverse();
-  const pendentes=_minhas.filter(r=>r.status==="pendente");
+  const fonteBase=_P.filtroGrade==='todos'?_todas:_minhas;
+  const futuras=fonteBase.filter(r=>r.data>=h&&r.status!=="recusado");
+  const passadas=fonteBase.filter(r=>r.data<h&&r.status!=="recusado").reverse();
+  const pendentes=_minhas.filter(r=>r.status==="pendente"); // pendentes sempre meus
 
   let html=`<div>`;
 
   // KPIs removidos — substituídos pela linha de botões abaixo
   const semDias=Array.from({length:5},(_,i)=>addDias(getSegunda(h),i));
-  const semCount=_minhas.filter(r=>semDias.includes(r.data)&&r.status!=="recusado").length;
+  const semCount=fonteBase.filter(r=>semDias.includes(r.data)&&r.status!=="recusado").length;
 
   // Card principal
   html+=`<div style="background:${c.surface};border-radius:14px;border:1px solid ${c.border};overflow:hidden;margin-bottom:20px">`;
