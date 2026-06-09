@@ -272,46 +272,6 @@ function calMensalHTML(cid,ano,mes,porData,dataSel){
   </div>`;
 }
 
-// Calendário especial para o agendamento — usa selecionarData() direto
-function calAgendarHTML(ano,mes,porData,dataSel){
-  const c=C(),h=fmtHoje();
-  const primeiroDia=new Date(Date.UTC(ano,mes,1));
-  const diasNoMes=new Date(Date.UTC(ano,mes+1,0)).getUTCDate();
-  const inicioGrid=primeiroDia.getUTCDay();
-  const cells=[];for(let i=0;i<inicioGrid;i++)cells.push(null);for(let d=1;d<=diasNoMes;d++)cells.push(d);
-
-  let dias="";
-  cells.forEach((d,i)=>{
-    if(!d){dias+=`<div></div>`;return;}
-    const ds=`${ano}-${String(mes+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-    const isH=ds===h,isPast=ds<h,isSel=ds===dataSel,letivo=isDiaLetivo(ds);
-    const dow=new Date(Date.UTC(ano,mes,d)).getUTCDay(),isFim=dow===0||dow===6;
-    const nao=!letivo&&!isPast;
-    const bg=isSel?"#40b07a":isH?"rgba(26,107,71,.12)":nao?"rgba(239,68,68,.08)":"transparent";
-    const col=isSel?"#fff":isPast?"#cbd5e1":nao?"#fca5a5":isFim?"#ef4444":c.navy;
-    const temRes=(porData[ds]||[]).length>0;
-    const disabled=isPast||!letivo;
-    dias+=`<button ${disabled?"":`onclick="selecionarData('${ds}')"`} ${disabled?"disabled":""}
-      style="aspect-ratio:1;border-radius:8px;border:none;cursor:${disabled?"not-allowed":"pointer"};background:${bg};color:${col};font-weight:${isH||isSel?800:500};font-size:13.5px;position:relative;opacity:${isPast?.4:1};transition:all .15s;font-family:inherit">
-      ${d}${temRes&&!isSel?`<div style="position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:#40b07a"></div>`:""}
-    </button>`;
-  });
-
-  return`<div style="background:${c.surface};border-radius:16px;border:1px solid ${c.border};overflow:hidden">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid ${c.border}">
-      <button onclick="navCalAgendar(-1)" style="background:none;border:1px solid ${c.border};border-radius:8px;width:34px;height:34px;cursor:pointer;color:${c.textMid};font-size:16px;font-family:inherit">‹</button>
-      <div style="text-align:center"><p style="font-size:17px;font-weight:800;color:${c.navy}">${MESES[mes]}</p><p style="font-size:12px;color:${c.textMuted}">${ano}</p></div>
-      <button onclick="navCalAgendar(1)" style="background:none;border:1px solid ${c.border};border-radius:8px;width:34px;height:34px;cursor:pointer;color:${c.textMid};font-size:16px;font-family:inherit">›</button>
-    </div>
-    <div style="padding:12px 16px 16px">
-      <div style="display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:6px">
-        ${["D","S","T","Q","Q","S","S"].map((n,i)=>`<div style="text-align:center;font-size:10px;font-weight:700;color:${i===0||i===6?"#ef4444":c.textMuted};padding:4px 0">${n}</div>`).join("")}
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">${dias}</div>
-    </div>
-  </div>`;
-}
-
 // ─── ESTADO GLOBAL ────────────────────────────────────────────────────────────
 let _usuario=null,_todas=[],_minhas=[],_usuarios=[];
 let _unsub1=null,_unsub2=null,_unsub3=null;
@@ -405,44 +365,32 @@ window.recuperarSenha=async()=>{
 function renderFotografo(){
   const c=C(),h=fmtHoje();
   const comFoto=_todas.filter(r=>r.precisaFoto&&r.data>=h&&r.status!=="recusado").sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
-  $("app").innerHTML=`
-  <div style="min-height:100vh;background:${c.bg}" translate="no">
+  $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="no">
     <header style="background:${c.headerBg};border-bottom:1px solid ${c.border};padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100;box-shadow:0 1px 6px rgba(19,35,24,.07)">
       <div style="display:flex;align-items:center;gap:10px">${logoHTML(36)}<div><p style="font-size:13px;font-weight:800;color:${c.navy}">Solicitações de Foto</p><p style="font-size:10px;color:${c.textMuted}">Equipe de Fotografia</p></div></div>
       <div style="display:flex;align-items:center;gap:8px">${avatarHTML(_usuario?.nome,30,"purple")}<button onclick="toggleDark()" style="background:${_dark?"#f1f5f9":"#0f172a"};color:${_dark?"#0f172a":"#f1f5f9"};border:none;border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button><button onclick="doSignOut()" style="${btn("ghost","","sm")}">Sair</button></div>
     </header>
     <div style="max-width:700px;margin:0 auto;padding:20px 14px">
-      <div style="background:${c.surface};border-radius:14px;border:1px solid ${c.border};padding:16px 20px;margin-bottom:18px">
-        <p style="font-size:18px;font-weight:800;color:${c.navy};margin-bottom:4px">📸 Agenda de Fotografia</p>
-        <p style="font-size:13px;color:${c.textMuted}">${comFoto.length} agendamento${comFoto.length!==1?"s":""} com solicitação de foto</p>
-      </div>
-      ${!comFoto.length?`<div style="text-align:center;padding:40px;color:${c.textMuted}"><p style="font-size:32px;margin-bottom:12px">📷</p><p style="font-size:14px">Nenhuma solicitação de foto no momento.</p></div>`:
-        comFoto.map(r=>{
-          const[a,m,d]=r.data.split("-");
-          const isH=r.data===h;
-          return `<div style="background:${c.surface};border-radius:12px;border:1px solid ${c.border};padding:14px 18px;margin-bottom:10px;border-left:4px solid #7c3aed;display:flex;gap:14px;align-items:flex-start">
+      <div style="background:${c.surface};border-radius:14px;border:1px solid ${c.border};padding:16px 20px;margin-bottom:18px"><p style="font-size:18px;font-weight:800;color:${c.navy}">📸 Agenda de Fotografia</p><p style="font-size:13px;color:${c.textMuted};margin-top:4px">${comFoto.length} solicitação${comFoto.length!==1?"s":""} de foto</p></div>
+      ${!comFoto.length?`<div style="text-align:center;padding:40px;color:${c.textMuted}"><p style="font-size:32px;margin-bottom:12px">📷</p><p>Nenhuma solicitação no momento.</p></div>`:
+        comFoto.map(r=>{const[a,m2,d]=r.data.split("-");const isH=r.data===h;
+          return`<div style="background:${c.surface};border-radius:12px;border:1px solid #ddd6fe;padding:14px 18px;margin-bottom:10px;border-left:4px solid #7c3aed;display:flex;gap:14px;align-items:flex-start">
             <div style="text-align:center;min-width:52px;background:#f5f3ff;border-radius:8px;padding:6px 8px">
               <p style="font-size:11px;font-weight:700;color:#7c3aed;text-transform:uppercase">${["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"][new Date(r.data+"T12:00:00").getDay()]}</p>
               <p style="font-size:20px;font-weight:900;color:#7c3aed;line-height:1">${d}</p>
-              <p style="font-size:10px;color:#7c3aed">${m}/${a.slice(2)}</p>
+              <p style="font-size:10px;color:#7c3aed">${m2}/${a.slice(2)}</p>
             </div>
-            <div style="flex:1">
-              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
-                <span style="font-family:'DM Mono',monospace;font-weight:800;color:#7c3aed;font-size:14px">${r.horario}</span>
-                <span style="font-size:13px;font-weight:700;color:${c.navy}">${tipoIcon(ESPACOS.find(e=>e.nome===r.espaco)?.tipo,r.espaco)} ${r.espaco}</span>
-                ${isH?`<span style="background:#7c3aed;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">📌 Hoje</span>`:""}
-              </div>
-              <p style="font-size:12px;color:${c.textMid}">${r.professor} · ${r.turma}</p>
-              <p style="font-size:12px;color:${c.textMuted};margin-top:3px">${r.conteudo}</p>
-              ${r.observacoes?`<p style="font-size:11px;color:${c.textMuted};margin-top:3px;font-style:italic">💬 ${r.observacoes}</p>`:""}
+            <div style="flex:1"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+              <span style="font-family:'DM Mono',monospace;font-weight:800;color:#7c3aed;font-size:14px">${r.horario}</span>
+              <span style="font-size:13px;font-weight:700;color:${c.navy}">${tipoIcon(ESPACOS.find(e=>e.nome===r.espaco)?.tipo,r.espaco)} ${r.espaco}</span>
+              ${isH?`<span style="background:#7c3aed;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">📌 Hoje</span>`:""}
             </div>
-          </div>`;
-        }).join("")
-      }
+            <p style="font-size:12px;color:${c.textMid}">${r.professor} · ${r.turma}</p>
+            <p style="font-size:12px;color:${c.textMuted};margin-top:3px">${r.conteudo}</p>
+            </div>
+          </div>`;}).join("")}
     </div>
-    <footer style="margin-top:40px;padding:14px 20px;border-top:1px solid ${c.border};background:${c.surface};text-align:center">
-      <p style="font-size:11px;color:${c.textMuted}">Colégio Arena · Reserva Arena v1.5</p>
-    </footer>
+    <footer style="margin-top:40px;padding:14px 20px;border-top:1px solid ${c.border};background:${c.surface};text-align:center"><p style="font-size:11px;color:${c.textMuted}">Colégio Arena · Reserva Arena v1.5</p></footer>
   </div>`;
 }
 
@@ -465,6 +413,7 @@ function renderApp(){
         
       </div>
       <div style="display:flex;align-items:center;gap:8px">
+        ${!isAdmin?`<button onclick="irInicio()" title="Início" style="background:${c.surface};border:1.5px solid ${c.border};border-radius:50%;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">🏠</button>`:""}
         ${avatarHTML(_usuario?.nome,30,isAdmin?"purple":"navy")}
         <div style="line-height:1.2"><p style="font-size:13px;font-weight:700;color:${c.navy}">${_usuario?.nome||""}</p><p style="font-size:10px;color:${isAdmin?"#6d28d9":c.blueMid};font-weight:700;text-transform:uppercase">${_usuario?.perfil||""}</p></div>
         <button onclick="toggleDark()" style="background:${_dark?"#f1f5f9":"#0f172a"};color:${_dark?"#0f172a":"#f1f5f9"};border:none;border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button>
@@ -477,7 +426,6 @@ function renderApp(){
     <footer style="margin-top:40px;padding:16px 24px;border-top:1px solid ${c.border};background:${c.surface};text-align:center">
       <p style="font-size:11px;color:${c.textMuted}">Colégio Arena · Reserva Arena v1.5 · Dev: Luciano Galdino de Melo</p>
     </footer>
-    <button onclick="irInicio()" title="Ir para o início" style="position:fixed;bottom:28px;left:16px;z-index:997;background:${c.surface};border:1.5px solid ${c.border};border-radius:50%;width:44px;height:44px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:${c.cardShadow}">🏠</button>
     ${modalEdicaoHTML()}
     ${modalAgendarHTML()}
     ${modalGerenciarHTML()}
@@ -487,33 +435,10 @@ function renderApp(){
   isAdmin?bindAdmin():bindProf();
 }
 window.doSignOut=()=>signOut(auth);
-
-// Função global para selecionar data no agendamento — nunca sobrescrita
-window.selecionarData=function(data){
-  if(!isDiaLetivo(data)){alert("Este dia não é letivo.");return;}
-  _MA.data=data;
-  if(_MA.espaco){
-    _MA.step=3;
-    _MA.blocos=[bVazio()];
-  } else {
-    _MA.step=1;
-  }
-  console.log("[selecionarData] data="+data+" espaco="+_MA.espaco+" step="+_MA.step);
-  if(_P.modoProf==="agendar"){re();}else{renderMA();}
-};
-window.navCalAgendar=function(dir){
-  let nm=_MA.calM+dir,na=_MA.calA;
-  if(nm>11){nm=0;na++;}
-  if(nm<0){nm=11;na--;}
-  _MA.calM=nm;_MA.calA=na;
-  if(_P.modoProf==="agendar"){re();}else{renderMA();}
-};
-window.setBibAV=v=>{_MA.bibAV=v;if(_P.modoProf==="agendar"){re();}else{renderMA();}};
 window.irInicio=()=>{
   _P.modoProf="ver";_P.modoCard="calendario";_P.modoVisu="semana";
   _P.semIni=getSegunda(fmtHoje());_P.diaSel=null;_P.filtroGrade="meus";
   _P.mostrarHistorico=false;_P.filtroPendente=false;
-  _MA={step:1,espaco:"",data:"",blocos:[bVazio()],resumo:false,salvando:false,sucesso:null,erro:"",calA:new Date().getFullYear(),calM:new Date().getMonth(),bibAV:null};
   window.scrollTo({top:0,behavior:"smooth"});
   re();
 };
@@ -683,14 +608,12 @@ function renderProfessorView(){
       });
     }
     if(passadas.length){
-      const btnHistId="btn-hist-prof-"+Date.now();
       html+=`<div style="margin-top:16px;border-top:1px solid ${c.borderLight};padding-top:12px">
-        <button id="${btnHistId}" onclick="_P.mostrarHistorico=!_P.mostrarHistorico;re()" style="display:flex;align-items:center;gap:8px;background:none;border:1px solid ${c.border};border-radius:8px;cursor:pointer;font-family:inherit;width:100%;padding:8px 12px">
-          <span style="font-size:12px;font-weight:700;color:${c.textMuted}">🕐 Histórico</span>
-          <span style="font-size:11px;color:${c.textMuted};background:${c.bg};padding:1px 8px;border-radius:10px">${passadas.length}</span>
-          <span style="font-size:12px;color:${c.textMuted};margin-left:auto">${_P.mostrarHistorico?"▲":"▼"}</span>
+        <button onclick="_P.mostrarHistorico=!_P.mostrarHistorico;re()" style="display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;font-family:inherit;width:100%;padding:4px 0">
+          <span style="font-size:11px;font-weight:700;color:${c.textMuted};text-transform:uppercase">🕐 Histórico (${passadas.length})</span>
+          <span style="font-size:12px;color:${c.textMuted}">${_P.mostrarHistorico?"▲ fechar":"▼ ver"}</span>
         </button>
-        ${_P.mostrarHistorico?`<div style="margin-top:8px">${passadas.slice(0,10).map(r=>profRRow(r)).join("")}</div>`:""}
+        ${_P.mostrarHistorico?passadas.slice(0,10).map(r=>profRRow(r)).join(""):""}
       </div>`;
     }
     html+=`</div>`;
@@ -761,15 +684,6 @@ function renderProfAgendar(){
   if(m.erro)html+=alertHTML("error",m.erro);
 
   if(m.step===1){
-    // Se data já definida (veio do clique no dia), mostrar banner
-    if(m.data){
-      const[a2,m2,d2]=m.data.split("-");
-      html+=`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#e0f2fe;border-radius:10px;margin-bottom:14px;border:1px solid #bae6fd">
-        <span style="font-size:18px">📅</span>
-        <span style="font-size:13px;font-weight:700;color:#0369a1">Data selecionada: ${d2}/${m2}/${a2}</span>
-        <button onclick="_MA.data='';re()" style="margin-left:auto;background:none;border:none;color:#0369a1;cursor:pointer;font-size:12px;font-family:inherit">Trocar data</button>
-      </div>`;
-    }
     ["espaco","laboratorio","equipamento","audiovisual"].forEach(tipo=>{
       const lbl={espaco:"🏛️ Espaços",laboratorio:"🔬 Laboratórios",equipamento:"💻 Equipamentos"}[tipo];
       html+=`<p style="font-size:11px;font-weight:700;color:${c.textMuted};text-transform:uppercase;margin:14px 0 8px">${lbl}</p><div style="display:grid;gap:8px">`;
@@ -784,9 +698,9 @@ function renderProfAgendar(){
   if(m.step===2){
     html+=`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:${c.greenBg};border-radius:10px;margin-bottom:16px;border:1px solid ${c.greenBorder}"><span style="font-size:18px">${tipoIcon(ESPACOS.find(e=>e.nome===m.espaco)?.tipo,m.espaco)}</span><span style="font-size:13px;font-weight:700;color:${c.green}">${m.espaco}</span><button onclick="maBack()" style="margin-left:auto;background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:12px;font-family:inherit">Trocar</button></div>`;
     const porData={};_todas.filter(r=>r.espaco===m.espaco&&r.status!=="recusado").forEach(r=>{if(!porData[r.data])porData[r.data]=[];porData[r.data].push(r);});
-    html+=calAgendarHTML(m.calA,m.calM,porData,m.data);
+    html+=calMensalHTML("pagin",m.calA,m.calM,porData,m.data);
     window._calClick=(cid,data)=>{
-      if(cid==="pagin"||cid==="agcal"){
+      if(cid==="pagin"){
         if(!isDiaLetivo(data)){alert("Este dia não é letivo.");return;}
         _MA.data=data;_MA.step=3;_MA.blocos=[bVazio()];re();
       } else if(cid==="ma"){
@@ -795,7 +709,7 @@ function renderProfAgendar(){
       } else {
         if(data>=fmtHoje()&&isDiaLetivo(data)&&_P.modoProf==="ver"){
           _P.modoProf="agendar";
-          _MA={step:1,espaco:"",data:data,blocos:[bVazio()],resumo:false,salvando:false,sucesso:null,erro:"",bibAV:null,calA:new Date().getFullYear(),calM:new Date().getMonth()};
+          _MA={step:1,espaco:"",data:data,blocos:[bVazio()],resumo:false,salvando:false,sucesso:null,erro:"",calA:new Date().getFullYear(),calM:new Date().getMonth()};
           re();
         } else {
           _P.diaSel=_P.diaSel===data?null:data;re();
@@ -803,7 +717,7 @@ function renderProfAgendar(){
       }
     };
     window._calNav=(cid,dir)=>{
-      if(cid==="pagin"||cid==="agcal"||cid==="ma"){
+      if(cid==="pagin"||cid==="ma"){
         let nm=_MA.calM+dir,na=_MA.calA;if(nm>11){nm=0;na++;}if(nm<0){nm=11;na--;}_MA.calM=nm;_MA.calA=na;re();
       } else {
         let nm=_P.mesCal.m+dir,na=_P.mesCal.a;if(nm>11){nm=0;na++;}if(nm<0){nm=11;na--;}_P.mesCal={a:na,m:nm};re();
@@ -816,26 +730,21 @@ function renderProfAgendar(){
     if(isDiaUrgente(m.data))html+=alertHTML("warning","⚠️ Menos de 24h de antecedência. Contate o T.E. para garantir disponibilidade.");
       if(m.espaco==="Biblioteca"){
         html+=`<div style="background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:10px;padding:12px 14px;margin-bottom:14px">
-          <p style="font-size:13px;font-weight:800;color:#0369a1;margin-bottom:8px">🎙️ Precisa de equipamentos de Áudio/Visual?</p>
-          <div style="display:flex;gap:8px;margin-bottom:8px">
-            <button onclick="setBibAV(true)" style="flex:1;padding:9px;border-radius:8px;border:2px solid ${_MA.bibAV===true?'#0369a1':'#bae6fd'};background:${_MA.bibAV===true?'#e0f2fe':'#fff'};font-weight:700;font-size:13px;cursor:pointer;color:#0369a1">✓ Sim</button>
-            <button onclick="setBibAV(false)" style="flex:1;padding:9px;border-radius:8px;border:2px solid ${_MA.bibAV===false?'#64748b':'#e2e8f0'};background:${_MA.bibAV===false?'#f1f5f9':'#fff'};font-weight:700;font-size:13px;cursor:pointer;color:#64748b">✕ Não</button>
+          <p style="font-size:13px;font-weight:800;color:#0369a1;margin-bottom:8px">🎙️ Precisa de Áudio/Visual na Biblioteca?</p>
+          <div style="display:flex;gap:8px;margin-bottom:6px">
+            <button onclick="_MA.bibAV=true;atualizarBotoesAgendar()" style="flex:1;padding:9px;border-radius:8px;border:2px solid ${_MA.bibAV===true?'#0369a1':'#bae6fd'};background:${_MA.bibAV===true?'#e0f2fe':'#fff'};font-weight:700;font-size:13px;cursor:pointer;color:#0369a1">✓ Sim</button>
+            <button onclick="_MA.bibAV=false;atualizarBotoesAgendar()" style="flex:1;padding:9px;border-radius:8px;border:2px solid ${_MA.bibAV===false?'#64748b':'#e2e8f0'};background:${_MA.bibAV===false?'#f1f5f9':'#fff'};font-weight:700;font-size:13px;cursor:pointer;color:#64748b">✕ Não</button>
           </div>
-          ${_MA.bibAV===true?"<p style=\"font-size:11px;color:#0369a1\">O Áudio/Visual será agendado automaticamente no mesmo horário, se disponível.</p>":""}
+          ${_MA.bibAV===true?"<p style=\"font-size:11px;color:#0369a1\">O Áudio/Visual será agendado automaticamente no mesmo horário.</p>":""}
         </div>`;
       }
     m.blocos.forEach((b,i)=>{html+=maBlocoHTML(b,i);});
     const ult=m.blocos[m.blocos.length-1];
     const eo=ESPACOS.find(e=>e.nome===m.espaco);
-    const bVal=b=>{
-    if(!b.horario||!b.turma||!b.conteudo)return false;
-    if(eo?.tipo==="laboratorio"&&!b.laboratorista)return false;
-    if(m.espaco==="Áudio/Visual"&&(!b.localMontagem||!b.observacoes))return false;
-    return true;
-  };
-    const ultVal=bVal(ult),todosVal=m.blocos.every(bVal)&&bibAvOk;
+    const bVal=b=>b.horario&&b.turma&&b.conteudo&&(eo?.tipo!=="laboratorio"||b.laboratorista);
+    const ultVal=bVal(ult),todosVal=m.blocos.every(bVal);
     if(m.blocos.length<HORARIOS.length)html+=`<button id="btn-add-inline" onclick="maAddBloco()" ${!ultVal?"disabled":""} style="${btn(ultVal?"success":"ghost",!ultVal)};width:100%;margin-top:10px;padding:11px;border:2px dashed ${ultVal?"#40b07a":"#cbd5e1"}">+ Agendar outra turma neste dia</button>`;
-    html+=`<button id="btn-conf-inline" onclick="maConfirmar()" ${!todosVal?"disabled":""} style="${btn("success",!todosVal)};width:100%;margin-top:14px;padding:14px;font-size:15px;border-radius:12px">${!bibAvOk?"Informe se precisa de Áudio/Visual":todosVal?`Confirmar ${m.blocos.length} agendamento${m.blocos.length>1?"s":""}`:"Preencha todos os campos"}</button>`;
+    html+=`<button id="btn-conf-inline" onclick="maConfirmar()" ${!todosVal?"disabled":""} style="${btn("success",!todosVal)};width:100%;margin-top:14px;padding:14px;font-size:15px;border-radius:12px">${todosVal?`Confirmar ${m.blocos.length} agendamento${m.blocos.length>1?"s":""}`:"Preencha todos os campos"}</button>`;
   }
 
   html+=`</div>`;
@@ -845,18 +754,7 @@ function renderProfAgendar(){
 }
 
 function bindProf(){
-  // Só redefine _calClick se não estiver no step 2 do agendar (calendário de seleção de data)
-  if(!(_P.modoProf==="agendar"&&_MA.step===2)){
-    window._calClick=(cid,data)=>{
-      if(data>=fmtHoje()&&isDiaLetivo(data)){
-        _P.modoProf="agendar";
-        _MA={step:1,espaco:"",data:data,blocos:[bVazio()],resumo:false,salvando:false,sucesso:null,erro:"",bibAV:null,calA:new Date().getFullYear(),calM:new Date().getMonth()};
-        re();
-      } else {
-        _P.diaSel=_P.diaSel===data?null:data;re();
-      }
-    };
-  }
+  // _calClick já definido em renderProfAgendar de forma unificada
 
   window._calNav=(cid,dir)=>{let nm=_P.mesCal.m+dir,na=_P.mesCal.a;if(nm>11){nm=0;na++;}if(nm<0){nm=11;na--;}_P.mesCal={a:na,m:nm};re();};
 }
@@ -883,7 +781,7 @@ window.pClicarDia=data=>{
   if(data>=fmtHoje()&&isDiaLetivo(data)){
     // Entra no modo agendar com data preenchida (pula para step 2 se espaco já selecionado ou step 1)
     _P.modoProf="agendar";
-    _MA={step:1,espaco:"",data:data,blocos:[bVazio()],resumo:false,salvando:false,sucesso:null,erro:"",bibAV:null,calA:new Date().getFullYear(),calM:new Date().getMonth()};
+    _MA={step:1,espaco:"",data:data,blocos:[bVazio()],resumo:false,salvando:false,sucesso:null,erro:"",calA:new Date().getFullYear(),calM:new Date().getMonth()};
     re();
   } else {
     _P.diaSel=_P.diaSel===data?null:data;re();
@@ -963,16 +861,11 @@ function renderMA(){
       m.blocos.forEach((b,i)=>{body+=maBlocoHTML(b,i);});
       const ult=m.blocos[m.blocos.length-1];
       const eo=ESPACOS.find(e=>e.nome===m.espaco);
-      const bVal=b=>{
-    if(!b.horario||!b.turma||!b.conteudo)return false;
-    if(eo?.tipo==="laboratorio"&&!b.laboratorista)return false;
-    if(m.espaco==="Áudio/Visual"&&(!b.localMontagem||!b.observacoes))return false;
-    return true;
-  };
+      const bVal=b=>b.horario&&b.turma&&b.conteudo&&(eo?.tipo!=="laboratorio"||b.laboratorista);
       const ultVal=bVal(ult);
       const todosVal=m.blocos.every(bVal);
       if(m.blocos.length<HORARIOS.length)body+=`<button onclick="maAddBloco()" ${!ultVal?"disabled":""} style="${btn(ultVal?"success":"ghost",!ultVal)};width:100%;margin-top:10px;padding:11px;border:2px dashed ${ultVal?"#40b07a":"#cbd5e1"}">+ Agendar outra turma neste dia</button>`;
-      body+=`<button onclick="maConfirmar()" ${!todosVal?"disabled":""} style="${btn("success",!todosVal)};width:100%;margin-top:14px;padding:14px;font-size:15px;border-radius:12px">${!bibAvOk?"Informe se precisa de Áudio/Visual":todosVal?`Confirmar ${m.blocos.length} agendamento${m.blocos.length>1?"s":""}`:"Preencha todos os campos"}</button>`;
+      body+=`<button onclick="maConfirmar()" ${!todosVal?"disabled":""} style="${btn("success",!todosVal)};width:100%;margin-top:14px;padding:14px;font-size:15px;border-radius:12px">${todosVal?`Confirmar ${m.blocos.length} agendamento${m.blocos.length>1?"s":""}`:"Preencha todos os campos"}</button>`;
     }
     body+=`</div>`;
   }
@@ -1004,19 +897,18 @@ function maBlocoHTML(b,i){
       <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Turma *</label><br><select onchange="maSetBlocoRe(${i},'turma',this.value)" style="${sel()};margin-top:5px"><option value="">Selecione...</option><optgroup label="Anos Iniciais">${TURMAS.filter(t=>parseInt(t)<=5).map(t=>`<option ${b.turma===t?"selected":""}>${t}</option>`).join("")}</optgroup><optgroup label="Anos Finais">${TURMAS.filter(t=>parseInt(t)>=6).map(t=>`<option ${b.turma===t?"selected":""}>${t}</option>`).join("")}</optgroup></select></div>
       <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Conteúdo da Aula *</label><br><textarea oninput="maSetBlocoRe(${i},'conteudo',this.value)" rows="2" placeholder="Descreva o conteúdo..." style="${inp()};resize:vertical;line-height:1.6;margin-top:5px">${b.conteudo}</textarea></div>
       <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Páginas do Livro</label><br><input value="${b.paginas}" oninput="maSetBlocoRe(${i},'paginas',this.value)" placeholder="Ex: pp. 45-62" style="${inp()};margin-top:5px"></div>
-      ${m.espaco==="Fazendinha"?`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Observações</label><br><textarea oninput="maSetBlocoRe(${i},'observacoes',this.value)" rows="2" placeholder="Ex: Piquenique com turma, necessita de área sombreada..." style="${inp()};resize:none;line-height:1.6;margin-top:5px">${b.observacoes||""}</textarea></div>`:""}
-      ${m.espaco==="Áudio/Visual"?`
-        <div style="background:${c.bg};border-radius:10px;padding:12px;border:1px solid ${c.border};display:grid;gap:12px">
-          <p style="font-size:12px;font-weight:700;color:${c.navy}">🎙️ Equipamentos necessários</p>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
-            ${[{k:"microfones",l:"🎤 Microfones"},{k:"caixasom",l:"🔊 Caixa de som"},{k:"projetor",l:"📽️ Projetor"}].map(eq=>`<div><label style="font-size:11px;font-weight:700;color:${c.textMuted};text-transform:uppercase">${eq.l}</label><br><input type="number" min="0" value="${b[eq.k]||0}" oninput="maSetBlocoRe(${i},'${eq.k}',this.value)" style="${inp()};width:100%;margin-top:5px;text-align:center"></div>`).join("")}
-          </div>
-          <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">📍 Local de montagem *</label><br><input value="${b.localMontagem||""}" oninput="maSetBlocoRe(${i},'localMontagem',this.value)" placeholder="Ex: Sala 302, Pátio principal, Auditório..." style="${inp()};margin-top:5px"></div>
-          <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">💬 Observações *</label><br><textarea oninput="maSetBlocoRe(${i},'observacoes',this.value)" rows="2" placeholder="Descreva como os equipamentos serão utilizados..." style="${inp()};resize:none;line-height:1.6;margin-top:5px">${b.observacoes||""}</textarea></div>
-        </div>`:""}
-      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:${c.greenBg};border-radius:8px;border:1px solid ${c.greenBorder};cursor:pointer" onclick="maSetBlocoRe(${i},'precisaFoto',!_MA.blocos[${i}].precisaFoto)">
-        <input type="checkbox" ${b.precisaFoto?"checked":""} onchange="maSetBlocoRe(${i},'precisaFoto',this.checked)" style="width:18px;height:18px;accent-color:#1a6b47;cursor:pointer;flex-shrink:0">
-        <div><p style="font-size:13px;font-weight:700;color:${c.navy}">📸 Solicitar fotógrafo</p><p style="font-size:11px;color:${c.textMuted}">A equipe de fotografia será notificada</p></div>
+      ${m.espaco==="Fazendinha"?`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Observações</label><br><textarea oninput="maSetBlocoRe(${i},'observacoes',this.value)" rows="2" placeholder="Ex: Piquenique, área sombreada necessária..." style="${inp()};resize:none;margin-top:5px">${b.observacoes||""}</textarea></div>`:""}
+      ${m.espaco==="Áudio/Visual"?`<div style="background:${c.bg};border-radius:10px;padding:12px;border:1px solid ${c.border};display:grid;gap:10px">
+        <p style="font-size:12px;font-weight:700;color:${c.navy}">🎙️ Equipamentos necessários</p>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+          ${[{k:"microfones",l:"🎤 Microfones"},{k:"caixasom",l:"🔊 Caixa de som"},{k:"projetor",l:"📽️ Projetor"}].map(eq=>`<div><label style="font-size:10px;font-weight:700;color:${c.textMuted};text-transform:uppercase">${eq.l}</label><br><input type="number" min="0" value="${b[eq.k]||0}" oninput="maSetBlocoRe(${i},'${eq.k}',this.value)" style="${inp()};margin-top:4px;text-align:center"></div>`).join("")}
+        </div>
+        <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">📍 Local de montagem *</label><br><input value="${b.localMontagem||""}" oninput="maSetBlocoRe(${i},'localMontagem',this.value)" placeholder="Ex: Sala 302, Pátio, Auditório..." style="${inp()};margin-top:5px"></div>
+        <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">💬 Observações *</label><br><textarea oninput="maSetBlocoRe(${i},'observacoes',this.value)" rows="2" placeholder="Como os equipamentos serão utilizados..." style="${inp()};resize:none;margin-top:5px">${b.observacoes||""}</textarea></div>
+      </div>`:""}
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:${c.greenBg};border-radius:8px;border:1px solid ${c.greenBorder};cursor:pointer">
+        <input type="checkbox" id="chk-foto-${i}" ${b.precisaFoto?"checked":""} onchange="maSetBlocoRe(${i},'precisaFoto',this.checked)" style="width:18px;height:18px;accent-color:#1a6b47;cursor:pointer;flex-shrink:0">
+        <label for="chk-foto-${i}" style="cursor:pointer"><p style="font-size:13px;font-weight:700;color:${c.navy}">📸 Solicitar fotógrafo</p><p style="font-size:11px;color:${c.textMuted}">A equipe de fotografia será notificada</p></label>
       </div>
     </div>
   </div>`;
@@ -1039,10 +931,10 @@ function renderMAResumo(){
     const extras=[];
     if(b.paginas)extras.push("📖 "+b.paginas);
     if(b.laboratorista)extras.push("🔬 "+(b.laboratorista==="Sim"?"Com laboratorista":"Sem laboratorista"));
-    if(Number(b.quantidade)>0)extras.push("📦 "+b.quantidade+" unidade"+(b.quantidade>1?"s":""));
-    if(Number(b.microfones)>0)extras.push("🎤 "+b.microfones+" microfone"+(b.microfones>1?"s":""));
-    if(Number(b.caixasom)>0)extras.push("🔊 "+b.caixasom+" caixa"+(b.caixasom>1?"s":"")+" de som");
-    if(Number(b.projetor)>0)extras.push("📽️ "+b.projetor+" projetor"+(b.projetor>1?"es":""));
+    if(Number(b.quantidade)>0)extras.push("📦 "+b.quantidade+" un.");
+    if(Number(b.microfones)>0)extras.push("🎤 "+b.microfones+" mic.");
+    if(Number(b.caixasom)>0)extras.push("🔊 "+b.caixasom+" caixa");
+    if(Number(b.projetor)>0)extras.push("📽️ "+b.projetor+" proj.");
     if(b.localMontagem)extras.push("📍 "+b.localMontagem);
     if(b.observacoes)extras.push("💬 "+b.observacoes);
     if(b.precisaFoto)extras.push("📸 Fotógrafo solicitado");
@@ -1055,38 +947,17 @@ function renderMAResumo(){
   });
   html+=`</div>`;
   if(precisaCiencia)html+=`<label style="display:flex;align-items:flex-start;gap:10px;margin-bottom:18px;cursor:pointer;padding:12px 14px;background:${c.surface};border:1.5px solid ${c.border};border-radius:10px"><input type="checkbox" id="chk-ciente" onchange="cienteChanged(this.checked)" style="width:18px;height:18px;margin-top:1px;accent-color:#1a6b47;flex-shrink:0;cursor:pointer"><span style="font-size:12px;color:${c.navy};line-height:1.5">${fimSem?"Estou ciente: agendamento em fim de semana fica pendente até aprovação do administrador.":"Estou ciente de que este agendamento tem menos de 24h. Entrarei em contato com o T.E. para garantir disponibilidade."}</span></label>`;
-  html+=`<div style="display:flex;gap:10px">
-    <button onclick="_MA.resumo=false;_P.modoProf==='agendar'?re():renderMA()" style="${btn("ghost")};flex:1;padding:11px">✏️ Editar</button>
-    <button id="btn-conf" onclick="if(!this.disabled)maSalvar()" style="flex:2;padding:11px;font-size:13.5px;border-radius:8px;border:none;font-weight:700;font-family:inherit;cursor:${precisaCiencia?'not-allowed':'pointer'};background:${precisaCiencia?'#cbd5e1':'#1a6b47'};color:${precisaCiencia?'#94a3b8':'#fff'}" ${precisaCiencia?"data-needs-ciente=true":""}>${m.salvando?"Salvando...":"✓ Confirmar"}</button>
-  </div></div>`;
+  html+=`<div style="display:flex;gap:10px"><button onclick="_MA.resumo=false;renderMA()" style="${btn("ghost")};flex:1;padding:11px">← Revisar</button><button id="btn-conf" onclick="if(!this.disabled)maSalvar()" style="flex:2;padding:11px;font-size:13.5px;border-radius:8px;border:none;font-weight:700;font-family:inherit;cursor:${precisaCiencia?'not-allowed':'pointer'};background:${precisaCiencia?'#cbd5e1':'#1a6b47'};color:${precisaCiencia?'#94a3b8':'#fff'}" ${precisaCiencia?"data-needs-ciente=true":""}>${m.salvando?"Salvando...":"✓ Confirmar"}</button></div></div>`;
   return html;
 }
 
 window.maEspaco=v=>{
+  // Aceita índice numérico ou string
   _MA.espaco = (typeof v==="number"||(!isNaN(v)&&v!=="")) ? ESPACOS[parseInt(v)].nome : v;
-  if(_MA.data){
-    _MA.step=3;
-    _MA.blocos=[bVazio()];
-  } else {
-    _MA.step=2;
-  }
-  console.log("[maEspaco] espaco="+_MA.espaco+" data="+_MA.data+" step="+_MA.step);
+  _MA.step=2;
   if(_P.modoProf==="agendar"){re();}else{renderMA();}
 };
-window.maBack=()=>{
-  if(_MA.step===3){
-    // Limpa espaço para voltar à escolha de espaço (step 1)
-    _MA.espaco="";
-    _MA.blocos=[bVazio()];
-    _MA.step=1;
-  } else if(_MA.step===2){
-    _MA.espaco="";
-    _MA.step=1;
-  } else {
-    _MA.step=1;
-  }
-  if(_P.modoProf==="agendar"){re();}else{renderMA();}
-};
+window.maBack=()=>{if(_MA.step===3){_MA.data="";_MA.blocos=[bVazio()];}else if(_MA.step===2)_MA.espaco="";_MA.step--;if(_P.modoProf==="agendar"){re();}else{renderMA();}};
 window.maSetHorario=(i,h)=>{
   _MA.blocos[i].horario=h;
   if(_P.modoProf==="agendar"){re();}else{renderMA();}
@@ -1113,12 +984,7 @@ window.maSetBlocoRe=(i,k,v)=>{
 };
 function atualizarBotoesAgendar(){
   const eo=ESPACOS.find(e=>e.nome===_MA.espaco);
-  const bVal=b=>{
-    if(!b.horario||!b.turma||!b.conteudo)return false;
-    if(eo?.tipo==="laboratorio"&&!b.laboratorista)return false;
-    if(m.espaco==="Áudio/Visual"&&(!b.localMontagem||!b.observacoes))return false;
-    return true;
-  };
+  const bVal=b=>b.horario&&b.turma&&b.conteudo&&(eo?.tipo!=="laboratorio"||b.laboratorista);
   const todosVal=_MA.blocos.every(bVal);
   const ultVal=bVal(_MA.blocos[_MA.blocos.length-1]);
   const btnConf=document.getElementById("btn-conf-inline");
@@ -1158,16 +1024,7 @@ window.maSalvar=async()=>{
       const dow=new Date(Date.UTC(a,m-1,d)).getUTCDay();
       const st=(urg||dow===0||dow===6)?"pendente":"confirmado";
       if(st==="pendente")algPend=true;
-      const docData={professor:_usuario.nome,professorId:_usuario.uid,professorEmail:_usuario.email,turma:b.turma,espaco,data,horario:b.horario,conteudo:b.conteudo,paginas:b.paginas||"",laboratorista:b.laboratorista||"",quantidade:eo?.tipo==="equipamento"?Number(b.quantidade):null,status:st,criadoEm:Timestamp.now(),precisaFoto:b.precisaFoto||false,observacoes:b.observacoes||"",localMontagem:b.localMontagem||"",microfones:Number(b.microfones)||0,caixasom:Number(b.caixasom)||0,projetor:Number(b.projetor)||0};
-      await addDoc(collection(db,"reservas"),docData);
-      // Se Biblioteca + bibAV=true, criar reserva de A/V automaticamente
-      if(espaco==="Biblioteca"&&_MA.bibAV===true){
-        const avOcup=await getDocs(query(collection(db,"reservas"),where("espaco","==","Áudio/Visual"),where("data","==",data),where("horario","==",b.horario)));
-        const avLivre=!avOcup.docs.find(d=>d.data()?.status!=="recusado");
-        if(avLivre){
-          await addDoc(collection(db,"reservas"),{...docData,espaco:"Áudio/Visual",conteudo:"A/V integrado com Biblioteca — "+b.conteudo,localMontagem:"Biblioteca",observacoes:"Agendado automaticamente via Biblioteca"});
-        }
-      }
+      await addDoc(collection(db,"reservas"),{professor:_usuario.nome,professorId:_usuario.uid,professorEmail:_usuario.email,turma:b.turma,espaco,data,horario:b.horario,conteudo:b.conteudo,paginas:b.paginas||"",laboratorista:b.laboratorista||"",quantidade:eo?.tipo==="equipamento"?Number(b.quantidade):null,status:st,criadoEm:Timestamp.now(),precisaFoto:b.precisaFoto||false,observacoes:b.observacoes||"",localMontagem:b.localMontagem||"",microfones:Number(b.microfones)||0,caixasom:Number(b.caixasom)||0,projetor:Number(b.projetor)||0});
     }
     _MA.sucesso=algPend?"pendente":"confirmado";_MA.salvando=false;if(_P.modoProf==="agendar"){re();}else{renderMA();};
   }catch(e){_MA.erro="Erro ao salvar. Tente novamente.";_MA.salvando=false;_MA.resumo=false;if(_P.modoProf==="agendar"){re();}else{renderMA();};}
@@ -1399,30 +1256,14 @@ function renderAdminView(){
 
     if(_A.aba==="fotos"){
       const comFoto=filtradas.filter(r=>r.precisaFoto&&(_A.historico||r.data>=h)).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
-      if(!comFoto.length){html+=`<div style="text-align:center;padding:32px;color:${c.textMuted}"><p style="font-size:28px;margin-bottom:10px">📷</p><p>Nenhuma solicitação de foto encontrada.</p></div>`;}
+      if(!comFoto.length)html+=`<div style="text-align:center;padding:32px;color:${c.textMuted}"><p style="font-size:28px">📷</p><p style="margin-top:8px">Nenhuma solicitação de foto.</p></div>`;
       else{
-        html+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><div style="width:8px;height:8px;border-radius:50%;background:#7c3aed"></div><p style="font-size:12px;font-weight:800;color:#7c3aed;text-transform:uppercase">📸 Solicitações de foto · ${comFoto.length}</p><div style="flex:1;height:1px;background:#ddd6fe"></div></div>`;
         const pd={};comFoto.forEach(r=>{if(!pd[r.data])pd[r.data]=[];pd[r.data].push(r);});
+        html+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><div style="width:8px;height:8px;border-radius:50%;background:#7c3aed"></div><p style="font-size:12px;font-weight:800;color:#7c3aed;text-transform:uppercase">📸 Solicitações · ${comFoto.length}</p><div style="flex:1;height:1px;background:#ddd6fe"></div></div>`;
         Object.entries(pd).forEach(([data,rs])=>{
           const[a2,m2,d2]=data.split("-");const isH=data===h;
           html+=`<div style="margin-bottom:14px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><div style="background:${isH?"#7c3aed":"#64748b"};color:#fff;border-radius:7px;padding:3px 12px;font-size:11.5px;font-weight:700">${isH?"📌 Hoje":`${d2}/${m2}/${a2}`}</div><div style="flex:1;height:1px;background:#ddd6fe"></div></div>`;
-          rs.forEach(r=>{
-            html+=`<div style="display:flex;gap:10px;align-items:flex-start;padding:10px 14px;border-radius:10px;margin-bottom:6px;background:${c.surface};border:1px solid #ddd6fe;border-left:4px solid #7c3aed">
-              <div style="min-width:52px;text-align:center"><p style="font-size:13px;font-family:'DM Mono',monospace;font-weight:800;color:#7c3aed">${r.horario}</p></div>
-              <div style="width:1px;height:38px;background:#ddd6fe;flex-shrink:0"></div>
-              <div style="flex:1">
-                <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:3px">
-                  <span style="font-weight:700;font-size:13px;color:${c.navy}">${tipoIcon(ESPACOS.find(e=>e.nome===r.espaco)?.tipo,r.espaco)} ${r.espaco}</span>
-                  <span style="font-size:11px;color:${c.textMuted}">·</span>
-                  <span style="font-size:12px;color:${c.textMid}">${r.professor}</span>
-                  <span style="font-size:11px;color:${c.textMuted}">·</span>
-                  <span style="font-size:12px;color:${c.textMuted}">${r.turma}</span>
-                </div>
-                <p style="font-size:12px;color:${c.textMuted}">${r.conteudo}</p>
-                ${r.observacoes?`<p style="font-size:11px;color:${c.textMuted};font-style:italic;margin-top:3px">💬 ${r.observacoes}</p>`:""}
-              </div>
-            </div>`;
-          });
+          rs.forEach(r=>{html+=`<div style="display:flex;gap:10px;padding:10px 14px;border-radius:10px;margin-bottom:6px;background:${c.surface};border:1px solid #ddd6fe;border-left:4px solid #7c3aed"><div style="min-width:52px;text-align:center"><p style="font-size:13px;font-family:'DM Mono',monospace;font-weight:800;color:#7c3aed">${r.horario}</p></div><div style="flex:1"><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:3px"><span style="font-weight:700;font-size:13px;color:${c.navy}">${tipoIcon(ESPACOS.find(e=>e.nome===r.espaco)?.tipo,r.espaco)} ${r.espaco}</span><span style="font-size:11px;color:${c.textMuted}">·</span><span style="font-size:12px;color:${c.textMid}">${r.professor}</span><span style="font-size:11px;color:${c.textMuted}">·</span><span style="font-size:12px;color:${c.textMuted}">${r.turma}</span></div><p style="font-size:12px;color:${c.textMuted}">${r.conteudo}</p></div></div>`;});
           html+=`</div>`;
         });
       }
@@ -1551,11 +1392,11 @@ function renderGU(){
   if(_GU.flash){html+=alertHTML(_GU.flash.t,_GU.flash.m);_GU.flash=null;}
   html+=`<p style="font-size:13px;font-weight:800;color:${c.navy};margin-bottom:14px;text-transform:uppercase">Cadastrar Professor</p>
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end;margin-bottom:8px">
-    <div><label style="font-size:11px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Nome *</label><br><input id="gu-nome" placeholder="Ex: Maria Silva" value="${_GU.nome}" style="${inp()};margin-top:5px"></div>
-    <div><label style="font-size:11px;font-weight:700;color:${c.textMuted};text-transform:uppercase">E-mail *</label><br><input id="gu-email" type="email" placeholder="prof@escola.edu.br" value="${_GU.email}" style="${inp()};margin-top:5px"></div>
-    <div><label style="font-size:11px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Senha *</label><br><input id="gu-senha" type="password" placeholder="Mín. 6 caracteres" value="${_GU.senha}" style="${inp()};margin-top:5px"></div>
-    <div><label style="font-size:11px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Perfil *</label><br><select id="gu-perfil" style="${sel()};margin-top:5px"><option value="professor" ${_GU.perfil==="professor"?"selected":""}>Professor</option><option value="fotografo" ${_GU.perfil==="fotografo"?"selected":""}>📸 Fotógrafo</option></select></div>
-    <button id="gu-btn-criar" style="${btn("navy")};height:42px;white-space:nowrap">+ Cadastrar</button>
+    <div><label style="font-size:11px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Nome *</label><br><input id="gu-nome" placeholder="Ex: Maria Silva" value="${_GU.nome}" onchange="_GU.nome=this.value" style="${inp()};margin-top:5px"></div>
+    <div><label style="font-size:11px;font-weight:700;color:${c.textMuted};text-transform:uppercase">E-mail *</label><br><input id="gu-email" type="email" placeholder="prof@escola.edu.br" value="${_GU.email}" onchange="_GU.email=this.value" style="${inp()};margin-top:5px"></div>
+    <div><label style="font-size:11px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Senha *</label><br><input id="gu-senha" type="password" placeholder="Mín. 6 caracteres" value="${_GU.senha}" onchange="_GU.senha=this.value" style="${inp()};margin-top:5px"></div>
+    <div><label style="font-size:11px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Perfil</label><br><select onchange="_GU.perfil=this.value" style="${sel()};margin-top:5px"><option value="professor">👨‍🏫 Professor</option><option value="fotografo" ${_GU.perfil==="fotografo"?"selected":""}>📸 Fotógrafo</option></select></div>
+    <button onclick="guCriar()" style="${btn("navy")};height:42px;white-space:nowrap">+ Cadastrar</button>
   </div>
   <p style="font-size:11.5px;color:${c.textMuted};margin-bottom:20px">💡 Informe a senha ao professor. Ele pode alterá-la via "Esqueci minha senha".</p>`;
   html+=`<p style="font-size:13px;font-weight:800;color:${c.navy};margin-bottom:14px;text-transform:uppercase">Professores (${profs.length})</p>`;
@@ -1583,19 +1424,6 @@ function renderGU(){
     html+=`</div>`;
   }
   render("mod-gu-body",html);
-  // Bind via addEventListener (evita problema com innerHTML)
-  setTimeout(()=>{
-    const n=document.getElementById("gu-nome");
-    const e=document.getElementById("gu-email");
-    const s=document.getElementById("gu-senha");
-    const p=document.getElementById("gu-perfil");
-    const b=document.getElementById("gu-btn-criar");
-    if(n)n.addEventListener("input",ev=>{_GU.nome=ev.target.value;});
-    if(e)e.addEventListener("input",ev=>{_GU.email=ev.target.value;});
-    if(s)s.addEventListener("input",ev=>{_GU.senha=ev.target.value;});
-    if(p)p.addEventListener("change",ev=>{_GU.perfil=ev.target.value;});
-    if(b)b.addEventListener("click",guCriar);
-  },30);
 }
 
 window.guCriar=async()=>{
@@ -1604,8 +1432,7 @@ window.guCriar=async()=>{
   try{
     const cred=await createUserWithEmailAndPassword(secAuth,email,senha);
     await secAuth.signOut();
-    const perfil=email===ADMIN_EMAIL?"admin":_GU.perfil||"professor";
-    await setDoc(doc(db,"usuarios",cred.user.uid),{nome,email,perfil,ativo:true,criadoEm:Timestamp.now()});
+    const perfil=email===ADMIN_EMAIL?"admin":(_GU.perfil||"professor");await setDoc(doc(db,"usuarios",cred.user.uid),{nome,email,perfil,ativo:true,criadoEm:Timestamp.now()});
     _GU.nome="";_GU.email="";_GU.senha="";
     _GU.flash={t:"success",m:`Prof(a) ${nome} cadastrado(a)!`};
     renderGU();
