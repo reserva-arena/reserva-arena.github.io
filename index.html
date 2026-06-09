@@ -17,6 +17,8 @@ input,select,textarea,button{font-family:inherit}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 .row-hover{transition:all .15s ease}
 .row-hover:hover{transform:translateX(3px)}
+.adm-day-tooltip{position:fixed;z-index:500;background:#fff;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.18);padding:12px 16px;min-width:220px;max-width:300px;pointer-events:none;opacity:0;transition:opacity .15s;border:1px solid #c7dfd4}
+.adm-day-tooltip.show{opacity:1}
 select option{font-family:'DM Sans',system-ui,sans-serif}
 @media(max-width:640px){
   #main-content{padding:10px 8px!important}
@@ -1073,7 +1075,11 @@ function renderAdminView(){
       const conf=rsdia.filter(r=>r.status==="confirmado");
       const dow=new Date(Date.UTC(ano,mes,d)).getUTCDay();
       const naoL=!isDiaLetivo(ds)&&!isPast&&dow!==0&&dow!==6;
-      html+=`<div onclick="_A.diaSel=_A.diaSel==='${ds}'?null:'${ds}';re()" style="min-height:90px;border-right:1px solid ${c.borderLight};border-bottom:1px solid ${c.borderLight};padding:6px 8px;cursor:pointer;background:${isSel?"rgba(26,107,71,.08)":isH?"rgba(26,107,71,.04)":naoL?"rgba(239,68,68,.04)":isPast?"rgba(0,0,0,.015)":"transparent"};transition:background .15s">
+      html+=`<div onclick="_A.diaSel=_A.diaSel==='${ds}'?null:'${ds}';re()"
+        data-ds="${ds}"
+        onmouseenter="admDayHover('${ds}',event)"
+        onmouseleave="admDayLeave()"
+        style="min-height:90px;border-right:1px solid ${c.borderLight};border-bottom:1px solid ${c.borderLight};padding:6px 8px;cursor:pointer;background:${isSel?"rgba(26,107,71,.08)":isH?"rgba(26,107,71,.04)":naoL?"rgba(239,68,68,.04)":isPast?"rgba(0,0,0,.015)":"transparent"};transition:background .15s">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
           <span style="font-size:13.5px;font-weight:${isH?900:500};color:${isSel?"#40b07a":isH?"#40b07a":isPast?c.textMuted:naoL?"#ef4444":dow===0||dow===6?"#ef4444":c.navy};width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:${isH?"rgba(26,107,71,.15)":naoL?"rgba(239,68,68,.12)":"transparent"}">${d}</span>
           ${naoL?`<span style="font-size:7.5px;font-weight:700;color:#ef4444;background:rgba(239,68,68,.1);border-radius:3px;padding:1px 3px">não letivo</span>`:""}
@@ -1213,8 +1219,38 @@ function admRow(r,showDate=false){
 }
 
 function bindAdmin(){
-  // Admin usa re() globalmente, não precisa _calClick
+  // Admin usa re() globalmente
 }
+
+// Tooltip do dia no admin
+window.admDayHover=function(ds,evt){
+  let tip=document.getElementById("adm-tip");
+  if(!tip){tip=document.createElement("div");tip.id="adm-tip";tip.className="adm-day-tooltip";document.body.appendChild(tip);}
+  // Buscar reservas do dia diretamente do estado
+  const rs=_todas.filter(r=>r.data===ds&&r.status!=="recusado").sort((a,b)=>a.horario>b.horario?1:-1);
+  const c=C();
+  const[a,m,d]=ds.split("-");
+  let html=`<p style="font-size:11px;font-weight:800;color:#1a6b47;margin-bottom:8px;text-transform:uppercase">${d}/${m}/${a} · ${rs.length} agendamento${rs.length!==1?"s":""}</p>`;
+  if(!rs.length){html+=`<p style="font-size:12px;color:#607060">🎉 Dia livre</p>`;}
+  else rs.slice(0,6).forEach(r=>{
+    const urg=isUrgente(r.data,r.horario);
+    html+=`<div style="display:flex;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid #e2f0eb">
+      <span style="font-size:11px;font-family:'DM Mono',monospace;font-weight:800;color:${urg?"#c2410c":"#40b07a"};min-width:38px">${r.horario}</span>
+      <div style="min-width:0"><p style="font-size:12px;font-weight:700;color:#132318;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.espaco}</p><p style="font-size:11px;color:#607060">${r.professor?.split(" ")[0]||""} · ${r.turma}</p></div>
+    </div>`;
+  });
+  if(rs.length>6)html+=`<p style="font-size:10px;color:#607060;margin-top:6px">+${rs.length-6} mais — clique para ver todos</p>`;
+  tip.innerHTML=html;
+  // Posicionar
+  const x=Math.min(evt.clientX+12, window.innerWidth-320);
+  const y=Math.min(evt.clientY+12, window.innerHeight-300);
+  tip.style.left=x+"px"; tip.style.top=y+"px";
+  tip.classList.add("show");
+};
+window.admDayLeave=function(){
+  const tip=document.getElementById("adm-tip");
+  if(tip)tip.classList.remove("show");
+};
 window.aSetModo=v=>{_A.modoVisu=v;re();};
 window.aSetAba=v=>{_A.aba=v;re();};
 window.aNavMes=dir=>{let nm=_A.mesCal.m+dir,na=_A.mesCal.a;if(nm>11){nm=0;na++;}if(nm<0){nm=11;na--;}_A.mesCal={a:na,m:nm};_A.diaSel=null;re();};
