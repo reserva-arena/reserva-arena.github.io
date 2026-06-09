@@ -1410,10 +1410,55 @@ window.abrirEdicao=id=>{
 // ════════════════════════════════════════════════════════════════════════════
 // GERENCIAR USUÁRIOS
 // ════════════════════════════════════════════════════════════════════════════
-function modalGerenciarHTML(){const c=C();return`<div id="mod-gu" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);align-items:center;justify-content:center;z-index:1000;padding:1rem"><div style="background:${c.surface};border-radius:16px;width:100%;max-width:900px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.3)"><div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid ${c.border}"><p style="font-size:16px;font-weight:800;color:${c.navy}">👤 Gerenciar Usuários</p><button onclick="fecharGerenciarUsuarios()" style="background:none;border:none;font-size:20px;cursor:pointer;color:${c.textMuted}">✕</button></div><div id="mod-gu-body" style="padding:20px 24px"></div></div></div>`;}
+function modalGerenciarHTML(){
+  return`<div id="mod-gu" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);align-items:center;justify-content:center;z-index:1000;padding:1rem">
+    <div style="background:#ffffff;border-radius:16px;width:100%;max-width:860px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.3)">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid #c7dfd4">
+        <p style="font-size:16px;font-weight:800;color:#132318">👤 Gerenciar Usuários</p>
+        <button onclick="fecharGerenciarUsuarios()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#607060">✕</button>
+      </div>
+      <div style="padding:20px 24px">
+        <div id="mod-gu-flash"></div>
+        <p style="font-size:12px;font-weight:800;color:#132318;text-transform:uppercase;margin-bottom:12px">Cadastrar Usuário</p>
+        <div style="display:grid;gap:10px;margin-bottom:6px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div><label style="font-size:11px;font-weight:700;color:#607060;text-transform:uppercase">Nome *</label><br>
+              <input id="gu-nome" placeholder="Ex: Maria Silva" style="width:100%;padding:10px 12px;border-radius:8px;font-size:13.5px;border:1.5px solid #c7dfd4;background:#fff;outline:none;box-sizing:border-box;margin-top:5px"></div>
+            <div><label style="font-size:11px;font-weight:700;color:#607060;text-transform:uppercase">E-mail *</label><br>
+              <input id="gu-email" type="email" placeholder="prof@escola.edu.br" style="width:100%;padding:10px 12px;border-radius:8px;font-size:13.5px;border:1.5px solid #c7dfd4;background:#fff;outline:none;box-sizing:border-box;margin-top:5px"></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;align-items:end">
+            <div><label style="font-size:11px;font-weight:700;color:#607060;text-transform:uppercase">Senha *</label><br>
+              <input id="gu-senha" type="password" placeholder="Mín. 6 caracteres" style="width:100%;padding:10px 12px;border-radius:8px;font-size:13.5px;border:1.5px solid #c7dfd4;background:#fff;outline:none;box-sizing:border-box;margin-top:5px"></div>
+            <div><label style="font-size:11px;font-weight:700;color:#607060;text-transform:uppercase">Perfil</label><br>
+              <select id="gu-perfil" style="width:100%;padding:10px 12px;border-radius:8px;font-size:13.5px;border:1.5px solid #c7dfd4;background:#fff;outline:none;box-sizing:border-box;cursor:pointer;margin-top:5px">
+                <option value="professor">👨‍🏫 Professor</option>
+                <option value="fotografo">📸 Fotógrafo</option>
+              </select></div>
+            <button onclick="guCriarDireto()" style="background:#1a6b47;color:#fff;border:none;border-radius:8px;font-weight:700;padding:10px 18px;font-size:13.5px;cursor:pointer;height:42px;width:100%">+ Cadastrar</button>
+          </div>
+        </div>
+        <p style="font-size:11px;color:#607060;margin-bottom:20px">💡 Informe a senha ao usuário. Ele pode alterá-la via "Esqueci minha senha".</p>
+        <div id="mod-gu-lista"></div>
+      </div>
+    </div>
+  </div>`;
+}
 
 let _GU={nome:"",email:"",senha:"",perfil:"professor",editId:null,editNome:"",flash:null};
-window.abrirGerenciarUsuarios=()=>{$("mod-gu").style.display="flex";renderGU();};
+window.abrirGerenciarUsuarios=()=>{
+  $("mod-gu").style.display="flex";
+  // Limpar campos
+  setTimeout(()=>{
+    const n=document.getElementById("gu-nome");
+    const e=document.getElementById("gu-email");
+    const s=document.getElementById("gu-senha");
+    const f=document.getElementById("mod-gu-flash");
+    if(n)n.value=""; if(e)e.value=""; if(s)s.value="";
+    if(f)f.innerHTML="";
+    renderGuLista();
+  },50);
+};
 window.fecharGerenciarUsuarios=()=>{$("mod-gu").style.display="none";};
 
 function renderGU(){
@@ -1471,6 +1516,67 @@ function renderGU(){
   },30);
 }
 
+window.guCriarDireto=async()=>{
+  const nome=document.getElementById("gu-nome")?.value?.trim();
+  const email=document.getElementById("gu-email")?.value?.trim();
+  const senha=document.getElementById("gu-senha")?.value;
+  const perfil=document.getElementById("gu-perfil")?.value||"professor";
+  const flash=document.getElementById("mod-gu-flash");
+  if(!nome||!email||!senha||senha.length<6){
+    if(flash)flash.innerHTML='<div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;font-size:13px;color:#7f1d1d;margin-bottom:12px">Preencha todos os campos (senha mín. 6 chars).</div>';
+    return;
+  }
+  const btn=document.querySelector('#mod-gu button[onclick="guCriarDireto()"]');
+  if(btn)btn.textContent="Salvando...";
+  try{
+    const cred=await createUserWithEmailAndPassword(secAuth,email,senha);
+    await secAuth.signOut();
+    const p=email===ADMIN_EMAIL?"admin":perfil;
+    await setDoc(doc(db,"usuarios",cred.user.uid),{nome,email,perfil:p,ativo:true,criadoEm:Timestamp.now()});
+    document.getElementById("gu-nome").value="";
+    document.getElementById("gu-email").value="";
+    document.getElementById("gu-senha").value="";
+    if(flash)flash.innerHTML='<div style="background:#e2f4ea;border:1px solid #6ee7a0;border-radius:8px;padding:10px 14px;font-size:13px;color:#0f4c2b;margin-bottom:12px">✅ '+nome+' cadastrado(a) com sucesso!</div>';
+    renderGuLista();
+  }catch(e){
+    const msg=e.code==="auth/email-already-in-use"?"E-mail já cadastrado.":"Erro ao cadastrar: "+e.message;
+    if(flash)flash.innerHTML='<div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;font-size:13px;color:#7f1d1d;margin-bottom:12px">'+msg+'</div>';
+  }
+  if(btn)btn.textContent="+ Cadastrar";
+};
+
+function renderGuLista(){
+  const lista=document.getElementById("mod-gu-lista");
+  if(!lista)return;
+  const profs=_usuarios.filter(u=>u.perfil!=="admin");
+  const admins=_usuarios.filter(u=>u.perfil==="admin");
+  let h='<p style="font-size:12px;font-weight:800;color:#132318;text-transform:uppercase;margin-bottom:12px">Professores ('+profs.length+')</p>';
+  if(!profs.length){h+='<p style="font-size:13px;color:#607060;text-align:center;padding:20px">Nenhum professor cadastrado.</p>';}
+  else{
+    h+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:#f8faf8">';
+    ['Nome','E-mail','Perfil','Status','Ações'].forEach(t=>{h+='<th style="padding:8px 12px;text-align:left;color:#607060;font-weight:700;border-bottom:2px solid #c7dfd4;font-size:11px;text-transform:uppercase">'+t+'</th>';});
+    h+='</tr></thead><tbody>';
+    profs.forEach((u,i)=>{
+      h+='<tr style="background:'+(i%2===0?'#fff':'#f8faf8')+'">';
+      h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb;color:#132318;font-weight:600">'+u.nome+'</td>';
+      h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb;color:#607060;font-size:12px">'+u.email+'</td>';
+      h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:#e0e7ff;color:#3730a3">'+(u.perfil==="fotografo"?"📸 Fotógrafo":"👨‍🏫 Professor")+'</span></td>';
+      h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:'+(u.ativo!==false?'#e2f4ea':'#fef2f2')+';color:'+(u.ativo!==false?'#0f4c2b':'#7f1d1d')+'">'+(u.ativo!==false?'● Ativo':'○ Inativo')+'</span></td>';
+      h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><div style="display:flex;gap:5px">';
+      h+='<button onclick="guToggle(''+u.id+'',''+u.nome.replace(/'/g,"\'")+'','+u.ativo+')" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid '+(u.ativo!==false?'#fed7aa':'#6ee7a0')+';background:'+(u.ativo!==false?'#fff7ed':'#e2f4ea')+';color:'+(u.ativo!==false?'#7c2d12':'#0f4c2b')+';cursor:pointer;font-weight:700">'+(u.ativo!==false?'🔒 Desativar':'🔓 Ativar')+'</button>';
+      h+='<button onclick="guSenha(''+u.email+'')" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid #c7dfd4;background:#fff;color:#607060;cursor:pointer;font-weight:700">🔑 Senha</button>';
+      h+='</div></td></tr>';
+    });
+    h+='</tbody></table></div>';
+  }
+  if(admins.length){
+    h+='<div style="margin-top:16px;background:#f5f3ff;border-radius:10px;padding:14px 16px"><p style="font-size:11px;font-weight:700;color:#6d28d9;text-transform:uppercase;margin-bottom:8px">Administradores</p>';
+    admins.forEach(u=>{h+='<div style="display:flex;align-items:center;gap:10px;padding:4px 0"><span style="font-size:13px;font-weight:600;color:#132318">'+u.nome+'</span><span style="font-size:12px;color:#607060">'+u.email+'</span></div>';});
+    h+='</div>';
+  }
+  lista.innerHTML=h;
+}
+
 window.guCriar=async()=>{
   const{nome,email,senha}=_GU;
   if(!nome||!email||senha.length<6){_GU.flash={t:"error",m:"Preencha todos os campos (senha mín. 6 chars)."};renderGU();return;}
@@ -1514,6 +1620,8 @@ function startListeners(uid){
   _unsub3=onSnapshot(collection(db,"usuarios"),snap=>{
     _usuarios=snap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>u.ativo!==false);
     re();
+    // Atualizar lista do modal se estiver aberto
+    if(document.getElementById("mod-gu-lista"))renderGuLista();
   });
 }
 function stopListeners(){[_unsub1,_unsub2,_unsub3].forEach(u=>{try{u&&u();}catch{}});_unsub1=_unsub2=_unsub3=null;}
