@@ -401,7 +401,7 @@ window.doSignOut=()=>signOut(auth);
 // ════════════════════════════════════════════════════════════════════════════
 // PROFESSOR VIEW
 // ════════════════════════════════════════════════════════════════════════════
-let _P={modoProf:"ver",modoCard:"calendario",modoVisu:"semana",filtroGrade:"meus",filtroEspaco:"",semIni:"",diaSel:null,mesCal:null};
+let _P={modoProf:"ver",modoCard:"calendario",modoVisu:"semana",filtroGrade:"meus",filtroEspaco:"",semIni:"",diaSel:null,mesCal:null,mostrarHistorico:false,filtroPendente:false};
 
 function renderProfessorView(){
   const c=C(),h=fmtHoje();
@@ -534,11 +534,31 @@ function renderProfessorView(){
   if(_P.modoCard==="lista"){
     html+=`<div style="padding:14px">`;
     html+=`<div id="lista-futuras"></div>`;
-    if(!futuras.length)html+=`<p style="text-align:center;color:${c.textMuted};padding:32px 0;font-size:13px">Nenhum agendamento futuro.</p>`;
-    // Banner de pendentes no topo da lista se houver
-    if(pendentes.length&&_P.modoCard==='lista')html+=`<div data-filtro="pendente" style="background:${c.amberBg};border:1.5px solid ${c.amberBorder};border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px"><span style="font-size:18px">⏳</span><div><p style="font-size:12px;font-weight:800;color:${c.amber}">${pendentes.length} agendamento${pendentes.length!==1?"s":""} pendente${pendentes.length!==1?"s":""}</p><p style="font-size:11px;color:${c.amber};opacity:.8">Aguardando aprovação do administrador</p></div></div>`;
-    else{
-      const porData={};futuras.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1).forEach(r=>{if(!porData[r.data])porData[r.data]=[];porData[r.data].push(r);});
+
+    // ── Seção pendentes ──
+    if(pendentes.length){
+      html+=`<div data-filtro="pendente" style="margin-bottom:16px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <div style="width:8px;height:8px;border-radius:50%;background:${c.amber}"></div>
+          <p style="font-size:12px;font-weight:800;color:${c.amber};text-transform:uppercase">⏳ Pendentes · ${pendentes.length}</p>
+          <div style="flex:1;height:1px;background:${c.amberBorder}"></div>
+        </div>`;
+      if(_P.filtroPendente){
+        pendentes.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1).forEach(r=>{html+=profRRow(r);});
+      } else {
+        html+=`<div onclick="_P.filtroPendente=true;re()" style="background:${c.amberBg};border:1.5px solid ${c.amberBorder};border-radius:10px;padding:10px 14px;cursor:pointer;display:flex;align-items:center;justify-content:space-between">
+          <p style="font-size:13px;font-weight:700;color:${c.amber}">${pendentes.length} agendamento${pendentes.length!==1?"s":""} aguardando aprovação</p>
+          <span style="color:${c.amber};font-size:14px">▼ ver</span>
+        </div>`;
+      }
+      html+=`</div>`;
+    }
+
+    // ── Seção futuras ──
+    const futurasSemPend=futuras.filter(r=>r.status!=="pendente");
+    if(!futurasSemPend.length&&!pendentes.length)html+=`<p style="text-align:center;color:${c.textMuted};padding:32px 0;font-size:13px">Nenhum agendamento futuro.</p>`;
+    if(futurasSemPend.length){
+      const porData={};futurasSemPend.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1).forEach(r=>{if(!porData[r.data])porData[r.data]=[];porData[r.data].push(r);});
       Object.entries(porData).forEach(([data,rs])=>{
         const[,mes,dia]=data.split("-");const isH=data===h;
         html+=`<div style="margin-bottom:14px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-size:11px;font-weight:700;color:${isH?c.green:c.textMid};background:${isH?c.greenBg:"transparent"};padding:${isH?"2px 8px":"0"};border-radius:${isH?20:0}px">${isH?"📌 Hoje":`${dia}/${mes}`}</span><div style="flex:1;height:1px;background:${c.borderLight}"></div></div>`;
@@ -546,7 +566,15 @@ function renderProfessorView(){
         html+=`</div>`;
       });
     }
-    if(passadas.length)html+=`<div style="opacity:.5;margin-top:12px"><p style="font-size:11px;font-weight:700;color:${c.textMuted};text-transform:uppercase;margin-bottom:8px">Histórico</p>${passadas.slice(0,5).map(r=>profRRow(r)).join("")}</div>`;
+    if(passadas.length){
+      html+=`<div style="margin-top:16px;border-top:1px solid ${c.borderLight};padding-top:12px">
+        <button onclick="_P.mostrarHistorico=!_P.mostrarHistorico;re()" style="display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;font-family:inherit;width:100%;padding:4px 0">
+          <span style="font-size:11px;font-weight:700;color:${c.textMuted};text-transform:uppercase">🕐 Histórico (${passadas.length})</span>
+          <span style="font-size:12px;color:${c.textMuted}">${_P.mostrarHistorico?"▲ fechar":"▼ ver"}</span>
+        </button>
+        ${_P.mostrarHistorico?passadas.slice(0,10).map(r=>profRRow(r)).join(""):""}
+      </div>`;
+    }
     html+=`</div>`;
   }
 
@@ -682,7 +710,7 @@ window.pSetModoProf=v=>{_P.modoProf=v;if(v==='agendar'){_MA={step:1,espaco:"",da
 window.pSetModo=v=>{_P.modoCard=v;re();};
 window.pFiltroRapido=tipo=>{
   if(tipo==='pendente'){
-    _P.modoProf='ver';_P.modoCard='lista';re();
+    _P.modoProf='ver';_P.modoCard='lista';_P.filtroPendente=true;re();
     setTimeout(()=>{const el=document.querySelector('[data-filtro="pendente"]');if(el)el.scrollIntoView({behavior:'smooth'});},200);
   } else if(tipo==='semana'){
     _P.modoProf='ver';_P.modoCard='calendario';_P.modoVisu='semana';_P.semIni=getSegunda(fmtHoje());re();
