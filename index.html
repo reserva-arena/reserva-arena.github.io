@@ -82,10 +82,12 @@ const ESPACOS     = [
   {id:5, nome:"Sala de Dança",                  tipo:"espaco"},
   {id:6, nome:"Sala Multifuncional",            tipo:"espaco"},
   {id:7, nome:"Cozinha Experimental",           tipo:"espaco"},
-  {id:8, nome:"Lab. de Ciências Anos Iniciais", tipo:"laboratorio"},
-  {id:9, nome:"Lab. de Ciências Anos Finais",   tipo:"laboratorio"},
-  {id:10,nome:"Tablets (18 disp.)",             tipo:"equipamento",estoque:18},
-  {id:11,nome:"Computadores (16 disp.)",        tipo:"equipamento",estoque:16},
+  {id:8, nome:"Fazendinha",                     tipo:"espaco"},
+  {id:9, nome:"Lab. de Ciências Anos Iniciais", tipo:"laboratorio"},
+  {id:10,nome:"Lab. de Ciências Anos Finais",   tipo:"laboratorio"},
+  {id:11,nome:"Tablets (18 disp.)",             tipo:"equipamento",estoque:18},
+  {id:12,nome:"Computadores (16 disp.)",        tipo:"equipamento",estoque:16},
+  {id:13,nome:"Áudio/Visual",                   tipo:"audiovisual"},
 ];
 const TURMAS = (()=>{
   const t=[];
@@ -184,12 +186,14 @@ const ESPACO_ICON={
   "Sala de Dança":"💃",
   "Sala Multifuncional":"🖥️📖",
   "Cozinha Experimental":"🍳",
+  "Fazendinha":"🐔",
   "Lab. de Ciências Anos Iniciais":"🔬",
   "Lab. de Ciências Anos Finais":"⚗️",
   "Tablets (18 disp.)":"📱",
   "Computadores (16 disp.)":"💻",
+  "Áudio/Visual":"🎙️",
 };
-const tipoIcon=(t,nome)=>ESPACO_ICON[nome]||({espaco:"🏛️",laboratorio:"🔬",equipamento:"💻"}[t]||"📍");
+const tipoIcon=(t,nome)=>ESPACO_ICON[nome]||({espaco:"🏛️",laboratorio:"🔬",equipamento:"💻",audiovisual:"🎙️"}[t]||"📍");
 function nomeProf(n){if(!n)return"";const p=n.trim().split(" ").filter(Boolean);return p.length===1?p[0]:p[0]+" "+p[p.length-1][0].toUpperCase()+".";}
 function extraInfo(r){if(!r)return"";const eo=ESPACOS.find(e=>e.nome===r.espaco);if(eo?.tipo==="equipamento"&&r.quantidade)return`${r.quantidade} un.`;if(eo?.tipo==="laboratorio")return r.laboratorista==="Sim"?"c/ lab.":r.laboratorista==="Não"?"s/ lab.":"";return"";}
 
@@ -279,6 +283,7 @@ function re(){
   document.body.style.color=c.text;
   if(!_usuario){renderPublica();return;}
   if(_usuario.perfil==="sem_acesso"||_usuario.ativo===false){renderSemAcesso();return;}
+  if(_usuario.perfil==="fotografo"){renderFotografo();return;}
   renderApp();
 }
 
@@ -357,6 +362,50 @@ window.recuperarSenha=async()=>{
 // ════════════════════════════════════════════════════════════════════════════
 // SEM ACESSO
 // ════════════════════════════════════════════════════════════════════════════
+function renderFotografo(){
+  const c=C(),h=fmtHoje();
+  const comFoto=_todas.filter(r=>r.precisaFoto&&r.data>=h&&r.status!=="recusado").sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
+  $("app").innerHTML=`
+  <div style="min-height:100vh;background:${c.bg}" translate="no">
+    <header style="background:${c.headerBg};border-bottom:1px solid ${c.border};padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100;box-shadow:0 1px 6px rgba(19,35,24,.07)">
+      <div style="display:flex;align-items:center;gap:10px">${logoHTML(36)}<div><p style="font-size:13px;font-weight:800;color:${c.navy}">Solicitações de Foto</p><p style="font-size:10px;color:${c.textMuted}">Equipe de Fotografia</p></div></div>
+      <div style="display:flex;align-items:center;gap:8px">${avatarHTML(_usuario?.nome,30,"purple")}<button onclick="toggleDark()" style="background:${_dark?"#f1f5f9":"#0f172a"};color:${_dark?"#0f172a":"#f1f5f9"};border:none;border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button><button onclick="doSignOut()" style="${btn("ghost","","sm")}">Sair</button></div>
+    </header>
+    <div style="max-width:700px;margin:0 auto;padding:20px 14px">
+      <div style="background:${c.surface};border-radius:14px;border:1px solid ${c.border};padding:16px 20px;margin-bottom:18px">
+        <p style="font-size:18px;font-weight:800;color:${c.navy};margin-bottom:4px">📸 Agenda de Fotografia</p>
+        <p style="font-size:13px;color:${c.textMuted}">${comFoto.length} agendamento${comFoto.length!==1?"s":""} com solicitação de foto</p>
+      </div>
+      ${!comFoto.length?`<div style="text-align:center;padding:40px;color:${c.textMuted}"><p style="font-size:32px;margin-bottom:12px">📷</p><p style="font-size:14px">Nenhuma solicitação de foto no momento.</p></div>`:
+        comFoto.map(r=>{
+          const[a,m,d]=r.data.split("-");
+          const isH=r.data===h;
+          return `<div style="background:${c.surface};border-radius:12px;border:1px solid ${c.border};padding:14px 18px;margin-bottom:10px;border-left:4px solid #7c3aed;display:flex;gap:14px;align-items:flex-start">
+            <div style="text-align:center;min-width:52px;background:#f5f3ff;border-radius:8px;padding:6px 8px">
+              <p style="font-size:11px;font-weight:700;color:#7c3aed;text-transform:uppercase">${["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"][new Date(r.data+"T12:00:00").getDay()]}</p>
+              <p style="font-size:20px;font-weight:900;color:#7c3aed;line-height:1">${d}</p>
+              <p style="font-size:10px;color:#7c3aed">${m}/${a.slice(2)}</p>
+            </div>
+            <div style="flex:1">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+                <span style="font-family:'DM Mono',monospace;font-weight:800;color:#7c3aed;font-size:14px">${r.horario}</span>
+                <span style="font-size:13px;font-weight:700;color:${c.navy}">${tipoIcon(ESPACOS.find(e=>e.nome===r.espaco)?.tipo,r.espaco)} ${r.espaco}</span>
+                ${isH?`<span style="background:#7c3aed;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">📌 Hoje</span>`:""}
+              </div>
+              <p style="font-size:12px;color:${c.textMid}">${r.professor} · ${r.turma}</p>
+              <p style="font-size:12px;color:${c.textMuted};margin-top:3px">${r.conteudo}</p>
+              ${r.observacoes?`<p style="font-size:11px;color:${c.textMuted};margin-top:3px;font-style:italic">💬 ${r.observacoes}</p>`:""}
+            </div>
+          </div>`;
+        }).join("")
+      }
+    </div>
+    <footer style="margin-top:40px;padding:14px 20px;border-top:1px solid ${c.border};background:${c.surface};text-align:center">
+      <p style="font-size:11px;color:${c.textMuted}">Colégio Arena · Reserva Arena v1.5</p>
+    </footer>
+  </div>`;
+}
+
 function renderSemAcesso(){
   const c=C();
   $("app").innerHTML=`<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:${c.bg};padding:1rem"><div style="text-align:center;max-width:380px"><div style="width:72px;height:72px;border-radius:18px;background:${c.redBg};display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 20px">🔒</div><h2 style="font-size:20px;font-weight:800;color:${c.navy};margin-bottom:8px">Acesso não autorizado</h2><p style="font-size:13.5px;color:${c.textMid};margin-bottom:24px">A conta <strong>${_usuario?.email}</strong> não foi habilitada.</p><button onclick="signOut(auth)" style="${btn("navy")}">Sair</button></div></div>`;
@@ -388,6 +437,7 @@ function renderApp(){
     <footer style="margin-top:40px;padding:16px 24px;border-top:1px solid ${c.border};background:${c.surface};text-align:center">
       <p style="font-size:11px;color:${c.textMuted}">Colégio Arena · Reserva Arena v1.5 · Dev: Luciano Galdino de Melo</p>
     </footer>
+    <button onclick="irInicio()" title="Ir para o início" style="position:fixed;bottom:28px;left:16px;z-index:997;background:${c.surface};border:1.5px solid ${c.border};border-radius:50%;width:44px;height:44px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:${c.cardShadow}">🏠</button>
     ${modalEdicaoHTML()}
     ${modalAgendarHTML()}
     ${modalGerenciarHTML()}
@@ -397,6 +447,14 @@ function renderApp(){
   isAdmin?bindAdmin():bindProf();
 }
 window.doSignOut=()=>signOut(auth);
+window.irInicio=()=>{
+  _P.modoProf="ver";_P.modoCard="calendario";_P.modoVisu="semana";
+  _P.semIni=getSegunda(fmtHoje());_P.diaSel=null;_P.filtroGrade="meus";
+  _P.mostrarHistorico=false;_P.filtroPendente=false;
+  _MA={step:1,espaco:"",data:"",blocos:[bVazio()],resumo:false,salvando:false,sucesso:null,erro:"",calA:new Date().getFullYear(),calM:new Date().getMonth(),bibAV:null};
+  window.scrollTo({top:0,behavior:"smooth"});
+  re();
+};
 
 // ════════════════════════════════════════════════════════════════════════════
 // PROFESSOR VIEW
@@ -563,12 +621,14 @@ function renderProfessorView(){
       });
     }
     if(passadas.length){
+      const btnHistId="btn-hist-prof-"+Date.now();
       html+=`<div style="margin-top:16px;border-top:1px solid ${c.borderLight};padding-top:12px">
-        <button onclick="_P.mostrarHistorico=!_P.mostrarHistorico;re()" style="display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;font-family:inherit;width:100%;padding:4px 0">
-          <span style="font-size:11px;font-weight:700;color:${c.textMuted};text-transform:uppercase">🕐 Histórico (${passadas.length})</span>
-          <span style="font-size:12px;color:${c.textMuted}">${_P.mostrarHistorico?"▲ fechar":"▼ ver"}</span>
+        <button id="${btnHistId}" onclick="_P.mostrarHistorico=!_P.mostrarHistorico;re()" style="display:flex;align-items:center;gap:8px;background:none;border:1px solid ${c.border};border-radius:8px;cursor:pointer;font-family:inherit;width:100%;padding:8px 12px">
+          <span style="font-size:12px;font-weight:700;color:${c.textMuted}">🕐 Histórico</span>
+          <span style="font-size:11px;color:${c.textMuted};background:${c.bg};padding:1px 8px;border-radius:10px">${passadas.length}</span>
+          <span style="font-size:12px;color:${c.textMuted};margin-left:auto">${_P.mostrarHistorico?"▲":"▼"}</span>
         </button>
-        ${_P.mostrarHistorico?passadas.slice(0,10).map(r=>profRRow(r)).join(""):""}
+        ${_P.mostrarHistorico?`<div style="margin-top:8px">${passadas.slice(0,10).map(r=>profRRow(r)).join("")}</div>`:""}
       </div>`;
     }
     html+=`</div>`;
@@ -683,10 +743,25 @@ function renderProfAgendar(){
   if(m.step===3){
     html+=`<div style="background:linear-gradient(135deg,#1a6b47,#0f4c2b);padding:10px 14px;border-radius:10px;margin-bottom:14px"><p style="font-size:11px;color:rgba(255,255,255,.7);font-weight:700;text-transform:uppercase;margin-bottom:2px">Agendando em</p><p style="font-size:14px;font-weight:800;color:#fff">${tipoIcon(ESPACOS.find(e=>e.nome===m.espaco)?.tipo,m.espaco)} ${m.espaco} · ${m.data.split("-").reverse().join("/")}</p></div>`;
     if(isDiaUrgente(m.data))html+=alertHTML("warning","⚠️ Menos de 24h de antecedência. Contate o T.E. para garantir disponibilidade.");
+      if(m.espaco==="Biblioteca"){
+        html+=`<div style="background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:10px;padding:12px 14px;margin-bottom:14px">
+          <p style="font-size:13px;font-weight:800;color:#0369a1;margin-bottom:8px">🎙️ Precisa de equipamentos de Áudio/Visual?</p>
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <button onclick="_MA.bibAV=true;re()" style="flex:1;padding:9px;border-radius:8px;border:2px solid ${_MA.bibAV===true?'#0369a1':'#bae6fd'};background:${_MA.bibAV===true?'#e0f2fe':'#fff'};font-weight:700;font-size:13px;cursor:pointer;color:#0369a1">✓ Sim</button>
+            <button onclick="_MA.bibAV=false;re()" style="flex:1;padding:9px;border-radius:8px;border:2px solid ${_MA.bibAV===false?'#64748b':'#e2e8f0'};background:${_MA.bibAV===false?'#f1f5f9':'#fff'};font-weight:700;font-size:13px;cursor:pointer;color:#64748b">✕ Não</button>
+          </div>
+          ${_MA.bibAV===true?"<p style=\"font-size:11px;color:#0369a1\">O Áudio/Visual será agendado automaticamente no mesmo horário, se disponível.</p>":""}
+        </div>`;
+      }
     m.blocos.forEach((b,i)=>{html+=maBlocoHTML(b,i);});
     const ult=m.blocos[m.blocos.length-1];
     const eo=ESPACOS.find(e=>e.nome===m.espaco);
-    const bVal=b=>b.horario&&b.turma&&b.conteudo&&(eo?.tipo!=="laboratorio"||b.laboratorista);
+    const bVal=b=>{
+    if(!b.horario||!b.turma||!b.conteudo)return false;
+    if(eo?.tipo==="laboratorio"&&!b.laboratorista)return false;
+    if(m.espaco==="Áudio/Visual"&&(!b.localMontagem||!b.observacoes))return false;
+    return true;
+  };
     const ultVal=bVal(ult),todosVal=m.blocos.every(bVal);
     if(m.blocos.length<HORARIOS.length)html+=`<button id="btn-add-inline" onclick="maAddBloco()" ${!ultVal?"disabled":""} style="${btn(ultVal?"success":"ghost",!ultVal)};width:100%;margin-top:10px;padding:11px;border:2px dashed ${ultVal?"#40b07a":"#cbd5e1"}">+ Agendar outra turma neste dia</button>`;
     html+=`<button id="btn-conf-inline" onclick="maConfirmar()" ${!todosVal?"disabled":""} style="${btn("success",!todosVal)};width:100%;margin-top:14px;padding:14px;font-size:15px;border-radius:12px">${todosVal?`Confirmar ${m.blocos.length} agendamento${m.blocos.length>1?"s":""}`:"Preencha todos os campos"}</button>`;
@@ -703,7 +778,7 @@ function bindProf(){
 
   window._calNav=(cid,dir)=>{let nm=_P.mesCal.m+dir,na=_P.mesCal.a;if(nm>11){nm=0;na++;}if(nm<0){nm=11;na--;}_P.mesCal={a:na,m:nm};re();};
 }
-window.pSetModoProf=v=>{_P.modoProf=v;if(v==='agendar'){_MA={step:1,espaco:"",data:"",blocos:[bVazio()],resumo:false,salvando:false,sucesso:null,erro:"",calA:new Date().getFullYear(),calM:new Date().getMonth()};}re();};
+window.pSetModoProf=v=>{_P.modoProf=v;if(v==='agendar'){_MA={step:1,espaco:"",data:"",blocos:[bVazio()],resumo:false,salvando:false,sucesso:null,erro:"",calA:new Date().getFullYear(),calM:new Date().getMonth(),bibAV:null};}re();};
 window.pSetModo=v=>{_P.modoCard=v;re();};
 window.pFiltroRapido=tipo=>{
   if(tipo==='pendente'){
@@ -745,7 +820,7 @@ let _MA={step:1,espaco:"",data:"",blocos:[],resumo:false,salvando:false,sucesso:
 const bVazio=()=>({horario:"",turma:"",conteudo:"",paginas:"",laboratorista:"",quantidade:1});
 
 window.abrirModalAgendar=(dataIni="")=>{
-  _MA={step:dataIni?2:1,espaco:"",data:dataIni,blocos:[bVazio()],resumo:false,salvando:false,sucesso:null,erro:"",calA:new Date().getFullYear(),calM:new Date().getMonth()};
+  _MA={step:dataIni?2:1,espaco:"",data:dataIni,blocos:[bVazio()],resumo:false,salvando:false,sucesso:null,erro:"",calA:new Date().getFullYear(),calM:new Date().getMonth(),bibAV:null};
   $("mod-ag").style.display="flex";
   renderMA();
 };
@@ -806,7 +881,12 @@ function renderMA(){
       m.blocos.forEach((b,i)=>{body+=maBlocoHTML(b,i);});
       const ult=m.blocos[m.blocos.length-1];
       const eo=ESPACOS.find(e=>e.nome===m.espaco);
-      const bVal=b=>b.horario&&b.turma&&b.conteudo&&(eo?.tipo!=="laboratorio"||b.laboratorista);
+      const bVal=b=>{
+    if(!b.horario||!b.turma||!b.conteudo)return false;
+    if(eo?.tipo==="laboratorio"&&!b.laboratorista)return false;
+    if(m.espaco==="Áudio/Visual"&&(!b.localMontagem||!b.observacoes))return false;
+    return true;
+  };
       const ultVal=bVal(ult);
       const todosVal=m.blocos.every(bVal);
       if(m.blocos.length<HORARIOS.length)body+=`<button onclick="maAddBloco()" ${!ultVal?"disabled":""} style="${btn(ultVal?"success":"ghost",!ultVal)};width:100%;margin-top:10px;padding:11px;border:2px dashed ${ultVal?"#40b07a":"#cbd5e1"}">+ Agendar outra turma neste dia</button>`;
@@ -842,6 +922,20 @@ function maBlocoHTML(b,i){
       <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Turma *</label><br><select onchange="maSetBlocoRe(${i},'turma',this.value)" style="${sel()};margin-top:5px"><option value="">Selecione...</option><optgroup label="Anos Iniciais">${TURMAS.filter(t=>parseInt(t)<=5).map(t=>`<option ${b.turma===t?"selected":""}>${t}</option>`).join("")}</optgroup><optgroup label="Anos Finais">${TURMAS.filter(t=>parseInt(t)>=6).map(t=>`<option ${b.turma===t?"selected":""}>${t}</option>`).join("")}</optgroup></select></div>
       <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Conteúdo da Aula *</label><br><textarea oninput="maSetBlocoRe(${i},'conteudo',this.value)" rows="2" placeholder="Descreva o conteúdo..." style="${inp()};resize:vertical;line-height:1.6;margin-top:5px">${b.conteudo}</textarea></div>
       <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Páginas do Livro</label><br><input value="${b.paginas}" oninput="maSetBlocoRe(${i},'paginas',this.value)" placeholder="Ex: pp. 45-62" style="${inp()};margin-top:5px"></div>
+      ${m.espaco==="Fazendinha"?`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Observações</label><br><textarea oninput="maSetBlocoRe(${i},'observacoes',this.value)" rows="2" placeholder="Ex: Piquenique com turma, necessita de área sombreada..." style="${inp()};resize:none;line-height:1.6;margin-top:5px">${b.observacoes||""}</textarea></div>`:""}
+      ${m.espaco==="Áudio/Visual"?`
+        <div style="background:${c.bg};border-radius:10px;padding:12px;border:1px solid ${c.border};display:grid;gap:12px">
+          <p style="font-size:12px;font-weight:700;color:${c.navy}">🎙️ Equipamentos necessários</p>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+            ${[{k:"microfones",l:"🎤 Microfones"},{k:"caixasom",l:"🔊 Caixa de som"},{k:"projetor",l:"📽️ Projetor"}].map(eq=>`<div><label style="font-size:11px;font-weight:700;color:${c.textMuted};text-transform:uppercase">${eq.l}</label><br><input type="number" min="0" value="${b[eq.k]||0}" oninput="maSetBlocoRe(${i},'${eq.k}',this.value)" style="${inp()};width:100%;margin-top:5px;text-align:center"></div>`).join("")}
+          </div>
+          <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">📍 Local de montagem *</label><br><input value="${b.localMontagem||""}" oninput="maSetBlocoRe(${i},'localMontagem',this.value)" placeholder="Ex: Sala 302, Pátio principal, Auditório..." style="${inp()};margin-top:5px"></div>
+          <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">💬 Observações *</label><br><textarea oninput="maSetBlocoRe(${i},'observacoes',this.value)" rows="2" placeholder="Descreva como os equipamentos serão utilizados..." style="${inp()};resize:none;line-height:1.6;margin-top:5px">${b.observacoes||""}</textarea></div>
+        </div>`:""}
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:${c.greenBg};border-radius:8px;border:1px solid ${c.greenBorder};cursor:pointer" onclick="maSetBlocoRe(${i},'precisaFoto',!_MA.blocos[${i}].precisaFoto)">
+        <input type="checkbox" ${b.precisaFoto?"checked":""} onchange="maSetBlocoRe(${i},'precisaFoto',this.checked)" style="width:18px;height:18px;accent-color:#1a6b47;cursor:pointer;flex-shrink:0">
+        <div><p style="font-size:13px;font-weight:700;color:${c.navy}">📸 Solicitar fotógrafo</p><p style="font-size:11px;color:${c.textMuted}">A equipe de fotografia será notificada</p></div>
+      </div>
     </div>
   </div>`;
 }
@@ -860,11 +954,29 @@ function renderMAResumo(){
   html+=`<div style="display:grid;gap:8px;margin-bottom:${precisaCiencia?16:20}px">`;
   m.blocos.forEach((b,i)=>{
     const isUrg=urgentes.includes(b);
-    html+=`<div style="display:flex;gap:12px;align-items:flex-start;padding:10px 14px;background:${c.surface};border:1px solid ${isUrg?"#fed7aa":c.border};border-radius:8px;border-left:3px solid ${isUrg?"#f97316":"#40b07a"}"><div style="min-width:42px"><span style="font-family:'DM Mono',monospace;font-weight:800;color:${isUrg?"#c2410c":"#40b07a"};font-size:13px">${b.horario}</span>${isUrg?`<p style="font-size:9px;color:#c2410c;font-weight:700">urgente</p>`:""}</div><div><p style="font-size:13px;font-weight:700;color:${c.navy}">${b.turma}</p><p style="font-size:12px;color:${c.textMuted};margin-top:2px">${b.conteudo}</p></div></div>`;
+    const extras=[];
+    if(b.paginas)extras.push("📖 "+b.paginas);
+    if(b.laboratorista)extras.push("🔬 "+(b.laboratorista==="Sim"?"Com laboratorista":"Sem laboratorista"));
+    if(Number(b.quantidade)>0)extras.push("📦 "+b.quantidade+" unidade"+(b.quantidade>1?"s":""));
+    if(Number(b.microfones)>0)extras.push("🎤 "+b.microfones+" microfone"+(b.microfones>1?"s":""));
+    if(Number(b.caixasom)>0)extras.push("🔊 "+b.caixasom+" caixa"+(b.caixasom>1?"s":"")+" de som");
+    if(Number(b.projetor)>0)extras.push("📽️ "+b.projetor+" projetor"+(b.projetor>1?"es":""));
+    if(b.localMontagem)extras.push("📍 "+b.localMontagem);
+    if(b.observacoes)extras.push("💬 "+b.observacoes);
+    if(b.precisaFoto)extras.push("📸 Fotógrafo solicitado");
+    html+=`<div style="display:flex;gap:12px;align-items:flex-start;padding:10px 14px;background:${c.surface};border:1px solid ${isUrg?"#fed7aa":c.border};border-radius:8px;border-left:3px solid ${isUrg?"#f97316":"#40b07a"}">
+      <div style="min-width:42px"><span style="font-family:'DM Mono',monospace;font-weight:800;color:${isUrg?"#c2410c":"#40b07a"};font-size:13px">${b.horario}</span>${isUrg?`<p style="font-size:9px;color:#c2410c;font-weight:700">urgente</p>`:""}</div>
+      <div style="flex:1"><p style="font-size:13px;font-weight:700;color:${c.navy}">${b.turma}</p><p style="font-size:12px;color:${c.textMuted};margin-top:2px">${b.conteudo}</p>
+        ${extras.length?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">${extras.map(e=>`<span style="font-size:11px;background:${c.bg};border:1px solid ${c.border};border-radius:6px;padding:2px 8px;color:${c.textMid}">${e}</span>`).join("")}</div>`:""}
+      </div>
+    </div>`;
   });
   html+=`</div>`;
   if(precisaCiencia)html+=`<label style="display:flex;align-items:flex-start;gap:10px;margin-bottom:18px;cursor:pointer;padding:12px 14px;background:${c.surface};border:1.5px solid ${c.border};border-radius:10px"><input type="checkbox" id="chk-ciente" onchange="cienteChanged(this.checked)" style="width:18px;height:18px;margin-top:1px;accent-color:#1a6b47;flex-shrink:0;cursor:pointer"><span style="font-size:12px;color:${c.navy};line-height:1.5">${fimSem?"Estou ciente: agendamento em fim de semana fica pendente até aprovação do administrador.":"Estou ciente de que este agendamento tem menos de 24h. Entrarei em contato com o T.E. para garantir disponibilidade."}</span></label>`;
-  html+=`<div style="display:flex;gap:10px"><button onclick="_MA.resumo=false;renderMA()" style="${btn("ghost")};flex:1;padding:11px">← Revisar</button><button id="btn-conf" onclick="if(!this.disabled)maSalvar()" style="flex:2;padding:11px;font-size:13.5px;border-radius:8px;border:none;font-weight:700;font-family:inherit;cursor:${precisaCiencia?'not-allowed':'pointer'};background:${precisaCiencia?'#cbd5e1':'#1a6b47'};color:${precisaCiencia?'#94a3b8':'#fff'}" ${precisaCiencia?"data-needs-ciente=true":""}>${m.salvando?"Salvando...":"✓ Confirmar"}</button></div></div>`;
+  html+=`<div style="display:flex;gap:10px">
+    <button onclick="_MA.resumo=false;_P.modoProf==='agendar'?re():renderMA()" style="${btn("ghost")};flex:1;padding:11px">✏️ Editar</button>
+    <button id="btn-conf" onclick="if(!this.disabled)maSalvar()" style="flex:2;padding:11px;font-size:13.5px;border-radius:8px;border:none;font-weight:700;font-family:inherit;cursor:${precisaCiencia?'not-allowed':'pointer'};background:${precisaCiencia?'#cbd5e1':'#1a6b47'};color:${precisaCiencia?'#94a3b8':'#fff'}" ${precisaCiencia?"data-needs-ciente=true":""}>${m.salvando?"Salvando...":"✓ Confirmar"}</button>
+  </div></div>`;
   return html;
 }
 
@@ -901,7 +1013,12 @@ window.maSetBlocoRe=(i,k,v)=>{
 };
 function atualizarBotoesAgendar(){
   const eo=ESPACOS.find(e=>e.nome===_MA.espaco);
-  const bVal=b=>b.horario&&b.turma&&b.conteudo&&(eo?.tipo!=="laboratorio"||b.laboratorista);
+  const bVal=b=>{
+    if(!b.horario||!b.turma||!b.conteudo)return false;
+    if(eo?.tipo==="laboratorio"&&!b.laboratorista)return false;
+    if(m.espaco==="Áudio/Visual"&&(!b.localMontagem||!b.observacoes))return false;
+    return true;
+  };
   const todosVal=_MA.blocos.every(bVal);
   const ultVal=bVal(_MA.blocos[_MA.blocos.length-1]);
   const btnConf=document.getElementById("btn-conf-inline");
@@ -941,7 +1058,16 @@ window.maSalvar=async()=>{
       const dow=new Date(Date.UTC(a,m-1,d)).getUTCDay();
       const st=(urg||dow===0||dow===6)?"pendente":"confirmado";
       if(st==="pendente")algPend=true;
-      await addDoc(collection(db,"reservas"),{professor:_usuario.nome,professorId:_usuario.uid,professorEmail:_usuario.email,turma:b.turma,espaco,data,horario:b.horario,conteudo:b.conteudo,paginas:b.paginas||"",laboratorista:b.laboratorista||"",quantidade:eo?.tipo==="equipamento"?Number(b.quantidade):null,status:st,criadoEm:Timestamp.now()});
+      const docData={professor:_usuario.nome,professorId:_usuario.uid,professorEmail:_usuario.email,turma:b.turma,espaco,data,horario:b.horario,conteudo:b.conteudo,paginas:b.paginas||"",laboratorista:b.laboratorista||"",quantidade:eo?.tipo==="equipamento"?Number(b.quantidade):null,status:st,criadoEm:Timestamp.now(),precisaFoto:b.precisaFoto||false,observacoes:b.observacoes||"",localMontagem:b.localMontagem||"",microfones:Number(b.microfones)||0,caixasom:Number(b.caixasom)||0,projetor:Number(b.projetor)||0};
+      await addDoc(collection(db,"reservas"),docData);
+      // Se Biblioteca + bibAV=true, criar reserva de A/V automaticamente
+      if(espaco==="Biblioteca"&&_MA.bibAV===true){
+        const avOcup=await getDocs(query(collection(db,"reservas"),where("espaco","==","Áudio/Visual"),where("data","==",data),where("horario","==",b.horario)));
+        const avLivre=!avOcup.docs.find(d=>d.data()?.status!=="recusado");
+        if(avLivre){
+          await addDoc(collection(db,"reservas"),{...docData,espaco:"Áudio/Visual",conteudo:"A/V integrado com Biblioteca — "+b.conteudo,localMontagem:"Biblioteca",observacoes:"Agendado automaticamente via Biblioteca"});
+        }
+      }
     }
     _MA.sucesso=algPend?"pendente":"confirmado";_MA.salvando=false;if(_P.modoProf==="agendar"){re();}else{renderMA();};
   }catch(e){_MA.erro="Erro ao salvar. Tente novamente.";_MA.salvando=false;_MA.resumo=false;if(_P.modoProf==="agendar"){re();}else{renderMA();};}
@@ -1121,7 +1247,7 @@ function renderAdminView(){
     const conf=filtradas.filter(r=>r.status!=="pendente"&&(_A.historico||r.data>=h));
 
     html+=`<div style="display:flex;gap:2px;margin-bottom:18px;background:${c.surface};border-radius:10px;padding:4px;border:1px solid ${c.border};width:fit-content">
-      ${[{id:"reservas",l:"📋 Reservas"},{id:"espacos",l:"🏛️ Por Espaço"},{id:"turma",l:"🎓 Por Turma"}].map(t=>`<button onclick="aSetAba('${t.id}')" style="${btn(_A.aba===t.id?"navy":"ghost")};padding:7px 15px;font-size:12.5px;white-space:nowrap">${t.l}</button>`).join("")}
+      ${[{id:"reservas",l:"📋 Reservas"},{id:"espacos",l:"🏛️ Por Espaço"},{id:"turma",l:"🎓 Por Turma"},{id:"fotos",l:"📸 Fotos"}].map(t=>`<button onclick="aSetAba('${t.id}')" style="${btn(_A.aba===t.id?"navy":"ghost")};padding:7px 15px;font-size:12.5px;white-space:nowrap">${t.l}</button>`).join("")}
     </div>`;
 
     if(_A.aba==="reservas"){
@@ -1171,6 +1297,36 @@ function renderAdminView(){
       });
     }
 
+    if(_A.aba==="fotos"){
+      const comFoto=filtradas.filter(r=>r.precisaFoto&&(_A.historico||r.data>=h)).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
+      if(!comFoto.length){html+=`<div style="text-align:center;padding:32px;color:${c.textMuted}"><p style="font-size:28px;margin-bottom:10px">📷</p><p>Nenhuma solicitação de foto encontrada.</p></div>`;}
+      else{
+        html+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><div style="width:8px;height:8px;border-radius:50%;background:#7c3aed"></div><p style="font-size:12px;font-weight:800;color:#7c3aed;text-transform:uppercase">📸 Solicitações de foto · ${comFoto.length}</p><div style="flex:1;height:1px;background:#ddd6fe"></div></div>`;
+        const pd={};comFoto.forEach(r=>{if(!pd[r.data])pd[r.data]=[];pd[r.data].push(r);});
+        Object.entries(pd).forEach(([data,rs])=>{
+          const[a2,m2,d2]=data.split("-");const isH=data===h;
+          html+=`<div style="margin-bottom:14px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><div style="background:${isH?"#7c3aed":"#64748b"};color:#fff;border-radius:7px;padding:3px 12px;font-size:11.5px;font-weight:700">${isH?"📌 Hoje":`${d2}/${m2}/${a2}`}</div><div style="flex:1;height:1px;background:#ddd6fe"></div></div>`;
+          rs.forEach(r=>{
+            html+=`<div style="display:flex;gap:10px;align-items:flex-start;padding:10px 14px;border-radius:10px;margin-bottom:6px;background:${c.surface};border:1px solid #ddd6fe;border-left:4px solid #7c3aed">
+              <div style="min-width:52px;text-align:center"><p style="font-size:13px;font-family:'DM Mono',monospace;font-weight:800;color:#7c3aed">${r.horario}</p></div>
+              <div style="width:1px;height:38px;background:#ddd6fe;flex-shrink:0"></div>
+              <div style="flex:1">
+                <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:3px">
+                  <span style="font-weight:700;font-size:13px;color:${c.navy}">${tipoIcon(ESPACOS.find(e=>e.nome===r.espaco)?.tipo,r.espaco)} ${r.espaco}</span>
+                  <span style="font-size:11px;color:${c.textMuted}">·</span>
+                  <span style="font-size:12px;color:${c.textMid}">${r.professor}</span>
+                  <span style="font-size:11px;color:${c.textMuted}">·</span>
+                  <span style="font-size:12px;color:${c.textMuted}">${r.turma}</span>
+                </div>
+                <p style="font-size:12px;color:${c.textMuted}">${r.conteudo}</p>
+                ${r.observacoes?`<p style="font-size:11px;color:${c.textMuted};font-style:italic;margin-top:3px">💬 ${r.observacoes}</p>`:""}
+              </div>
+            </div>`;
+          });
+          html+=`</div>`;
+        });
+      }
+    }
     if(_A.aba==="turma"){
       const turmas=[...new Set(filtradas.map(r=>r.turma))].filter(Boolean).sort();
       turmas.forEach(turma=>{
@@ -1283,7 +1439,7 @@ window.abrirEdicao=id=>{
 // ════════════════════════════════════════════════════════════════════════════
 function modalGerenciarHTML(){const c=C();return`<div id="mod-gu" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);align-items:center;justify-content:center;z-index:1000;padding:1rem"><div style="background:${c.surface};border-radius:16px;width:100%;max-width:900px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.3)"><div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid ${c.border}"><p style="font-size:16px;font-weight:800;color:${c.navy}">👤 Gerenciar Usuários</p><button onclick="fecharGerenciarUsuarios()" style="background:none;border:none;font-size:20px;cursor:pointer;color:${c.textMuted}">✕</button></div><div id="mod-gu-body" style="padding:20px 24px"></div></div></div>`;}
 
-let _GU={nome:"",email:"",senha:"",editId:null,editNome:"",flash:null};
+let _GU={nome:"",email:"",senha:"",perfil:"professor",editId:null,editNome:"",flash:null};
 window.abrirGerenciarUsuarios=()=>{$("mod-gu").style.display="flex";renderGU();};
 window.fecharGerenciarUsuarios=()=>{$("mod-gu").style.display="none";};
 
@@ -1298,6 +1454,7 @@ function renderGU(){
     <div><label style="font-size:11px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Nome *</label><br><input id="gu-nome" placeholder="Ex: Maria Silva" value="${_GU.nome}" onchange="_GU.nome=this.value" style="${inp()};margin-top:5px"></div>
     <div><label style="font-size:11px;font-weight:700;color:${c.textMuted};text-transform:uppercase">E-mail *</label><br><input id="gu-email" type="email" placeholder="prof@escola.edu.br" value="${_GU.email}" onchange="_GU.email=this.value" style="${inp()};margin-top:5px"></div>
     <div><label style="font-size:11px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Senha *</label><br><input id="gu-senha" type="password" placeholder="Mín. 6 caracteres" value="${_GU.senha}" onchange="_GU.senha=this.value" style="${inp()};margin-top:5px"></div>
+    <div><label style="font-size:11px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Perfil *</label><br><select onchange="_GU.perfil=this.value" style="${sel()};margin-top:5px"><option value="professor">Professor</option><option value="fotografo">📸 Fotógrafo</option></select></div>
     <button onclick="guCriar()" style="${btn("navy")};height:42px;white-space:nowrap">+ Cadastrar</button>
   </div>
   <p style="font-size:11.5px;color:${c.textMuted};margin-bottom:20px">💡 Informe a senha ao professor. Ele pode alterá-la via "Esqueci minha senha".</p>`;
@@ -1334,7 +1491,8 @@ window.guCriar=async()=>{
   try{
     const cred=await createUserWithEmailAndPassword(secAuth,email,senha);
     await secAuth.signOut();
-    await setDoc(doc(db,"usuarios",cred.user.uid),{nome,email,perfil:email===ADMIN_EMAIL?"admin":"professor",ativo:true,criadoEm:Timestamp.now()});
+    const perfil=email===ADMIN_EMAIL?"admin":_GU.perfil||"professor";
+    await setDoc(doc(db,"usuarios",cred.user.uid),{nome,email,perfil,ativo:true,criadoEm:Timestamp.now()});
     _GU.nome="";_GU.email="";_GU.senha="";
     _GU.flash={t:"success",m:`Prof(a) ${nome} cadastrado(a)!`};
     renderGU();
