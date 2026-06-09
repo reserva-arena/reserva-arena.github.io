@@ -1563,8 +1563,9 @@ function renderGuLista(){
       h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:#e0e7ff;color:#3730a3">'+(u.perfil==="fotografo"?"📸 Fotógrafo":"👨‍🏫 Professor")+'</span></td>';
       h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:'+(u.ativo!==false?'#e2f4ea':'#fef2f2')+';color:'+(u.ativo!==false?'#0f4c2b':'#7f1d1d')+'">'+(u.ativo!==false?'● Ativo':'○ Inativo')+'</span></td>';
       h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><div style="display:flex;gap:5px">';
-      h+='<button onclick="guToggle(''+u.id+'',''+u.nome.replace(/'/g,"\'")+'','+u.ativo+')" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid '+(u.ativo!==false?'#fed7aa':'#6ee7a0')+';background:'+(u.ativo!==false?'#fff7ed':'#e2f4ea')+';color:'+(u.ativo!==false?'#7c2d12':'#0f4c2b')+';cursor:pointer;font-weight:700">'+(u.ativo!==false?'🔒 Desativar':'🔓 Ativar')+'</button>';
-      h+='<button onclick="guSenha(''+u.email+'')" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid #c7dfd4;background:#fff;color:#607060;cursor:pointer;font-weight:700">🔑 Senha</button>';
+      const ativoBtnStyle='font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid '+(u.ativo!==false?'#fed7aa':'#6ee7a0')+';background:'+(u.ativo!==false?'#fff7ed':'#e2f4ea')+';color:'+(u.ativo!==false?'#7c2d12':'#0f4c2b')+';cursor:pointer;font-weight:700';
+      h+='<button data-uid="'+u.id+'" data-ativo="'+(u.ativo!==false?'1':'0')+'" class="gu-toggle-btn" style="'+ativoBtnStyle+'">'+(u.ativo!==false?'🔒 Desativar':'🔓 Ativar')+'</button>';
+      h+='<button data-email="'+u.email+'" class="gu-senha-btn" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid #c7dfd4;background:#fff;color:#607060;cursor:pointer;font-weight:700">🔑 Senha</button>';
       h+='</div></td></tr>';
     });
     h+='</tbody></table></div>';
@@ -1575,6 +1576,27 @@ function renderGuLista(){
     h+='</div>';
   }
   lista.innerHTML=h;
+  // Event delegation para botões da tabela
+  lista.querySelectorAll('.gu-toggle-btn').forEach(b=>{
+    b.addEventListener('click',()=>{
+      const uid=b.getAttribute('data-uid');
+      const ativo=b.getAttribute('data-ativo')==='1';
+      const nome=b.closest('tr').cells[0].textContent;
+      if(confirm((ativo?'Desativar':'Ativar')+' '+nome+'?')){
+        updateDoc(doc(db,'usuarios',uid),{ativo:!ativo}).then(()=>setTimeout(renderGuLista,500));
+      }
+    });
+  });
+  lista.querySelectorAll('.gu-senha-btn').forEach(b=>{
+    b.addEventListener('click',()=>{
+      const email=b.getAttribute('data-email');
+      if(confirm('Enviar redefinição de senha para '+email+'?')){
+        sendPasswordResetEmail(auth,email)
+          .then(()=>alert('Link enviado para '+email))
+          .catch(()=>alert('Erro ao enviar.'));
+      }
+    });
+  });
 }
 
 window.guCriar=async()=>{
