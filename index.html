@@ -418,23 +418,23 @@ function renderSemAcesso(){
 function renderApp(){
   const c=C(),isAdmin=_usuario?.perfil==="admin";
   $("app").innerHTML=`
-  <div style="min-height:100vh;background:${c.bg}" translate="no" lang="pt-BR">
-    <header style="background:${c.headerBg};border-bottom:1px solid ${c.border};padding:0 12px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100;box-shadow:0 1px 6px rgba(19,35,24,.07);overflow:hidden;width:100%;max-width:100vw">
+  <div style="min-height:100vh;background:${c.bg};width:100%" translate="no" lang="pt-BR">
+    <header style="background:${c.headerBg};border-bottom:1px solid ${c.border};padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100;box-shadow:0 1px 6px rgba(19,35,24,.07);width:100%;box-sizing:border-box">
       <div style="display:flex;align-items:center;gap:10px">
         ${logoHTML(36)}
         <div><p style="font-size:13px;font-weight:800;color:${c.navy}">Reserva de Salas</p><p style="font-size:10px;color:${c.textMuted}">Colégio Arena</p></div>
         
       </div>
       <div style="display:flex;align-items:center;gap:8px">
-        ${!isAdmin?`<button onclick="irInicio()" title="Início" style="background:${c.surface};border:1.5px solid ${c.border};border-radius:50%;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">🏠</button>`:""}
+        ${!isAdmin?`<button onclick="irInicio()" title="Voltar ao início" style="background:${c.surface};border:1.5px solid ${c.border};border-radius:20px;padding:4px 10px;height:34px;cursor:pointer;display:flex;align-items:center;gap:5px;font-size:13px;flex-shrink:0;font-family:inherit;font-weight:600;color:${c.textMid}"><span style="font-size:15px">🏠</span><span style="font-size:11px;font-weight:700">Início</span></button>`:""}
         ${avatarHTML(_usuario?.nome,30,isAdmin?"purple":"navy")}
         <div class="header-nome" style="line-height:1.2"><p style="font-size:13px;font-weight:700;color:${c.navy}">${_usuario?.nome||""}</p><p style="font-size:10px;color:${isAdmin?"#6d28d9":c.blueMid};font-weight:700;text-transform:uppercase">${_usuario?.perfil||""}</p></div>
         <button onclick="toggleDark()" style="background:${_dark?"#f1f5f9":"#0f172a"};color:${_dark?"#0f172a":"#f1f5f9"};border:none;border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button>
         <button onclick="doSignOut()" style="${btn("ghost","","sm")}">Sair</button>
       </div>
     </header>
-    <div id="main-content" id="main-content" style="max-width:1040px;margin:0 auto;padding:20px 14px;overflow-x:hidden;width:100%">
-      ${isAdmin?renderAdminView():renderProfessorView()}
+    <div id="main-content" id="main-content" style="max-width:100%;width:100%;margin:0 auto;padding:20px 20px;overflow-x:hidden;box-sizing:border-box">
+      <div style="max-width:1200px;margin:0 auto;width:100%">${isAdmin?renderAdminView():renderProfessorView()}</div>
     </div>
     <footer style="margin-top:40px;padding:16px 24px;border-top:1px solid ${c.border};background:${c.surface};text-align:center">
       <p style="font-size:11px;color:${c.textMuted}">Colégio Arena · Reserva Arena v1.5 · Dev: Luciano Galdino de Melo</p>
@@ -567,7 +567,7 @@ function renderProfessorView(){
         if(!rsD.length)html+=`<p style="font-size:9px;color:${c.textMuted};opacity:.5;text-align:center">-</p>`;
         else rsD.forEach(r=>{
           const isMeu=ehMeu(r),isPend=r.status==="pendente";
-          html+=`<div style="background:${isMeu?c.greenBg:c.surface};border-radius:5px;padding:3px 5px;border:1px solid ${isMeu?c.greenBorder:c.border};border-left:3px solid ${isMeu?c.green:"#94a3b8"};margin-bottom:3px">
+          html+=`<div style="background:${isMeu?"rgba(187,235,210,.65)":c.surface};border-radius:5px;padding:3px 5px;border:1px solid ${isMeu?"#40b07a":c.border};border-left:3px solid ${isMeu?"#1a6b47":"#cbd5e1"};margin-bottom:3px">
             <div style="display:flex;align-items:baseline;gap:3px">
               <p style="font-size:10px;font-weight:800;font-family:'DM Mono',monospace;color:${isMeu?c.green:"#64748b"}">${r.horario}</p>
               <p style="font-size:10px;font-weight:700;color:${c.navy};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.espaco.split(" ")[0]}</p>
@@ -648,8 +648,8 @@ function profRRow(r){
   const c=C(),h=fmtHoje();
   const isMeu=r.professorId===_usuario?.uid;
   const isPend=r.status==="pendente";
-  const bg=isMeu?(isPend?"rgba(255,247,237,.6)":"rgba(226,244,234,.5)"):c.surface;
-  const bl=isMeu?(isPend?c.amber:c.green):"#cbd5e1";
+  const bg=isMeu?(isPend?"rgba(255,237,213,.85)":"rgba(187,235,210,.6)"):c.surface;
+  const bl=isMeu?(isPend?"#f97316":"#1a6b47"):"#e2e8f0";
   const ex=extraInfo(r);
   return`<div class="row-hover" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;background:${bg};border:1px solid ${c.border};margin-bottom:4px;border-left:4px solid ${bl}">
     <span style="font-size:13px;font-family:'DM Mono',monospace;font-weight:800;color:${isMeu?c.green:"#64748b"};min-width:42px;flex-shrink:0">${r.horario}</span>
