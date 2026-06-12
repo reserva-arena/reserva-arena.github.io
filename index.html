@@ -888,6 +888,19 @@ function renderMA(){
     if(m.step===3){
       body+=`<div style="background:linear-gradient(135deg,#1a6b47,#0f4c2b);padding:10px 14px;border-radius:10px;margin-bottom:14px"><p style="font-size:11px;color:rgba(255,255,255,.7);font-weight:700;text-transform:uppercase;margin-bottom:2px">Agendando em</p><p style="font-size:14px;font-weight:800;color:#fff">${tipoIcon(ESPACOS.find(e=>e.nome===m.espaco)?.tipo,m.espaco)} ${m.espaco} · ${m.data.split("-").reverse().join("/")}</p></div>`;
       if(isDiaUrgente(m.data))body+=alertHTML("warning","⚠️ Menos de 24h de antecedência. Contate o T.E. para garantir disponibilidade.");
+      // Bloco A/V para salas que precisam
+      const _espacosComAV2=["Biblioteca","Sala Multifuncional","Sala de Dança","Ateliê de Artes"];
+      if(_espacosComAV2.includes(m.espaco)){
+        body+=`<div style="background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:10px;padding:12px 14px;margin-bottom:14px">
+          <p style="font-size:13px;font-weight:800;color:#0369a1;margin-bottom:8px">🎙️ Precisa de equipamentos de Áudio/Visual?</p>
+          <p style="font-size:11px;color:#64748b;margin-bottom:8px">Microfone, caixa de som ou projetor para a aula.</p>
+          <div style="display:flex;gap:8px;margin-bottom:6px">
+            <button onclick="setBibAV(true)" style="flex:1;padding:9px;border-radius:8px;border:2px solid ${_MA.bibAV===true?'#0369a1':'#bae6fd'};background:${_MA.bibAV===true?'#e0f2fe':'#fff'};font-weight:700;font-size:13px;cursor:pointer;color:#0369a1">✓ Sim</button>
+            <button onclick="setBibAV(false)" style="flex:1;padding:9px;border-radius:8px;border:2px solid ${_MA.bibAV===false?'#64748b':'#e2e8f0'};background:${_MA.bibAV===false?'#f1f5f9':'#fff'};font-weight:700;font-size:13px;cursor:pointer;color:#64748b">✕ Não</button>
+          </div>
+          ${_MA.bibAV===true?"<p style=\"font-size:11px;color:#0369a1\">O Áudio/Visual será agendado automaticamente no mesmo horário, se disponível.</p>":""}
+        </div>`;
+      }
       m.blocos.forEach((b,i)=>{body+=maBlocoHTML(b,i);});
       const ult=m.blocos[m.blocos.length-1];
       const eo=ESPACOS.find(e=>e.nome===m.espaco);
