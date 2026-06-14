@@ -77,8 +77,8 @@ const HORARIOS    = ["07:10","08:00","09:10","10:00","11:10","12:00","12:50","13
 // equipAuto: []       → lista de equipamentos que podem ser reservados automaticamente junto
 const ESPACOS = [
   {id:1,  nome:"Biblioteca",                     tipo:"espaco",     multiHorario:true,  equipAuto:[]},
-  {id:2,  nome:"Maker 1",                        tipo:"espaco",     multiHorario:true,  equipAuto:[]},
-  {id:3,  nome:"Maker 2",                        tipo:"espaco",     multiHorario:true,  equipAuto:[]},
+  {id:2,  nome:"Maker 1",                        tipo:"espaco",     multiHorario:true,  equipAuto:[],  equipFixo:true},
+  {id:3,  nome:"Maker 2",                        tipo:"espaco",     multiHorario:true,  equipAuto:[],  equipFixo:true},
   {id:4,  nome:"Ateliê de Artes",                tipo:"espaco",     multiHorario:true,  equipAuto:[]},
   {id:5,  nome:"Sala de Dança",                  tipo:"espaco",     multiHorario:true,  equipAuto:[]},
   {id:6,  nome:"Sala Multifuncional",            tipo:"espaco",     multiHorario:true,  equipAuto:["Tablets (18 disp.)","Computadores (16 disp.)"]},
@@ -88,9 +88,9 @@ const ESPACOS = [
   {id:9,  nome:"Lab. de Matemática",             tipo:"espaco",     multiHorario:true,  equipAuto:["Tablets (18 disp.)","Computadores (16 disp.)"]},
   {id:10, nome:"Lab. de Ciências Anos Iniciais", tipo:"laboratorio",multiHorario:true,  equipAuto:[]},
   {id:11, nome:"Lab. de Ciências Anos Finais",   tipo:"laboratorio",multiHorario:true,  equipAuto:[]},
-  {id:12, nome:"Tablets (18 disp.)",             tipo:"equipamento",multiHorario:true,  estoque:18, equipAuto:[]},
-  {id:13, nome:"Computadores (16 disp.)",        tipo:"equipamento",multiHorario:true,  estoque:16, equipAuto:[]},
-  {id:14, nome:"Áudio/Visual",                   tipo:"audiovisual",multiHorario:true,  equipAuto:[]},
+  {id:12, nome:"Tablets (18 disp.)",             tipo:"equipamento",multiHorario:true,  estoque:18, equipAuto:[], equipAvulso:true},
+  {id:13, nome:"Computadores (16 disp.)",        tipo:"equipamento",multiHorario:true,  estoque:16, equipAuto:[], equipAvulso:true},
+  {id:14, nome:"Áudio/Visual",                   tipo:"audiovisual",multiHorario:true,  equipAuto:[], equipAvulso:true},
 ];
 
 const TURMAS_EDUCACAO_INFANTIL = [
@@ -834,9 +834,13 @@ function maBlocoMultiHTML(b,i,eo){
   const rangeAtual=b.horario&&b.horarioFim?horariosRange(b.horario,b.horarioFim):[];
 
   // Validação: equipamentos precisam de local, outros precisam de pelo menos 1 turma no range
+  const isAvulso=eo?.equipAvulso;
   const bValMulti=b=>{
     if(!b.horario||!b.horarioFim)return false;
-    if(isEquip)return !!(b.local&&b.conteudo);
+    // Equipamentos avulsos: precisam de local início, término e conteúdo
+    if(isAvulso)return !!(b.local&&b.localDevolucao&&b.conteudo);
+    // Equipamentos auto (Sala Multifuncional, Lab Mat): só precisam de conteúdo
+    if(isEquip)return !!b.conteudo;
     // Espaços com rotação: todos os horários do range precisam de turma
     if(rangeAtual.length===0)return false;
     const turmasOk=rangeAtual.every(h=>b.turmasPorHorario&&b.turmasPorHorario[h]);
@@ -886,31 +890,33 @@ function maBlocoMultiHTML(b,i,eo){
     </div>`;
   }
 
-  // ── EQUIPAMENTOS: local de entrega e devolução ──
-  if(isEquip&&b.horario&&b.horarioFim){
-    html+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">📍 Local de entrega *</label><br>
-        <input value="${b.local||""}" oninput="maSetBlocoRe(${i},'local',this.value)" placeholder="Ex: Sala 302, Lab. Mat..." style="${inp()};margin-top:5px">
-      </div>
-      <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">📍 Local de devolução</label><br>
-        <input value="${b.localDevolucao||""}" oninput="maSetBlocoRe(${i},'localDevolucao',this.value)" placeholder="Se diferente da entrega" style="${inp()};margin-top:5px">
-      </div>
-    </div>`;
-    // Quantidade para equipamentos com estoque
-    if(tipo==="equipamento"&&eo.estoque){
-      html+=`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">📦 Quantidade (máx ${eo.estoque}) *</label><br>
-        <input type="number" min="1" max="${eo.estoque}" value="${b.quantidade||1}" oninput="maSetBlocoRe(${i},'quantidade',this.value)" style="${inp()};width:140px;margin-top:5px">
-      </div>`;
-    }
-    // A/V: equipamentos específicos
-    if(tipo==="audiovisual"){
-      html+=`<div style="background:${c.bg};border-radius:10px;padding:12px;border:1px solid ${c.border};display:grid;gap:10px">
-        <p style="font-size:12px;font-weight:700;color:${c.navy}">🎙️ Equipamentos necessários</p>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
-          ${[{k:"microfones",l:"🎤 Mic."},{k:"caixasom",l:"🔊 Caixa"},{k:"projetor",l:"📽️ Proj."}].map(eq=>`<div><label style="font-size:10px;font-weight:700;color:${c.textMuted};text-transform:uppercase">${eq.l}</label><br><input type="number" min="0" value="${b[eq.k]||0}" oninput="maSetBlocoRe(${i},'${eq.k}',this.value)" style="${inp()};margin-top:4px;text-align:center"></div>`).join("")}
+  // ── EQUIPAMENTOS AVULSOS: local de início e término ──
+  if(isEquip&&eo?.equipAvulso&&b.horario&&b.horarioFim){
+    html+=`<div style="background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:10px;padding:14px;display:grid;gap:12px">
+      <p style="font-size:13px;font-weight:800;color:#0369a1">📦 Trajeto dos equipamentos</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">📍 Local de início *</label>
+          <p style="font-size:10px;color:${c.textMuted};margin:2px 0 5px">De onde saem os equipamentos</p>
+          <input value="${b.local||""}" oninput="maSetBlocoRe(${i},'local',this.value)" placeholder="Ex: Sala 302, Biblioteca..." style="${inp()}">
         </div>
-      </div>`;
-    }
+        <div>
+          <label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">📍 Local de término *</label>
+          <p style="font-size:10px;color:${c.textMuted};margin:2px 0 5px">Para onde vão / onde serão buscados</p>
+          <input value="${b.localDevolucao||""}" oninput="maSetBlocoRe(${i},'localDevolucao',this.value)" placeholder="Ex: Maker 1, Sala 205..." style="${inp()}">
+        </div>
+      </div>
+      ${tipo==="equipamento"&&eo.estoque?`<div>
+        <label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">📦 Quantidade (máx ${eo.estoque}) *</label><br>
+        <input type="number" min="1" max="${eo.estoque}" value="${b.quantidade||1}" oninput="maSetBlocoRe(${i},'quantidade',this.value)" style="${inp()};width:140px;margin-top:5px">
+      </div>`:""}
+      ${tipo==="audiovisual"?`<div>
+        <label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">🎙️ Equipamentos necessários</label>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px">
+          ${[{k:"microfones",l:"🎤 Microfones"},{k:"caixasom",l:"🔊 Caixa de som"},{k:"projetor",l:"📽️ Projetor"}].map(eq=>`<div><label style="font-size:10px;font-weight:700;color:${c.textMuted};text-transform:uppercase">${eq.l}</label><br><input type="number" min="0" value="${b[eq.k]||0}" oninput="maSetBlocoRe(${i},'${eq.k}',this.value)" style="${inp()};margin-top:4px;text-align:center"></div>`).join("")}
+        </div>
+      </div>`:""}
+    </div>`;
   }
 
   // ── ROTAÇÃO DE TURMAS por horário (espaços não-equipamento) ──
@@ -940,11 +946,12 @@ function maBlocoMultiHTML(b,i,eo){
     }
   }
 
-  // ── Equipamentos automáticos (Lab. Mat., Sala Multifuncional) ──
+  // ── Equipamentos automáticos (Sala Multifuncional e Lab. Mat.) ──
+  // O local já é a própria sala — professor só informa início/fim (já selecionado) e quantidade
   if(temEquipAuto&&b.horario&&b.horarioFim){
     html+=`<div style="background:${c.surface};border-radius:10px;padding:12px;border:1.5px solid #bae6fd">
-      <p style="font-size:13px;font-weight:800;color:#0369a1;margin-bottom:8px">💻 Equipamentos para o período</p>
-      <p style="font-size:11px;color:${c.textMuted};margin-bottom:10px">Serão reservados automaticamente para todos os horários do período.</p>
+      <p style="font-size:13px;font-weight:800;color:#0369a1;margin-bottom:4px">💻 Equipamentos para o período</p>
+      <p style="font-size:11px;color:${c.textMuted};margin-bottom:10px">Serão entregues e recolhidos na própria sala no período ${b.horario} → ${b.horarioFim}.</p>
       <div style="display:grid;gap:8px">`;
     if(eo.equipAuto.includes("Tablets (18 disp.)")){
       html+=`<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:${c.bg};border-radius:8px;border:1.5px solid ${b.qtdTablets>0?c.blueMid:c.border}">
@@ -1082,7 +1089,8 @@ function renderMAResumo(){
         </div>
         <div style="flex:1">
           <p style="font-size:12px;font-weight:700;color:${c.green}">${rangeHors.length} horário${rangeHors.length!==1?"s":""} · ${m.espaco}</p>
-          ${b.local?`<p style="font-size:11px;color:${c.textMuted};margin-top:2px">📍 Entrega: ${b.local}${b.localDevolucao?" · Devolução: "+b.localDevolucao:""}</p>`:""}
+          ${b.local&&eo?.equipAvulso?`<p style="font-size:11px;color:#0369a1;margin-top:2px;font-weight:700">📍 ${b.local} → ${b.localDevolucao||b.local}</p>`:""}
+          ${b.local&&!eo?.equipAvulso?`<p style="font-size:11px;color:${c.textMuted};margin-top:2px">📍 ${b.local}</p>`:""}
           ${b.precisaFoto?`<p style="font-size:11px;color:#7c3aed;margin-top:2px">📸 Fotógrafo solicitado</p>`:""}
           ${b.qtdTablets>0?`<p style="font-size:11px;color:#0369a1;margin-top:2px">📱 ${b.qtdTablets} tablet${b.qtdTablets>1?"s":""}</p>`:""}
           ${b.qtdNotebooks>0?`<p style="font-size:11px;color:#0369a1;margin-top:2px">💻 ${b.qtdNotebooks} computador${b.qtdNotebooks>1?"es":""}</p>`:""}
