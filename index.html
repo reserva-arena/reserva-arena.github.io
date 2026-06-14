@@ -93,12 +93,13 @@ const ESPACOS = [
   {id:14, nome:"Áudio/Visual",                   tipo:"audiovisual",multiHorario:true,  equipAuto:[]},
 ];
 
-const TURMAS = (()=>{
-  const t=[];
-  for(let a=1;a<=5;a++)["A","B","C","D","E"].forEach(l=>t.push(`${a}º${l}`));
-  for(let a=6;a<=9;a++)["A","B","C","D","E","F","G","H"].forEach(l=>t.push(`${a}º${l}`));
-  return t;
-})();
+const TURMAS_EDUCACAO_INFANTIL = [
+  "Maternal",
+  "Infantil 1","Infantil 2","Infantil 3","Infantil 4","Infantil 5",
+];
+const TURMAS_FUND1 = (()=>{const t=[];for(let a=1;a<=5;a++)["A","B","C","D","E"].forEach(l=>t.push(`${a}º${l}`));return t;})();
+const TURMAS_FUND2 = (()=>{const t=[];for(let a=6;a<=9;a++)["A","B","C","D","E","F","G","H"].forEach(l=>t.push(`${a}º${l}`));return t;})();
+const TURMAS = [...TURMAS_EDUCACAO_INFANTIL, ...TURMAS_FUND1, ...TURMAS_FUND2];
 const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 
 const NAO_LETIVOS = new Set([
@@ -681,7 +682,7 @@ const bVazio=()=>({
   multTablets:0,multNotebooks:0,multProjetor:0,
   tipoAtividade:"",
   // Campos específicos multi-horario
-  local:"",qtdTablets:0,qtdNotebooks:0
+  local:"",localDevolucao:"",qtdTablets:0,qtdNotebooks:0,turmasPorHorario:{}
 });
 
 window.fecharModalAgendar=()=>{$("mod-ag").style.display="none";};
@@ -832,21 +833,38 @@ function maBlocoMultiHTML(b,i,eo){
     return[r.horario];
   });
 
-  // Determina horários disponíveis para início
-  const dispIni=HORARIOS.filter(h=>!ocpFire.includes(h));
-  // Horários disponíveis para fim (a partir do início selecionado)
+  // Horários disponíveis para fim (a partir do início)
   let dispFim=[];
   if(b.horario){
     const iIni=HORARIOS.indexOf(b.horario);
-    // Varre do próximo horário até encontrar um ocupado ou o fim
-    dispFim=[b.horario]; // pode terminar no próprio horário (1 período)
+    dispFim=[b.horario];
     for(let idx=iIni+1;idx<HORARIOS.length;idx++){
       if(ocpFire.includes(HORARIOS[idx]))break;
       dispFim.push(HORARIOS[idx]);
     }
   }
 
-  const bValMulti=b=>b.horario&&b.horarioFim&&b.turmaInicio&&b.conteudo&&(!isEquip||b.local);
+  // Range de horários selecionado
+  const rangeAtual=b.horario&&b.horarioFim?horariosRange(b.horario,b.horarioFim):[];
+
+  // Validação: equipamentos precisam de local, outros precisam de pelo menos 1 turma no range
+  const bValMulti=b=>{
+    if(!b.horario||!b.horarioFim)return false;
+    if(isEquip)return !!(b.local&&b.conteudo);
+    // Espaços com rotação: todos os horários do range precisam de turma
+    if(rangeAtual.length===0)return false;
+    const turmasOk=rangeAtual.every(h=>b.turmasPorHorario&&b.turmasPorHorario[h]);
+    return turmasOk&&!!b.conteudo;
+  };
+
+  // Helper para select de turma
+  const selTurma=(horario,val)=>`
+    <select onchange="maSetTurmaPorHorario(${i},'${horario}',this.value)" style="${sel()};font-size:13px;padding:7px 10px">
+      <option value="">Turma...</option>
+      <optgroup label="Ed. Infantil">${TURMAS_EDUCACAO_INFANTIL.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup>
+      <optgroup label="Fund. 1">${TURMAS_FUND1.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup>
+      <optgroup label="Fund. 2">${TURMAS_FUND2.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup>
+    </select>`;
 
   let html=`<div style="background:${c.bg};border:1.5px solid ${bValMulti(b)?c.blueMid+"55":c.border};border-radius:12px;padding:16px;margin-bottom:12px">
     <div style="display:grid;gap:14px">`;
@@ -857,25 +875,24 @@ function maBlocoMultiHTML(b,i,eo){
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px">
       ${HORARIOS.map(h=>{
         const ocp=ocpFire.includes(h)&&h!==b.horario;
-        const sel=h===b.horario;
+        const sel2=h===b.horario;
         return`<button onclick="maSetHorarioMulti(${i},'ini','${h}')" ${ocp?"disabled":""}
-          style="padding:8px 4px;border-radius:8px;border:${sel?"2px solid "+c.blueMid:ocp?"1.5px solid "+c.redBorder:"1.5px solid "+c.greenBorder};background:${sel?c.greenBg:ocp?c.redBg:c.surface};color:${sel?c.blueMid:ocp?c.red:c.green};font-size:11px;font-weight:700;cursor:${ocp?"not-allowed":"pointer"};font-family:'DM Mono',monospace;display:flex;flex-direction:column;align-items:center;gap:2px">
-          ${h}<span style="font-size:8px">${ocp?"● Ocup":sel?"✓ Ini":"○"}</span>
+          style="padding:8px 4px;border-radius:8px;border:${sel2?"2px solid "+c.blueMid:ocp?"1.5px solid "+c.redBorder:"1.5px solid "+c.greenBorder};background:${sel2?c.greenBg:ocp?c.redBg:c.surface};color:${sel2?c.blueMid:ocp?c.red:c.green};font-size:11px;font-weight:700;cursor:${ocp?"not-allowed":"pointer"};font-family:'DM Mono',monospace;display:flex;flex-direction:column;align-items:center;gap:2px">
+          ${h}<span style="font-size:8px">${ocp?"● Ocup":sel2?"✓ Ini":"○"}</span>
         </button>`;
       }).join("")}
     </div>
   </div>`;
 
-  // ── Horário de fim (só aparece após escolher início) ──
+  // ── Horário de fim ──
   if(b.horario){
     html+=`<div>
       <label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">🕐 Horário de fim *</label>
-      ${b.horario===b.horarioFim||!b.horarioFim?`<p style="font-size:11px;color:${c.textMuted};margin:4px 0 8px">Selecione até qual horário ficará com o espaço/equipamento</p>`:""}
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
         ${dispFim.map(h=>{
-          const sel=h===b.horarioFim;
+          const sel2=h===b.horarioFim;
           return`<button onclick="maSetHorarioMulti(${i},'fim','${h}')"
-            style="padding:8px 12px;border-radius:8px;border:${sel?"2px solid #1a6b47":"1.5px solid "+c.border};background:${sel?"#1a6b47":c.surface};color:${sel?"#fff":c.navy};font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Mono',monospace">
+            style="padding:8px 12px;border-radius:8px;border:${sel2?"2px solid #1a6b47":"1.5px solid "+c.border};background:${sel2?"#1a6b47":c.surface};color:${sel2?"#fff":c.navy};font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Mono',monospace">
             ${h}${h===b.horario?" (só este)":""}
           </button>`;
         }).join("")}
@@ -883,45 +900,65 @@ function maBlocoMultiHTML(b,i,eo){
     </div>`;
   }
 
-  // ── Turma de início ──
-  html+=`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">🎓 Turma inicial *</label><br>
-    <select onchange="maSetBlocoRe(${i},'turmaInicio',this.value)" style="${sel()};margin-top:5px">
-      <option value="">Selecione...</option>
-      <optgroup label="Anos Iniciais">${TURMAS.filter(t=>parseInt(t)<=5).map(t=>`<option ${b.turmaInicio===t?"selected":""}>${t}</option>`).join("")}</optgroup>
-      <optgroup label="Anos Finais">${TURMAS.filter(t=>parseInt(t)>=6).map(t=>`<option ${b.turmaInicio===t?"selected":""}>${t}</option>`).join("")}</optgroup>
-    </select>
-  </div>`;
-
-  // ── Turma de fim (opcional, só se range > 1 horário) ──
-  if(b.horario&&b.horarioFim&&b.horario!==b.horarioFim){
-    html+=`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">🎓 Turma final <span style="font-weight:400;text-transform:none">(se diferente)</span></label><br>
-      <select onchange="maSetBlocoRe(${i},'turmaFim',this.value)" style="${sel()};margin-top:5px">
-        <option value="">Mesma turma</option>
-        <optgroup label="Anos Iniciais">${TURMAS.filter(t=>parseInt(t)<=5).map(t=>`<option ${b.turmaFim===t?"selected":""}>${t}</option>`).join("")}</optgroup>
-        <optgroup label="Anos Finais">${TURMAS.filter(t=>parseInt(t)>=6).map(t=>`<option ${b.turmaFim===t?"selected":""}>${t}</option>`).join("")}</optgroup>
-      </select>
+  // ── EQUIPAMENTOS: local de entrega e devolução ──
+  if(isEquip&&b.horario&&b.horarioFim){
+    html+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">📍 Local de entrega *</label><br>
+        <input value="${b.local||""}" oninput="maSetBlocoRe(${i},'local',this.value)" placeholder="Ex: Sala 302, Lab. Mat..." style="${inp()};margin-top:5px">
+      </div>
+      <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">📍 Local de devolução</label><br>
+        <input value="${b.localDevolucao||""}" oninput="maSetBlocoRe(${i},'localDevolucao',this.value)" placeholder="Se diferente da entrega" style="${inp()};margin-top:5px">
+      </div>
     </div>`;
+    // Quantidade para equipamentos com estoque
+    if(tipo==="equipamento"&&eo.estoque){
+      html+=`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">📦 Quantidade (máx ${eo.estoque}) *</label><br>
+        <input type="number" min="1" max="${eo.estoque}" value="${b.quantidade||1}" oninput="maSetBlocoRe(${i},'quantidade',this.value)" style="${inp()};width:140px;margin-top:5px">
+      </div>`;
+    }
+    // A/V: equipamentos específicos
+    if(tipo==="audiovisual"){
+      html+=`<div style="background:${c.bg};border-radius:10px;padding:12px;border:1px solid ${c.border};display:grid;gap:10px">
+        <p style="font-size:12px;font-weight:700;color:${c.navy}">🎙️ Equipamentos necessários</p>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+          ${[{k:"microfones",l:"🎤 Mic."},{k:"caixasom",l:"🔊 Caixa"},{k:"projetor",l:"📽️ Proj."}].map(eq=>`<div><label style="font-size:10px;font-weight:700;color:${c.textMuted};text-transform:uppercase">${eq.l}</label><br><input type="number" min="0" value="${b[eq.k]||0}" oninput="maSetBlocoRe(${i},'${eq.k}',this.value)" style="${inp()};margin-top:4px;text-align:center"></div>`).join("")}
+        </div>
+      </div>`;
+    }
   }
 
-  // ── Local (para equipamentos/audiovisual) ──
-  if(isEquip){
-    html+=`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">📍 Local de uso *</label><br>
-      <input value="${b.local||""}" oninput="maSetBlocoRe(${i},'local',this.value)" placeholder="Ex: Sala 302, Lab. de Matemática, Pátio..." style="${inp()};margin-top:5px">
-    </div>`;
+  // ── ROTAÇÃO DE TURMAS por horário (espaços não-equipamento) ──
+  if(!isEquip&&b.horario&&b.horarioFim){
+    if(rangeAtual.length===1){
+      // Só um horário → select simples
+      html+=`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">🎓 Turma *</label>
+        ${selTurma(rangeAtual[0],(b.turmasPorHorario||{})[rangeAtual[0]]||"")}
+      </div>`;
+    } else {
+      // Vários horários → linha por horário
+      html+=`<div>
+        <label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">🎓 Turmas por horário *</label>
+        <p style="font-size:11px;color:${c.textMuted};margin:4px 0 10px">Selecione a turma de cada horário</p>
+        <div style="display:grid;gap:6px">
+          ${rangeAtual.map(h=>{
+            const turmaVal=(b.turmasPorHorario||{})[h]||"";
+            const ok=!!turmaVal;
+            return`<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;background:${ok?c.greenBg:c.surface};border:1.5px solid ${ok?c.greenBorder:c.border}">
+              <span style="font-family:'DM Mono',monospace;font-weight:800;color:${ok?c.green:c.textMuted};font-size:13px;min-width:42px">${h}</span>
+              <div style="flex:1">${selTurma(h,turmaVal)}</div>
+              ${ok?`<span style="font-size:14px">✓</span>`:`<span style="font-size:14px;color:${c.textMuted}">○</span>`}
+            </div>`;
+          }).join("")}
+        </div>
+      </div>`;
+    }
   }
 
-  // ── Quantidade (equipamentos) ──
-  if(tipo==="equipamento"&&eo.estoque){
-    html+=`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">📦 Quantidade (máx ${eo.estoque}) *</label><br>
-      <input type="number" min="1" max="${eo.estoque}" value="${b.quantidade||1}" oninput="maSetBlocoRe(${i},'quantidade',this.value)" style="${inp()};width:140px;margin-top:5px">
-    </div>`;
-  }
-
-  // ── Equipamentos automáticos (Lab. Matemática, Sala Multifuncional) ──
-  if(temEquipAuto){
+  // ── Equipamentos automáticos (Lab. Mat., Sala Multifuncional) ──
+  if(temEquipAuto&&b.horario&&b.horarioFim){
     html+=`<div style="background:${c.surface};border-radius:10px;padding:12px;border:1.5px solid #bae6fd">
       <p style="font-size:13px;font-weight:800;color:#0369a1;margin-bottom:8px">💻 Equipamentos para o período</p>
-      <p style="font-size:11px;color:${c.textMuted};margin-bottom:10px">Selecione se precisar. As reservas serão criadas automaticamente.</p>
+      <p style="font-size:11px;color:${c.textMuted};margin-bottom:10px">Serão reservados automaticamente para todos os horários do período.</p>
       <div style="display:grid;gap:8px">`;
     if(eo.equipAuto.includes("Tablets (18 disp.)")){
       html+=`<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:${c.bg};border-radius:8px;border:1.5px solid ${b.qtdTablets>0?c.blueMid:c.border}">
@@ -946,24 +983,14 @@ function maBlocoMultiHTML(b,i,eo){
     html+=`</div></div>`;
   }
 
-  // ── Áudio/Visual campos específicos ──
-  if(tipo==="audiovisual"){
-    html+=`<div style="background:${c.bg};border-radius:10px;padding:12px;border:1px solid ${c.border};display:grid;gap:10px">
-      <p style="font-size:12px;font-weight:700;color:${c.navy}">🎙️ Equipamentos necessários</p>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
-        ${[{k:"microfones",l:"🎤 Microfones"},{k:"caixasom",l:"🔊 Caixa de som"},{k:"projetor",l:"📽️ Projetor"}].map(eq=>`<div><label style="font-size:10px;font-weight:700;color:${c.textMuted};text-transform:uppercase">${eq.l}</label><br><input type="number" min="0" value="${b[eq.k]||0}" oninput="maSetBlocoRe(${i},'${eq.k}',this.value)" style="${inp()};margin-top:4px;text-align:center"></div>`).join("")}
-      </div>
-    </div>`;
-  }
-
   // ── Conteúdo ──
   html+=`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">📝 Conteúdo / Atividade *</label><br>
     <textarea oninput="maSetBlocoRe(${i},'conteudo',this.value)" rows="2" placeholder="Descreva a atividade do período..." style="${inp()};resize:vertical;line-height:1.6;margin-top:5px">${b.conteudo}</textarea>
   </div>`;
 
-  // ── Observações (opcional) ──
+  // ── Observações ──
   html+=`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">💬 Observações</label><br>
-    <textarea oninput="maSetBlocoRe(${i},'observacoes',this.value)" rows="2" placeholder="Ex: turmas diferentes em cada horário, necessidade especial..." style="${inp()};resize:none;margin-top:5px">${b.observacoes||""}</textarea>
+    <textarea oninput="maSetBlocoRe(${i},'observacoes',this.value)" rows="2" placeholder="Observações adicionais..." style="${inp()};resize:none;margin-top:5px">${b.observacoes||""}</textarea>
   </div>`;
 
   // ── Fotógrafo ──
@@ -974,12 +1001,12 @@ function maBlocoMultiHTML(b,i,eo){
 
   html+=`</div></div>`;
 
-  // Botão confirmar para multi
   const ok=bValMulti(b);
   html+=`<button onclick="maConfirmar()" ${!ok?"disabled":""} style="${btn("success",!ok)};width:100%;margin-top:14px;padding:14px;font-size:15px;border-radius:12px">${ok?"Confirmar agendamento":"Preencha todos os campos obrigatórios"}</button>`;
 
   return html;
 }
+
 
 // ─── BLOCO INDIVIDUAL (espaços não-multiHorario) ──────────────────────────
 function maBlocoHTML(b,i,eo){
@@ -1004,7 +1031,7 @@ function maBlocoHTML(b,i,eo){
       <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Horário *</label>${slots}</div>
       ${isEquip?`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Quantidade (máx ${eo.estoque}) *</label><br><input type="number" min="1" max="${eo.estoque}" value="${b.quantidade||1}" oninput="maSetBlocoRe(${i},'quantidade',this.value)" style="${inp()};width:140px;margin-top:5px"></div>`:""}
       ${isLab?`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Laboratorista? *</label><div style="display:flex;gap:20px;margin-top:4px">${["Sim","Não"].map(op=>`<label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13.5px"><input type="radio" name="lab${i}" value="${op}" ${b.laboratorista===op?"checked":""} onchange="maSetBloco(${i},'laboratorista','${op}')">${op}</label>`).join("")}</div></div>`:""}
-      <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Turma *</label><br><select onchange="maSetBlocoRe(${i},'turma',this.value)" style="${sel()};margin-top:5px"><option value="">Selecione...</option><optgroup label="Anos Iniciais">${TURMAS.filter(t=>parseInt(t)<=5).map(t=>`<option ${b.turma===t?"selected":""}>${t}</option>`).join("")}</optgroup><optgroup label="Anos Finais">${TURMAS.filter(t=>parseInt(t)>=6).map(t=>`<option ${b.turma===t?"selected":""}>${t}</option>`).join("")}</optgroup></select></div>
+      <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Turma *</label><br><select onchange="maSetBlocoRe(${i},'turma',this.value)" style="${sel()};margin-top:5px"><option value="">Selecione...</option><optgroup label="Ed. Infantil">${TURMAS_EDUCACAO_INFANTIL.map(t=>`<option ${b.turma===t?"selected":""}>${t}</option>`).join("")}</optgroup><optgroup label="Fund. 1">${TURMAS_FUND1.map(t=>`<option ${b.turma===t?"selected":""}>${t}</option>`).join("")}</optgroup><optgroup label="Fund. 2">${TURMAS_FUND2.map(t=>`<option ${b.turma===t?"selected":""}>${t}</option>`).join("")}</optgroup></select></div>
       ${(m.espaco==="Maker 1"||m.espaco==="Maker 2")?`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Tipo de Atividade *</label><br><select oninput="maSetBlocoRe(${i},'tipoAtividade',this.value)" style="${inp()};margin-top:5px"><option value="">Selecione...</option><option value="Nave a Vela" ${b.tipoAtividade==="Nave a Vela"?"selected":""}>🚀 Nave a Vela</option><option value="Outros" ${b.tipoAtividade==="Outros"?"selected":""}>📋 Outros</option></select></div>`:""}
       <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Conteúdo da Aula *</label><br><textarea oninput="maSetBlocoRe(${i},'conteudo',this.value)" rows="2" placeholder="Descreva o conteúdo..." style="${inp()};resize:vertical;line-height:1.6;margin-top:5px">${b.conteudo}</textarea></div>
       <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Páginas do Livro</label><br><input value="${b.paginas}" oninput="maSetBlocoRe(${i},'paginas',this.value)" placeholder="Ex: pp. 45-62" style="${inp()};margin-top:5px"></div>
@@ -1058,22 +1085,32 @@ function renderMAResumo(){
 
   if(isMulti){
     // Resumo do range
-    html+=`<div style="padding:12px 16px;background:${c.surface};border:1px solid ${c.border};border-radius:10px;margin-bottom:12px;border-left:4px solid #40b07a">
-      <div style="display:flex;gap:12px;align-items:flex-start">
-        <div style="min-width:80px;text-align:center">
-          <p style="font-family:'DM Mono',monospace;font-weight:800;color:#40b07a;font-size:14px">${b.horario}</p>
-          <p style="font-size:11px;color:${c.textMuted}">até</p>
-          <p style="font-family:'DM Mono',monospace;font-weight:800;color:#40b07a;font-size:14px">${b.horarioFim}</p>
-          <p style="font-size:10px;color:${c.textMuted};margin-top:4px">${rangeHors.length} período${rangeHors.length!==1?"s":""}</p>
+    const isEquipResumo=eo?.tipo==="equipamento"||eo?.tipo==="audiovisual";
+    const tphResumo=b.turmasPorHorario||{};
+    html+=`<div style="background:${c.surface};border:1px solid ${c.border};border-radius:10px;margin-bottom:12px;border-left:4px solid #40b07a;overflow:hidden">
+      <div style="padding:10px 14px;background:${c.greenBg};border-bottom:1px solid ${c.greenBorder};display:flex;align-items:center;gap:12px">
+        <div style="text-align:center;min-width:80px">
+          <p style="font-family:'DM Mono',monospace;font-weight:800;color:#40b07a;font-size:13px">${b.horario}</p>
+          <p style="font-size:10px;color:${c.textMuted}">até</p>
+          <p style="font-family:'DM Mono',monospace;font-weight:800;color:#40b07a;font-size:13px">${b.horarioFim}</p>
         </div>
         <div style="flex:1">
-          <p style="font-size:13px;font-weight:700;color:${c.navy}">${b.turmaInicio}${b.turmaFim&&b.turmaFim!==b.turmaInicio?" → "+b.turmaFim:""}</p>
-          ${b.local?`<p style="font-size:12px;color:${c.textMuted};margin-top:2px">📍 ${b.local}</p>`:""}
-          <p style="font-size:12px;color:${c.textMuted};margin-top:4px">${b.conteudo}</p>
-          ${b.qtdTablets>0?`<p style="font-size:11px;color:#0369a1;margin-top:4px">📱 ${b.qtdTablets} tablet${b.qtdTablets>1?"s":""}</p>`:""}
-          ${b.qtdNotebooks>0?`<p style="font-size:11px;color:#0369a1;margin-top:2px">💻 ${b.qtdNotebooks} computador${b.qtdNotebooks>1?"es":""}</p>`:""}
+          <p style="font-size:12px;font-weight:700;color:${c.green}">${rangeHors.length} horário${rangeHors.length!==1?"s":""} · ${m.espaco}</p>
+          ${b.local?`<p style="font-size:11px;color:${c.textMuted};margin-top:2px">📍 Entrega: ${b.local}${b.localDevolucao?" · Devolução: "+b.localDevolucao:""}</p>`:""}
           ${b.precisaFoto?`<p style="font-size:11px;color:#7c3aed;margin-top:2px">📸 Fotógrafo solicitado</p>`:""}
+          ${b.qtdTablets>0?`<p style="font-size:11px;color:#0369a1;margin-top:2px">📱 ${b.qtdTablets} tablet${b.qtdTablets>1?"s":""}</p>`:""}
+          ${b.qtdNotebooks>0?`<p style="font-size:11px;color:#0369a1;margin-top:2px">💻 ${b.qtdNotebooks} computador${b.qtdNotebooks>1?"es":""}</p>`:""}
         </div>
+      </div>
+      ${!isEquipResumo?`<div style="padding:8px 14px;display:grid;gap:4px">
+        ${rangeHors.map(h=>{const t=tphResumo[h]||"—";return`<div style="display:flex;align-items:center;gap:10px;padding:5px 8px;border-radius:6px;background:${t!=="—"?c.greenBg+"80":c.bg};border:1px solid ${t!=="—"?c.greenBorder:c.borderLight}">
+          <span style="font-family:'DM Mono',monospace;font-weight:800;color:${c.blueMid};font-size:12px;min-width:42px">${h}</span>
+          <span style="font-size:13px;font-weight:700;color:${t!=="—"?c.navy:c.textMuted}">${t}</span>
+          ${t!=="—"?`<span style="font-size:11px;color:${c.green};margin-left:auto">✓</span>`:`<span style="font-size:11px;color:${c.textMuted};margin-left:auto">sem turma</span>`}
+        </div>`;}).join("")}
+      </div>`:""}
+      <div style="padding:8px 14px;border-top:1px solid ${c.borderLight}">
+        <p style="font-size:12px;color:${c.textMuted}">${b.conteudo}</p>
       </div>
     </div>`;
   } else {
@@ -1114,6 +1151,11 @@ window.maSetHorarioMulti=(i,tipo,h)=>{
   re();
 };
 window.maSetBloco=(i,k,v)=>{_MA.blocos[i][k]=v;};
+window.maSetTurmaPorHorario=(i,horario,turma)=>{
+  if(!_MA.blocos[i].turmasPorHorario)_MA.blocos[i].turmasPorHorario={};
+  _MA.blocos[i].turmasPorHorario[horario]=turma;
+  re();
+};
 window.maSetBlocoRe=(i,k,v)=>{_MA.blocos[i][k]=v;re();};
 window.maAddBloco=()=>{_MA.blocos.push(bVazio());re();};
 window.maRemBloco=i=>{_MA.blocos.splice(i,1);re();};
@@ -1172,13 +1214,19 @@ window.maSalvar=async()=>{
       const[a,m,d2]=data.split("-").map(Number);
       const dow=new Date(Date.UTC(a,m-1,d2)).getUTCDay();
       const st=(algUrgente||dow===0||dow===6)?"pendente":"confirmado";
-      // Salvar reserva principal
+      // turmasPorHorario: mapeia cada horário do range à sua turma
+      const tph=b.turmasPorHorario||{};
+      const isEquipSalvar=eo?.tipo==="equipamento"||eo?.tipo==="audiovisual";
+      // Salvar reserva principal (horário inicial)
       const dadosPrincipal={
         professor:_usuario.nome,professorId:_usuario.uid,professorEmail:_usuario.email,
-        turma:b.turmaInicio,turmaInicio:b.turmaInicio,turmaFim:b.turmaFim||b.turmaInicio,
+        turma:isEquipSalvar?"":( tph[b.horario]||b.turmaInicio||""),
+        turmaInicio:isEquipSalvar?"":( tph[b.horario]||b.turmaInicio||""),
+        turmaFim:isEquipSalvar?"":( tph[b.horarioFim]||b.turmaFim||tph[b.horario]||""),
+        turmasPorHorario:tph,
         espaco,data,horario:b.horario,horarioFim:b.horarioFim,
         conteudo:b.conteudo,observacoes:b.observacoes||"",
-        local:b.local||"",localMontagem:b.local||"",
+        local:b.local||"",localMontagem:b.local||"",localDevolucao:b.localDevolucao||"",
         quantidade:eo?.tipo==="equipamento"?Number(b.quantidade):null,
         microfones:Number(b.microfones)||0,caixasom:Number(b.caixasom)||0,projetor:Number(b.projetor)||0,
         status:st,criadoEm:Timestamp.now(),precisaFoto:b.precisaFoto||false,
@@ -1186,10 +1234,14 @@ window.maSalvar=async()=>{
         qtdTablets:Number(b.qtdTablets)||0,qtdNotebooks:Number(b.qtdNotebooks)||0,
       };
       await addDoc(collection(db,"reservas"),dadosPrincipal);
-      // Salvar reservas automáticas para horários intermediários (para bloquear o espaço)
+      // Salvar reservas automáticas para cada horário intermediário com sua turma
       for(let idx=1;idx<rangeHors.length;idx++){
+        const hAtual=rangeHors[idx];
+        const turmaAtual=isEquipSalvar?"":(tph[hAtual]||tph[b.horario]||"");
         await addDoc(collection(db,"reservas"),{
-          ...dadosPrincipal,horario:rangeHors[idx],horarioFim:rangeHors[idx],
+          ...dadosPrincipal,
+          horario:hAtual,horarioFim:hAtual,
+          turma:turmaAtual,turmaInicio:turmaAtual,turmaFim:turmaAtual,
           reservaAutomatica:true,conteudo:"[Auto] "+b.conteudo
         });
       }
@@ -1331,7 +1383,7 @@ function renderED(){
     ${isEquip?`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Quantidade *</label><br><input type="number" min="1" max="${eo.estoque}" value="${e.quantidade||1}" onchange="_ED.quantidade=this.value" style="${inp()};width:140px;margin-top:5px"></div>`:""}
     ${isLab?`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Laboratorista? *</label><div style="display:flex;gap:20px;margin-top:4px">${["Sim","Não"].map(op=>`<label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13.5px"><input type="radio" name="labEd" value="${op}" ${e.laboratorista===op?"checked":""} onchange="_ED.laboratorista='${op}'">${op}</label>`).join("")}</div></div>`:""}
     <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Data *</label><br><input type="date" value="${e.data}" min="${fmtHoje()}" onchange="_ED.data=this.value" style="${inp()};margin-top:5px"></div>
-    <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Turma *</label><br><select onchange="_ED.turma=this.value" style="${sel()};margin-top:5px"><option value="">Selecione...</option><optgroup label="Anos Iniciais">${TURMAS.filter(t=>parseInt(t)<=5).map(t=>`<option ${e.turma===t?"selected":""}>${t}</option>`).join("")}</optgroup><optgroup label="Anos Finais">${TURMAS.filter(t=>parseInt(t)>=6).map(t=>`<option ${e.turma===t?"selected":""}>${t}</option>`).join("")}</optgroup></select></div>
+    <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Turma *</label><br><select onchange="_ED.turma=this.value" style="${sel()};margin-top:5px"><option value="">Selecione...</option><optgroup label="Ed. Infantil">${TURMAS_EDUCACAO_INFANTIL.map(t=>`<option ${e.turma===t?"selected":""}>${t}</option>`).join("")}</optgroup><optgroup label="Fund. 1">${TURMAS_FUND1.map(t=>`<option ${e.turma===t?"selected":""}>${t}</option>`).join("")}</optgroup><optgroup label="Fund. 2">${TURMAS_FUND2.map(t=>`<option ${e.turma===t?"selected":""}>${t}</option>`).join("")}</optgroup></select></div>
     <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Conteúdo *</label><br><textarea rows="3" onchange="_ED.conteudo=this.value" style="${inp()};resize:vertical;line-height:1.6;margin-top:5px">${e.conteudo||""}</textarea></div>
     <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px"><button onclick="fecharEdicao()" style="${btn("ghost")}">Cancelar</button><button onclick="salvarED()" style="${btn("success")}">Salvar ✓</button></div>
   </div>`;
