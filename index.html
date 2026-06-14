@@ -957,9 +957,9 @@ function maBlocoMultiHTML(b,i,eo){
       html+=`<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:${c.bg};border-radius:8px;border:1.5px solid ${b.qtdTablets>0?c.blueMid:c.border}">
         <span style="font-size:16px">📱</span><div style="flex:1"><p style="font-size:13px;font-weight:700;color:${c.navy}">Tablets</p><p style="font-size:11px;color:${c.textMuted}">Máx. 18 disponíveis</p></div>
         <div style="display:flex;align-items:center;gap:8px">
-          <button onclick="maSetBlocoRe(${i},'qtdTablets',Math.max(0,Number(_MA.blocos[${i}].qtdTablets||0)-1))" style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${c.surface};cursor:pointer;font-size:16px;font-family:inherit">−</button>
+          <button onclick="_MA.blocos[${i}].qtdTablets=Math.max(0,(_MA.blocos[${i}].qtdTablets||0)-1);re()" style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${c.surface};cursor:pointer;font-size:16px;font-family:inherit">−</button>
           <span style="font-size:16px;font-weight:800;color:${c.navy};min-width:24px;text-align:center">${b.qtdTablets||0}</span>
-          <button onclick="maSetBlocoRe(${i},'qtdTablets',Math.min(18,Number(_MA.blocos[${i}].qtdTablets||0)+1))" style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${c.surface};cursor:pointer;font-size:16px;font-family:inherit">+</button>
+          <button onclick="_MA.blocos[${i}].qtdTablets=Math.min(18,(_MA.blocos[${i}].qtdTablets||0)+1);re()" style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${c.surface};cursor:pointer;font-size:16px;font-family:inherit">+</button>
         </div>
       </div>`;
     }
@@ -967,9 +967,9 @@ function maBlocoMultiHTML(b,i,eo){
       html+=`<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:${c.bg};border-radius:8px;border:1.5px solid ${b.qtdNotebooks>0?c.blueMid:c.border}">
         <span style="font-size:16px">💻</span><div style="flex:1"><p style="font-size:13px;font-weight:700;color:${c.navy}">Computadores</p><p style="font-size:11px;color:${c.textMuted}">Máx. 16 disponíveis</p></div>
         <div style="display:flex;align-items:center;gap:8px">
-          <button onclick="maSetBlocoRe(${i},'qtdNotebooks',Math.max(0,Number(_MA.blocos[${i}].qtdNotebooks||0)-1))" style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${c.surface};cursor:pointer;font-size:16px;font-family:inherit">−</button>
+          <button onclick="_MA.blocos[${i}].qtdNotebooks=Math.max(0,(_MA.blocos[${i}].qtdNotebooks||0)-1);re()" style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${c.surface};cursor:pointer;font-size:16px;font-family:inherit">−</button>
           <span style="font-size:16px;font-weight:800;color:${c.navy};min-width:24px;text-align:center">${b.qtdNotebooks||0}</span>
-          <button onclick="maSetBlocoRe(${i},'qtdNotebooks',Math.min(16,Number(_MA.blocos[${i}].qtdNotebooks||0)+1))" style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${c.surface};cursor:pointer;font-size:16px;font-family:inherit">+</button>
+          <button onclick="_MA.blocos[${i}].qtdNotebooks=Math.min(16,(_MA.blocos[${i}].qtdNotebooks||0)+1);re()" style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${c.surface};cursor:pointer;font-size:16px;font-family:inherit">+</button>
         </div>
       </div>`;
     }
