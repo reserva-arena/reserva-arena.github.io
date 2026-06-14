@@ -76,18 +76,18 @@ const HORARIOS    = ["07:10","08:00","09:10","10:00","11:10","12:00","12:50","13
 // multiHorario: true  → formulário de range (início→fim) em vez de blocos individuais
 // equipAuto: []       → lista de equipamentos que podem ser reservados automaticamente junto
 const ESPACOS = [
-  {id:1,  nome:"Biblioteca",                     tipo:"espaco",     multiHorario:false, equipAuto:[]},
-  {id:2,  nome:"Maker 1",                        tipo:"espaco",     multiHorario:false, equipAuto:[]},
-  {id:3,  nome:"Maker 2",                        tipo:"espaco",     multiHorario:false, equipAuto:[]},
-  {id:4,  nome:"Ateliê de Artes",                tipo:"espaco",     multiHorario:false, equipAuto:[]},
+  {id:1,  nome:"Biblioteca",                     tipo:"espaco",     multiHorario:true,  equipAuto:[]},
+  {id:2,  nome:"Maker 1",                        tipo:"espaco",     multiHorario:true,  equipAuto:[]},
+  {id:3,  nome:"Maker 2",                        tipo:"espaco",     multiHorario:true,  equipAuto:[]},
+  {id:4,  nome:"Ateliê de Artes",                tipo:"espaco",     multiHorario:true,  equipAuto:[]},
   {id:5,  nome:"Sala de Dança",                  tipo:"espaco",     multiHorario:true,  equipAuto:[]},
-  {id:6,  nome:"Sala Multifuncional",            tipo:"espaco",     multiHorario:false, equipAuto:["Tablets (18 disp.)","Computadores (16 disp.)"]},
+  {id:6,  nome:"Sala Multifuncional",            tipo:"espaco",     multiHorario:true,  equipAuto:["Tablets (18 disp.)","Computadores (16 disp.)"]},
   {id:7,  nome:"Cozinha Experimental",           tipo:"espaco",     multiHorario:true,  equipAuto:[]},
   {id:8,  nome:"Fazendinha",                     tipo:"espaco",     multiHorario:true,  equipAuto:[]},
-  {id:15, nome:"Pátio do Lago de Pedras",         tipo:"espaco",     multiHorario:true,  equipAuto:[]},
+  {id:15, nome:"Pátio do Lago de Pedras",        tipo:"espaco",     multiHorario:true,  equipAuto:[]},
   {id:9,  nome:"Lab. de Matemática",             tipo:"espaco",     multiHorario:true,  equipAuto:["Tablets (18 disp.)","Computadores (16 disp.)"]},
-  {id:10, nome:"Lab. de Ciências Anos Iniciais", tipo:"laboratorio",multiHorario:false, equipAuto:[]},
-  {id:11, nome:"Lab. de Ciências Anos Finais",   tipo:"laboratorio",multiHorario:false, equipAuto:[]},
+  {id:10, nome:"Lab. de Ciências Anos Iniciais", tipo:"laboratorio",multiHorario:true,  equipAuto:[]},
+  {id:11, nome:"Lab. de Ciências Anos Finais",   tipo:"laboratorio",multiHorario:true,  equipAuto:[]},
   {id:12, nome:"Tablets (18 disp.)",             tipo:"equipamento",multiHorario:true,  estoque:18, equipAuto:[]},
   {id:13, nome:"Computadores (16 disp.)",        tipo:"equipamento",multiHorario:true,  estoque:16, equipAuto:[]},
   {id:14, nome:"Áudio/Visual",                   tipo:"audiovisual",multiHorario:true,  equipAuto:[]},
@@ -740,7 +740,6 @@ function renderProfAgendar(){
           <span style="font-size:20px">${tipoIcon(tipo,e.nome)}</span>
           <div style="flex:1">
             <span style="font-size:14px;font-weight:700;color:${c.navy}">${e.nome}</span>
-            ${isMulti?`<span style="font-size:10px;background:#e0f2fe;color:#0369a1;border-radius:6px;padding:1px 7px;margin-left:8px;font-weight:700">🕐 Multi-horário</span>`:""}
           </div>
           ${e.estoque?`<span style="font-size:11px;color:${c.textMuted}">${e.estoque} disp.</span>`:""}
         </button>`;
@@ -755,7 +754,7 @@ function renderProfAgendar(){
     html+=`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:${c.greenBg};border-radius:10px;margin-bottom:16px;border:1px solid ${c.greenBorder}">
       <span style="font-size:18px">${tipoIcon(eo?.tipo,m.espaco)}</span>
       <span style="font-size:13px;font-weight:700;color:${c.green}">${m.espaco}</span>
-      ${eo?.multiHorario?`<span style="font-size:10px;background:#e0f2fe;color:#0369a1;border-radius:6px;padding:1px 7px;font-weight:700">🕐 Multi-horário</span>`:""}
+
       <button onclick="maBack()" style="margin-left:auto;background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:12px;font-family:inherit">Trocar</button>
     </div>`;
     const porData={};
@@ -782,7 +781,7 @@ function renderProfAgendar(){
     html+=`<div style="background:linear-gradient(135deg,#1a6b47,#0f4c2b);padding:10px 14px;border-radius:10px;margin-bottom:14px">
       <p style="font-size:11px;color:rgba(255,255,255,.7);font-weight:700;text-transform:uppercase;margin-bottom:2px">Agendando em</p>
       <p style="font-size:14px;font-weight:800;color:#fff">${tipoIcon(eo?.tipo,m.espaco)} ${m.espaco} · ${m.data.split("-").reverse().join("/")}</p>
-      ${isMulti?`<p style="font-size:11px;color:rgba(255,255,255,.7);margin-top:4px">🕐 Selecione o período completo (início → fim)</p>`:""}
+
     </div>`;
 
     if(isDiaUrgente(m.data))html+=alertHTML("warning","⚠️ Menos de 24h de antecedência. Contate o T.E. para garantir disponibilidade.");
@@ -799,21 +798,8 @@ function renderProfAgendar(){
       </div>`;
     }
 
-    if(isMulti){
-      // Formulário multi-horário (range)
-      html+=maBlocoMultiHTML(m.blocos[0],0,eo);
-    } else {
-      // Formulário bloco-a-bloco (espaços normais)
-      m.blocos.forEach((b,i)=>{html+=maBlocoHTML(b,i,eo);});
-      const ult=m.blocos[m.blocos.length-1];
-      const bVal=b=>b.horario&&b.turma&&b.conteudo&&(eo?.tipo!=="laboratorio"||b.laboratorista);
-      const ultVal=bVal(ult),todosVal=m.blocos.every(bVal);
-      if(m.blocos.length<HORARIOS.length){
-        html+=`<button id="btn-add-inline" onclick="maAddBloco()" ${!ultVal?"disabled":""} style="${btn(ultVal?"success":"ghost",!ultVal)};width:100%;margin-top:10px;padding:11px;border:2px dashed ${ultVal?"#40b07a":"#cbd5e1"}">+ Agendar outra turma neste dia</button>`;
-      }
-      const btnLabel=todosVal?`Confirmar ${m.blocos.length} agendamento${m.blocos.length>1?"s":""}`:"Preencha todos os campos";
-      html+=`<button id="btn-conf-inline" onclick="maConfirmar()" ${!todosVal?"disabled":""} style="${btn("success",!todosVal)};width:100%;margin-top:14px;padding:14px;font-size:15px;border-radius:12px">${btnLabel}</button>`;
-    }
+    // Todos os espaços usam formulário multi-horário com rotação de turmas
+    html+=maBlocoMultiHTML(m.blocos[0],0,eo);
   }
   html+=`</div>`;
   setTimeout(()=>{atualizarBotoesAgendar();},30);
@@ -1173,14 +1159,10 @@ window.cienteChanged=function(checked){
 
 function atualizarBotoesAgendar(){
   const eo=ESPACOS.find(e=>e.nome===_MA.espaco);
-  const isMulti=eo?.multiHorario;
   let todosVal=false;
-  if(isMulti){
+  if(true){
     const b=_MA.blocos[0];
     todosVal=!!(b.horario&&b.horarioFim&&b.turmaInicio&&b.conteudo&&(eo?.tipo!=="equipamento"&&eo?.tipo!=="audiovisual"||b.local));
-  } else {
-    const bVal=b=>b.horario&&b.turma&&b.conteudo&&(eo?.tipo!=="laboratorio"||b.laboratorista);
-    todosVal=_MA.blocos.every(bVal);
   }
   const btnConf=document.getElementById("btn-conf-inline");
   if(btnConf){
@@ -1196,7 +1178,7 @@ window.maSalvar=async()=>{
   _MA.salvando=true;_MA.erro="";re();
   const{espaco,data,blocos}=_MA;
   const eo=ESPACOS.find(e=>e.nome===espaco);
-  const isMulti=eo?.multiHorario;
+  const isMulti=true; // todos usam multi-horário
 
   try{
     if(isMulti){
