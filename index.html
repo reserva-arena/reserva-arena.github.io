@@ -51,7 +51,7 @@ select option{font-family:'DM Sans',system-ui,sans-serif}
 <script type="module">
 import{initializeApp,getApps}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,onAuthStateChanged,sendPasswordResetEmail}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import{getFirestore,collection,addDoc,onSnapshot,doc,updateDoc,query,where,getDocs,Timestamp,setDoc,getDoc,deleteDoc}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import{getFirestore,collection,addDoc,onSnapshot,doc,updateDoc,query,where,getDocs,Timestamp,setDoc,getDoc,deleteDoc,writeBatch}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey:            "AIzaSyC_fN9rAp9pr_MsoHPuenVs2WF617cPKQg",
@@ -1188,163 +1188,124 @@ window.maSalvar=async()=>{
   _MA.salvando=true;_MA.erro="";re();
   const{espaco,data,blocos}=_MA;
   const eo=ESPACOS.find(e=>e.nome===espaco);
-  const isMulti=true; // todos usam multi-horário
 
   try{
-    if(isMulti){
-      // Salva uma reserva principal + reservas automáticas para cada horário intermediário
-      const b=blocos[0];
-      const rangeHors=horariosRange(b.horario,b.horarioFim);
-      // Verificar conflitos em todos os horários do range
-      for(const h of rangeHors){
-        const snap=await getDocs(query(collection(db,"reservas"),where("espaco","==",espaco),where("data","==",data),where("horario","==",h)));
-        const existe=snap.docs.map(d=>d.data()).find(r=>r?.status!=="recusado");
-        if(existe){_MA.erro=`Horário ${h} já reservado por ${existe.professor}.`;_MA.salvando=false;_MA.resumo=false;re();return;}
-      }
-      // Determinar status
-      const algUrgente=rangeHors.some(h=>isUrgente(data,h));
-      const[a,m,d2]=data.split("-").map(Number);
-      const dow=new Date(Date.UTC(a,m-1,d2)).getUTCDay();
-      const st=(algUrgente||dow===0||dow===6)?"pendente":"confirmado";
-      // turmasPorHorario: mapeia cada horário do range à sua turma
-      const tph=b.turmasPorHorario||{};
-      const isEquipSalvar=eo?.tipo==="equipamento"||eo?.tipo==="audiovisual";
-      // Salvar reserva principal (horário inicial)
-      const dadosPrincipal={
-        professor:_usuario.nome,professorId:_usuario.uid,professorEmail:_usuario.email,
-        turma:isEquipSalvar?"":( tph[b.horario]||b.turmaInicio||""),
-        turmaInicio:isEquipSalvar?"":( tph[b.horario]||b.turmaInicio||""),
-        turmaFim:isEquipSalvar?"":( tph[b.horarioFim]||b.turmaFim||tph[b.horario]||""),
-        turmasPorHorario:tph,
-        espaco,data,horario:b.horario,horarioFim:b.horarioFim,
-        conteudo:b.conteudo,observacoes:b.observacoes||"",
-        local:b.local||"",localMontagem:b.local||"",localDevolucao:b.localDevolucao||"",
-        quantidade:eo?.tipo==="equipamento"?Number(b.quantidade):null,
-        microfones:Number(b.microfones)||0,caixasom:Number(b.caixasom)||0,projetor:Number(b.projetor)||0,
-        status:st,criadoEm:Timestamp.now(),precisaFoto:b.precisaFoto||false,
-        paginas:"",laboratorista:"",reservaAutomatica:false,
-        qtdTablets:Number(b.qtdTablets)||0,qtdNotebooks:Number(b.qtdNotebooks)||0,
-      };
-      await addDoc(collection(db,"reservas"),dadosPrincipal);
-      // Salvar reservas automáticas para cada horário intermediário com sua turma
-      for(let idx=1;idx<rangeHors.length;idx++){
-        const hAtual=rangeHors[idx];
-        const turmaAtual=isEquipSalvar?"":(tph[hAtual]||tph[b.horario]||"");
-        await addDoc(collection(db,"reservas"),{
-          ...dadosPrincipal,
-          horario:hAtual,horarioFim:hAtual,
-          turma:turmaAtual,turmaInicio:turmaAtual,turmaFim:turmaAtual,
-          reservaAutomatica:true,conteudo:"[Auto] "+b.conteudo
-        });
-      }
-      // Equipamentos automáticos (tablets, notebooks) para cada horário do range
-      const equipAuto=eo.equipAuto||[];
-      for(const nomeEquip of equipAuto){
-        const qtd=nomeEquip.includes("Tablet")?Number(b.qtdTablets):Number(b.qtdNotebooks);
-        if(!qtd||qtd<=0)continue;
-        for(const h of rangeHors){
-          const snapEq=await getDocs(query(collection(db,"reservas"),where("espaco","==",nomeEquip),where("data","==",data),where("horario","==",h)));
-          const eqOcup=snapEq.docs.find(d=>d.data()?.status!=="recusado");
-          if(!eqOcup){
-            await addDoc(collection(db,"reservas"),{
-              professor:_usuario.nome,professorId:_usuario.uid,professorEmail:_usuario.email,
-              turma:b.turmaInicio,espaco:nomeEquip,data,horario:h,horarioFim:h,
-              conteudo:`Vinculado à ${espaco} — ${b.conteudo}`,
-              quantidade:qtd,status:st,criadoEm:Timestamp.now(),
-              precisaFoto:false,observacoes:`Agendado automaticamente via ${espaco}`,
-              localMontagem:b.local||espaco,reservaAutomatica:true,
-              paginas:"",laboratorista:"",
-            });
-          }
-        }
-      }
-      // A/V automático se bibAV=true
-      if(_MA.bibAV===true){
-        for(const h of rangeHors){
-          const avSnap=await getDocs(query(collection(db,"reservas"),where("espaco","==","Áudio/Visual"),where("data","==",data),where("horario","==",h)));
-          const avOcup=avSnap.docs.find(d=>d.data()?.status!=="recusado");
-          if(!avOcup){
-            await addDoc(collection(db,"reservas"),{
-              professor:_usuario.nome,professorId:_usuario.uid,professorEmail:_usuario.email,
-              turma:b.turmaInicio,espaco:"Áudio/Visual",data,horario:h,horarioFim:h,
-              conteudo:`A/V vinculado à ${espaco} — ${b.conteudo}`,
-              localMontagem:espaco,observacoes:`Agendado automaticamente junto com ${espaco}`,
-              status:st,criadoEm:Timestamp.now(),precisaFoto:false,
-              paginas:"",laboratorista:"",quantidade:null,reservaAutomatica:true,
-              microfones:0,caixasom:0,projetor:0
-            });
-          }
-        }
-      }
-      _MA.sucesso=st;_MA.salvando=false;re();
-    } else {
-      // Fluxo original bloco-a-bloco
-      for(const bl of blocos){
-        const snap=await getDocs(query(collection(db,"reservas"),where("espaco","==",espaco),where("data","==",data),where("horario","==",bl.horario)));
-        const existe=snap.docs.map(d=>d.data()).find(r=>r?.status!=="recusado");
-        if(existe){_MA.erro=`Horário ${bl.horario} já reservado por ${existe.professor}.`;_MA.salvando=false;_MA.resumo=false;re();return;}
-      }
-      let algPend=false;
-      for(const bl of blocos){
-        const urg=isUrgente(data,bl.horario);
-        const[a,m,d2]=data.split("-").map(Number);
-        const dow=new Date(Date.UTC(a,m-1,d2)).getUTCDay();
-        const st=(urg||dow===0||dow===6)?"pendente":"confirmado";
-        if(st==="pendente")algPend=true;
-        await addDoc(collection(db,"reservas"),{
-          professor:_usuario.nome,professorId:_usuario.uid,professorEmail:_usuario.email,
-          turma:bl.turma,turmaInicio:bl.turma,turmaFim:bl.turma,
-          espaco,data,horario:bl.horario,horarioFim:bl.horario,
-          conteudo:bl.conteudo,paginas:bl.paginas||"",
-          laboratorista:bl.laboratorista||"",
-          quantidade:eo?.tipo==="equipamento"?Number(bl.quantidade):null,
-          status:st,criadoEm:Timestamp.now(),precisaFoto:bl.precisaFoto||false,
-          observacoes:bl.observacoes||"",localMontagem:bl.localMontagem||"",
-          microfones:Number(bl.microfones)||0,caixasom:Number(bl.caixasom)||0,projetor:Number(bl.projetor)||0,
-          multTablets:Number(bl.multTablets)||0,multNotebooks:Number(bl.multNotebooks)||0,
-          tipoAtividade:bl.tipoAtividade||"",reservaAutomatica:false,
-          qtdTablets:0,qtdNotebooks:0,local:"",
-        });
-      }
-      // Sala Multifuncional: equipamentos automáticos por bloco
-      for(const bl of blocos){
-        for(const eq of [{nome:"Tablets (18 disp.)",qtd:Number(bl.multTablets)||0},{nome:"Computadores (16 disp.)",qtd:Number(bl.multNotebooks)||0}]){
-          if(eq.qtd<=0)continue;
-          const eqSnap=await getDocs(query(collection(db,"reservas"),where("espaco","==",eq.nome),where("data","==",data),where("horario","==",bl.horario)));
-          if(!eqSnap.docs.find(d=>d.data()?.status!=="recusado")){
-            const[a,m,d2]=data.split("-").map(Number);const dow=new Date(Date.UTC(a,m-1,d2)).getUTCDay();
-            const urg=isUrgente(data,bl.horario);const st=(urg||dow===0||dow===6)?"pendente":"confirmado";
-            await addDoc(collection(db,"reservas"),{
-              professor:_usuario.nome,professorId:_usuario.uid,professorEmail:_usuario.email,
-              turma:bl.turma,espaco:eq.nome,data,horario:bl.horario,horarioFim:bl.horario,
-              conteudo:"Vinculado à Sala Multifuncional — "+bl.conteudo,
-              quantidade:eq.qtd,status:st,criadoEm:Timestamp.now(),
-              precisaFoto:false,observacoes:"Agendado automaticamente via Sala Multifuncional",
-              localMontagem:"Sala Multifuncional",reservaAutomatica:true,paginas:"",laboratorista:""
-            });
-          }
-        }
-      }
-      // A/V automático
-      if(_MA.bibAV===true){
-        for(const bl of blocos){
-          const avSnap=await getDocs(query(collection(db,"reservas"),where("espaco","==","Áudio/Visual"),where("data","==",data),where("horario","==",bl.horario)));
-          if(!avSnap.docs.find(d=>d.data()?.status!=="recusado")){
-            const[a,m,d2]=data.split("-").map(Number);const dow=new Date(Date.UTC(a,m-1,d2)).getUTCDay();
-            const urg=isUrgente(data,bl.horario);const st=(urg||dow===0||dow===6)?"pendente":"confirmado";
-            await addDoc(collection(db,"reservas"),{
-              professor:_usuario.nome,professorId:_usuario.uid,professorEmail:_usuario.email,
-              turma:bl.turma,espaco:"Áudio/Visual",data,horario:bl.horario,horarioFim:bl.horario,
-              conteudo:"A/V vinculado — "+bl.conteudo,localMontagem:espaco,
-              status:st,criadoEm:Timestamp.now(),precisaFoto:false,
-              paginas:"",laboratorista:"",quantidade:null,reservaAutomatica:true,
-              microfones:0,caixasom:0,projetor:0
-            });
-          }
-        }
-      }
-      _MA.sucesso=algPend?"pendente":"confirmado";_MA.salvando=false;re();
+    const b=blocos[0];
+    const rangeHors=horariosRange(b.horario,b.horarioFim);
+
+    // 1. Verificar conflitos (reads primeiro, antes de qualquer write)
+    const snapConflitos=await Promise.all(rangeHors.map(h=>
+      getDocs(query(collection(db,"reservas"),where("espaco","==",espaco),where("data","==",data),where("horario","==",h)))
+    ));
+    for(let i=0;i<rangeHors.length;i++){
+      const existe=snapConflitos[i].docs.map(d=>d.data()).find(r=>r?.status!=="recusado");
+      if(existe){_MA.erro=`Horário ${rangeHors[i]} já reservado por ${existe.professor}.`;_MA.salvando=false;_MA.resumo=false;re();return;}
     }
+
+    // 2. Verificar conflitos de equipamentos automáticos em paralelo
+    const equipAuto=eo.equipAuto||[];
+    const equipSnaps={};
+    if(equipAuto.length>0){
+      const eqPromises=[];
+      for(const nomeEquip of equipAuto){
+        for(const h of rangeHors){
+          eqPromises.push(
+            getDocs(query(collection(db,"reservas"),where("espaco","==",nomeEquip),where("data","==",data),where("horario","==",h)))
+            .then(snap=>({nomeEquip,h,snap}))
+          );
+        }
+      }
+      const eqResults=await Promise.all(eqPromises);
+      eqResults.forEach(({nomeEquip,h,snap})=>{
+        if(!equipSnaps[nomeEquip])equipSnaps[nomeEquip]={};
+        equipSnaps[nomeEquip][h]=!snap.docs.find(d=>d.data()?.status!=="recusado");
+      });
+    }
+
+    // 3. Determinar status
+    const algUrgente=rangeHors.some(h=>isUrgente(data,h));
+    const[ano,mes,dia]=data.split("-").map(Number);
+    const dow=new Date(Date.UTC(ano,mes-1,dia)).getUTCDay();
+    const st=(algUrgente||dow===0||dow===6)?"pendente":"confirmado";
+
+    const tph=b.turmasPorHorario||{};
+    const isEquipSalvar=eo?.tipo==="equipamento"||eo?.tipo==="audiovisual";
+    const ts=Timestamp.now();
+
+    // 4. Montar todos os documentos e salvar em batch (muito mais rápido)
+    const batch=writeBatch(db);
+
+    // Reserva principal
+    const dadosPrincipal={
+      professor:_usuario.nome,professorId:_usuario.uid,professorEmail:_usuario.email,
+      turma:isEquipSalvar?"":(tph[b.horario]||""),
+      turmaInicio:isEquipSalvar?"":(tph[b.horario]||""),
+      turmaFim:isEquipSalvar?"":(tph[b.horarioFim]||tph[b.horario]||""),
+      turmasPorHorario:tph,
+      espaco,data,horario:b.horario,horarioFim:b.horarioFim,
+      conteudo:b.conteudo,observacoes:b.observacoes||"",
+      local:b.local||"",localMontagem:b.local||"",localDevolucao:b.localDevolucao||"",
+      quantidade:eo?.tipo==="equipamento"?Number(b.quantidade):null,
+      microfones:Number(b.microfones)||0,caixasom:Number(b.caixasom)||0,projetor:Number(b.projetor)||0,
+      status:st,criadoEm:ts,precisaFoto:b.precisaFoto||false,
+      paginas:"",laboratorista:"",reservaAutomatica:false,
+      qtdTablets:Number(b.qtdTablets)||0,qtdNotebooks:Number(b.qtdNotebooks)||0,
+    };
+    batch.set(doc(collection(db,"reservas")),dadosPrincipal);
+
+    // Reservas automáticas (horários intermediários)
+    for(let idx=1;idx<rangeHors.length;idx++){
+      const hAtual=rangeHors[idx];
+      const turmaAtual=isEquipSalvar?"":(tph[hAtual]||"");
+      batch.set(doc(collection(db,"reservas")),{
+        ...dadosPrincipal,
+        horario:hAtual,horarioFim:hAtual,
+        turma:turmaAtual,turmaInicio:turmaAtual,turmaFim:turmaAtual,
+        reservaAutomatica:true,conteudo:"[Auto] "+b.conteudo
+      });
+    }
+
+    // Equipamentos automáticos (Sala Multifuncional, Lab Mat)
+    for(const nomeEquip of equipAuto){
+      const qtd=nomeEquip.includes("Tablet")?Number(b.qtdTablets):Number(b.qtdNotebooks);
+      if(!qtd||qtd<=0)continue;
+      for(const h of rangeHors){
+        if(equipSnaps[nomeEquip]?.[h]){
+          batch.set(doc(collection(db,"reservas")),{
+            professor:_usuario.nome,professorId:_usuario.uid,professorEmail:_usuario.email,
+            turma:tph[h]||"",espaco:nomeEquip,data,horario:h,horarioFim:h,
+            conteudo:`Vinculado à ${espaco} — ${b.conteudo}`,
+            quantidade:qtd,status:st,criadoEm:ts,
+            precisaFoto:false,observacoes:`Agendado automaticamente via ${espaco}`,
+            localMontagem:espaco,reservaAutomatica:true,paginas:"",laboratorista:"",
+          });
+        }
+      }
+    }
+
+    // A/V automático se bibAV=true
+    if(_MA.bibAV===true){
+      const avSnaps=await Promise.all(rangeHors.map(h=>
+        getDocs(query(collection(db,"reservas"),where("espaco","==","Áudio/Visual"),where("data","==",data),where("horario","==",h)))
+      ));
+      rangeHors.forEach((h,idx)=>{
+        if(!avSnaps[idx].docs.find(d=>d.data()?.status!=="recusado")){
+          batch.set(doc(collection(db,"reservas")),{
+            professor:_usuario.nome,professorId:_usuario.uid,professorEmail:_usuario.email,
+            turma:tph[h]||"",espaco:"Áudio/Visual",data,horario:h,horarioFim:h,
+            conteudo:`A/V vinculado à ${espaco} — ${b.conteudo}`,
+            localMontagem:espaco,status:st,criadoEm:ts,precisaFoto:false,
+            paginas:"",laboratorista:"",quantidade:null,reservaAutomatica:true,
+            microfones:0,caixasom:0,projetor:0,observacoes:"Auto via "+espaco,
+          });
+        }
+      });
+    }
+
+    // 5. Commit do batch — uma única operação de rede!
+    await batch.commit();
+    _MA.sucesso=st;_MA.salvando=false;re();
+
   }catch(e){
     console.error(e);
     _MA.erro="Erro ao salvar. Tente novamente.";_MA.salvando=false;_MA.resumo=false;re();
