@@ -84,6 +84,7 @@ const ESPACOS = [
   {id:6,  nome:"Sala Multifuncional",            tipo:"espaco",     multiHorario:false, equipAuto:["Tablets (18 disp.)","Computadores (16 disp.)"]},
   {id:7,  nome:"Cozinha Experimental",           tipo:"espaco",     multiHorario:true,  equipAuto:[]},
   {id:8,  nome:"Fazendinha",                     tipo:"espaco",     multiHorario:true,  equipAuto:[]},
+  {id:15, nome:"Pátio do Lago de Pedras",         tipo:"espaco",     multiHorario:true,  equipAuto:[]},
   {id:9,  nome:"Lab. de Matemática",             tipo:"espaco",     multiHorario:true,  equipAuto:["Tablets (18 disp.)","Computadores (16 disp.)"]},
   {id:10, nome:"Lab. de Ciências Anos Iniciais", tipo:"laboratorio",multiHorario:false, equipAuto:[]},
   {id:11, nome:"Lab. de Ciências Anos Finais",   tipo:"laboratorio",multiHorario:false, equipAuto:[]},
@@ -192,7 +193,7 @@ function horariosRange(ini,fim){
 const ESPACO_ICON={
   "Biblioteca":"📚","Maker 1":"🔧","Maker 2":"🤖","Ateliê de Artes":"🎨",
   "Sala de Dança":"💃","Sala Multifuncional":"🖥️","Cozinha Experimental":"🍳",
-  "Fazendinha":"🐔","Lab. de Matemática":"📐",
+  "Fazendinha":"🐔","Pátio do Lago de Pedras":"🌊","Lab. de Matemática":"📐",
   "Lab. de Ciências Anos Iniciais":"🔬","Lab. de Ciências Anos Finais":"⚗️",
   "Tablets (18 disp.)":"📱","Computadores (16 disp.)":"💻","Áudio/Visual":"🎙️",
 };
@@ -1113,7 +1114,7 @@ window.maSetHorarioMulti=(i,tipo,h)=>{
   re();
 };
 window.maSetBloco=(i,k,v)=>{_MA.blocos[i][k]=v;};
-window.maSetBlocoRe=(i,k,v)=>{_MA.blocos[i][k]=v;atualizarBotoesAgendar();};
+window.maSetBlocoRe=(i,k,v)=>{_MA.blocos[i][k]=v;re();};
 window.maAddBloco=()=>{_MA.blocos.push(bVazio());re();};
 window.maRemBloco=i=>{_MA.blocos.splice(i,1);re();};
 window.maConfirmar=()=>{_MA.resumo=true;re();};
