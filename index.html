@@ -849,6 +849,8 @@ function maBlocoMultiHTML(b,i,eo){
     if(isAvulso)return !!(b.local&&b.conteudo); // localDevolucao opcional se 1 horário só
     // Equipamentos auto (Sala Multifuncional, Lab Mat): só precisam de conteúdo
     if(isEquip)return !!b.conteudo;
+    // Labs de ciências: exige laboratorista
+    if(eo?.tipo==="laboratorio"&&!b.laboratorista)return false;
     // Espaços com rotação: todos os horários do range precisam de turma
     if(rangeAtual.length===0)return false;
     const turmasOk=rangeAtual.every(h=>b.turmasPorHorario&&b.turmasPorHorario[h]);
@@ -1001,6 +1003,21 @@ function maBlocoMultiHTML(b,i,eo){
     html+=`</div></div>`;
   }
 
+  // ── Laboratorista (apenas Labs de Ciências) ──
+  if(eo?.tipo==="laboratorio"&&b.horario&&b.horarioFim){
+    html+=`<div style="background:${c.bg};border-radius:10px;padding:12px 14px;border:1.5px solid ${b.laboratorista?c.greenBorder:c.border}">
+      <label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">🔬 Precisa de laboratorista? *</label>
+      <div style="display:flex;gap:10px;margin-top:10px">
+        <button onclick="maSetBlocoRe(${i},'laboratorista','Sim')" style="flex:1;padding:10px;border-radius:8px;border:2px solid ${b.laboratorista==='Sim'?c.green:c.border};background:${b.laboratorista==='Sim'?c.greenBg:c.surface};color:${b.laboratorista==='Sim'?c.green:c.textMid};font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">
+          ${b.laboratorista==='Sim'?"✓ ":""}Sim
+        </button>
+        <button onclick="maSetBlocoRe(${i},'laboratorista','Não')" style="flex:1;padding:10px;border-radius:8px;border:2px solid ${b.laboratorista==='Não'?"#64748b":c.border};background:${b.laboratorista==='Não'?"#f1f5f9":c.surface};color:${b.laboratorista==='Não'?"#64748b":c.textMid};font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">
+          ${b.laboratorista==='Não'?"✓ ":""}Não
+        </button>
+      </div>
+    </div>`;
+  }
+
   // ── Conteúdo ──
   html+=`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">📝 Conteúdo / Atividade *</label><br>
     <textarea oninput="maSetBlocoRe(${i},'conteudo',this.value)" rows="2" placeholder="Descreva a atividade do período..." style="${inp()};resize:vertical;line-height:1.6;margin-top:5px">${b.conteudo}</textarea>
@@ -1128,6 +1145,7 @@ function renderMAResumo(){
         </div>`;}).join("")}
       </div>`:""}
       <div style="padding:8px 14px;border-top:1px solid ${c.borderLight}">
+        ${b.laboratorista?`<p style="font-size:11px;font-weight:700;color:${b.laboratorista==='Sim'?c.green:'#64748b'};margin-bottom:4px">🔬 Laboratorista: ${b.laboratorista}</p>`:""}
         <p style="font-size:12px;color:${c.textMuted}">${b.conteudo}</p>
       </div>
     </div>`;
