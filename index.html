@@ -668,7 +668,7 @@ function fabHTML(){return'';}
 function modalAgendarHTML(){const c=C();return`<div id="mod-ag" style="display:none;position:fixed;inset:0;z-index:1100;align-items:flex-end;justify-content:center"><div onclick="fecharModalAgendar()" style="position:absolute;inset:0;background:rgba(0,0,0,.5)"></div><div id="mod-ag-inner" style="position:relative;background:${c.surface};border-radius:20px 20px 0 0;width:100%;max-width:600px;max-height:92vh;overflow-y:auto;box-shadow:0 -8px 40px rgba(0,0,0,.25)"><div id="mod-ag-body"></div></div></div>`;}
 
 // ─── ESTADO DO FORMULÁRIO DE AGENDAMENTO ──────────────────────────────────
-let _MA={step:1,espaco:"",data:"",blocos:[],resumo:false,salvando:false,sucesso:null,erro:"",calA:new Date().getFullYear(),calM:new Date().getMonth(),bibAV:null};
+let _MA={step:1,espaco:"",data:"",blocos:[],resumo:false,salvando:false,sucesso:null,erro:"",avisoConflito:"",calA:new Date().getFullYear(),calM:new Date().getMonth(),bibAV:null};
 
 // bVazio() cria um bloco de agendamento vazio
 // Para espaços multiHorario: horarioFim, turmaInicio, turmaFim, local, qtdTablets, qtdNotebooks
@@ -928,6 +928,14 @@ function maBlocoMultiHTML(b,i,eo){
     </div>`;
   }
 
+  // ── Aviso de conflito em tempo real ──
+  if(_MA.avisoConflito&&b.horario){
+    html+=`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:10px 14px;display:flex;align-items:flex-start;gap:8px">
+      <span style="font-size:18px;flex-shrink:0">⚠️</span>
+      <p style="font-size:13px;color:#92400e;line-height:1.5">${_MA.avisoConflito}</p>
+    </div>`;
+  }
+
   // ── ROTAÇÃO DE TURMAS por horário (espaços não-equipamento) ──
   if(!isEquip&&b.horario&&b.horarioFim){
     if(rangeAtual.length===1){
@@ -1135,6 +1143,7 @@ function renderMAResumo(){
 // ─── HANDLERS DO FORMULÁRIO ───────────────────────────────────────────────
 window.maEspaco=v=>{
   _MA.espaco=(typeof v==="number"||(!isNaN(v)&&v!==""))?ESPACOS[parseInt(v)].nome:v;
+  _MA.avisoConflito="";
   _MA.step=2;re();
 };
 window.maBack=()=>{
@@ -1146,9 +1155,28 @@ window.maSetHorario=(i,h)=>{_MA.blocos[i].horario=h;re();setTimeout(atualizarBot
 window.maSetHorarioMulti=(i,tipo,h)=>{
   if(tipo==="ini"){
     _MA.blocos[i].horario=h;
-    _MA.blocos[i].horarioFim=h; // reset fim ao mudar início
+    _MA.blocos[i].horarioFim=h;
   } else {
     _MA.blocos[i].horarioFim=h;
+  }
+  // Verificar conflito em tempo real após selecionar horário
+  _MA.avisoConflito="";
+  const eo=ESPACOS.find(e=>e.nome===_MA.espaco);
+  if(!eo?.equipAvulso&&_MA.blocos[i].horario){
+    const range=horariosRange(_MA.blocos[i].horario,_MA.blocos[i].horarioFim||_MA.blocos[i].horario);
+    const conflitos=_todas.filter(r=>
+      r.professorId===_usuario?.uid&&
+      r.data===_MA.data&&
+      r.status!=="recusado"&&
+      !r.reservaAutomatica&&
+      r.espaco!==_MA.espaco&&
+      !ESPACOS.find(e=>e.nome===r.espaco)?.equipAvulso&&
+      range.includes(r.horario)
+    );
+    if(conflitos.length>0){
+      const c=conflitos[0];
+      _MA.avisoConflito=`Você já tem o <strong>${c.espaco}</strong> reservado às <strong>${c.horario}</strong>. Confirme se este é o horário correto.`;
+    }
   }
   re();
 };
