@@ -874,6 +874,14 @@ function maBlocoMultiHTML(b,i,eo){
     </div>
   </div>`;
 
+  // ── Aviso de conflito — aparece logo após selecionar horário de início ──
+  if(_MA.avisoConflito&&b.horario){
+    html+=`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:12px 14px;display:flex;align-items:flex-start;gap:10px;animation:fadeIn .2s ease">
+      <span style="font-size:20px;flex-shrink:0">⚠️</span>
+      <p style="font-size:13px;color:#92400e;line-height:1.6;font-weight:600">${_MA.avisoConflito}</p>
+    </div>`;
+  }
+
   // ── Horário de fim ──
   if(b.horario){
     html+=`<div>
@@ -925,14 +933,6 @@ function maBlocoMultiHTML(b,i,eo){
           ${[{k:"microfones",l:"🎤 Microfones"},{k:"caixasom",l:"🔊 Caixa de som"},{k:"projetor",l:"📽️ Projetor"}].map(eq=>`<div><label style="font-size:10px;font-weight:700;color:${c.textMuted};text-transform:uppercase">${eq.l}</label><br><input type="number" min="0" value="${b[eq.k]||0}" oninput="maSetBlocoRe(${i},'${eq.k}',this.value)" style="${inp()};margin-top:4px;text-align:center"></div>`).join("")}
         </div>
       </div>`:""}
-    </div>`;
-  }
-
-  // ── Aviso de conflito em tempo real ──
-  if(_MA.avisoConflito&&b.horario){
-    html+=`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:10px 14px;display:flex;align-items:flex-start;gap:8px">
-      <span style="font-size:18px;flex-shrink:0">⚠️</span>
-      <p style="font-size:13px;color:#92400e;line-height:1.5">${_MA.avisoConflito}</p>
     </div>`;
   }
 
