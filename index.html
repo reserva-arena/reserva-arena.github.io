@@ -1201,13 +1201,38 @@ window.maSalvar=async()=>{
     const b=blocos[0];
     const rangeHors=horariosRange(b.horario,b.horarioFim);
 
-    // 1. Verificar conflitos (reads primeiro, antes de qualquer write)
+    // 1. Verificar conflitos de espaço (mesmo espaço, mesmo horário)
     const snapConflitos=await Promise.all(rangeHors.map(h=>
       getDocs(query(collection(db,"reservas"),where("espaco","==",espaco),where("data","==",data),where("horario","==",h)))
     ));
     for(let i=0;i<rangeHors.length;i++){
       const existe=snapConflitos[i].docs.map(d=>d.data()).find(r=>r?.status!=="recusado");
       if(existe){_MA.erro=`Horário ${rangeHors[i]} já reservado por ${existe.professor}.`;_MA.salvando=false;_MA.resumo=false;re();return;}
+    }
+
+    // 1b. Verificar se o professor já tem outro ESPAÇO reservado nos mesmos horários
+    // (equipamentos avulsos não bloqueiam — professor pode ter sala + tablets no mesmo horário)
+    const isEquipAvulsoSalvar=eo?.equipAvulso;
+    if(!isEquipAvulsoSalvar){
+      const snapProfConflitos=await Promise.all(rangeHors.map(h=>
+        getDocs(query(collection(db,"reservas"),
+          where("professorId","==",_usuario.uid),
+          where("data","==",data),
+          where("horario","==",h),
+          where("reservaAutomatica","==",false)
+        ))
+      ));
+      for(let i=0;i<rangeHors.length;i++){
+        const conflito=snapProfConflitos[i].docs.map(d=>d.data()).find(r=>
+          r?.status!=="recusado"&&
+          r?.espaco!==espaco&&
+          !ESPACOS.find(e=>e.nome===r?.espaco)?.equipAvulso
+        );
+        if(conflito){
+          _MA.erro=`⚠️ Você já tem <strong>${conflito.espaco}</strong> reservado às <strong>${rangeHors[i]}</strong>. Um professor não pode estar em dois lugares ao mesmo tempo.`;
+          _MA.salvando=false;_MA.resumo=false;re();return;
+        }
+      }
     }
 
     // 2. Verificar conflitos de equipamentos automáticos em paralelo
