@@ -1229,7 +1229,7 @@ window.maSalvar=async()=>{
           !ESPACOS.find(e=>e.nome===r?.espaco)?.equipAvulso
         );
         if(conflito){
-          _MA.erro=`⚠️ Você já tem <strong>${conflito.espaco}</strong> reservado às <strong>${rangeHors[i]}</strong>. Um professor não pode estar em dois lugares ao mesmo tempo.`;
+          _MA.erro=`Você já tem o <strong>${conflito.espaco}</strong> reservado às <strong>${rangeHors[i]}</strong>. Confirme se este é o horário correto.`;
           _MA.salvando=false;_MA.resumo=false;re();return;
         }
       }
