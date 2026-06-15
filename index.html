@@ -422,6 +422,10 @@ function renderApp(){
       </div>
       <div style="display:flex;align-items:center;gap:8px">
         <button onclick="irInicio()" style="background:${_dark?c.surface:'rgba(255,255,255,.15)'};border:1.5px solid ${_dark?c.border:'rgba(255,255,255,.3)'};border-radius:20px;padding:4px 10px;height:34px;cursor:pointer;display:flex;align-items:center;gap:5px;font-size:13px;flex-shrink:0;font-family:inherit;font-weight:600;color:${_dark?c.textMid:'#ffffff'}"><span style="font-size:15px">🏠</span><span style="font-size:11px;font-weight:700">Início</span></button>
+        ${isAdmin?`<button onclick="toggleAdminVisu()" style="background:${_adminVisu==='professor'?'rgba(255,255,255,.9)':'rgba(255,255,255,.15)'};border:1.5px solid ${_adminVisu==='professor'?'rgba(255,255,255,.9)':'rgba(255,255,255,.3)'};border-radius:20px;padding:4px 10px;height:34px;cursor:pointer;display:flex;align-items:center;gap:5px;font-size:11px;flex-shrink:0;font-family:inherit;font-weight:700;color:${_adminVisu==='professor'?'#1a6b47':'#ffffff'};white-space:nowrap">
+          <span style="font-size:13px">${_adminVisu==='professor'?'🔧':'👨‍🏫'}</span>
+          <span>${_adminVisu==='professor'?'Admin':'Professor'}</span>
+        </button>`:""}
         ${avatarHTML(_usuario?.nome,30,isAdmin?"purple":"navy")}
         <div class="header-nome" style="line-height:1.2"><p style="font-size:13px;font-weight:700;color:${_dark?c.navy:'#ffffff'}">${_usuario?.nome||""}</p><p style="font-size:10px;color:${_dark?(isAdmin?"#6d28d9":c.blueMid):'rgba(255,255,255,.8)'};font-weight:700;text-transform:uppercase">${_usuario?.perfil||""}</p></div>
         <button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button>
@@ -429,7 +433,7 @@ function renderApp(){
       </div>
     </header>
     <div id="main-content" style="max-width:100%;width:100%;margin:0 auto;padding:20px 20px;overflow-x:hidden;box-sizing:border-box">
-      <div style="max-width:1200px;margin:0 auto;width:100%">${isAdmin?renderAdminView():renderProfessorView()}</div>
+      <div style="max-width:1200px;margin:0 auto;width:100%">${isAdmin&&_adminVisu==='admin'?renderAdminView():renderProfessorView()}</div>
     </div>
     <footer style="margin-top:40px;padding:16px 24px;border-top:1px solid ${c.border};background:${_dark?c.surface:'#0d2b1a'};text-align:center">
       <p style="font-size:10px;color:${_dark?c.textMuted:'rgba(255,255,255,.5)'}">Reserva de Espaços e Equipamentos · Dev: Luciano Galdino de Melo · 🔥 Firebase · ☁️ GitHub Pages</p>
@@ -441,6 +445,16 @@ function renderApp(){
   isAdmin?bindAdmin():bindProf();
 }
 window.doSignOut=()=>signOut(auth);
+window.toggleAdminVisu=()=>{
+  _adminVisu=_adminVisu==='admin'?'professor':'admin';
+  // Resetar estado da visão professor ao entrar nela
+  if(_adminVisu==='professor'){
+    _P.modoProf='ver';_P.modoCard='calendario';_P.modoVisu='semana';
+    _P.semIni=getSegunda(fmtHoje());_P.diaSel=null;
+    _P.filtroGrade='meus';_P.mostrarHistorico=false;_P.filtroPendente=false;
+  }
+  re();
+};
 window.irInicio=()=>{
   if(_usuario?.perfil==="admin"){
     _A.modoVisu="calendario";_A.fEspaco="";_A.fProf="";_A.fStatus="";
@@ -677,6 +691,7 @@ function modalAgendarHTML(){const c=C();return`<div id="mod-ag" style="display:n
 
 // ─── ESTADO DO FORMULÁRIO DE AGENDAMENTO ──────────────────────────────────
 let _MA={step:1,espaco:"",data:"",blocos:[],resumo:false,salvando:false,sucesso:null,erro:"",avisoConflito:"",calA:new Date().getFullYear(),calM:new Date().getMonth(),bibAV:null};
+let _adminVisu="admin"; // 'admin' ou 'professor' — só para admins
 
 // bVazio() cria um bloco de agendamento vazio
 // Para espaços multiHorario: horarioFim, turmaInicio, turmaFim, local, qtdTablets, qtdNotebooks
