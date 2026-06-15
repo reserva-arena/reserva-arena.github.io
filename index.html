@@ -464,10 +464,10 @@ function renderProfessorView(){
   if(!_P.semIni)_P.semIni=getSegunda(h);
   if(!_P.mesCal){const d=new Date();_P.mesCal={a:d.getFullYear(),m:d.getMonth()};}
   // Para exibição, ignora reservas automáticas de range
-  const fonteBase=(_P.filtroGrade==='todos'?_todas:_minhas).filter(r=>!r.reservaAutomatica);
+  const fonteBase=(_P.filtroGrade==='todos'?_todas:_minhas).filter(r=>!r.reservaAutomatica&&(!_P.filtroEspaco||r.espaco===_P.filtroEspaco));
   const futuras=fonteBase.filter(r=>r.data>=h&&r.status!=="recusado");
   const passadas=fonteBase.filter(r=>r.data<h&&r.status!=="recusado").reverse();
-  const pendentes=_minhas.filter(r=>r.status==="pendente"&&!r.reservaAutomatica);
+  const pendentes=_minhas.filter(r=>r.status==="pendente"&&!r.reservaAutomatica&&(!_P.filtroEspaco||r.espaco===_P.filtroEspaco));
 
   let html=`<div>`;
 
@@ -564,6 +564,14 @@ function renderProfessorView(){
 
   if(_P.modoCard==="lista"){
     html+=`<div style="padding:14px">`;
+    // Filtro de espaço no modo agenda
+    html+=`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
+      <select onchange="pSetEspaco(this.value)" style="padding:7px 12px;border-radius:8px;border:1.5px solid ${c.border};background:${c.surface};color:${c.text};font-size:13px;cursor:pointer;outline:none;font-family:inherit;flex:1;min-width:160px">
+        <option value="">🏛️ Todos os espaços</option>
+        ${ESPACOS.map(e=>`<option value="${e.nome}" ${_P.filtroEspaco===e.nome?"selected":""}>${tipoIcon(e.tipo,e.nome)} ${e.nome}</option>`).join("")}
+      </select>
+      ${_P.filtroEspaco?`<button onclick="pSetEspaco('')" style="${btn('ghost')};padding:7px 12px;font-size:12px;white-space:nowrap">✕ Limpar</button>`:""}
+    </div>`;
     if(pendentes.length){
       html+=`<div data-filtro="pendente" style="margin-bottom:16px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="width:8px;height:8px;border-radius:50%;background:${c.amber}"></div><p style="font-size:12px;font-weight:800;color:${c.amber};text-transform:uppercase">⏳ Pendentes · ${pendentes.length}</p><div style="flex:1;height:1px;background:${c.amberBorder}"></div></div>`;
