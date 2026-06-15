@@ -211,7 +211,7 @@ function extraInfo(r){
 
 // ─── TEMA ────────────────────────────────────────────────────────────────────
 let _dark=localStorage.getItem("theme")==="dark";
-const LIGHT={navy:"#132318",navyMid:"#1a6b47",blueMid:"#40b07a",bg:"#f8faf8",surface:"#ffffff",border:"#c7dfd4",borderLight:"#e2f0eb",text:"#132318",textMid:"#3d5c45",textMuted:"#607060",green:"#0f4c2b",greenBg:"#e2f4ea",greenBorder:"#6ee7a0",amber:"#7c2d12",amberBg:"#fff7ed",amberBorder:"#fed7aa",red:"#7f1d1d",redBg:"#fef2f2",redBorder:"#fca5a5",logoBg:"#ffffff",headerBg:"#ffffff",inputBg:"#ffffff",inputBorder:"#c7dfd4",cardShadow:"0 1px 6px rgba(26,107,71,.09)"};
+const LIGHT={navy:"#0d2b1a",navyMid:"#1a6b47",blueMid:"#2d9463",bg:"#eef7f2",surface:"#ffffff",border:"#b0d9c4",borderLight:"#d4ede1",text:"#0d2b1a",textMid:"#2a5c3a",textMuted:"#4a7a5a",green:"#0a3d22",greenBg:"#d6f0e3",greenBorder:"#5cc98a",amber:"#7c2d12",amberBg:"#fff7ed",amberBorder:"#fed7aa",red:"#7f1d1d",redBg:"#fef2f2",redBorder:"#fca5a5",logoBg:"#ffffff",headerBg:"#0d2b1a",inputBg:"#ffffff",inputBorder:"#b0d9c4",cardShadow:"0 2px 10px rgba(13,43,26,.12)"};
 const DARK ={navy:"#e8fdf2",navyMid:"#b8f0d4",blueMid:"#34d399",bg:"#0a1a12",surface:"#0f2318",border:"#1a3d27",borderLight:"#1a3d27",text:"#f0fdf4",textMid:"#d1fae5",textMuted:"#86efac",green:"#6ee7b7",greenBg:"#052e16",greenBorder:"#065f46",amber:"#fbbf24",amberBg:"#1c1408",amberBorder:"#7c2d12",red:"#f87171",redBg:"#1a0505",redBorder:"#7f1d1d",logoBg:"#0f2318",headerBg:"#0f2318",inputBg:"#0a1a12",inputBorder:"#1a3d27",cardShadow:"0 1px 6px rgba(0,0,0,.35)"};
 const C=()=>_dark?DARK:LIGHT;
 function toggleDark(){_dark=!_dark;localStorage.setItem("theme",_dark?"dark":"light");re();}
@@ -301,11 +301,11 @@ function renderPublica(){
   const c=C();
   $("app").innerHTML=`
   <div style="min-height:100vh;background:${c.bg}" translate="no">
-    <header style="background:${c.headerBg};border-bottom:1px solid ${c.border};padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100;box-shadow:0 1px 6px rgba(19,35,24,.07)">
-      <div style="display:flex;align-items:center;gap:10px">${logoHTML(36)}<div><p style="font-size:13px;font-weight:800;color:${c.navy}">Reserva de Salas</p><p style="font-size:10px;color:${c.textMuted}">Colégio Arena</p></div></div>
+    <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#0d2b1a,#1a6b47)"};border-bottom:1px solid ${_dark?c.border:"transparent"};padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100;box-shadow:0 1px 6px rgba(19,35,24,.07)">
+      <div style="display:flex;align-items:center;gap:10px">${logoHTML(36)}<div><p style="font-size:13px;font-weight:800;color:${_dark?c.navy:'#ffffff'}">Reserva de Salas</p><p style="font-size:10px;color:${_dark?c.textMuted:'rgba(255,255,255,.75)'}">Colégio Arena</p></div></div>
       <div style="display:flex;gap:8px;align-items:center">
-        <button onclick="toggleDark()" style="background:${_dark?"#f1f5f9":"#0f172a"};color:${_dark?"#0f172a":"#f1f5f9"};border:none;border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button>
-        <button onclick="abrirLogin()" style="${btn("navy")}">Entrar</button>
+        <button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button>
+        <button onclick="abrirLogin()" style="background:rgba(255,255,255,.15);color:#fff;border:1.5px solid rgba(255,255,255,.35);border-radius:8px;font-weight:700;cursor:pointer;padding:9px 18px;font-size:13.5px;font-family:inherit">Entrar</button>
       </div>
     </header>
     <div style="max-width:860px;margin:0 auto;padding:24px 14px">
@@ -377,9 +377,9 @@ function renderFotografo(){
   const c=C(),h=fmtHoje();
   const comFoto=_todas.filter(r=>r.precisaFoto&&r.data>=h&&r.status!=="recusado").sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
   $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="no">
-    <header style="background:${c.headerBg};border-bottom:1px solid ${c.border};padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100">
+    <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#0d2b1a,#1a6b47)"};border-bottom:1px solid ${_dark?c.border:"transparent"};padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100">
       <div style="display:flex;align-items:center;gap:10px">${logoHTML(36)}<div><p style="font-size:13px;font-weight:800;color:${c.navy}">Solicitações de Foto</p></div></div>
-      <div style="display:flex;align-items:center;gap:8px">${avatarHTML(_usuario?.nome,30,"purple")}<button onclick="toggleDark()" style="background:${_dark?"#f1f5f9":"#0f172a"};color:${_dark?"#0f172a":"#f1f5f9"};border:none;border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button><button onclick="doSignOut()" style="${btn("ghost","","sm")}">Sair</button></div>
+      <div style="display:flex;align-items:center;gap:8px">${avatarHTML(_usuario?.nome,30,"purple")}<button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button><button onclick="doSignOut()" style="${btn("ghost","","sm")}">Sair</button></div>
     </header>
     <div style="max-width:700px;margin:0 auto;padding:20px 14px">
       ${!comFoto.length?`<div style="text-align:center;padding:40px;color:${c.textMuted}"><p style="font-size:32px">📷</p><p style="margin-top:12px">Nenhuma solicitação no momento.</p></div>`:
@@ -415,24 +415,24 @@ function renderApp(){
   const c=C(),isAdmin=_usuario?.perfil==="admin";
   $("app").innerHTML=`
   <div style="min-height:100vh;background:${c.bg};width:100%" translate="no">
-    <header style="background:${c.headerBg};border-bottom:1px solid ${c.border};padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100;box-shadow:0 1px 6px rgba(19,35,24,.07);width:100%;box-sizing:border-box">
+    <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#0d2b1a,#1a6b47)"};border-bottom:1px solid ${_dark?c.border:"transparent"};padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100;box-shadow:0 1px 6px rgba(19,35,24,.07);width:100%;box-sizing:border-box">
       <div style="display:flex;align-items:center;gap:10px">
         ${logoHTML(36)}
-        <div><p style="font-size:13px;font-weight:800;color:${c.navy}">Reserva de Salas</p><p style="font-size:10px;color:${c.textMuted}">Colégio Arena</p></div>
+        <div><p style="font-size:13px;font-weight:800;color:${_dark?c.navy:'#ffffff'}">Reserva de Salas</p><p style="font-size:10px;color:${_dark?c.textMuted:'rgba(255,255,255,.75)'}">Colégio Arena</p></div>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
-        <button onclick="irInicio()" style="background:${c.surface};border:1.5px solid ${c.border};border-radius:20px;padding:4px 10px;height:34px;cursor:pointer;display:flex;align-items:center;gap:5px;font-size:13px;flex-shrink:0;font-family:inherit;font-weight:600;color:${c.textMid}"><span style="font-size:15px">🏠</span><span style="font-size:11px;font-weight:700">Início</span></button>
+        <button onclick="irInicio()" style="background:${_dark?c.surface:'rgba(255,255,255,.15)'};border:1.5px solid ${_dark?c.border:'rgba(255,255,255,.3)'};border-radius:20px;padding:4px 10px;height:34px;cursor:pointer;display:flex;align-items:center;gap:5px;font-size:13px;flex-shrink:0;font-family:inherit;font-weight:600;color:${_dark?c.textMid:'#ffffff'}"><span style="font-size:15px">🏠</span><span style="font-size:11px;font-weight:700">Início</span></button>
         ${avatarHTML(_usuario?.nome,30,isAdmin?"purple":"navy")}
-        <div class="header-nome" style="line-height:1.2"><p style="font-size:13px;font-weight:700;color:${c.navy}">${_usuario?.nome||""}</p><p style="font-size:10px;color:${isAdmin?"#6d28d9":c.blueMid};font-weight:700;text-transform:uppercase">${_usuario?.perfil||""}</p></div>
-        <button onclick="toggleDark()" style="background:${_dark?"#f1f5f9":"#0f172a"};color:${_dark?"#0f172a":"#f1f5f9"};border:none;border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button>
-        <button onclick="doSignOut()" style="${btn("ghost","","sm")}">Sair</button>
+        <div class="header-nome" style="line-height:1.2"><p style="font-size:13px;font-weight:700;color:${_dark?c.navy:'#ffffff'}">${_usuario?.nome||""}</p><p style="font-size:10px;color:${_dark?(isAdmin?"#6d28d9":c.blueMid):'rgba(255,255,255,.8)'};font-weight:700;text-transform:uppercase">${_usuario?.perfil||""}</p></div>
+        <button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button>
+        <button onclick="doSignOut()" style="${btn(_dark?'ghost':'ghost','','sm')};color:${_dark?c.textMid:'rgba(255,255,255,.9)'};border-color:${_dark?c.border:'rgba(255,255,255,.3)'};background:${_dark?'transparent':'rgba(255,255,255,.12)'}">Sair</button>
       </div>
     </header>
     <div id="main-content" style="max-width:100%;width:100%;margin:0 auto;padding:20px 20px;overflow-x:hidden;box-sizing:border-box">
       <div style="max-width:1200px;margin:0 auto;width:100%">${isAdmin?renderAdminView():renderProfessorView()}</div>
     </div>
-    <footer style="margin-top:40px;padding:16px 24px;border-top:1px solid ${c.border};background:${c.surface};text-align:center">
-      <p style="font-size:11px;color:${c.textMuted}">Colégio Arena · Reserva Arena v2.0 · Dev: Luciano Galdino de Melo</p>
+    <footer style="margin-top:40px;padding:16px 24px;border-top:1px solid ${c.border};background:${_dark?c.surface:'#0d2b1a'};text-align:center">
+      <p style="font-size:11px;color:${_dark?c.textMuted:'rgba(255,255,255,.5)'}">Colégio Arena · Reserva Arena v3.4 · Dev: Luciano Galdino de Melo</p>
     </footer>
     ${modalEdicaoHTML()}
     ${modalAgendarHTML()}
@@ -537,7 +537,7 @@ function renderProfessorView(){
             <p style="font-size:10px;font-weight:700;color:${naoL?"#ef4444":c.textMuted};text-transform:uppercase">${nomes[i]}</p>
             <p style="font-size:18px;font-weight:900;line-height:1;color:${isH?c.blueMid:c.navy}">${dia}</p>
           </div>`;
-        if(!rsD.length)html+=`<p style="font-size:9px;color:${c.textMuted};opacity:.5;text-align:center">-</p>`;
+        if(!rsD.length)html+=`<p style="font-size:9px;color:${c.textMuted};opacity:.4;text-align:center;margin-top:8px">livre</p>`;
         else rsD.forEach(r=>{
           const isMeu=ehMeu(r),isPend=r.status==="pendente";
           const range=r.horarioFim&&r.horarioFim!==r.horario?`→${r.horarioFim}`:"";
