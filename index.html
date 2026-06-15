@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Reserva Arena – Colégio Arena</title>
+<title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
@@ -302,14 +302,14 @@ function renderPublica(){
   $("app").innerHTML=`
   <div style="min-height:100vh;background:${c.bg}" translate="no">
     <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#0d2b1a,#1a6b47)"};border-bottom:1px solid ${_dark?c.border:"transparent"};padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100;box-shadow:0 1px 6px rgba(19,35,24,.07)">
-      <div style="display:flex;align-items:center;gap:10px">${logoHTML(36)}<div><p style="font-size:13px;font-weight:800;color:${_dark?c.navy:'#ffffff'}">Reserva de Salas</p><p style="font-size:10px;color:${_dark?c.textMuted:'rgba(255,255,255,.75)'}">Colégio Arena</p></div></div>
+      <div style="display:flex;align-items:center;gap:10px">${logoHTML(36)}<div><p style="font-size:13px;font-weight:800;color:${_dark?c.navy:'#ffffff'}">Reserva de Espaços</p><p style="font-size:10px;color:${_dark?c.textMuted:'rgba(255,255,255,.75)'}">Colégio Arena</p></div></div>
       <div style="display:flex;gap:8px;align-items:center">
         <button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button>
         <button onclick="abrirLogin()" style="background:rgba(255,255,255,.15);color:#fff;border:1.5px solid rgba(255,255,255,.35);border-radius:8px;font-weight:700;cursor:pointer;padding:9px 18px;font-size:13.5px;font-family:inherit">Entrar</button>
       </div>
     </header>
     <div style="max-width:860px;margin:0 auto;padding:24px 14px">
-      <div style="text-align:center;margin-bottom:24px">${logoHTML(56)}<h1 style="font-size:24px;font-weight:800;color:${c.navy};margin-top:12px">Reserva de Salas e Equipamentos</h1><p style="font-size:13px;color:${c.textMuted};margin-top:6px">Colégio Arena · Visualize os agendamentos</p></div>
+      <div style="text-align:center;margin-bottom:24px">${logoHTML(56)}<h1 style="font-size:24px;font-weight:800;color:${c.navy};margin-top:12px">Reserva de Espaços e Equipamentos</h1><p style="font-size:13px;color:${c.textMuted};margin-top:6px">Colégio Arena · Visualize os agendamentos</p></div>
       <div id="pub-cal"></div><div id="pub-detalhe" style="margin-top:10px"></div>
     </div>
   </div>
@@ -418,7 +418,7 @@ function renderApp(){
     <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#0d2b1a,#1a6b47)"};border-bottom:1px solid ${_dark?c.border:"transparent"};padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100;box-shadow:0 1px 6px rgba(19,35,24,.07);width:100%;box-sizing:border-box">
       <div style="display:flex;align-items:center;gap:10px">
         ${logoHTML(36)}
-        <div><p style="font-size:13px;font-weight:800;color:${_dark?c.navy:'#ffffff'}">Reserva de Salas</p><p style="font-size:10px;color:${_dark?c.textMuted:'rgba(255,255,255,.75)'}">Colégio Arena</p></div>
+        <div><p style="font-size:13px;font-weight:800;color:${_dark?c.navy:'#ffffff'}">Reserva de Espaços</p><p style="font-size:10px;color:${_dark?c.textMuted:'rgba(255,255,255,.75)'}">Colégio Arena</p></div>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
         <button onclick="irInicio()" style="background:${_dark?c.surface:'rgba(255,255,255,.15)'};border:1.5px solid ${_dark?c.border:'rgba(255,255,255,.3)'};border-radius:20px;padding:4px 10px;height:34px;cursor:pointer;display:flex;align-items:center;gap:5px;font-size:13px;flex-shrink:0;font-family:inherit;font-weight:600;color:${_dark?c.textMid:'#ffffff'}"><span style="font-size:15px">🏠</span><span style="font-size:11px;font-weight:700">Início</span></button>
@@ -432,8 +432,7 @@ function renderApp(){
       <div style="max-width:1200px;margin:0 auto;width:100%">${isAdmin?renderAdminView():renderProfessorView()}</div>
     </div>
     <footer style="margin-top:40px;padding:16px 24px;border-top:1px solid ${c.border};background:${_dark?c.surface:'#0d2b1a'};text-align:center">
-      <p style="font-size:11px;color:${_dark?c.textMuted:'rgba(255,255,255,.5)'}">Colégio Arena · Reserva Arena v3.5 · Dev: Luciano Galdino de Melo</p>
-      <p style="font-size:10px;color:${_dark?c.textMuted:'rgba(255,255,255,.35)'};margin-top:4px">Desenvolvido com 🔥 Firebase · ☁️ GitHub Pages</p>
+      <p style="font-size:10px;color:${_dark?c.textMuted:'rgba(255,255,255,.5)'}">Colégio Arena · Reserva de Espaços e Equipamentos · 🔥 Firebase · ☁️ GitHub Pages</p>
     </footer>
     ${modalEdicaoHTML()}
     ${modalAgendarHTML()}
