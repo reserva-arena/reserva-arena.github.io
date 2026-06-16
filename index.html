@@ -306,20 +306,37 @@ function re(){
 let _pubCal={a:new Date().getFullYear(),m:new Date().getMonth()},_pubDiaSel=null;
 
 function renderPublica(){
-  const c=C();
+  const c=C(),h=fmtHoje();
+  if(!_pubState)_pubState={modo:"semana",filtroEspaco:"",diaSel:null,mesCal:{a:new Date().getFullYear(),m:new Date().getMonth()}};
+  const ps=_pubState;
+  const fonte=_todas.filter(r=>!r.reservaAutomatica&&r.status!=="recusado"&&(!ps.filtroEspaco||r.espaco===ps.filtroEspaco));
+
   $("app").innerHTML=`
   <div style="min-height:100vh;background:${c.bg}" translate="no">
-    <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#0d2b1a,#1a6b47)"};border-bottom:1px solid ${_dark?c.border:"transparent"};padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100;box-shadow:0 1px 6px rgba(19,35,24,.07)">
-      <div style="display:flex;align-items:center;gap:10px">${logoHTML(36)}<div><p style="font-size:13px;font-weight:800;color:${_dark?c.navy:'#ffffff'}">Reserva de Espaços</p><p style="font-size:10px;color:${_dark?c.textMuted:'rgba(255,255,255,.75)'}">Colégio Arena</p></div></div>
+    <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#0d2b1a,#1a6b47)"};border-bottom:1px solid ${_dark?c.border:"transparent"};padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(13,43,26,.25)">
+      <div style="display:flex;align-items:center;gap:10px">${logoHTML(36)}<div style="min-width:0"><p style="font-size:12px;font-weight:800;color:#ffffff;white-space:nowrap">Reserva de Espaços</p><p style="font-size:10px;color:rgba(255,255,255,.75);white-space:nowrap">Colégio Arena</p></div></div>
       <div style="display:flex;gap:8px;align-items:center">
-        <button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button>
-        <button onclick="abrirLogin()" style="background:rgba(255,255,255,.15);color:#fff;border:1.5px solid rgba(255,255,255,.35);border-radius:8px;font-weight:700;cursor:pointer;padding:9px 18px;font-size:13.5px;font-family:inherit">Entrar</button>
+        <button onclick="toggleDark()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:34px;height:34px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center">${_dark?"☀️":"🌙"}</button>
+        <button onclick="abrirLogin()" style="background:rgba(255,255,255,.15);color:#fff;border:1.5px solid rgba(255,255,255,.35);border-radius:8px;font-weight:700;cursor:pointer;padding:7px 14px;font-size:13px;font-family:inherit">Entrar</button>
       </div>
     </header>
-    <div style="max-width:860px;margin:0 auto;padding:24px 14px">
-      <div style="text-align:center;margin-bottom:24px">${logoHTML(56)}<h1 style="font-size:24px;font-weight:800;color:${c.navy};margin-top:12px">Reserva de Espaços e Equipamentos</h1><p style="font-size:13px;color:${c.textMuted};margin-top:6px">Colégio Arena · Visualize os agendamentos</p></div>
-      <div id="pub-cal"></div><div id="pub-detalhe" style="margin-top:10px"></div>
+    <div style="max-width:1000px;margin:0 auto;padding:16px 14px">
+      <!-- Filtros e modos -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
+        <div style="display:flex;background:${c.surface};border-radius:10px;padding:3px;border:1px solid ${c.border};gap:2px">
+          ${["semana","mes","agenda"].map(m=>`<button onclick="pubSetModo('${m}')" style="padding:6px 12px;border-radius:8px;border:none;background:${"${ps.modo}"===m?(_dark?"#1a6b47":c.navy):"transparent"};color:${"${ps.modo}"===m?"#fff":c.text};font-weight:700;font-size:12px;cursor:pointer;font-family:inherit">${m==="semana"?"📅 Semana":m==="mes"?"🗓 Mês":"☰ Agenda"}</button>`).join("")}
+        </div>
+        <select onchange="pubSetEspaco(this.value)" style="flex:1;min-width:140px;padding:7px 10px;border-radius:8px;font-size:12px;border:1.5px solid ${c.border};background:${c.surface};color:${c.text};outline:none;cursor:pointer;font-family:inherit">
+          <option value="">🏛️ Todos os espaços</option>
+          ${ESPACOS.map(e=>`<option value="${e.nome}" ${ps.filtroEspaco===e.nome?"selected":""}>${tipoIcon(e.tipo,e.nome)} ${e.nome}</option>`).join("")}
+        </select>
+        <button onclick="abrirLogin()" style="background:#1a6b47;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;padding:7px 14px;font-size:12px;font-family:inherit;white-space:nowrap">+ Agendar</button>
+      </div>
+      <div id="pub-conteudo"></div>
     </div>
+    <footer style="margin-top:40px;padding:14px 20px;border-top:1px solid ${c.border};background:${_dark?"#0a1a12":"#0d2b1a"};text-align:center">
+      <p style="font-size:10px;color:rgba(255,255,255,.5)">Reserva de Espaços e Equipamentos · Dev: Luciano Galdino de Melo · 🔥 Firebase · ☁️ GitHub Pages</p>
+    </footer>
   </div>
   <div id="modal-login" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);align-items:center;justify-content:center;z-index:2000;padding:1rem">
     <div style="background:${c.surface};border-radius:16px;padding:28px;width:100%;max-width:380px;box-shadow:0 24px 60px rgba(0,0,0,.3)">
@@ -334,34 +351,110 @@ function renderPublica(){
       </div>
     </div>
   </div>`;
-  renderPubCal();
-  window._calClick=(cid,data)=>{_pubDiaSel=_pubDiaSel===data?null:data;renderPubCal();renderPubDetalhe(data);};
-  window._calNav=(cid,dir)=>{let nm=_pubCal.m+dir,na=_pubCal.a;if(nm>11){nm=0;na++;}if(nm<0){nm=11;na--;}_pubCal={a:na,m:nm};renderPubCal();};
+  renderPubConteudo();
+  bindPub();
 }
 
-function renderPubCal(){const porData={};_todas.filter(r=>r.status!=="recusado").forEach(r=>{if(!porData[r.data])porData[r.data]=[];porData[r.data].push(r);});render("pub-cal",calMensalHTML("pub",_pubCal.a,_pubCal.m,porData,_pubDiaSel));}
-
-function renderPubDetalhe(data){
+function renderPubConteudo(){
   const c=C(),h=fmtHoje();
-  const[a,m,d]=data.split("-");
-  // Agrupamos por reserva principal (horario+espaco únicos, ignorando horários automáticos do range)
-  const rs=_todas.filter(r=>r.data===data&&r.status!=="recusado"&&!r.reservaAutomatica).sort((a,b)=>a.horario>b.horario?1:-1);
-  let html=`<div class="fade-in" style="background:${c.bg};border-radius:10px;padding:12px 14px;border:1px solid ${c.border}">
-    <p style="font-size:12px;font-weight:700;color:${c.navy};margin-bottom:8px">${d}/${m}/${a}</p>`;
-  if(!rs.length)html+=`<p style="font-size:13px;color:${c.textMuted}">🎉 Dia livre.</p>`;
-  else rs.forEach(r=>{
-    const range=r.horarioFim&&r.horarioFim!==r.horario?` → ${r.horarioFim}`:"";
-    html+=`<div style="display:flex;gap:8px;align-items:center;padding:6px 10px;border-radius:8px;background:${c.surface};border:1px solid ${c.border};border-left:3px solid #40b07a;margin-bottom:4px">
-      <span style="font-family:'DM Mono',monospace;font-weight:800;color:#40b07a;font-size:12px;min-width:38px">${r.horario}${range}</span>
-      <span style="font-weight:700;font-size:12px;flex:1;color:${c.navy}">${r.espaco}</span>
-      <span style="font-size:11px;color:${c.textMid}">${r.turmaInicio||r.turma}${r.turmaFim&&r.turmaFim!==r.turmaInicio?" → "+r.turmaFim:""}</span>
-      <span style="font-size:11px;color:${c.textMuted}">${r.professor.split(" ")[0]}</span>
-    </div>`;
-  });
-  if(data>=h)html+=`<div style="border-top:1px solid ${c.border};padding-top:10px;margin-top:8px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px"><p style="font-size:12.5px;font-weight:700;color:${c.navy}">Deseja agendar?</p><button onclick="abrirLogin()" style="${btn("success")}">Entrar para agendar →</button></div>`;
-  html+=`</div>`;
-  render("pub-detalhe",html);
+  const ps=_pubState;
+  const fonte=_todas.filter(r=>!r.reservaAutomatica&&r.status!=="recusado"&&(!ps.filtroEspaco||r.espaco===ps.filtroEspaco));
+  let html="";
+
+  if(ps.modo==="semana"){
+    // 5 próximos dias letivos
+    const dias=[];let dc=h;
+    while(dias.length<5){const dow=new Date(dc+"T12:00:00").getDay();if(dow!==0&&dow!==6&&isDiaLetivo(dc))dias.push(dc);dc=addDias(dc,1);if(dc>addDias(h,30))break;}
+    while(dias.length<5)dias.push(addDias(dias[dias.length-1],1));
+    const nomes=dias.map(d=>{const dow=new Date(d+"T12:00:00").getDay();return["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"][dow]+"."});
+    html+=`<div style="display:grid;grid-template-columns:repeat(5,minmax(80px,1fr));gap:6px;overflow-x:auto">`;
+    dias.forEach((d,i)=>{
+      const[,,dia]=d.split("-");const isH=d===h;
+      const rsD=fonte.filter(r=>r.data===d).sort((a,b)=>a.horario>b.horario?1:-1);
+      html+=`<div style="background:${isH?"rgba(26,107,71,.06)":c.surface};border:1.5px solid ${isH?c.blueMid:c.border};border-radius:10px;padding:8px 6px;min-height:80px">
+        <div style="text-align:center;margin-bottom:6px">
+          <p style="font-size:10px;font-weight:700;color:${c.textMid};text-transform:uppercase">${nomes[i]}</p>
+          <p style="font-size:18px;font-weight:900;line-height:1;color:${isH?c.blueMid:c.text}">${dia}</p>
+        </div>`;
+      if(!rsD.length)html+=`<p style="font-size:9px;color:${c.textMuted};opacity:.5;text-align:center">livre</p>`;
+      else rsD.forEach(r=>{
+        const range=r.horarioFim&&r.horarioFim!==r.horario?`→${r.horarioFim}`:"";
+        html+=`<div style="background:${c.greenBg};border-radius:5px;padding:3px 5px;border-left:3px solid #1a6b47;margin-bottom:3px">
+          <p style="font-size:9px;font-weight:800;font-family:'DM Mono',monospace;color:${c.green}">${r.horario}${range}</p>
+          <p style="font-size:9px;font-weight:700;color:${c.navy};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.espaco.split(" ")[0]}</p>
+          <p style="font-size:8px;color:${c.textMuted}">${r.turmaInicio||r.turma||""}</p>
+        </div>`;
+      });
+      html+=`</div>`;
+    });
+    html+=`</div>`;
+  }
+
+  if(ps.modo==="mes"){
+    const{a,m}=ps.mesCal;
+    const porData={};fonte.forEach(r=>{if(!porData[r.data])porData[r.data]=[];porData[r.data].push(r);});
+    html+=calMensalHTML("pub",a,m,porData,ps.diaSel);
+    if(ps.diaSel){
+      const[a2,m2,d2]=ps.diaSel.split("-");
+      const rs=fonte.filter(r=>r.data===ps.diaSel).sort((a,b)=>a.horario>b.horario?1:-1);
+      html+=`<div class="fade-in" style="margin-top:10px;background:${c.surface};border-radius:12px;border:1px solid ${c.border};overflow:hidden">
+        <div style="background:linear-gradient(135deg,#1a6b47,#0f4c2b);padding:10px 16px;display:flex;justify-content:space-between;align-items:center">
+          <p style="font-size:14px;font-weight:800;color:#fff">📅 ${d2}/${m2}/${a2}</p>
+          <button onclick="_pubState.diaSel=null;renderPubConteudo()" style="background:rgba(255,255,255,.2);border:none;border-radius:6px;color:#fff;padding:3px 10px;cursor:pointer;font-size:12px">✕</button>
+        </div>
+        <div style="padding:12px">`;
+      if(!rs.length)html+=`<p style="font-size:13px;color:${c.textMuted};text-align:center;padding:12px 0">🎉 Dia livre.</p>`;
+      else rs.forEach(r=>{
+        const range=r.horarioFim&&r.horarioFim!==r.horario?` → ${r.horarioFim}`:"";
+        html+=`<div style="display:flex;gap:10px;padding:8px 10px;border-radius:8px;background:${c.bg};border:1px solid ${c.border};border-left:3px solid #40b07a;margin-bottom:6px">
+          <span style="font-family:'DM Mono',monospace;font-weight:800;color:#40b07a;font-size:12px;min-width:80px">${r.horario}${range}</span>
+          <div><p style="font-size:13px;font-weight:700;color:${c.navy}">${r.espaco}</p>
+          <p style="font-size:11px;color:${c.textMid}">${r.professor} · ${r.turmaInicio||r.turma||""}</p></div>
+        </div>`;
+      });
+      html+=`</div></div>`;
+    }
+  }
+
+  if(ps.modo==="agenda"){
+    const futuras=fonte.filter(r=>r.data>=h).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
+    if(!futuras.length){html+=`<p style="text-align:center;padding:32px;color:${c.textMuted}">Nenhum agendamento futuro.</p>`;}
+    else{
+      const porData={};futuras.forEach(r=>{if(!porData[r.data])porData[r.data]=[];porData[r.data].push(r);});
+      Object.entries(porData).forEach(([data,rs])=>{
+        const[,m2,d2]=data.split("-");const isH=data===h;
+        html+=`<div style="margin-bottom:14px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-size:11px;font-weight:700;color:${isH?c.green:c.textMid};background:${isH?c.greenBg:"transparent"};padding:${isH?"2px 8px":"0"};border-radius:20px">${isH?"📌 Hoje":`${d2}/${m2}`}</span><div style="flex:1;height:1px;background:${c.borderLight}"></div></div>`;
+        rs.forEach(r=>{
+          const range=r.horarioFim&&r.horarioFim!==r.horario?` → ${r.horarioFim}`:"";
+          html+=`<div style="display:flex;gap:10px;padding:8px 12px;border-radius:8px;background:${c.surface};border:1px solid ${c.border};border-left:4px solid #1a6b47;margin-bottom:5px">
+            <span style="font-family:'DM Mono',monospace;font-weight:800;color:#40b07a;font-size:12px;min-width:80px;flex-shrink:0">${r.horario}${range}</span>
+            <div style="flex:1;min-width:0">
+              <p style="font-size:13px;font-weight:700;color:${c.navy}">${r.espaco}</p>
+              <p style="font-size:11px;color:${c.textMid}">${r.professor} · ${r.turmaInicio||r.turma||""}</p>
+            </div>
+          </div>`;
+        });
+        html+=`</div>`;
+      });
+    }
+  }
+
+  render("pub-conteudo",html);
 }
+
+function bindPub(){
+  window._calClick=(cid,data)=>{
+    if(cid==="pub"){_pubState.diaSel=_pubState.diaSel===data?null:data;renderPubConteudo();}
+  };
+  window._calNav=(cid,dir)=>{
+    if(cid==="pub"){let nm=_pubState.mesCal.m+dir,na=_pubState.mesCal.a;if(nm>11){nm=0;na++;}if(nm<0){nm=11;na--;}_pubState.mesCal={a:na,m:nm};renderPubConteudo();}
+  };
+}
+
+let _pubState=null;
+window.pubSetModo=m=>{_pubState.modo=m;renderPubConteudo();};
+window.pubSetEspaco=v=>{_pubState.filtroEspaco=v;renderPubConteudo();};
+
 
 window.abrirLogin=()=>{const m=$("modal-login");if(m)m.style.display="flex";};
 window.fecharLogin=()=>{const m=$("modal-login");if(m)m.style.display="none";};
