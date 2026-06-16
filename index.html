@@ -239,7 +239,9 @@ function inp(){const c=C();return`width:100%;padding:10px 12px;border-radius:8px
 function sel(){return inp()+";cursor:pointer";}
 function btn(variant="primary",disabled=false,size="md"){
   const c=C();
-  const VM={primary:{bg:c.blueMid,col:"#fff",b:c.blueMid},navy:{bg:c.navy,col:"#fff",b:c.navy},danger:{bg:"#dc2626",col:"#fff",b:"#dc2626"},success:{bg:"#1a6b47",col:"#fff",b:"#1a6b47"},ghost:{bg:"transparent",col:c.textMid,b:c.border},amber:{bg:"#d97706",col:"#fff",b:"#d97706"}};
+  // No dark, navy vira verde real para manter legibilidade
+  const navyBg=_dark?"#1a6b47":c.navy;
+  const VM={primary:{bg:c.blueMid,col:"#fff",b:c.blueMid},navy:{bg:navyBg,col:"#fff",b:navyBg},danger:{bg:"#dc2626",col:"#fff",b:"#dc2626"},success:{bg:"#1a6b47",col:"#fff",b:"#1a6b47"},ghost:{bg:"transparent",col:c.text,b:c.border},amber:{bg:"#d97706",col:"#fff",b:"#d97706"}};
   const v=VM[variant]||VM.primary;
   const P={sm:"5px 12px",md:"9px 18px",lg:"12px 24px"};
   const F={sm:"12",md:"13.5",lg:"14.5"};
@@ -1585,7 +1587,7 @@ function renderAdminView(){
     const conf=filtradas.filter(r=>r.status!=="pendente"&&(_A.historico||r.data>=h));
 
     html+=`<div style="display:flex;gap:2px;margin-bottom:18px;background:${c.surface};border-radius:10px;padding:4px;border:1px solid ${c.border};width:fit-content">
-      ${[{id:"reservas",l:"📋 Reservas"},{id:"espacos",l:"🏛️ Por Espaço"},{id:"fotos",l:"📸 Fotos"}].map(t=>`<button onclick="aSetAba('${t.id}')" style="${btn(_A.aba===t.id?"navy":"ghost")};padding:7px 15px;font-size:12.5px;white-space:nowrap">${t.l}</button>`).join("")}
+      ${[{id:"reservas",l:"📋 Reservas"},{id:"espacos",l:"🏛️ Por Espaço"},{id:"fotos",l:"📸 Fotos"}].map(t=>`<button onclick="aSetAba('${t.id}')" style="padding:7px 15px;font-size:12.5px;white-space:nowrap;border-radius:8px;border:1.5px solid ${_A.aba===t.id?(_dark?'#1a6b47':c.navy):c.border};background:${_A.aba===t.id?(_dark?'#1a6b47':c.navy):'transparent'};color:${_A.aba===t.id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${t.l}</button>`).join("")}
     </div>`;
 
     if(_A.aba==="reservas"){
