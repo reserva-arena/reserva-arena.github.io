@@ -1034,9 +1034,15 @@ function maBlocoMultiHTML(b,i,eo){
       ${HORARIOS.map(h=>{
         const ocp=ocpFire.includes(h)&&h!==b.horario;
         const sel2=h===b.horario;
-        return`<button onclick="maSetHorarioMulti(${i},'ini','${h}')" ${ocp?"disabled":""}
-          style="padding:8px 4px;border-radius:8px;border:${sel2?"2px solid "+c.blueMid:ocp?"1.5px solid "+c.redBorder:"1.5px solid "+c.greenBorder};background:${sel2?c.greenBg:ocp?c.redBg:c.surface};color:${sel2?c.blueMid:ocp?c.red:c.green};font-size:11px;font-weight:700;cursor:${ocp?"not-allowed":"pointer"};font-family:'DM Mono',monospace;display:flex;flex-direction:column;align-items:center;gap:2px">
-          ${h}<span style="font-size:8px">${ocp?"● Ocup":sel2?"✓ Ini":"○"}</span>
+        // Bloquear horários já passados no dia de hoje
+        const agoraRef=new Date();
+        const hojeStr=agoraRef.toLocaleDateString('sv-SE');
+        const [hh,mm]=h.split(':').map(Number);
+        const passado=_MA.data===hojeStr&&(hh<agoraRef.getHours()||(hh===agoraRef.getHours()&&mm<=agoraRef.getMinutes()));
+        const bloq=ocp||passado;
+        return`<button onclick="maSetHorarioMulti(${i},'ini','${h}')" ${bloq?"disabled":""}
+          style="padding:8px 4px;border-radius:8px;border:${sel2?"2px solid "+c.blueMid:bloq?"1.5px solid "+c.redBorder:"1.5px solid "+c.greenBorder};background:${sel2?c.greenBg:bloq?c.redBg:c.surface};color:${sel2?c.blueMid:bloq?c.red:c.green};font-size:11px;font-weight:700;cursor:${bloq?"not-allowed":"pointer"};font-family:'DM Mono',monospace;display:flex;flex-direction:column;align-items:center;gap:2px">
+          ${h}<span style="font-size:8px">${ocp?"● Ocup":passado?"● Pass":sel2?"✓ Ini":"○"}</span>
         </button>`;
       }).join("")}
     </div>
