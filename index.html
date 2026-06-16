@@ -81,7 +81,7 @@ let _messaging = null;
 try { _messaging = getMessaging(app); } catch(e) { console.warn('FCM não disponível:', e); }
 
 // VAPID_KEY será substituída quando o usuário fornecer
-const VAPID_KEY = '__VAPID_KEY__';
+const VAPID_KEY = 'BLa94Zm3M-nrytcapsPLPcMYMCkbe11OOAo-DJwUPZE6qzrYxFHRwW_E0aeysaN1BXmGgL4SRUUtO-pTRINzBNc';
 
 async function iniciarNotificacoes(userId) {
   if (!_messaging || !('Notification' in window)) return;
