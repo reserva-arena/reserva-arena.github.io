@@ -331,6 +331,7 @@ function re(){
   if(!_usuario){renderPublica();return;}
   if(_usuario.perfil==="sem_acesso"||_usuario.ativo===false){renderSemAcesso();return;}
   if(_usuario.perfil==="fotografo"){renderFotografo();return;}
+  if(_usuario.perfil==="ti"){renderTI();return;}
   renderApp();
 }
 
@@ -543,6 +544,76 @@ function renderFotografo(){
     </div>
   </div>`;
 }
+
+function renderTI(){
+  const c=C(),h=fmtHoje();
+  const audioVisuais=_todas.filter(r=>{
+    const eo=ESPACOS.find(e=>e.nome===r.espaco);
+    return (eo?.tipo==="audiovisual"||eo?.tipo==="equipamento"&&r.espaco==="Áudio/Visual")&&r.data>=h&&!r.reservaAutomatica;
+  }).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
+  const pendentes=audioVisuais.filter(r=>r.status==="pendente");
+  const confirmados=audioVisuais.filter(r=>r.status==="confirmado");
+  $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="no">
+    <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#0d2b1a,#1a6b47)"};padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100">
+      <div style="display:flex;align-items:center;gap:10px">${logoHTML(36)}<div><p style="font-size:13px;font-weight:800;color:#fff">T.I. — Áudio/Visual</p></div></div>
+      <div style="display:flex;align-items:center;gap:8px">${avatarHTML(_usuario?.nome,30,"blue")}<button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button><button onclick="doSignOut()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">Sair</button></div>
+    </header>
+    <div style="max-width:700px;margin:0 auto;padding:20px 14px">
+      ${pendentes.length?`<div style="margin-bottom:24px">
+        <p style="font-size:12px;font-weight:800;color:#ea580c;text-transform:uppercase;margin-bottom:10px">⏳ Aguardando aprovação (${pendentes.length})</p>
+        ${pendentes.map(r=>tiCard(r,true)).join("")}
+      </div>`:""}
+      ${confirmados.length?`<div>
+        <p style="font-size:12px;font-weight:800;color:${c.green};text-transform:uppercase;margin-bottom:10px">✅ Confirmados (${confirmados.length})</p>
+        ${confirmados.map(r=>tiCard(r,false)).join("")}
+      </div>`:""}
+      ${!audioVisuais.length?`<div style="text-align:center;padding:40px;color:${c.textMuted}"><p style="font-size:32px">🔊</p><p style="margin-top:12px">Nenhum agendamento de Áudio/Visual.</p></div>`:""}
+    </div>
+  </div>`;
+}
+function tiCard(r,pend){
+  const c=C(),h=fmtHoje();
+  const[a,m2,d]=r.data.split("-");
+  const isH=r.data===h;
+  const dias=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+  const dow=dias[new Date(r.data+"T12:00:00").getDay()];
+  return`<div style="background:${c.surface};border-radius:12px;border:1.5px solid ${pend?"#fed7aa":"#a7f3d0"};padding:14px 18px;margin-bottom:10px;border-left:4px solid ${pend?"#f97316":"#1a6b47"}">
+    <div style="display:flex;gap:14px;align-items:flex-start">
+      <div style="text-align:center;min-width:52px;background:${pend?"#fff7ed":"#e2f4ea"};border-radius:8px;padding:6px 8px">
+        <p style="font-size:11px;font-weight:700;color:${pend?"#c2410c":"#1a6b47"};text-transform:uppercase">${dow}</p>
+        <p style="font-size:20px;font-weight:900;color:${pend?"#c2410c":"#1a6b47"};line-height:1">${d}</p>
+        <p style="font-size:10px;color:${pend?"#c2410c":"#1a6b47"}">${m2}/${a.slice(2)}</p>
+      </div>
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+          <span style="font-family:'DM Mono',monospace;font-weight:800;color:${pend?"#c2410c":"#1a6b47"};font-size:14px">${r.horario}${r.horarioFim&&r.horarioFim!==r.horario?" → "+r.horarioFim:""}</span>
+          <span style="font-size:13px;font-weight:700;color:${c.navy}">${r.espaco}</span>
+          ${isH?`<span style="background:#1a6b47;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">📌 Hoje</span>`:""}
+          ${pend?`<span style="background:#fff7ed;color:#c2410c;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #fed7aa">⏳ Pendente</span>`:`<span style="background:#e2f4ea;color:#1a6b47;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #a7f3d0">✅ Confirmado</span>`}
+        </div>
+        <p style="font-size:12px;color:${c.textMid};margin-bottom:2px">👤 ${r.professor} · ${r.turmaInicio||r.turma||"—"}</p>
+        <p style="font-size:12px;color:${c.textMuted}">${r.conteudo}</p>
+        ${r.local?`<p style="font-size:11px;color:#0369a1;margin-top:3px;font-weight:700">📍 ${r.local}${r.localDevolucao&&r.localDevolucao!==r.local?" → "+r.localDevolucao:""}</p>`:""}
+      </div>
+    </div>
+    ${pend?`<div style="display:flex;gap:8px;margin-top:12px">
+      <button onclick="tiAprovar('${r.id}')" style="flex:1;padding:9px;border-radius:8px;border:none;background:#1a6b47;color:#fff;font-weight:700;font-size:13px;cursor:pointer">✅ Aprovar</button>
+      <button onclick="tiRecusar('${r.id}')" style="flex:1;padding:9px;border-radius:8px;border:none;background:#dc2626;color:#fff;font-weight:700;font-size:13px;cursor:pointer">❌ Recusar</button>
+    </div>`:`<div style="margin-top:10px">
+      <button onclick="tiRecusar('${r.id}')" style="padding:7px 18px;border-radius:8px;border:1.5px solid #fca5a5;background:#fff;color:#dc2626;font-weight:700;font-size:12px;cursor:pointer">❌ Cancelar aprovação</button>
+    </div>`}
+  </div>`;
+}
+window.tiAprovar=async(id)=>{
+  if(!confirm("Aprovar este agendamento?"))return;
+  await updateDoc(doc(db,"reservas",id),{status:"confirmado"});
+  re();
+};
+window.tiRecusar=async(id)=>{
+  if(!confirm("Recusar este agendamento?"))return;
+  await updateDoc(doc(db,"reservas",id),{status:"recusado"});
+  re();
+};
 
 function renderSemAcesso(){
   const c=C();
@@ -1907,6 +1978,7 @@ function modalGerenciarHTML(){
               <select id="gu-perfil" style="width:100%;padding:10px 12px;border-radius:8px;font-size:13.5px;border:1.5px solid #c7dfd4;background:#fff;outline:none;box-sizing:border-box;cursor:pointer;margin-top:5px">
                 <option value="professor">👨‍🏫 Professor</option>
                 <option value="fotografo">📸 Fotógrafo</option>
+                <option value="ti">💻 T.I.</option>
               </select></div>
             <button onclick="guCriarDireto()" style="background:#1a6b47;color:#fff;border:none;border-radius:8px;font-weight:700;padding:10px 18px;font-size:13.5px;cursor:pointer;height:42px;width:100%">+ Cadastrar</button>
           </div>
@@ -1967,7 +2039,7 @@ function renderGuLista(){
       h+='<tr style="background:'+(i%2===0?'#fff':'#f8faf8')+'">';
       h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb;color:#132318;font-weight:600">'+u.nome+'</td>';
       h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb;color:#607060;font-size:12px">'+u.email+'</td>';
-      h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:#e0e7ff;color:#3730a3">'+(u.perfil==="fotografo"?"📸 Fotógrafo":"👨‍🏫 Professor")+'</span></td>';
+      h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:#e0e7ff;color:#3730a3">'+(u.perfil==="fotografo"?"📸 Fotógrafo":u.perfil==="ti"?"💻 T.I.":"👨‍🏫 Professor")+'</span></td>';
       h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:'+(u.ativo!==false?'#e2f4ea':'#fef2f2')+';color:'+(u.ativo!==false?'#0f4c2b':'#7f1d1d')+'">'+(u.ativo!==false?'● Ativo':'○ Inativo')+'</span></td>';
       h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><div style="display:flex;gap:5px">';
       h+='<button data-uid="'+u.id+'" data-ativo="'+(u.ativo!==false?'1':'0')+'" data-nome="'+u.nome+'" class="gu-toggle-btn" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid '+(u.ativo!==false?'#fed7aa':'#6ee7a0')+';background:'+(u.ativo!==false?'#fff7ed':'#e2f4ea')+';color:'+(u.ativo!==false?'#7c2d12':'#0f4c2b')+';cursor:pointer;font-weight:700">'+(u.ativo!==false?'🔒 Desativar':'🔓 Ativar')+'</button>';
