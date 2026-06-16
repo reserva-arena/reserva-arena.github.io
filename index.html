@@ -569,7 +569,7 @@ function renderMarketing(){
 window.mkAprovar=async(id)=>{
   if(!confirm("Aprovar esta solicitação de foto/vídeo?"))return;
   const r=_todas.find(r=>r.id===id);
-  await updateDoc(doc(db,"reservas",id),{statusMarketing:"aprovado"});
+  await updateDoc(doc(db,"reservas",id),{statusMarketing:"aprovado",status:"confirmado"});
   // Notificação push para professor e admins
   if(r){
     const msg=`✅ Solicitação de foto/vídeo aprovada!
@@ -583,7 +583,7 @@ ${r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco} — ${r
 window.mkRecusar=async(id)=>{
   if(!confirm("Recusar esta solicitação?"))return;
   const r=_todas.find(r=>r.id===id);
-  await updateDoc(doc(db,"reservas",id),{statusMarketing:"recusado"});
+  await updateDoc(doc(db,"reservas",id),{statusMarketing:"recusado",status:"recusado"});
   if(r){
     const msg=`❌ Solicitação de foto/vídeo não aprovada.
 ${r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco} — ${r.data.split("-").reverse().join("/")} às ${r.horario}`;
@@ -1630,11 +1630,11 @@ window.maSalvar=async()=>{
     const algUrgente=rangeHors.some(h=>isUrgente(data,h));
     const[ano,mes,dia]=data.split("-").map(Number);
     const dow=new Date(Date.UTC(ano,mes-1,dia)).getUTCDay();
-    const st=(algUrgente||dow===0||dow===6)?"pendente":"confirmado";
-    // Equipe de Marketing: statusMarketing sempre pendente
     const eoSalvar=ESPACOS.find(e=>e.nome===espaco);
     const temMidia=blocos[0]?.precisaFoto||blocos[0]?.precisaVideo||eoSalvar?.tipo==="marketing";
+    // Equipe de Marketing: sempre pendente (aguarda aprovação da equipe)
     const statusMarketing=temMidia?"pendente":null;
+    const st=(algUrgente||dow===0||dow===6||temMidia)?"pendente":"confirmado";
 
     const tph=b.turmasPorHorario||{};
     const isEquipSalvar=eo?.tipo==="equipamento"||eo?.tipo==="audiovisual";
