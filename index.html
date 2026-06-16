@@ -6,6 +6,12 @@
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link rel="manifest" href="/manifest.json"/>
+<meta name="theme-color" content="#1a6b47"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Reserva Arena"/>
+<link rel="apple-touch-icon" href="/icon-192.png"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;max-width:100%}
 html{-webkit-text-size-adjust:100%;overflow-x:hidden;max-width:100vw}
@@ -437,6 +443,7 @@ function renderApp(){
     </div>
     <footer style="margin-top:40px;padding:16px 24px;border-top:1px solid ${c.border};background:${_dark?c.surface:'#0d2b1a'};text-align:center">
       <p style="font-size:10px;color:${_dark?c.textMuted:'rgba(255,255,255,.5)'}">Reserva de Espaços e Equipamentos · Dev: Luciano Galdino de Melo · 🔥 Firebase · ☁️ GitHub Pages</p>
+      <button id="btn-instalar-pwa" onclick="instalarPWA()" style="display:none;align-items:center;gap:6px;margin:8px auto 0;background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);border-radius:20px;padding:6px 16px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">📲 Instalar como app</button>
     </footer>
     ${modalEdicaoHTML()}
     ${modalAgendarHTML()}
@@ -1878,6 +1885,39 @@ onAuthStateChanged(auth,async user=>{
     re();
   }
 });
+</script>
+<script>
+// Registrar Service Worker
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('/sw.js')
+      .then(r=>console.log('SW registrado:', r.scope))
+      .catch(e=>console.log('SW erro:', e));
+  });
+}
+
+// Banner de instalação PWA
+let _deferredPrompt=null;
+window.addEventListener('beforeinstallprompt', e=>{
+  e.preventDefault();
+  _deferredPrompt=e;
+  // Mostrar botão de instalação se existir
+  const btn=document.getElementById('btn-instalar-pwa');
+  if(btn)btn.style.display='flex';
+});
+window.addEventListener('appinstalled', ()=>{
+  _deferredPrompt=null;
+  const btn=document.getElementById('btn-instalar-pwa');
+  if(btn)btn.style.display='none';
+});
+window.instalarPWA=async()=>{
+  if(!_deferredPrompt)return;
+  _deferredPrompt.prompt();
+  const{outcome}=await _deferredPrompt.userChoice;
+  _deferredPrompt=null;
+  const btn=document.getElementById('btn-instalar-pwa');
+  if(btn)btn.style.display='none';
+};
 </script>
 </body>
 </html>
