@@ -361,8 +361,31 @@ function renderPubConteudo(){
   const fonte=_todas.filter(r=>!r.reservaAutomatica&&r.status!=="recusado"&&(!ps.filtroEspaco||r.espaco===ps.filtroEspaco));
   let html="";
 
+  // Card de cada reserva — sempre mostra tudo
+  const pubCard=(r,compact=false)=>{
+    const range=r.horarioFim&&r.horarioFim!==r.horario?`→${r.horarioFim}`:"";
+    const turma=(r.turmaInicio||r.turma||"")+(r.turmaFim&&r.turmaFim!==(r.turmaInicio||r.turma)?` → ${r.turmaFim}`:"");
+    const prof=nomeProf(r.professor);
+    if(compact){
+      return`<div style="background:${c.greenBg};border-radius:6px;padding:4px 6px;border-left:3px solid #1a6b47;margin-bottom:4px">
+        <p style="font-size:9px;font-weight:800;font-family:'DM Mono',monospace;color:${c.green}">${r.horario}${range}</p>
+        <p style="font-size:9px;font-weight:700;color:${c.navy};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${tipoIcon(ESPACOS.find(e=>e.nome===r.espaco)?.tipo,r.espaco)} ${r.espaco.split(" ")[0]}</p>
+        <p style="font-size:8px;color:${c.textMid};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${turma} · ${prof}</p>
+      </div>`;
+    }
+    return`<div style="display:flex;gap:10px;padding:10px 12px;border-radius:8px;background:${c.surface};border:1px solid ${c.border};border-left:4px solid #1a6b47;margin-bottom:6px">
+      <div style="min-width:70px;flex-shrink:0">
+        <p style="font-family:'DM Mono',monospace;font-weight:800;color:#40b07a;font-size:12px">${r.horario}${range?` ${range}`:""}</p>
+      </div>
+      <div style="flex:1;min-width:0">
+        <p style="font-size:13px;font-weight:700;color:${c.navy}">${tipoIcon(ESPACOS.find(e=>e.nome===r.espaco)?.tipo,r.espaco)} ${r.espaco}</p>
+        <p style="font-size:11px;color:${c.textMid};margin-top:2px">👤 ${r.professor}</p>
+        <p style="font-size:11px;color:${c.textMuted};margin-top:1px">🎓 ${turma}</p>
+      </div>
+    </div>`;
+  };
+
   if(ps.modo==="semana"){
-    // 5 próximos dias letivos
     const dias=[];let dc=h;
     while(dias.length<5){const dow=new Date(dc+"T12:00:00").getDay();if(dow!==0&&dow!==6&&isDiaLetivo(dc))dias.push(dc);dc=addDias(dc,1);if(dc>addDias(h,30))break;}
     while(dias.length<5)dias.push(addDias(dias[dias.length-1],1));
@@ -377,14 +400,7 @@ function renderPubConteudo(){
           <p style="font-size:18px;font-weight:900;line-height:1;color:${isH?c.blueMid:c.text}">${dia}</p>
         </div>`;
       if(!rsD.length)html+=`<p style="font-size:9px;color:${c.textMuted};opacity:.5;text-align:center">livre</p>`;
-      else rsD.forEach(r=>{
-        const range=r.horarioFim&&r.horarioFim!==r.horario?`→${r.horarioFim}`:"";
-        html+=`<div style="background:${c.greenBg};border-radius:5px;padding:3px 5px;border-left:3px solid #1a6b47;margin-bottom:3px">
-          <p style="font-size:9px;font-weight:800;font-family:'DM Mono',monospace;color:${c.green}">${r.horario}${range}</p>
-          <p style="font-size:9px;font-weight:700;color:${c.navy};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.espaco.split(" ")[0]}</p>
-          <p style="font-size:8px;color:${c.textMuted}">${r.turmaInicio||r.turma||""}</p>
-        </div>`;
-      });
+      else rsD.forEach(r=>{html+=pubCard(r,true);});
       html+=`</div>`;
     });
     html+=`</div>`;
@@ -404,14 +420,8 @@ function renderPubConteudo(){
         </div>
         <div style="padding:12px">`;
       if(!rs.length)html+=`<p style="font-size:13px;color:${c.textMuted};text-align:center;padding:12px 0">🎉 Dia livre.</p>`;
-      else rs.forEach(r=>{
-        const range=r.horarioFim&&r.horarioFim!==r.horario?` → ${r.horarioFim}`:"";
-        html+=`<div style="display:flex;gap:10px;padding:8px 10px;border-radius:8px;background:${c.bg};border:1px solid ${c.border};border-left:3px solid #40b07a;margin-bottom:6px">
-          <span style="font-family:'DM Mono',monospace;font-weight:800;color:#40b07a;font-size:12px;min-width:80px">${r.horario}${range}</span>
-          <div><p style="font-size:13px;font-weight:700;color:${c.navy}">${r.espaco}</p>
-          <p style="font-size:11px;color:${c.textMid}">${r.professor} · ${r.turmaInicio||r.turma||""}</p></div>
-        </div>`;
-      });
+      else rs.forEach(r=>{html+=pubCard(r,false);});
+      html+=`<div style="margin-top:10px;padding-top:10px;border-top:1px solid ${c.borderLight}"><button onclick="abrirLogin()" style="background:#1a6b47;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;padding:9px 18px;font-size:13px;font-family:inherit;width:100%">+ Agendar neste dia</button></div>`;
       html+=`</div></div>`;
     }
   }
@@ -423,17 +433,12 @@ function renderPubConteudo(){
       const porData={};futuras.forEach(r=>{if(!porData[r.data])porData[r.data]=[];porData[r.data].push(r);});
       Object.entries(porData).forEach(([data,rs])=>{
         const[,m2,d2]=data.split("-");const isH=data===h;
-        html+=`<div style="margin-bottom:14px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-size:11px;font-weight:700;color:${isH?c.green:c.textMid};background:${isH?c.greenBg:"transparent"};padding:${isH?"2px 8px":"0"};border-radius:20px">${isH?"📌 Hoje":`${d2}/${m2}`}</span><div style="flex:1;height:1px;background:${c.borderLight}"></div></div>`;
-        rs.forEach(r=>{
-          const range=r.horarioFim&&r.horarioFim!==r.horario?` → ${r.horarioFim}`:"";
-          html+=`<div style="display:flex;gap:10px;padding:8px 12px;border-radius:8px;background:${c.surface};border:1px solid ${c.border};border-left:4px solid #1a6b47;margin-bottom:5px">
-            <span style="font-family:'DM Mono',monospace;font-weight:800;color:#40b07a;font-size:12px;min-width:80px;flex-shrink:0">${r.horario}${range}</span>
-            <div style="flex:1;min-width:0">
-              <p style="font-size:13px;font-weight:700;color:${c.navy}">${r.espaco}</p>
-              <p style="font-size:11px;color:${c.textMid}">${r.professor} · ${r.turmaInicio||r.turma||""}</p>
-            </div>
+        html+=`<div style="margin-bottom:16px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <span style="font-size:11px;font-weight:700;color:${isH?c.green:c.textMid};background:${isH?c.greenBg:"transparent"};padding:${isH?"2px 8px":"0"};border-radius:20px">${isH?"📌 Hoje":`${d2}/${m2}`}</span>
+            <div style="flex:1;height:1px;background:${c.borderLight}"></div>
           </div>`;
-        });
+        rs.forEach(r=>{html+=pubCard(r,false);});
         html+=`</div>`;
       });
     }
