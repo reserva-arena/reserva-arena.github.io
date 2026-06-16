@@ -218,7 +218,7 @@ function extraInfo(r){
 // ─── TEMA ────────────────────────────────────────────────────────────────────
 let _dark=localStorage.getItem("theme")==="dark";
 const LIGHT={navy:"#0d2b1a",navyMid:"#1a6b47",blueMid:"#2d9463",bg:"#eef7f2",surface:"#ffffff",border:"#b0d9c4",borderLight:"#d4ede1",text:"#0d2b1a",textMid:"#2a5c3a",textMuted:"#4a7a5a",green:"#0a3d22",greenBg:"#d6f0e3",greenBorder:"#5cc98a",amber:"#7c2d12",amberBg:"#fff7ed",amberBorder:"#fed7aa",red:"#7f1d1d",redBg:"#fef2f2",redBorder:"#fca5a5",logoBg:"#ffffff",headerBg:"#0d2b1a",inputBg:"#ffffff",inputBorder:"#b0d9c4",cardShadow:"0 2px 10px rgba(13,43,26,.12)"};
-const DARK ={navy:"#e8fdf2",navyMid:"#b8f0d4",blueMid:"#34d399",bg:"#0a1a12",surface:"#0f2318",border:"#1a3d27",borderLight:"#1a3d27",text:"#f0fdf4",textMid:"#d1fae5",textMuted:"#86efac",green:"#6ee7b7",greenBg:"#052e16",greenBorder:"#065f46",amber:"#fbbf24",amberBg:"#1c1408",amberBorder:"#7c2d12",red:"#f87171",redBg:"#1a0505",redBorder:"#7f1d1d",logoBg:"#0f2318",headerBg:"#0f2318",inputBg:"#0a1a12",inputBorder:"#1a3d27",cardShadow:"0 1px 6px rgba(0,0,0,.35)"};
+const DARK ={navy:"#e8fdf2",navyMid:"#b8f0d4",blueMid:"#34d399",bg:"#0a1a12",surface:"#0f2318",border:"#2a5c3a",borderLight:"#1e3d2a",text:"#f0fdf4",textMid:"#d1fae5",textMuted:"#86efac",green:"#6ee7b7",greenBg:"#052e16",greenBorder:"#065f46",amber:"#fbbf24",amberBg:"#1c1408",amberBorder:"#92400e",red:"#f87171",redBg:"#1a0505",redBorder:"#7f1d1d",logoBg:"#0f2318",headerBg:"#0f2318",inputBg:"#132318",inputBorder:"#2a5c3a",cardShadow:"0 1px 6px rgba(0,0,0,.5)"};
 const C=()=>_dark?DARK:LIGHT;
 function toggleDark(){_dark=!_dark;localStorage.setItem("theme",_dark?"dark":"light");re();}
 window.toggleDark=toggleDark;
@@ -441,8 +441,8 @@ function renderApp(){
     <div id="main-content" style="max-width:100%;width:100%;margin:0 auto;padding:20px 20px;overflow-x:hidden;box-sizing:border-box">
       <div style="max-width:1200px;margin:0 auto;width:100%">${isAdmin&&_adminVisu==='admin'?renderAdminView():renderProfessorView()}</div>
     </div>
-    <footer style="margin-top:40px;padding:16px 24px;border-top:1px solid ${c.border};background:${_dark?c.surface:'#0d2b1a'};text-align:center">
-      <p style="font-size:10px;color:${_dark?c.textMuted:'rgba(255,255,255,.5)'}">Reserva de Espaços e Equipamentos · Dev: Luciano Galdino de Melo · 🔥 Firebase · ☁️ GitHub Pages</p>
+    <footer style="margin-top:40px;padding:16px 24px;border-top:1px solid ${c.border};background:${_dark?'#0a1a12':'#0d2b1a'};text-align:center">
+      <p style="font-size:10px;color:rgba(255,255,255,.5)">Reserva de Espaços e Equipamentos · Dev: Luciano Galdino de Melo · 🔥 Firebase · ☁️ GitHub Pages</p>
       <button id="btn-instalar-pwa" onclick="instalarPWA()" style="display:none;align-items:center;gap:6px;margin:8px auto 0;background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);border-radius:20px;padding:6px 16px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">📲 Instalar como app</button>
     </footer>
     ${modalEdicaoHTML()}
@@ -520,12 +520,12 @@ function renderProfessorView(){
   html+=`<div style="background:${c.surface};border-radius:14px;border:1px solid ${c.border};overflow:hidden">`;
   html+=`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;gap:8px;flex-wrap:wrap">
     <div style="display:flex;background:${c.bg};border-radius:10px;padding:3px;border:1px solid ${c.border};gap:2px">
-      <button onclick="pSetGrade('meus')" style="padding:6px 16px;border-radius:8px;border:none;background:${_P.filtroGrade==='meus'?c.navy:'transparent'};color:${_P.filtroGrade==='meus'?'#fff':c.textMuted};font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">Meus</button>
-      <button onclick="pSetGrade('todos')" style="padding:6px 16px;border-radius:8px;border:none;background:${_P.filtroGrade==='todos'?c.navy:'transparent'};color:${_P.filtroGrade==='todos'?'#fff':c.textMuted};font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">Todos</button>
+      <button onclick="pSetGrade('meus')" style="padding:6px 16px;border-radius:8px;border:none;background:${_P.filtroGrade==='meus'?c.navy:'transparent'};color:${_P.filtroGrade==='meus'?'#fff':c.text};font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">Meus</button>
+      <button onclick="pSetGrade('todos')" style="padding:6px 16px;border-radius:8px;border:none;background:${_P.filtroGrade==='todos'?c.navy:'transparent'};color:${_P.filtroGrade==='todos'?'#fff':c.text};font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">Todos</button>
     </div>
     <div style="display:flex;background:${c.bg};border-radius:10px;padding:3px;border:1px solid ${c.border};gap:2px">
-      <button onclick="pSetModo('calendario')" style="padding:6px 16px;border-radius:8px;border:none;background:${_P.modoCard==='calendario'?c.navy:'transparent'};color:${_P.modoCard==='calendario'?'#fff':c.textMuted};font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">🗓 Calendário</button>
-      <button onclick="pSetModo('lista')" style="padding:6px 16px;border-radius:8px;border:none;background:${_P.modoCard==='lista'?c.navy:'transparent'};color:${_P.modoCard==='lista'?'#fff':c.textMuted};font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">☰ Agenda</button>
+      <button onclick="pSetModo('calendario')" style="padding:6px 16px;border-radius:8px;border:none;background:${_P.modoCard==='calendario'?c.navy:'transparent'};color:${_P.modoCard==='calendario'?'#fff':c.text};font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">🗓 Calendário</button>
+      <button onclick="pSetModo('lista')" style="padding:6px 16px;border-radius:8px;border:none;background:${_P.modoCard==='lista'?c.navy:'transparent'};color:${_P.modoCard==='lista'?'#fff':c.text};font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">☰ Agenda</button>
     </div>
   </div>`;
 
@@ -555,10 +555,10 @@ function renderProfessorView(){
         const naoL=!isDiaLetivo(d)&&d>=h&&new Date(d).getDay()!==0&&new Date(d).getDay()!==6;
         html+=`<div style="background:${isH?"rgba(26,107,71,.06)":c.bg};border:1px solid ${isH?c.blueMid:c.borderLight};border-radius:10px;padding:10px 8px;min-height:80px;cursor:pointer" onclick="pClicarDia('${d}')">
           <div style="text-align:center;margin-bottom:6px">
-            <p style="font-size:10px;font-weight:700;color:${naoL?"#ef4444":c.textMuted};text-transform:uppercase">${nomes[i]}</p>
-            <p style="font-size:18px;font-weight:900;line-height:1;color:${isH?c.blueMid:c.navy}">${dia}</p>
+            <p style="font-size:10px;font-weight:700;color:${naoL?"#ef4444":c.textMid};text-transform:uppercase">${nomes[i]}</p>
+            <p style="font-size:18px;font-weight:900;line-height:1;color:${isH?c.blueMid:c.text}">${dia}</p>
           </div>`;
-        if(!rsD.length)html+=`<p style="font-size:9px;color:${c.textMuted};opacity:.4;text-align:center;margin-top:8px">livre</p>`;
+        if(!rsD.length)html+=`<p style="font-size:9px;color:${c.textMid};opacity:.6;text-align:center;margin-top:8px">livre</p>`;
         else rsD.forEach(r=>{
           const isMeu=ehMeu(r),isPend=r.status==="pendente";
           const range=r.horarioFim&&r.horarioFim!==r.horario?`→${r.horarioFim}`:"";
