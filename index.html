@@ -720,7 +720,7 @@ window.toggleAdminVisu=()=>{
 };
 window.irInicio=()=>{
   if(_usuario?.perfil==="admin"){
-    _A.modoVisu="calendario";_A.fEspaco="";_A.fProf="";_A.fStatus="";
+    _A.modoVisu="calendario";_A.fEspaco="";_A.fProf="";_A.fStatus="";_A.fTurma="";
     _A.diaSel=null;_A.historico=false;
     const d=new Date();_A.mesCal={a:d.getFullYear(),m:d.getMonth()};
   } else {
@@ -1804,8 +1804,9 @@ function renderAdminView(){
     <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;width:100%">
       <select id="adm-sel-espaco" style="${sel()};width:auto;font-size:12.5px;padding:6px 10px;flex:1;min-width:100px"><option value="">🏛️ Todos os espaços</option>${ESPACOS.map(e=>`<option value="${e.nome}" ${_A.fEspaco===e.nome?"selected":""}>${e.nome}</option>`).join("")}</select>
       <select id="adm-sel-prof" style="${sel()};width:auto;font-size:12.5px;padding:6px 10px;flex:1;min-width:100px"><option value="">👤 Todos os professores</option>${_usuarios.map(u=>`<option value="${u.nome}" ${_A.fProf===u.nome?"selected":""}>${u.nome}</option>`).join("")}</select>
+      <select id="adm-sel-turma" style="${sel()};width:auto;font-size:12.5px;padding:6px 10px;flex:1;min-width:100px"><option value="">🎓 Todas as turmas</option>${TURMAS.map(t=>`<option value="${t}" ${_A.fTurma===t?"selected":""}>${t}</option>`).join("")}</select>
       <select id="adm-sel-status" style="${sel()};width:auto;font-size:12.5px;padding:6px 10px;min-width:100px"><option value="">● Todos status</option><option value="confirmado" ${_A.fStatus==="confirmado"?"selected":""}>✅ Confirmado</option><option value="pendente" ${_A.fStatus==="pendente"?"selected":""}>⏳ Pendente</option><option value="recusado" ${_A.fStatus==="recusado"?"selected":""}>❌ Recusado</option></select>
-      ${_A.fEspaco||_A.fProf||_A.fStatus?`<button id="adm-btn-limpar" style="${btn("ghost")};padding:6px 12px;font-size:12px">✕ Limpar</button>`:""}
+      ${_A.fEspaco||_A.fProf||_A.fStatus||_A.fTurma?`<button id="adm-btn-limpar" style="${btn("ghost")};padding:6px 12px;font-size:12px">✕ Limpar</button>`:""}
       <button id="adm-btn-hist" style="background:${_A.historico?c.navy:"transparent"};border:1.5px solid ${_A.historico?c.navy:c.border};border-radius:8px;color:${_A.historico?"#fff":c.textMuted};font-size:12px;padding:6px 12px;cursor:pointer;font-weight:600;white-space:nowrap;margin-left:auto">🕐 ${_A.historico?"Ocultar hist.":"Ver histórico"}</button>
     </div>
   </div>`;
@@ -1883,7 +1884,7 @@ function renderAdminView(){
     const conf=filtradas.filter(r=>r.status!=="pendente"&&(_A.historico||r.data>=h));
 
     html+=`<div style="display:flex;gap:2px;margin-bottom:18px;background:${c.surface};border-radius:10px;padding:4px;border:1px solid ${c.border};width:fit-content">
-      ${[{id:"reservas",l:"📋 Reservas"},{id:"espacos",l:"🏛️ Por Espaço"},{id:"fotos",l:"📸 Fotos"}].map(t=>`<button onclick="aSetAba('${t.id}')" style="padding:7px 15px;font-size:12.5px;white-space:nowrap;border-radius:8px;border:1.5px solid ${_A.aba===t.id?(_dark?'#1a6b47':c.navy):c.border};background:${_A.aba===t.id?(_dark?'#1a6b47':c.navy):'transparent'};color:${_A.aba===t.id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${t.l}</button>`).join("")}
+      ${[{id:"reservas",l:"📋 Reservas"},{id:"espacos",l:"🏛️ Por Espaço"},{id:"marketing",l:"📸 Marketing"},{id:"ti",l:"💻 T.I."}].map(t=>`<button onclick="aSetAba('${t.id}')" style="padding:7px 15px;font-size:12.5px;white-space:nowrap;border-radius:8px;border:1.5px solid ${_A.aba===t.id?(_dark?'#1a6b47':c.navy):c.border};background:${_A.aba===t.id?(_dark?'#1a6b47':c.navy):'transparent'};color:${_A.aba===t.id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${t.l}</button>`).join("")}
     </div>`;
 
     if(_A.aba==="reservas"){
@@ -1936,20 +1937,60 @@ function renderAdminView(){
       });
     }
 
-    if(_A.aba==="fotos"){
-      const comFoto=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&r.status!=="recusado"&&!r.reservaAutomatica&&(_A.historico||r.data>=h)).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
-      if(!comFoto.length)html+=`<div style="text-align:center;padding:32px;color:${c.textMuted}"><p style="font-size:28px">📷</p><p style="margin-top:8px">Nenhuma solicitação de foto.</p></div>`;
+    if(_A.aba==="marketing"){
+      const mkPend=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&(r.statusMarketing==="pendente"||!r.statusMarketing)&&r.status!=="recusado"&&!r.reservaAutomatica&&(_A.historico||r.data>=h)).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
+      const mkAprov=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&r.statusMarketing==="aprovado"&&r.status!=="recusado"&&!r.reservaAutomatica&&(_A.historico||r.data>=h)).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
+      function mkAdmRow(r){
+        const[a2,m2,d2]=r.data.split("-");const isH=r.data===h;
+        const range=r.horarioFim&&r.horarioFim!==r.horario?` → ${r.horarioFim}`:"";
+        const pend=r.statusMarketing!=="aprovado";
+        const midiaTags=(r.precisaFoto?`<span style="background:#f5f3ff;color:#7c3aed;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;border:1px solid #ddd6fe">📸 Foto</span>`:"")+(r.precisaVideo?`<span style="background:#eff6ff;color:#1d4ed8;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;border:1px solid #bfdbfe">🎬 Vídeo</span>`:"");
+        const objTag=r.objetivoMidia?`<span style="background:#fef9c3;color:#854d0e;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;border:1px solid #fde68a">${r.objetivoMidia==="social"?"📱 Rede Social":"📚 Pedagógico"}</span>`:"";
+        return`<div style="display:flex;gap:10px;padding:12px 14px;border-radius:10px;margin-bottom:8px;background:${c.surface};border:1.5px solid ${pend?"#ddd6fe":"#a7f3d0"};border-left:4px solid ${pend?"#7c3aed":"#1a6b47"}">
+          <div style="min-width:80px"><p style="font-size:13px;font-family:'DM Mono',monospace;font-weight:800;color:${pend?"#7c3aed":"#1a6b47"}">${r.horario}${range}</p><p style="font-size:10px;color:${c.textMuted};margin-top:2px">${d2}/${m2}</p></div>
+          <div style="flex:1">
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px">
+              <span style="font-weight:700;font-size:13px;color:${c.navy}">${r.espaco==="Equipe de Marketing"?(r.salaAtividade||"Sala não informada"):r.espaco}</span>
+              <span style="font-size:12px;color:${c.textMid}">${r.professor}</span>
+              <span style="font-size:12px;color:${c.textMuted}">${r.turmaInicio||r.turma||"—"}</span>
+            </div>
+            <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:4px">${midiaTags}${objTag}</div>
+            <p style="font-size:12px;color:${c.textMuted}">${r.conteudo}</p>
+            ${r.descritivo?`<p style="font-size:11px;color:#854d0e;margin-top:4px;background:#fef9c3;padding:4px 8px;border-radius:5px">📝 ${r.descritivo}</p>`:""}
+          </div>
+        </div>`;
+      }
+      if(!mkPend.length&&!mkAprov.length){html+=`<div style="text-align:center;padding:32px;color:${c.textMuted}"><p style="font-size:28px">📸</p><p style="margin-top:8px">Nenhuma solicitação de marketing.</p></div>`;}
       else{
-        const pd={};comFoto.forEach(r=>{if(!pd[r.data])pd[r.data]=[];pd[r.data].push(r);});
-        Object.entries(pd).forEach(([data,rs])=>{
-          const[a2,m2,d2]=data.split("-");const isH=data===h;
-          html+=`<div style="margin-bottom:14px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><div style="background:${isH?"#7c3aed":"#64748b"};color:#fff;border-radius:7px;padding:3px 12px;font-size:11.5px;font-weight:700">${isH?"📌 Hoje":`${d2}/${m2}/${a2}`}</div></div>`;
-          rs.forEach(r=>{
-            const range=r.horarioFim&&r.horarioFim!==r.horario?` → ${r.horarioFim}`:"";
-            html+=`<div style="display:flex;gap:10px;padding:10px 14px;border-radius:10px;margin-bottom:6px;background:${c.surface};border:1px solid #ddd6fe;border-left:4px solid #7c3aed"><div style="min-width:80px"><p style="font-size:13px;font-family:'DM Mono',monospace;font-weight:800;color:#7c3aed">${r.horario}${range}</p></div><div style="flex:1"><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:3px"><span style="font-weight:700;font-size:13px;color:${c.navy}">${r.espaco}</span><span style="font-size:12px;color:${c.textMid}">${r.professor}</span><span style="font-size:12px;color:${c.textMuted}">${r.turmaInicio||r.turma}</span></div><p style="font-size:12px;color:${c.textMuted}">${r.conteudo}</p></div></div>`;
-          });
-          html+=`</div>`;
-        });
+        if(mkPend.length){html+=`<p style="font-size:12px;font-weight:800;color:#7c3aed;text-transform:uppercase;margin-bottom:10px">⏳ Aguardando aprovação (${mkPend.length})</p>`;mkPend.forEach(r=>{html+=mkAdmRow(r);});}
+        if(mkAprov.length){html+=`<p style="font-size:12px;font-weight:800;color:${c.green};text-transform:uppercase;margin:14px 0 10px">✅ Aprovados (${mkAprov.length})</p>`;mkAprov.forEach(r=>{html+=mkAdmRow(r);});}
+      }
+    }
+
+    if(_A.aba==="ti"){
+      const avItems=_todas.filter(r=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);return(eo?.tipo==="audiovisual")&&r.status!=="recusado"&&!r.reservaAutomatica&&(_A.historico||r.data>=h);}).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
+      const avPend=avItems.filter(r=>r.status==="pendente");
+      const avConf=avItems.filter(r=>r.status==="confirmado");
+      function tiAdmRow(r){
+        const[a2,m2,d2]=r.data.split("-");const pend=r.status==="pendente";
+        const range=r.horarioFim&&r.horarioFim!==r.horario?` → ${r.horarioFim}`:"";
+        return`<div style="display:flex;gap:10px;padding:12px 14px;border-radius:10px;margin-bottom:8px;background:${c.surface};border:1.5px solid ${pend?"#fed7aa":"#a7f3d0"};border-left:4px solid ${pend?"#f97316":"#1a6b47"}">
+          <div style="min-width:80px"><p style="font-size:13px;font-family:'DM Mono',monospace;font-weight:800;color:${pend?"#c2410c":"#1a6b47"}">${r.horario}${range}</p><p style="font-size:10px;color:${c.textMuted};margin-top:2px">${d2}/${m2}</p></div>
+          <div style="flex:1">
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:3px">
+              <span style="font-weight:700;font-size:13px;color:${c.navy}">${r.espaco}</span>
+              <span style="font-size:12px;color:${c.textMid}">${r.professor}</span>
+              <span style="font-size:12px;color:${c.textMuted}">${r.turmaInicio||r.turma||"—"}</span>
+              ${badge(r.status)}
+            </div>
+            <p style="font-size:12px;color:${c.textMuted}">${r.conteudo}</p>
+          </div>
+        </div>`;
+      }
+      if(!avItems.length){html+=`<div style="text-align:center;padding:32px;color:${c.textMuted}"><p style="font-size:28px">🔊</p><p style="margin-top:8px">Nenhum agendamento de Áudio/Visual.</p></div>`;}
+      else{
+        if(avPend.length){html+=`<p style="font-size:12px;font-weight:800;color:#c2410c;text-transform:uppercase;margin-bottom:10px">⏳ Pendentes T.I. (${avPend.length})</p>`;avPend.forEach(r=>{html+=tiAdmRow(r);});}
+        if(avConf.length){html+=`<p style="font-size:12px;font-weight:800;color:${c.green};text-transform:uppercase;margin:14px 0 10px">✅ Confirmados (${avConf.length})</p>`;avConf.forEach(r=>{html+=tiAdmRow(r);});}
       }
     }
   }
@@ -2004,7 +2045,9 @@ function bindAdmin(){
     if(se)se.addEventListener("change",e=>{_A.fEspaco=e.target.value;re();});
     if(sp)sp.addEventListener("change",e=>{_A.fProf=e.target.value;re();});
     if(ss)ss.addEventListener("change",e=>{_A.fStatus=e.target.value;re();});
-    if(bl)bl.addEventListener("click",()=>{_A.fEspaco="";_A.fProf="";_A.fStatus="";re();});
+    const st2=document.getElementById("adm-sel-turma");
+    if(st2)st2.addEventListener("change",e=>{_A.fTurma=e.target.value;re();});
+    if(bl)bl.addEventListener("click",()=>{_A.fEspaco="";_A.fProf="";_A.fStatus="";_A.fTurma="";re();});
     if(bh)bh.addEventListener("click",()=>{_A.historico=!_A.historico;re();});
   },50);
 }
