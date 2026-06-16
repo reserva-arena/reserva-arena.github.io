@@ -747,10 +747,7 @@ function renderApp(){
       </div>
       <div style="display:flex;align-items:center;gap:8px">
         <button onclick="irInicio()" title="Início" style="background:${_dark?c.surface:'rgba(255,255,255,.15)'};border:1.5px solid ${_dark?c.border:'rgba(255,255,255,.3)'};border-radius:20px;padding:4px 10px;height:34px;cursor:pointer;display:flex;align-items:center;gap:5px;font-size:15px;flex-shrink:0;font-family:inherit">🏠</button>
-        ${isAdmin?`<button onclick="toggleAdminVisu()" title="${_adminVisu==='professor'?'Voltar ao Admin':'Visão Professor'}" style="background:${_adminVisu==='professor'?'rgba(255,255,255,.9)':'rgba(255,255,255,.15)'};border:1.5px solid ${_adminVisu==='professor'?'rgba(255,255,255,.9)':'rgba(255,255,255,.3)'};border-radius:20px;padding:4px 10px;height:34px;cursor:pointer;display:flex;align-items:center;gap:4px;font-size:13px;flex-shrink:0;font-family:inherit;font-weight:700;color:${_adminVisu==='professor'?'#1a6b47':'#ffffff'}">
-          <span>${_adminVisu==='professor'?'🔧':'👨‍🏫'}</span>
-          <span style="font-size:11px">${_adminVisu==='professor'?'Admin':'Prof.'}</span>
-        </button>`:""}
+        ${isAdmin?`<select onchange="setAdminVisu(this.value)" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);border-radius:20px;padding:4px 10px;height:34px;cursor:pointer;font-size:12px;font-family:inherit;font-weight:700;color:#fff;outline:none"><option value="admin" ${_adminVisu==="admin"?"selected":""} style="color:#132318;background:#fff">🔧 Admin</option><option value="professor" ${_adminVisu==="professor"?"selected":""} style="color:#132318;background:#fff">👨‍🏫 Prof.</option><option value="ti" ${_adminVisu==="ti"?"selected":""} style="color:#132318;background:#fff">💻 T.I.</option><option value="marketing" ${_adminVisu==="marketing"?"selected":""} style="color:#132318;background:#fff">📸 Marketing</option></select>`:""}
         ${avatarHTML(_usuario?.nome,30,isAdmin?"purple":"navy")}
         <div class="header-nome" style="line-height:1.2"><p style="font-size:13px;font-weight:700;color:${_dark?c.navy:'#ffffff'}">${_usuario?.nome||""}</p><p style="font-size:10px;color:${_dark?(isAdmin?"#6d28d9":c.blueMid):'rgba(255,255,255,.8)'};font-weight:700;text-transform:uppercase">${_usuario?.perfil||""}</p></div>
         <button onclick="location.reload()" title="Atualizar" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:34px;height:34px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0">🔄</button>
@@ -759,7 +756,7 @@ function renderApp(){
       </div>
     </header>
     <div id="main-content" style="max-width:100%;width:100%;margin:0 auto;padding:20px 20px;overflow-x:hidden;box-sizing:border-box">
-      <div style="max-width:1200px;margin:0 auto;width:100%">${isAdmin&&_adminVisu==='admin'?renderAdminView():renderProfessorView()}</div>
+      <div style="max-width:1200px;margin:0 auto;width:100%">${isAdmin&&_adminVisu==="admin"?renderAdminView():isAdmin&&_adminVisu==="ti"?renderTI():isAdmin&&_adminVisu==="marketing"?renderMarketing():renderProfessorView()}</div>
     </div>
     <footer style="margin-top:40px;padding:16px 24px;border-top:1px solid ${c.border};background:${_dark?'#0a1a12':'#0d2b1a'};text-align:center">
       <p style="font-size:10px;color:rgba(255,255,255,.5)">Reserva de Espaços e Equipamentos · Dev: Luciano Galdino · Frontend: HTML · CSS · JS · ☁️ GitHub Pages · Backend: 🔥 Firebase</p>
@@ -772,14 +769,12 @@ function renderApp(){
   isAdmin?bindAdmin():bindProf();
 }
 window.doSignOut=()=>signOut(auth);
-window.toggleAdminVisu=()=>{
-  _adminVisu=_adminVisu==='admin'?'professor':'admin';
-  // Resetar estado da visão professor ao entrar nela
-  if(_adminVisu==='professor'){
-    _P.modoProf='ver';_P.modoCard='calendario';_P.modoVisu='semana';
-    _P.semIni=getSegunda(fmtHoje());_P.diaSel=null;
-    _P.filtroGrade='meus';_P.mostrarHistorico=false;_P.filtroPendente=false;
-  }
+window.toggleAdminVisu=()=>{};
+window.setAdminVisu=(v)=>{
+  _adminVisu=v;
+  if(v==="professor"){_P.modoProf="ver";_P.modoCard="calendario";_P.modoVisu="semana";_P.semIni=getSegunda(fmtHoje());_P.diaSel=null;_P.filtroGrade="meus";_P.mostrarHistorico=false;_P.filtroPendente=false;}
+  if(v==="ti"&&window._TI)_TI.aba="minhas";
+  if(v==="marketing"&&window._MK)_MK.aba="minhas";
   re();
 };
 window.irInicio=()=>{
@@ -1018,7 +1013,7 @@ function modalAgendarHTML(){const c=C();return`<div id="mod-ag" style="display:n
 
 // ─── ESTADO DO FORMULÁRIO DE AGENDAMENTO ──────────────────────────────────
 let _MA={step:1,espaco:"",data:"",blocos:[],resumo:false,salvando:false,sucesso:null,erro:"",avisoConflito:"",calA:new Date().getFullYear(),calM:new Date().getMonth(),bibAV:null};
-let _adminVisu="admin"; // 'admin' ou 'professor' — só para admins
+let _adminVisu="admin"; // admin|professor|ti|marketing
 
 // bVazio() cria um bloco de agendamento vazio
 // Para espaços multiHorario: horarioFim, turmaInicio, turmaFim, local, qtdTablets, qtdNotebooks
@@ -1909,6 +1904,8 @@ function renderAdminView(){
   </div>`;
 
   if(_A.modoVisu==="calendario"){
+    const _abasBtns2=[{id:"marketing",l:"📸 Marketing"},{id:"ti",l:"💻 T.I."}].map(t=>`<button onclick="aSetAba('${t.id}');re()" style="padding:7px 15px;font-size:12.5px;white-space:nowrap;border-radius:8px;border:1.5px solid ${_A.aba===t.id?(_dark?'#1a6b47':c.navy):c.border};background:${_A.aba===t.id?(_dark?'#1a6b47':c.navy):'transparent'};color:${_A.aba===t.id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${t.l}</button>`).join("");
+    if(["marketing","ti"].includes(_A.aba)){html+=`<div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap"><button onclick="aSetAba('reservas');re()" style="padding:7px 15px;font-size:12.5px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.text};font-weight:700;cursor:pointer">📋 Reservas</button><button onclick="aSetAba('espacos');re()" style="padding:7px 15px;font-size:12.5px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.text};font-weight:700;cursor:pointer">🏛️ Por Espaço</button>${_abasBtns2}</div>`;}
     const{a:ano,m:mes}=_A.mesCal;
     const porData={};
     filtradas.filter(r=>r.status!=="recusado").forEach(r=>{if(!porData[r.data])porData[r.data]=[];porData[r.data].push(r);});
@@ -1917,6 +1914,8 @@ function renderAdminView(){
     const inicioGrid=primeiroDia.getUTCDay();
     const cells=[];for(let i=0;i<inicioGrid;i++)cells.push(null);for(let d=1;d<=diasNoMes;d++)cells.push(d);
 
+    if(_A.aba==="marketing"){html+="<div id='mk-adm-inline'></div>";setTimeout(()=>{const el=document.getElementById("mk-adm-inline");if(el){const mkP=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&(r.statusMarketing==="pendente"||!r.statusMarketing)&&r.status!=="recusado"&&!r.reservaAutomatica&&r.data>=fmtHoje()).sort((a,b)=>a.data>b.data?1:-1);const mkA=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&r.statusMarketing==="aprovado"&&r.status!=="recusado"&&!r.reservaAutomatica&&r.data>=fmtHoje()).sort((a,b)=>a.data>b.data?1:-1);let h2="";if(mkP.length)h2+=`<p style='font-size:12px;font-weight:800;color:#7c3aed;text-transform:uppercase;margin:0 0 10px'>⏳ Aguardando aprovação (${mkP.length})</p>`+mkP.map(r=>`<div style='background:#fff;border:1.5px solid #ddd6fe;border-left:4px solid #7c3aed;border-radius:10px;padding:12px 14px;margin-bottom:8px'><div style='display:flex;gap:10px;align-items:center'><span style='font-family:monospace;font-weight:800;color:#7c3aed'>${r.horario}</span><span style='font-weight:700'>${r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco}</span><span style='font-size:12px;color:#607060'>${r.professor} · ${r.data.split("-").reverse().join("/")}</span></div><div style='display:flex;gap:8px;margin-top:10px'><button onclick='mkAprovar("${r.id}")' style='flex:1;padding:8px;border-radius:8px;border:none;background:#1a6b47;color:#fff;font-weight:700;cursor:pointer'>✅ Aprovar</button><button onclick='mkRecusar("${r.id}")' style='flex:1;padding:8px;border-radius:8px;border:none;background:#dc2626;color:#fff;font-weight:700;cursor:pointer'>❌ Recusar</button></div></div>`).join("");if(mkA.length)h2+=`<p style='font-size:12px;font-weight:800;color:#1a6b47;text-transform:uppercase;margin:14px 0 10px'>✅ Aprovados (${mkA.length})</p>`+mkA.map(r=>`<div style='background:#fff;border:1.5px solid #a7f3d0;border-left:4px solid #1a6b47;border-radius:10px;padding:12px 14px;margin-bottom:8px'><span style='font-family:monospace;font-weight:800;color:#1a6b47'>${r.horario}</span> <span style='font-weight:700'>${r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco}</span> <span style='font-size:12px;color:#607060'>${r.professor} · ${r.data.split("-").reverse().join("/")}</span></div>`).join("");if(!h2)h2=`<div style='text-align:center;padding:40px;color:#607060'><p style='font-size:32px'>📸</p><p>Nenhuma solicitação.</p></div>`;el.innerHTML=h2;}},0);return html+="</div>";}
+    if(_A.aba==="ti"){html+="<div id='ti-adm-inline'></div>";setTimeout(()=>{const el=document.getElementById("ti-adm-inline");if(el){const tiP=_todas.filter(r=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);return eo?.tipo==="audiovisual"&&r.status==="pendente"&&!r.reservaAutomatica&&r.data>=fmtHoje();}).sort((a,b)=>a.data>b.data?1:-1);const tiC=_todas.filter(r=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);return eo?.tipo==="audiovisual"&&r.status==="confirmado"&&!r.reservaAutomatica&&r.data>=fmtHoje();}).sort((a,b)=>a.data>b.data?1:-1);let h2="";if(tiP.length)h2+=`<p style='font-size:12px;font-weight:800;color:#c2410c;text-transform:uppercase;margin:0 0 10px'>⏳ Aguardando aprovação (${tiP.length})</p>`+tiP.map(r=>`<div style='background:#fff;border:1.5px solid #fed7aa;border-left:4px solid #f97316;border-radius:10px;padding:12px 14px;margin-bottom:8px'><div style='display:flex;gap:10px;align-items:center'><span style='font-family:monospace;font-weight:800;color:#c2410c'>${r.horario}</span><span style='font-weight:700'>${r.espaco}</span><span style='font-size:12px;color:#607060'>${r.professor} · ${r.data.split("-").reverse().join("/")}</span></div><div style='display:flex;gap:8px;margin-top:10px'><button onclick='tiAprovar("${r.id}")' style='flex:1;padding:8px;border-radius:8px;border:none;background:#1a6b47;color:#fff;font-weight:700;cursor:pointer'>✅ Aprovar</button><button onclick='tiRecusar("${r.id}")' style='flex:1;padding:8px;border-radius:8px;border:none;background:#dc2626;color:#fff;font-weight:700;cursor:pointer'>❌ Recusar</button></div></div>`).join("");if(tiC.length)h2+=`<p style='font-size:12px;font-weight:800;color:#1a6b47;text-transform:uppercase;margin:14px 0 10px'>✅ Confirmados (${tiC.length})</p>`+tiC.map(r=>`<div style='background:#fff;border:1.5px solid #a7f3d0;border-left:4px solid #1a6b47;border-radius:10px;padding:12px 14px;margin-bottom:8px'><span style='font-family:monospace;font-weight:800;color:#1a6b47'>${r.horario}</span> <span style='font-weight:700'>${r.espaco}</span> <span style='font-size:12px;color:#607060'>${r.professor} · ${r.data.split("-").reverse().join("/")}</span></div>`).join("");if(!h2)h2=`<div style='text-align:center;padding:40px;color:#607060'><p style='font-size:32px'>🔊</p><p>Nenhum agendamento.</p></div>`;el.innerHTML=h2;}},0);return html+="</div>";}
     html+=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
       <div style="display:flex;align-items:center;gap:10px">
         <button onclick="aNavMes(-1)" style="background:${c.surface};border:1px solid ${c.border};border-radius:8px;width:34px;height:34px;cursor:pointer;color:${c.textMid};font-size:16px">‹</button>
