@@ -427,15 +427,15 @@ function renderApp(){
         <div style="min-width:0"><p style="font-size:12px;font-weight:800;color:${_dark?c.navy:'#ffffff'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Reserva de Espaços</p><p style="font-size:10px;color:${_dark?c.textMuted:'rgba(255,255,255,.75)'};white-space:nowrap">Colégio Arena</p></div>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
-        <button onclick="irInicio()" style="background:${_dark?c.surface:'rgba(255,255,255,.15)'};border:1.5px solid ${_dark?c.border:'rgba(255,255,255,.3)'};border-radius:20px;padding:4px 10px;height:34px;cursor:pointer;display:flex;align-items:center;gap:5px;font-size:13px;flex-shrink:0;font-family:inherit;font-weight:600;color:${_dark?c.textMid:'#ffffff'}"><span style="font-size:15px">🏠</span><span style="font-size:11px;font-weight:700">Início</span></button>
-        ${isAdmin?`<button onclick="toggleAdminVisu()" style="background:${_adminVisu==='professor'?'rgba(255,255,255,.9)':'rgba(255,255,255,.15)'};border:1.5px solid ${_adminVisu==='professor'?'rgba(255,255,255,.9)':'rgba(255,255,255,.3)'};border-radius:20px;padding:4px 10px;height:34px;cursor:pointer;display:flex;align-items:center;gap:5px;font-size:11px;flex-shrink:0;font-family:inherit;font-weight:700;color:${_adminVisu==='professor'?'#1a6b47':'#ffffff'};white-space:nowrap">
-          <span style="font-size:13px">${_adminVisu==='professor'?'🔧':'👨‍🏫'}</span>
-          <span>${_adminVisu==='professor'?'Admin':'Professor'}</span>
+        <button onclick="irInicio()" title="Início" style="background:${_dark?c.surface:'rgba(255,255,255,.15)'};border:1.5px solid ${_dark?c.border:'rgba(255,255,255,.3)'};border-radius:20px;padding:4px 10px;height:34px;cursor:pointer;display:flex;align-items:center;gap:5px;font-size:15px;flex-shrink:0;font-family:inherit">🏠</button>
+        ${isAdmin?`<button onclick="toggleAdminVisu()" title="${_adminVisu==='professor'?'Voltar ao Admin':'Visão Professor'}" style="background:${_adminVisu==='professor'?'rgba(255,255,255,.9)':'rgba(255,255,255,.15)'};border:1.5px solid ${_adminVisu==='professor'?'rgba(255,255,255,.9)':'rgba(255,255,255,.3)'};border-radius:20px;padding:4px 10px;height:34px;cursor:pointer;display:flex;align-items:center;gap:4px;font-size:13px;flex-shrink:0;font-family:inherit;font-weight:700;color:${_adminVisu==='professor'?'#1a6b47':'#ffffff'}">
+          <span>${_adminVisu==='professor'?'🔧':'👨‍🏫'}</span>
+          <span style="font-size:11px">${_adminVisu==='professor'?'Admin':'Prof.'}</span>
         </button>`:""}
         ${avatarHTML(_usuario?.nome,30,isAdmin?"purple":"navy")}
         <div class="header-nome" style="line-height:1.2"><p style="font-size:13px;font-weight:700;color:${_dark?c.navy:'#ffffff'}">${_usuario?.nome||""}</p><p style="font-size:10px;color:${_dark?(isAdmin?"#6d28d9":c.blueMid):'rgba(255,255,255,.8)'};font-weight:700;text-transform:uppercase">${_usuario?.perfil||""}</p></div>
-        <button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button>
-        <button onclick="doSignOut()" style="${btn(_dark?'ghost':'ghost','','sm')};color:${_dark?c.textMid:'rgba(255,255,255,.9)'};border-color:${_dark?c.border:'rgba(255,255,255,.3)'};background:${_dark?'transparent':'rgba(255,255,255,.12)'}">Sair</button>
+        <button onclick="toggleDark()" title="${_dark?'Modo claro':'Modo escuro'}" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:34px;height:34px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0">${_dark?"☀️":"🌙"}</button>
+        <button onclick="doSignOut()" style="background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.3);border-radius:20px;color:rgba(255,255,255,.9);font-size:12px;font-weight:700;padding:5px 10px;cursor:pointer;font-family:inherit;flex-shrink:0">Sair</button>
       </div>
     </header>
     <div id="main-content" style="max-width:100%;width:100%;margin:0 auto;padding:20px 20px;overflow-x:hidden;box-sizing:border-box">
