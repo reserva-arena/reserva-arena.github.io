@@ -58,6 +58,7 @@ select option{font-family:'DM Sans',system-ui,sans-serif}
 import{initializeApp,getApps}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,onAuthStateChanged,sendPasswordResetEmail}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import{getFirestore,collection,addDoc,onSnapshot,doc,updateDoc,query,where,getDocs,Timestamp,setDoc,getDoc,deleteDoc,writeBatch}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import{getMessaging,getToken,onMessage}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
 
 const firebaseConfig = {
   apiKey:            "AIzaSyC_fN9rAp9pr_MsoHPuenVs2WF617cPKQg",
@@ -74,6 +75,38 @@ const db      = getFirestore(app);
 window.__db__ = db; // exposto para scripts de migração
 const secApp  = getApps().find(a=>a.name==="secondary")||initializeApp(firebaseConfig,"secondary");
 const secAuth = getAuth(secApp);
+
+// ── FCM Messaging ──
+let _messaging = null;
+try { _messaging = getMessaging(app); } catch(e) { console.warn('FCM não disponível:', e); }
+
+// VAPID_KEY será substituída quando o usuário fornecer
+const VAPID_KEY = '__VAPID_KEY__';
+
+async function iniciarNotificacoes(userId) {
+  if (!_messaging || !('Notification' in window)) return;
+  try {
+    // Registrar o SW do FCM
+    const swReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') { console.log('Notificações negadas'); return; }
+    const fcmToken = await getToken(_messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
+    if (fcmToken) {
+      await updateDoc(doc(db, 'usuarios', userId), { fcmToken });
+      console.log('✅ FCM token salvo');
+    }
+    // Notificação em foreground (app aberto)
+    onMessage(_messaging, payload => {
+      const { title, body } = payload.notification || {};
+      if (title) {
+        const n = new Notification(title, {
+          body, icon: '/icon-192.png', badge: '/icon-192.png'
+        });
+        n.onclick = () => { window.focus(); n.close(); };
+      }
+    });
+  } catch(e) { console.warn('FCM erro:', e); }
+}
 
 // ─── CONSTANTES ──────────────────────────────────────────────────────────────
 const ADMIN_EMAIL = "luciano.galdino@colegioarena.com.br";
@@ -2025,7 +2058,7 @@ onAuthStateChanged(auth,async user=>{
       const snap=await getDoc(doc(db,"usuarios",user.uid));
       _usuario=snap.exists()?{uid:user.uid,...snap.data()}:{uid:user.uid,email:user.email,perfil:"sem_acesso",ativo:false};
     }catch{_usuario={uid:user.uid,email:user.email,perfil:"sem_acesso",ativo:false};}
-    if(_usuario.perfil!=="sem_acesso"&&_usuario.ativo!==false)startListeners(user.uid);
+    if(_usuario.perfil!=="sem_acesso"&&_usuario.ativo!==false){startListeners(user.uid);iniciarNotificacoes(user.uid);}
     else re();
   }else{
     _usuario=null;
