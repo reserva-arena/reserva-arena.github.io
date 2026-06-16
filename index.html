@@ -574,13 +574,14 @@ window.mkAprovar=async(id)=>{
   if(!confirm("Aprovar esta solicitação de foto/vídeo?"))return;
   const r=_todas.find(r=>r.id===id);
   await updateDoc(doc(db,"reservas",id),{statusMarketing:"aprovado",status:"confirmado"});
-  // Notificação push para professor e admins
   if(r){
-    const msg=`✅ Solicitação de foto/vídeo aprovada!
-${r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco} — ${r.data.split("-").reverse().join("/")} às ${r.horario}`;
-    _usuarios.filter(u=>(u.uid===r.professorId||u.perfil==="admin")&&u.fcmToken).forEach(async u=>{
-      try{await fetch(`https://fcm.googleapis.com/fcm/send`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:u.fcmToken,notification:{title:"📸 Reserva Arena",body:msg}})});}catch(e){}
-    });
+    const local=r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco;
+    const dataFmt=r.data.split("-").reverse().join("/");
+    const push=(tk,title,body)=>fetch("https://fcm.googleapis.com/fcm/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:tk,notification:{title,body}})}).catch(()=>{});
+    _usuarios.filter(u=>u.uid===r.professorId&&u.fcmToken).forEach(u=>push(u.fcmToken,"📸 Marketing — Aprovado!",`✅ Sua solicitação de foto/vídeo foi aprovada!
+${local} — ${dataFmt} às ${r.horario}`));
+    _usuarios.filter(u=>u.perfil==="admin"&&u.fcmToken).forEach(u=>push(u.fcmToken,"📸 Reserva Arena — Marketing",`✅ Marketing aprovou: ${r.professor}
+${local} — ${dataFmt} às ${r.horario}`));
   }
   re();
 };
@@ -589,11 +590,13 @@ window.mkRecusar=async(id)=>{
   const r=_todas.find(r=>r.id===id);
   await updateDoc(doc(db,"reservas",id),{statusMarketing:"recusado",status:"recusado"});
   if(r){
-    const msg=`❌ Solicitação de foto/vídeo não aprovada.
-${r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco} — ${r.data.split("-").reverse().join("/")} às ${r.horario}`;
-    _usuarios.filter(u=>(u.uid===r.professorId||u.perfil==="admin")&&u.fcmToken).forEach(async u=>{
-      try{await fetch(`https://fcm.googleapis.com/fcm/send`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:u.fcmToken,notification:{title:"📸 Reserva Arena",body:msg}})});}catch(e){}
-    });
+    const local=r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco;
+    const dataFmt=r.data.split("-").reverse().join("/");
+    const push=(tk,title,body)=>fetch("https://fcm.googleapis.com/fcm/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:tk,notification:{title,body}})}).catch(()=>{});
+    _usuarios.filter(u=>u.uid===r.professorId&&u.fcmToken).forEach(u=>push(u.fcmToken,"📸 Marketing — Recusado",`❌ Sua solicitação de foto/vídeo não foi aprovada.
+${local} — ${dataFmt} às ${r.horario}`));
+    _usuarios.filter(u=>u.perfil==="admin"&&u.fcmToken).forEach(u=>push(u.fcmToken,"📸 Reserva Arena — Marketing",`❌ Marketing recusou: ${r.professor}
+${local} — ${dataFmt} às ${r.horario}`));
   }
   re();
 };
@@ -663,12 +666,40 @@ function tiCard(r,pend){
 }
 window.tiAprovar=async(id)=>{
   if(!confirm("Aprovar este agendamento?"))return;
+  const r=_todas.find(r=>r.id===id);
   await updateDoc(doc(db,"reservas",id),{status:"confirmado"});
+  if(r){
+    const dataFmt=r.data.split("-").reverse().join("/");
+    // Professor
+    const msgProf=`✅ Agendamento de ${r.espaco} aprovado pelo T.I.\n${dataFmt} às ${r.horario}`;
+    _usuarios.filter(u=>u.uid===r.professorId&&u.fcmToken).forEach(u=>{
+      fetch("https://fcm.googleapis.com/fcm/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:u.fcmToken,notification:{title:"💻 T.I. — Aprovado!",body:msgProf}})}).catch(()=>{});
+    });
+    // Admins
+    const msgAdmin=`✅ T.I. aprovou: ${r.professor}\n${r.espaco} — ${dataFmt} às ${r.horario}`;
+    _usuarios.filter(u=>u.perfil==="admin"&&u.fcmToken).forEach(u=>{
+      fetch("https://fcm.googleapis.com/fcm/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:u.fcmToken,notification:{title:"💻 Reserva Arena — T.I.",body:msgAdmin}})}).catch(()=>{});
+    });
+  }
   re();
 };
 window.tiRecusar=async(id)=>{
   if(!confirm("Recusar este agendamento?"))return;
+  const r=_todas.find(r=>r.id===id);
   await updateDoc(doc(db,"reservas",id),{status:"recusado"});
+  if(r){
+    const dataFmt=r.data.split("-").reverse().join("/");
+    // Professor
+    const msgProf=`❌ Agendamento de ${r.espaco} não aprovado pelo T.I.\n${dataFmt} às ${r.horario}`;
+    _usuarios.filter(u=>u.uid===r.professorId&&u.fcmToken).forEach(u=>{
+      fetch("https://fcm.googleapis.com/fcm/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:u.fcmToken,notification:{title:"💻 T.I. — Recusado",body:msgProf}})}).catch(()=>{});
+    });
+    // Admins
+    const msgAdmin=`❌ T.I. recusou: ${r.professor}\n${r.espaco} — ${dataFmt} às ${r.horario}`;
+    _usuarios.filter(u=>u.perfil==="admin"&&u.fcmToken).forEach(u=>{
+      fetch("https://fcm.googleapis.com/fcm/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:u.fcmToken,notification:{title:"💻 Reserva Arena — T.I.",body:msgAdmin}})}).catch(()=>{});
+    });
+  }
   re();
 };
 
@@ -1743,6 +1774,13 @@ window.maSalvar=async()=>{
           fetch("https://fcm.googleapis.com/fcm/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:u.fcmToken,notification:{title:"💻 Reserva Arena — T.I.",body:msgTI}})}).catch(()=>{});
         });
       }
+
+      // Admins: notificar todo novo agendamento
+      const statusLabel=st==="pendente"?"⏳ Pendente":"✅ Confirmado";
+      const msgAdmin=`📅 Novo agendamento — ${statusLabel}\n${profNome} · ${espaco} · ${dataFmt} às ${horFmt}`;
+      _usuarios.filter(u=>u.perfil==="admin"&&u.fcmToken&&u.ativo!==false).forEach(u=>{
+        fetch("https://fcm.googleapis.com/fcm/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:u.fcmToken,notification:{title:"📅 Reserva Arena",body:msgAdmin}})}).catch(()=>{});
+      });
     } catch(ne){ console.warn("Notificação push falhou:",ne); }
 
     _MA.sucesso=st;_MA.salvando=false;re();
