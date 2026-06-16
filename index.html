@@ -1927,6 +1927,7 @@ function renderGuLista(){
       h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><div style="display:flex;gap:5px">';
       h+='<button data-uid="'+u.id+'" data-ativo="'+(u.ativo!==false?'1':'0')+'" data-nome="'+u.nome+'" class="gu-toggle-btn" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid '+(u.ativo!==false?'#fed7aa':'#6ee7a0')+';background:'+(u.ativo!==false?'#fff7ed':'#e2f4ea')+';color:'+(u.ativo!==false?'#7c2d12':'#0f4c2b')+';cursor:pointer;font-weight:700">'+(u.ativo!==false?'🔒 Desativar':'🔓 Ativar')+'</button>';
       h+='<button data-email="'+u.email+'" class="gu-senha-btn" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid #c7dfd4;background:#fff;color:#607060;cursor:pointer;font-weight:700">🔑 Senha</button>';
+      h+='<button data-uid="'+u.id+'" data-nome="'+u.nome.replace(/"/g,'&quot;')+'" data-email="'+u.email.replace(/"/g,'&quot;')+'" class="gu-editar-btn" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid #bfdbfe;background:#eff6ff;color:#1e40af;cursor:pointer;font-weight:700">✏️ Editar</button>';
       h+='</div></td></tr>';
     });
     h+='</tbody></table></div>';
@@ -1936,6 +1937,20 @@ function renderGuLista(){
     admins.forEach(u=>{h+='<div style="display:flex;align-items:center;gap:10px;padding:4px 0"><span style="font-size:13px;font-weight:600;color:#132318">'+u.nome+'</span><span style="font-size:12px;color:#607060">'+u.email+'</span></div>';});
     h+='</div>';
   }
+  // Modal de edição inline
+  h+='<div id="mod-gu-edit" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);align-items:center;justify-content:center;z-index:2000">';
+  h+='<div style="background:#fff;border-radius:14px;padding:28px 24px;width:100%;max-width:400px;box-shadow:0 8px 32px rgba(0,0,0,.18)">';
+  h+='<p style="font-size:15px;font-weight:800;color:#132318;margin-bottom:18px">✏️ Editar Usuário</p>';
+  h+='<label style="font-size:11px;font-weight:700;color:#607060;text-transform:uppercase">Nome</label>';
+  h+='<input id="gu-edit-nome" type="text" style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid #c7dfd4;font-size:13.5px;outline:none;box-sizing:border-box;margin:5px 0 14px">';
+  h+='<label style="font-size:11px;font-weight:700;color:#607060;text-transform:uppercase">E-mail</label>';
+  h+='<input id="gu-edit-email" type="email" style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid #c7dfd4;font-size:13.5px;outline:none;box-sizing:border-box;margin:5px 0 6px">';
+  h+='<p id="gu-edit-aviso" style="font-size:11px;color:#92400e;background:#fffbeb;border-radius:6px;padding:6px 10px;margin-bottom:14px">⚠️ Alterar o e-mail não muda o login do Firebase. O usuário continuará entrando com o e-mail antigo até fazer novo cadastro.</p>';
+  h+='<div id="gu-edit-flash" style="margin-bottom:10px"></div>';
+  h+='<div style="display:flex;gap:10px;justify-content:flex-end">';
+  h+='<button id="gu-edit-cancelar" style="padding:8px 18px;border-radius:8px;border:1.5px solid #c7dfd4;background:#fff;color:#607060;cursor:pointer;font-weight:700;font-size:13px">Cancelar</button>';
+  h+='<button id="gu-edit-salvar" style="padding:8px 18px;border-radius:8px;border:none;background:linear-gradient(135deg,#0d2b1a,#1a6b47);color:#fff;cursor:pointer;font-weight:700;font-size:13px">💾 Salvar</button>';
+  h+='</div></div></div>';
   lista.innerHTML=h;
   lista.querySelectorAll('.gu-toggle-btn').forEach(b=>{
     b.addEventListener('click',()=>{
@@ -1948,6 +1963,38 @@ function renderGuLista(){
       const email=b.getAttribute('data-email');
       if(confirm('Enviar redefinição de senha para '+email+'?'))sendPasswordResetEmail(auth,email).then(()=>alert('Link enviado!')).catch(()=>alert('Erro ao enviar.'));
     });
+  });
+  let _editUID=null;
+  lista.querySelectorAll('.gu-editar-btn').forEach(b=>{
+    b.addEventListener('click',()=>{
+      _editUID=b.getAttribute('data-uid');
+      document.getElementById('gu-edit-nome').value=b.getAttribute('data-nome');
+      document.getElementById('gu-edit-email').value=b.getAttribute('data-email');
+      document.getElementById('gu-edit-flash').innerHTML='';
+      document.getElementById('mod-gu-edit').style.display='flex';
+    });
+  });
+  document.getElementById('gu-edit-cancelar').addEventListener('click',()=>{
+    document.getElementById('mod-gu-edit').style.display='none';
+  });
+  document.getElementById('gu-edit-salvar').addEventListener('click',()=>{
+    const nome=document.getElementById('gu-edit-nome').value.trim();
+    const email=document.getElementById('gu-edit-email').value.trim();
+    const flash=document.getElementById('gu-edit-flash');
+    if(!nome||!email){flash.innerHTML='<p style="color:#7f1d1d;font-size:12px">Preencha todos os campos.</p>';return;}
+    if(!_editUID){return;}
+    const btn=document.getElementById('gu-edit-salvar');
+    btn.disabled=true;btn.textContent='Salvando...';
+    updateDoc(doc(db,'usuarios',_editUID),{nome,email})
+      .then(()=>{
+        flash.innerHTML='<p style="color:#0f4c2b;font-size:12px">✅ Salvo com sucesso!</p>';
+        btn.disabled=false;btn.textContent='💾 Salvar';
+        setTimeout(()=>{document.getElementById('mod-gu-edit').style.display='none';renderGuLista();},900);
+      })
+      .catch(err=>{
+        flash.innerHTML='<p style="color:#7f1d1d;font-size:12px">Erro: '+err.message+'</p>';
+        btn.disabled=false;btn.textContent='💾 Salvar';
+      });
   });
 }
 
