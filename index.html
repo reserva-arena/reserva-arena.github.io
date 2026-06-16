@@ -131,6 +131,7 @@ const ESPACOS = [
   {id:12, nome:"Tablets (18 disp.)",             tipo:"equipamento",multiHorario:true,  estoque:18, equipAuto:[], equipAvulso:true},
   {id:13, nome:"Computadores (16 disp.)",        tipo:"equipamento",multiHorario:true,  estoque:16, equipAuto:[], equipAvulso:true},
   {id:14, nome:"Áudio/Visual",                   tipo:"audiovisual",multiHorario:true,  equipAuto:[], equipAvulso:true},
+  {id:16, nome:"Equipe de Marketing",             tipo:"marketing",  multiHorario:true,  equipAuto:[]},
 ];
 
 const TURMAS_EDUCACAO_INFANTIL = [
@@ -238,7 +239,7 @@ const ESPACO_ICON={
   "Lab. de Ciências Anos Iniciais":"🔬","Lab. de Ciências Anos Finais":"⚗️",
   "Tablets (18 disp.)":"📱","Computadores (16 disp.)":"💻","Áudio/Visual":"🎙️",
 };
-const tipoIcon=(t,nome)=>ESPACO_ICON[nome]||({espaco:"🏛️",laboratorio:"🔬",equipamento:"💻",audiovisual:"🎙️"}[t]||"📍");
+const tipoIcon=(t,nome)=>ESPACO_ICON[nome]||({espaco:"🏛️",laboratorio:"🔬",equipamento:"💻",audiovisual:"🎙️",marketing:"📸"}[t]||"📍");
 function nomeProf(n){if(!n)return"";const p=n.trim().split(" ").filter(Boolean);return p.length===1?p[0]:p[0]+" "+p[p.length-1][0].toUpperCase()+".";}
 function extraInfo(r){
   if(!r)return"";
@@ -330,7 +331,7 @@ function re(){
   document.body.style.color=c.text;
   if(!_usuario){renderPublica();return;}
   if(_usuario.perfil==="sem_acesso"||_usuario.ativo===false){renderSemAcesso();return;}
-  if(_usuario.perfil==="fotografo"){renderFotografo();return;}
+  if(_usuario.perfil==="fotografo"||_usuario.perfil==="marketing"){renderMarketing();return;}
   if(_usuario.perfil==="ti"){renderTI();return;}
   renderApp();
 }
@@ -515,35 +516,83 @@ window.recuperarSenha=async()=>{
 // ════════════════════════════════════════════════════════════════════════════
 // FOTÓGRAFO
 // ════════════════════════════════════════════════════════════════════════════
-function renderFotografo(){
+function renderMarketing(){
   const c=C(),h=fmtHoje();
-  const comFoto=_todas.filter(r=>r.precisaFoto&&r.data>=h&&r.status!=="recusado").sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
+  // Agendamentos com foto ou vídeo OU agendados diretamente na Equipe de Marketing
+  const solicitacoes=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&r.data>=h&&r.status!=="recusado").sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
+  const pendentes=solicitacoes.filter(r=>r.statusMarketing==="pendente"||!r.statusMarketing);
+  const aprovados=solicitacoes.filter(r=>r.statusMarketing==="aprovado");
+  function mkCard(r,pend){
+    const[a,m2,d]=r.data.split("-");const isH=r.data===h;
+    const dias=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+    const dow=dias[new Date(r.data+"T12:00:00").getDay()];
+    const midiaTags=(r.precisaFoto?`<span style="background:#f5f3ff;color:#7c3aed;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #ddd6fe">📸 Foto</span>`:"")
+      +(r.precisaVideo?`<span style="background:#eff6ff;color:#1d4ed8;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #bfdbfe">🎬 Vídeo</span>`:"");
+    const objTag=r.objetivoMidia?`<span style="background:#fef9c3;color:#854d0e;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #fde68a">${r.objetivoMidia==="social"?"📱 Rede Social":"📚 Proj. Pedagógico"}</span>`:"";
+    return`<div style="background:${c.surface};border-radius:12px;border:1.5px solid ${pend?"#ddd6fe":"#a7f3d0"};padding:14px 18px;margin-bottom:10px;border-left:4px solid ${pend?"#7c3aed":"#1a6b47"}">
+      <div style="display:flex;gap:14px;align-items:flex-start">
+        <div style="text-align:center;min-width:52px;background:${pend?"#f5f3ff":"#e2f4ea"};border-radius:8px;padding:6px 8px">
+          <p style="font-size:11px;font-weight:700;color:${pend?"#7c3aed":"#1a6b47"};text-transform:uppercase">${dow}</p>
+          <p style="font-size:20px;font-weight:900;color:${pend?"#7c3aed":"#1a6b47"};line-height:1">${d}</p>
+          <p style="font-size:10px;color:${pend?"#7c3aed":"#1a6b47"}">${m2}/${a.slice(2)}</p>
+        </div>
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:5px">
+            <span style="font-family:'DM Mono',monospace;font-weight:800;color:${pend?"#7c3aed":"#1a6b47"};font-size:13px">${r.horario}${r.horarioFim&&r.horarioFim!==r.horario?" → "+r.horarioFim:""}</span>
+            <span style="font-size:13px;font-weight:700;color:${c.navy}">${r.espaco==="Equipe de Marketing"?(r.salaAtividade||"Sala não informada"):r.espaco}</span>
+            ${isH?`<span style="background:#1a6b47;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">📌 Hoje</span>`:""}
+          </div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px">${midiaTags}${objTag}</div>
+          <p style="font-size:12px;color:${c.textMid};margin-bottom:2px">👤 ${r.professor} · ${r.turmaInicio||r.turma||"—"}</p>
+          <p style="font-size:12px;color:${c.textMuted}">${r.conteudo}</p>
+          ${r.descritivo?`<div style="margin-top:6px;padding:8px 10px;background:#fef9c3;border-radius:6px;border:1px solid #fde68a"><p style="font-size:11px;font-weight:700;color:#854d0e;margin-bottom:2px">📝 Descritivo para publicação:</p><p style="font-size:12px;color:#713f12">${r.descritivo}</p></div>`:""}
+        </div>
+      </div>
+      ${pend?`<div style="display:flex;gap:8px;margin-top:12px">
+        <button onclick="mkAprovar('${r.id}')" style="flex:1;padding:9px;border-radius:8px;border:none;background:#1a6b47;color:#fff;font-weight:700;font-size:13px;cursor:pointer">✅ Aprovar</button>
+        <button onclick="mkRecusar('${r.id}')" style="flex:1;padding:9px;border-radius:8px;border:none;background:#dc2626;color:#fff;font-weight:700;font-size:13px;cursor:pointer">❌ Recusar</button>
+      </div>`:`<div style="margin-top:10px"><button onclick="mkRecusar('${r.id}')" style="padding:7px 18px;border-radius:8px;border:1.5px solid #fca5a5;background:#fff;color:#dc2626;font-weight:700;font-size:12px;cursor:pointer">❌ Cancelar aprovação</button></div>`}
+    </div>`;
+  }
   $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="no">
-    <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#0d2b1a,#1a6b47)"};border-bottom:1px solid ${_dark?c.border:"transparent"};padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100">
-      <div style="display:flex;align-items:center;gap:10px">${logoHTML(36)}<div><p style="font-size:13px;font-weight:800;color:${c.navy}">Solicitações de Foto</p></div></div>
-      <div style="display:flex;align-items:center;gap:8px">${avatarHTML(_usuario?.nome,30,"purple")}<button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button><button onclick="doSignOut()" style="${btn("ghost","","sm")}">Sair</button></div>
+    <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#0d2b1a,#1a6b47)"};padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100">
+      <div style="display:flex;align-items:center;gap:10px">${logoHTML(36)}<div><p style="font-size:13px;font-weight:800;color:#fff">📸 Equipe de Marketing</p></div></div>
+      <div style="display:flex;align-items:center;gap:8px">${avatarHTML(_usuario?.nome,30,"purple")}<button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button><button onclick="doSignOut()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">Sair</button></div>
     </header>
     <div style="max-width:700px;margin:0 auto;padding:20px 14px">
-      ${!comFoto.length?`<div style="text-align:center;padding:40px;color:${c.textMuted}"><p style="font-size:32px">📷</p><p style="margin-top:12px">Nenhuma solicitação no momento.</p></div>`:
-        comFoto.map(r=>{const[a,m2,d]=r.data.split("-");const isH=r.data===h;
-          return`<div style="background:${c.surface};border-radius:12px;border:1px solid #ddd6fe;padding:14px 18px;margin-bottom:10px;border-left:4px solid #7c3aed;display:flex;gap:14px;align-items:flex-start">
-            <div style="text-align:center;min-width:52px;background:#f5f3ff;border-radius:8px;padding:6px 8px">
-              <p style="font-size:11px;font-weight:700;color:#7c3aed;text-transform:uppercase">${["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"][new Date(r.data+"T12:00:00").getDay()]}</p>
-              <p style="font-size:20px;font-weight:900;color:#7c3aed;line-height:1">${d}</p>
-              <p style="font-size:10px;color:#7c3aed">${m2}/${a.slice(2)}</p>
-            </div>
-            <div style="flex:1"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
-              <span style="font-family:'DM Mono',monospace;font-weight:800;color:#7c3aed;font-size:14px">${r.horario}${r.horarioFim&&r.horarioFim!==r.horario?" → "+r.horarioFim:""}</span>
-              <span style="font-size:13px;font-weight:700;color:${c.navy}">${tipoIcon(ESPACOS.find(e=>e.nome===r.espaco)?.tipo,r.espaco)} ${r.espaco}</span>
-              ${isH?`<span style="background:#7c3aed;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">📌 Hoje</span>`:""}
-            </div>
-            <p style="font-size:12px;color:${c.textMid}">${r.professor} · ${r.turmaInicio||r.turma}</p>
-            <p style="font-size:12px;color:${c.textMuted};margin-top:3px">${r.conteudo}</p>
-            </div>
-          </div>`;}).join("")}
+      ${pendentes.length?`<div style="margin-bottom:24px"><p style="font-size:12px;font-weight:800;color:#7c3aed;text-transform:uppercase;margin-bottom:10px">⏳ Aguardando aprovação (${pendentes.length})</p>${pendentes.map(r=>mkCard(r,true)).join("")}</div>`:""}
+      ${aprovados.length?`<div><p style="font-size:12px;font-weight:800;color:${c.green};text-transform:uppercase;margin-bottom:10px">✅ Aprovados (${aprovados.length})</p>${aprovados.map(r=>mkCard(r,false)).join("")}</div>`:""}
+      ${!solicitacoes.length?`<div style="text-align:center;padding:40px;color:${c.textMuted}"><p style="font-size:32px">📸</p><p style="margin-top:12px">Nenhuma solicitação no momento.</p></div>`:""}
     </div>
   </div>`;
 }
+window.mkAprovar=async(id)=>{
+  if(!confirm("Aprovar esta solicitação de foto/vídeo?"))return;
+  const r=_todas.find(r=>r.id===id);
+  await updateDoc(doc(db,"reservas",id),{statusMarketing:"aprovado"});
+  // Notificação push para professor e admins
+  if(r){
+    const msg=`✅ Solicitação de foto/vídeo aprovada!
+${r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco} — ${r.data.split("-").reverse().join("/")} às ${r.horario}`;
+    _usuarios.filter(u=>(u.uid===r.professorId||u.perfil==="admin")&&u.fcmToken).forEach(async u=>{
+      try{await fetch(`https://fcm.googleapis.com/fcm/send`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:u.fcmToken,notification:{title:"📸 Reserva Arena",body:msg}})});}catch(e){}
+    });
+  }
+  re();
+};
+window.mkRecusar=async(id)=>{
+  if(!confirm("Recusar esta solicitação?"))return;
+  const r=_todas.find(r=>r.id===id);
+  await updateDoc(doc(db,"reservas",id),{statusMarketing:"recusado"});
+  if(r){
+    const msg=`❌ Solicitação de foto/vídeo não aprovada.
+${r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco} — ${r.data.split("-").reverse().join("/")} às ${r.horario}`;
+    _usuarios.filter(u=>(u.uid===r.professorId||u.perfil==="admin")&&u.fcmToken).forEach(async u=>{
+      try{await fetch(`https://fcm.googleapis.com/fcm/send`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:u.fcmToken,notification:{title:"📸 Reserva Arena",body:msg}})});}catch(e){}
+    });
+  }
+  re();
+};
 
 function renderTI(){
   const c=C(),h=fmtHoje();
@@ -914,7 +963,7 @@ const bVazio=()=>({
   horario:"",horarioFim:"",
   turma:"",turmaInicio:"",turmaFim:"",
   conteudo:"",paginas:"",laboratorista:"",quantidade:1,
-  precisaFoto:false,observacoes:"",localMontagem:"",
+  precisaFoto:false,precisaVideo:false,objetivoMidia:"",descritivo:"",salaAtividade:"",observacoes:"",localMontagem:"",
   microfones:0,caixasom:0,projetor:0,
   multTablets:0,multNotebooks:0,multProjetor:0,
   tipoAtividade:"",
@@ -1074,6 +1123,8 @@ function maBlocoMultiHTML(b,i,eo){
   const isAvulso=eo?.equipAvulso;
   const bValMulti=b=>{
     if(!b.horario||!b.horarioFim)return false;
+    // Marketing: precisa de sala e pelo menos foto ou vídeo
+    if(eo?.tipo==="marketing")return !!(b.salaAtividade&&b.conteudo&&(b.precisaFoto||b.precisaVideo));
     // Equipamentos avulsos: precisam de local início, término e conteúdo
     if(isAvulso)return !!(b.local&&b.conteudo); // localDevolucao opcional se 1 horário só
     // Equipamentos auto (Sala Multifuncional, Lab Mat): só precisam de conteúdo
@@ -1263,10 +1314,34 @@ function maBlocoMultiHTML(b,i,eo){
     <textarea onchange="maSetBlocoRe(${i},'observacoes',this.value)" rows="2" placeholder="Observações adicionais..." style="${inp()};resize:none;margin-top:5px">${b.observacoes||""}</textarea>
   </div>`;
 
-  // ── Fotógrafo ──
-  html+=`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:${c.greenBg};border-radius:8px;border:1px solid ${c.greenBorder};cursor:pointer">
-    <input type="checkbox" id="chk-foto-${i}" ${b.precisaFoto?"checked":""} onchange="maSetBlocoRe(${i},'precisaFoto',this.checked)" style="width:18px;height:18px;accent-color:#1a6b47;cursor:pointer;flex-shrink:0">
-    <label for="chk-foto-${i}" style="cursor:pointer"><p style="font-size:13px;font-weight:700;color:${c.navy}">📸 Solicitar fotógrafo</p></label>
+  // ── Marketing: sala da atividade ──
+  if(eo?.tipo==="marketing"){
+    html+=`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">🏫 Sala / Local da atividade *</label><br>
+      <input type="text" value="${b.salaAtividade||""}" onchange="maSetBlocoRe(${i},'salaAtividade',this.value)" placeholder="Ex: Sala 12, Pátio, Quadra..." style="${inp()};margin-top:5px">
+    </div>`;
+  }
+
+  // ── Foto / Vídeo ──
+  html+=`<div style="display:flex;flex-direction:column;gap:8px">
+    <p style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">📸 Registro de mídia</p>
+    <div style="display:flex;gap:10px">
+      <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:${c.greenBg};border-radius:8px;border:1px solid ${c.greenBorder};cursor:pointer;flex:1">
+        <input type="checkbox" id="chk-foto-${i}" ${b.precisaFoto?"checked":""} onchange="maSetBlocoRe(${i},'precisaFoto',this.checked)" style="width:18px;height:18px;accent-color:#1a6b47;cursor:pointer;flex-shrink:0">
+        <span style="font-size:13px;font-weight:700;color:${c.navy}">📸 Solicitar foto</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:#eff6ff;border-radius:8px;border:1px solid #bfdbfe;cursor:pointer;flex:1">
+        <input type="checkbox" id="chk-video-${i}" ${b.precisaVideo?"checked":""} onchange="maSetBlocoRe(${i},'precisaVideo',this.checked)" style="width:18px;height:18px;accent-color:#1d4ed8;cursor:pointer;flex-shrink:0">
+        <span style="font-size:13px;font-weight:700;color:#1e40af">🎬 Solicitar vídeo</span>
+      </label>
+    </div>
+    ${(b.precisaFoto||b.precisaVideo)?`
+    <select onchange="maSetBlocoRe(${i},'objetivoMidia',this.value)" style="${inp()};margin-top:2px">
+      <option value="">🎯 Objetivo do material...</option>
+      <option value="social" ${b.objetivoMidia==="social"?"selected":""}>📱 Publicação em Rede Social</option>
+      <option value="pedagogico" ${b.objetivoMidia==="pedagogico"?"selected":""}>📚 Projeto Pedagógico</option>
+    </select>
+    ${b.objetivoMidia==="social"?`<textarea onchange="maSetBlocoRe(${i},'descritivo',this.value)" rows="3" placeholder="Descreva o contexto para publicação em rede social (atividade, turma, mensagem que deseja transmitir)..." style="${inp()};resize:none;margin-top:2px">${b.descritivo||""}</textarea>`:""}
+    `:""}
   </div>`;
 
   html+=`</div></div>`;
@@ -1367,7 +1442,7 @@ function renderMAResumo(){
         <div style="flex:1">
           <p style="font-size:12px;font-weight:700;color:${c.green}">${rangeHors.length} horário${rangeHors.length!==1?"s":""} · ${m.espaco}</p>
           ${b.local&&eo?.equipAvulso?`<p style="font-size:11px;color:#0369a1;margin-top:2px;font-weight:700">🏫 ${b.local}${b.localDevolucao&&b.localDevolucao!==b.local?" → "+b.localDevolucao:""}</p>`:""}
-          ${b.precisaFoto?`<p style="font-size:11px;color:#7c3aed;margin-top:2px">📸 Fotógrafo solicitado</p>`:""}
+          ${b.precisaFoto?`<p style="font-size:11px;color:#7c3aed;margin-top:2px">📸 Foto solicitada</p>`:""}${b.precisaVideo?`<p style="font-size:11px;color:#1d4ed8;margin-top:2px">🎬 Vídeo solicitado</p>`:""}
           ${b.qtdTablets>0?`<p style="font-size:11px;color:#0369a1;margin-top:2px">📱 ${b.qtdTablets} tablet${b.qtdTablets>1?"s":""}</p>`:""}
           ${b.qtdNotebooks>0?`<p style="font-size:11px;color:#0369a1;margin-top:2px">💻 ${b.qtdNotebooks} computador${b.qtdNotebooks>1?"es":""}</p>`:""}
         </div>
@@ -1555,6 +1630,10 @@ window.maSalvar=async()=>{
     const[ano,mes,dia]=data.split("-").map(Number);
     const dow=new Date(Date.UTC(ano,mes-1,dia)).getUTCDay();
     const st=(algUrgente||dow===0||dow===6)?"pendente":"confirmado";
+    // Equipe de Marketing: statusMarketing sempre pendente
+    const eoSalvar=ESPACOS.find(e=>e.nome===espaco);
+    const temMidia=blocos[0]?.precisaFoto||blocos[0]?.precisaVideo||eoSalvar?.tipo==="marketing";
+    const statusMarketing=temMidia?"pendente":null;
 
     const tph=b.turmasPorHorario||{};
     const isEquipSalvar=eo?.tipo==="equipamento"||eo?.tipo==="audiovisual";
@@ -1575,7 +1654,7 @@ window.maSalvar=async()=>{
       local:b.local||"",localMontagem:b.local||"",localDevolucao:b.localDevolucao||"",
       quantidade:eo?.tipo==="equipamento"?Number(b.quantidade):null,
       microfones:Number(b.microfones)||0,caixasom:Number(b.caixasom)||0,projetor:Number(b.projetor)||0,
-      status:st,criadoEm:ts,precisaFoto:b.precisaFoto||false,
+      status:st,criadoEm:ts,precisaFoto:b.precisaFoto||false,precisaVideo:b.precisaVideo||false,objetivoMidia:b.objetivoMidia||"",descritivo:b.descritivo||"",salaAtividade:b.salaAtividade||"",...(statusMarketing?{statusMarketing}:{}),
       paginas:"",laboratorista:"",reservaAutomatica:false,
       qtdTablets:Number(b.qtdTablets)||0,qtdNotebooks:Number(b.qtdNotebooks)||0,
     };
@@ -1858,7 +1937,7 @@ function renderAdminView(){
     }
 
     if(_A.aba==="fotos"){
-      const comFoto=_todas.filter(r=>r.precisaFoto&&r.status!=="recusado"&&!r.reservaAutomatica&&(_A.historico||r.data>=h)).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
+      const comFoto=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&r.status!=="recusado"&&!r.reservaAutomatica&&(_A.historico||r.data>=h)).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
       if(!comFoto.length)html+=`<div style="text-align:center;padding:32px;color:${c.textMuted}"><p style="font-size:28px">📷</p><p style="margin-top:8px">Nenhuma solicitação de foto.</p></div>`;
       else{
         const pd={};comFoto.forEach(r=>{if(!pd[r.data])pd[r.data]=[];pd[r.data].push(r);});
@@ -1902,7 +1981,7 @@ function admRow(r,showDate=false){
       <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
         ${badge(r.status)}
         ${urg&&r.status==="pendente"?`<span style="font-size:10.5px;font-weight:800;background:#fff7ed;color:#c2410c;border:1.5px solid #f97316;padding:1px 8px;border-radius:10px">⚡ URGENTE</span>`:""}
-        ${r.precisaFoto?`<span style="font-size:10.5px;font-weight:800;background:#f5f3ff;color:#7c3aed;border:1.5px solid #ddd6fe;padding:1px 8px;border-radius:10px">📸 Foto</span>`:""}
+        ${r.precisaFoto?`<span style="font-size:10.5px;font-weight:800;background:#f5f3ff;color:#7c3aed;border:1.5px solid #ddd6fe;padding:1px 8px;border-radius:10px">📸 Foto</span>`:""}${r.precisaVideo?`<span style="font-size:10.5px;font-weight:800;background:#eff6ff;color:#1d4ed8;border:1.5px solid #bfdbfe;padding:1px 8px;border-radius:10px">🎬 Vídeo</span>`:""}
         ${r.conteudo?`<span style="font-size:11.5px;color:${c.textMuted};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px">${r.conteudo}</span>`:""}
       </div>
     </div>
@@ -1977,7 +2056,7 @@ function modalGerenciarHTML(){
             <div><label style="font-size:11px;font-weight:700;color:#607060;text-transform:uppercase">Perfil</label><br>
               <select id="gu-perfil" style="width:100%;padding:10px 12px;border-radius:8px;font-size:13.5px;border:1.5px solid #c7dfd4;background:#fff;outline:none;box-sizing:border-box;cursor:pointer;margin-top:5px">
                 <option value="professor">👨‍🏫 Professor</option>
-                <option value="fotografo">📸 Fotógrafo</option>
+                <option value="marketing">📸 Equipe de Marketing</option>
                 <option value="ti">💻 T.I.</option>
               </select></div>
             <button onclick="guCriarDireto()" style="background:#1a6b47;color:#fff;border:none;border-radius:8px;font-weight:700;padding:10px 18px;font-size:13.5px;cursor:pointer;height:42px;width:100%">+ Cadastrar</button>
@@ -2039,7 +2118,7 @@ function renderGuLista(){
       h+='<tr style="background:'+(i%2===0?'#fff':'#f8faf8')+'">';
       h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb;color:#132318;font-weight:600">'+u.nome+'</td>';
       h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb;color:#607060;font-size:12px">'+u.email+'</td>';
-      h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:#e0e7ff;color:#3730a3">'+(u.perfil==="fotografo"?"📸 Fotógrafo":u.perfil==="ti"?"💻 T.I.":"👨‍🏫 Professor")+'</span></td>';
+      h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:#e0e7ff;color:#3730a3">'+(u.perfil==="fotografo"||u.perfil==="marketing"?"📸 Equipe de Marketing":u.perfil==="ti"?"💻 T.I.":"👨‍🏫 Professor")+'</span></td>';
       h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:'+(u.ativo!==false?'#e2f4ea':'#fef2f2')+';color:'+(u.ativo!==false?'#0f4c2b':'#7f1d1d')+'">'+(u.ativo!==false?'● Ativo':'○ Inativo')+'</span></td>';
       h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><div style="display:flex;gap:5px">';
       h+='<button data-uid="'+u.id+'" data-ativo="'+(u.ativo!==false?'1':'0')+'" data-nome="'+u.nome+'" class="gu-toggle-btn" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid '+(u.ativo!==false?'#fed7aa':'#6ee7a0')+';background:'+(u.ativo!==false?'#fff7ed':'#e2f4ea')+';color:'+(u.ativo!==false?'#7c2d12':'#0f4c2b')+';cursor:pointer;font-weight:700">'+(u.ativo!==false?'🔒 Desativar':'🔓 Ativar')+'</button>';
