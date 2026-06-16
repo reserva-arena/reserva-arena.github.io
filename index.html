@@ -130,7 +130,7 @@ const ESPACOS = [
   {id:11, nome:"Lab. de Ciências Anos Finais",   tipo:"laboratorio",multiHorario:true,  equipAuto:[]},
   {id:12, nome:"Tablets (18 disp.)",             tipo:"equipamento",multiHorario:true,  estoque:18, equipAuto:[], equipAvulso:true},
   {id:13, nome:"Computadores (16 disp.)",        tipo:"equipamento",multiHorario:true,  estoque:16, equipAuto:[], equipAvulso:true},
-  {id:14, nome:"Áudio/Visual",                   tipo:"audiovisual",multiHorario:true,  equipAuto:[], equipAvulso:true},
+  {id:14, nome:"Som, Microfone e Projetor",                   tipo:"audiovisual",multiHorario:true,  equipAuto:[], equipAvulso:true},
   {id:16, nome:"Equipe de Marketing",             tipo:"marketing",  multiHorario:true,  equipAuto:[]},
 ];
 
@@ -237,7 +237,7 @@ const ESPACO_ICON={
   "Sala de Dança":"💃","Sala Multifuncional":"🖥️","Cozinha Experimental":"🍳",
   "Fazendinha":"🐔","Pátio do Lago de Pedras":"🌊","Lab. de Matemática":"📐",
   "Lab. de Ciências Anos Iniciais":"🔬","Lab. de Ciências Anos Finais":"⚗️",
-  "Tablets (18 disp.)":"📱","Computadores (16 disp.)":"💻","Áudio/Visual":"🎙️",
+  "Tablets (18 disp.)":"📱","Computadores (16 disp.)":"💻","Som, Microfone e Projetor":"🔊",
 };
 const tipoIcon=(t,nome)=>ESPACO_ICON[nome]||({espaco:"🏛️",laboratorio:"🔬",equipamento:"💻",audiovisual:"🎙️",marketing:"📸"}[t]||"📍");
 function nomeProf(n){if(!n)return"";const p=n.trim().split(" ").filter(Boolean);return p.length===1?p[0]:p[0]+" "+p[p.length-1][0].toUpperCase()+".";}
@@ -598,13 +598,13 @@ function renderTI(){
   const c=C(),h=fmtHoje();
   const audioVisuais=_todas.filter(r=>{
     const eo=ESPACOS.find(e=>e.nome===r.espaco);
-    return (eo?.tipo==="audiovisual"||eo?.tipo==="equipamento"&&r.espaco==="Áudio/Visual")&&r.data>=h&&!r.reservaAutomatica;
+    return (eo?.tipo==="audiovisual"||eo?.tipo==="equipamento"&&r.espaco==="Som, Microfone e Projetor")&&r.data>=h&&!r.reservaAutomatica;
   }).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
   const pendentes=audioVisuais.filter(r=>r.status==="pendente");
   const confirmados=audioVisuais.filter(r=>r.status==="confirmado");
   $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="no">
     <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#0d2b1a,#1a6b47)"};padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100">
-      <div style="display:flex;align-items:center;gap:10px">${logoHTML(36)}<div><p style="font-size:13px;font-weight:800;color:#fff">T.I. — Áudio/Visual</p></div></div>
+      <div style="display:flex;align-items:center;gap:10px">${logoHTML(36)}<div><p style="font-size:13px;font-weight:800;color:#fff">T.I. — Som, Microfone e Projetor</p></div></div>
       <div style="display:flex;align-items:center;gap:8px">${avatarHTML(_usuario?.nome,30,"blue")}<button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button><button onclick="doSignOut()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">Sair</button></div>
     </header>
     <div style="max-width:700px;margin:0 auto;padding:20px 14px">
@@ -616,7 +616,7 @@ function renderTI(){
         <p style="font-size:12px;font-weight:800;color:${c.green};text-transform:uppercase;margin-bottom:10px">✅ Confirmados (${confirmados.length})</p>
         ${confirmados.map(r=>tiCard(r,false)).join("")}
       </div>`:""}
-      ${!audioVisuais.length?`<div style="text-align:center;padding:40px;color:${c.textMuted}"><p style="font-size:32px">🔊</p><p style="margin-top:12px">Nenhum agendamento de Áudio/Visual.</p></div>`:""}
+      ${!audioVisuais.length?`<div style="text-align:center;padding:40px;color:${c.textMuted}"><p style="font-size:32px">🔊</p><p style="margin-top:12px">Nenhum agendamento de Som, Microfone e Projetor.</p></div>`:""}
     </div>
   </div>`;
 }
@@ -1013,7 +1013,7 @@ function renderProfAgendar(){
       {tipo:"espaco",   label:"🏛️ Espaços"},
       {tipo:"laboratorio",label:"🔬 Laboratórios"},
       {tipo:"equipamento",label:"💻 Equipamentos"},
-      {tipo:"audiovisual",label:"🎙️ Áudio/Visual"},
+      {tipo:"audiovisual",label:"🔊 Som, Microfone e Projetor"},
     ];
     grupos.forEach(({tipo,label})=>{
       const lista=ESPACOS.filter(e=>e.tipo===tipo);
@@ -1076,7 +1076,7 @@ function renderProfAgendar(){
     const _espacosComAV=["Biblioteca","Sala Multifuncional","Sala de Dança","Ateliê de Artes","Lab. de Matemática"];
     if(_espacosComAV.includes(m.espaco)){
       html+=`<div style="background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:10px;padding:12px 14px;margin-bottom:14px">
-        <p style="font-size:13px;font-weight:800;color:#0369a1;margin-bottom:6px">🎙️ Precisa de Áudio/Visual?</p>
+        <p style="font-size:13px;font-weight:800;color:#0369a1;margin-bottom:6px">🔊 Precisa de Som, Microfone e Projetor?</p>
         <div style="display:flex;gap:8px">
           <button onclick="setBibAV(true)" style="flex:1;padding:9px;border-radius:8px;border:2px solid ${_MA.bibAV===true?'#0369a1':'#bae6fd'};background:${_MA.bibAV===true?'#e0f2fe':'#fff'};font-weight:700;font-size:13px;cursor:pointer;color:#0369a1">✓ Sim</button>
           <button onclick="setBibAV(false)" style="flex:1;padding:9px;border-radius:8px;border:2px solid ${_MA.bibAV===false?'#64748b':'#e2e8f0'};background:${_MA.bibAV===false?'#f1f5f9':'#fff'};font-weight:700;font-size:13px;cursor:pointer;color:#64748b">✕ Não</button>
@@ -1693,13 +1693,13 @@ window.maSalvar=async()=>{
     // A/V automático se bibAV=true
     if(_MA.bibAV===true){
       const avSnaps=await Promise.all(rangeHors.map(h=>
-        getDocs(query(collection(db,"reservas"),where("espaco","==","Áudio/Visual"),where("data","==",data),where("horario","==",h)))
+        getDocs(query(collection(db,"reservas"),where("espaco","==","Som, Microfone e Projetor"),where("data","==",data),where("horario","==",h)))
       ));
       rangeHors.forEach((h,idx)=>{
         if(!avSnaps[idx].docs.find(d=>d.data()?.status!=="recusado")){
           batch.set(doc(collection(db,"reservas")),{
             professor:_usuario.nome,professorId:_usuario.uid,professorEmail:_usuario.email,
-            turma:tph[h]||"",espaco:"Áudio/Visual",data,horario:h,horarioFim:h,
+            turma:tph[h]||"",espaco:"Som, Microfone e Projetor",data,horario:h,horarioFim:h,
             conteudo:`A/V vinculado à ${espaco} — ${b.conteudo}`,
             localMontagem:espaco,status:st,criadoEm:ts,precisaFoto:false,
             paginas:"",laboratorista:"",quantidade:null,reservaAutomatica:true,
@@ -1987,7 +1987,7 @@ function renderAdminView(){
           </div>
         </div>`;
       }
-      if(!avItems.length){html+=`<div style="text-align:center;padding:32px;color:${c.textMuted}"><p style="font-size:28px">🔊</p><p style="margin-top:8px">Nenhum agendamento de Áudio/Visual.</p></div>`;}
+      if(!avItems.length){html+=`<div style="text-align:center;padding:32px;color:${c.textMuted}"><p style="font-size:28px">🔊</p><p style="margin-top:8px">Nenhum agendamento de Som, Microfone e Projetor.</p></div>`;}
       else{
         if(avPend.length){html+=`<p style="font-size:12px;font-weight:800;color:#c2410c;text-transform:uppercase;margin-bottom:10px">⏳ Pendentes T.I. (${avPend.length})</p>`;avPend.forEach(r=>{html+=tiAdmRow(r);});}
         if(avConf.length){html+=`<p style="font-size:12px;font-weight:800;color:${c.green};text-transform:uppercase;margin:14px 0 10px">✅ Confirmados (${avConf.length})</p>`;avConf.forEach(r=>{html+=tiAdmRow(r);});}
