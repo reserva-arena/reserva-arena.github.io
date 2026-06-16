@@ -71,6 +71,7 @@ const firebaseConfig = {
 const app     = initializeApp(firebaseConfig);
 const auth    = getAuth(app);
 const db      = getFirestore(app);
+window.__db__ = db; // exposto para scripts de migração
 const secApp  = getApps().find(a=>a.name==="secondary")||initializeApp(firebaseConfig,"secondary");
 const secAuth = getAuth(secApp);
 
