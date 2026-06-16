@@ -518,18 +518,13 @@ window.recuperarSenha=async()=>{
 // ════════════════════════════════════════════════════════════════════════════
 function renderMarketing(){
   const c=C(),h=fmtHoje();
-  if(!window._MK)window._MK={historico:false};
-  // Agendamentos com foto ou vídeo OU agendados diretamente na Equipe de Marketing
-  const solicitacoes=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&(_MK.historico||r.data>=h)&&r.status!=="recusado").sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
-  const pendentes=solicitacoes.filter(r=>r.statusMarketing==="pendente"||!r.statusMarketing);
-  const aprovados=solicitacoes.filter(r=>r.statusMarketing==="aprovado");
-  function mkCard(r,pend){
+  if(!window._MK)window._MK={aba:"minhas",historico:false};
+  const mkCard=(r,pend)=>{
     const[a,m2,d]=r.data.split("-");const isH=r.data===h;
     const dias=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
     const dow=dias[new Date(r.data+"T12:00:00").getDay()];
-    const midiaTags=(r.precisaFoto?`<span style="background:#f5f3ff;color:#7c3aed;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #ddd6fe">📸 Foto</span>`:"")
-      +(r.precisaVideo?`<span style="background:#eff6ff;color:#1d4ed8;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #bfdbfe">🎬 Vídeo</span>`:"");
-    const objTag=r.objetivoMidia?`<span style="background:#fef9c3;color:#854d0e;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #fde68a">${r.objetivoMidia==="social"?"📱 Rede Social":"📚 Proj. Pedagógico"}</span>`:"";
+    const midiaTags=(r.precisaFoto?`<span style="background:#f5f3ff;color:#7c3aed;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #ddd6fe">📸 Foto</span>`:"")+(r.precisaVideo?`<span style="background:#eff6ff;color:#1d4ed8;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #bfdbfe">🎬 Vídeo</span>`:"");
+    const objTag=r.objetivoMidia?`<span style="background:#fef9c3;color:#854d0e;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #fde68a">${r.objetivoMidia==="social"?"📱 Rede Social":"📚 Pedagógico"}</span>`:"";
     return`<div style="background:${c.surface};border-radius:12px;border:1.5px solid ${pend?"#ddd6fe":"#a7f3d0"};padding:14px 18px;margin-bottom:10px;border-left:4px solid ${pend?"#7c3aed":"#1a6b47"}">
       <div style="display:flex;gap:14px;align-items:flex-start">
         <div style="text-align:center;min-width:52px;background:${pend?"#f5f3ff":"#e2f4ea"};border-radius:8px;padding:6px 8px">
@@ -546,7 +541,7 @@ function renderMarketing(){
           <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px">${midiaTags}${objTag}</div>
           <p style="font-size:12px;color:${c.textMid};margin-bottom:2px">👤 ${r.professor} · ${r.turmaInicio||r.turma||"—"}</p>
           <p style="font-size:12px;color:${c.textMuted}">${r.conteudo}</p>
-          ${r.descritivo?`<div style="margin-top:6px;padding:8px 10px;background:#fef9c3;border-radius:6px;border:1px solid #fde68a"><p style="font-size:11px;font-weight:700;color:#854d0e;margin-bottom:2px">📝 Descritivo para publicação:</p><p style="font-size:12px;color:#713f12">${r.descritivo}</p></div>`:""}
+          ${r.descritivo?`<div style="margin-top:6px;padding:8px 10px;background:#fef9c3;border-radius:6px;border:1px solid #fde68a"><p style="font-size:11px;font-weight:700;color:#854d0e;margin-bottom:2px">📝 Publicação:</p><p style="font-size:12px;color:#713f12">${r.descritivo}</p></div>`:""}
         </div>
       </div>
       ${pend?`<div style="display:flex;gap:8px;margin-top:12px">
@@ -554,19 +549,41 @@ function renderMarketing(){
         <button onclick="mkRecusar('${r.id}')" style="flex:1;padding:9px;border-radius:8px;border:none;background:#dc2626;color:#fff;font-weight:700;font-size:13px;cursor:pointer">❌ Recusar</button>
       </div>`:`<div style="margin-top:10px"><button onclick="mkRecusar('${r.id}')" style="padding:7px 18px;border-radius:8px;border:1.5px solid #fca5a5;background:#fff;color:#dc2626;font-weight:700;font-size:12px;cursor:pointer">❌ Cancelar aprovação</button></div>`}
     </div>`;
+  };
+  // Filtro por aba
+  const minhas=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&(_MK.historico||r.data>=h)&&r.status!=="recusado").sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
+  const pendentes=minhas.filter(r=>r.statusMarketing==="pendente"||!r.statusMarketing);
+  const aprovados=minhas.filter(r=>r.statusMarketing==="aprovado");
+  const todos=_todas.filter(r=>(_MK.historico||r.data>=h)&&r.status!=="recusado"&&!r.reservaAutomatica).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
+  const btnAba=(id,l)=>`<button onclick="window._MK.aba='${id}';re()" style="padding:7px 16px;font-size:12.5px;border-radius:8px;border:1.5px solid ${_MK.aba===id?'#7c3aed':c.border};background:${_MK.aba===id?'#7c3aed':'transparent'};color:${_MK.aba===id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${l}</button>`;
+  let corpo="";
+  if(_MK.aba==="minhas"){
+    if(pendentes.length)corpo+=`<div style="margin-bottom:20px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="background:#7c3aed;color:#fff;font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px">⏳ PENDENTES — ${pendentes.length}</span></div>${pendentes.map(r=>mkCard(r,true)).join("")}</div>`;
+    if(aprovados.length)corpo+=`<div><p style="font-size:12px;font-weight:800;color:${c.green};text-transform:uppercase;margin-bottom:10px">✅ Aprovados (${aprovados.length})</p>${aprovados.map(r=>mkCard(r,false)).join("")}</div>`;
+    if(!minhas.length)corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">📸</p><p style="margin-top:12px;font-size:14px">Nenhuma solicitação no momento.</p></div>`;
+  } else {
+    // Agrupar por data
+    const pd={};todos.forEach(r=>{if(!pd[r.data])pd[r.data]=[];pd[r.data].push(r);});
+    if(!todos.length)corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">📅</p><p style="margin-top:12px">Nenhum agendamento.</p></div>`;
+    Object.entries(pd).forEach(([data,rs])=>{
+      const[a2,m2,d2]=data.split("-");const isH=data===h;
+      corpo+=`<div style="margin-bottom:14px"><div style="background:${isH?"#1a6b47":"#64748b"};color:#fff;border-radius:7px;padding:3px 12px;font-size:11.5px;font-weight:700;display:inline-block;margin-bottom:8px">${isH?"📌 Hoje":`${d2}/${m2}/${a2}`}</div>`;
+      rs.forEach(r=>{corpo+=`<div style="display:flex;gap:10px;padding:10px 14px;border-radius:10px;margin-bottom:6px;background:${c.surface};border:1px solid ${c.border}"><div style="min-width:72px"><p style="font-size:12px;font-family:'DM Mono',monospace;font-weight:800;color:${c.green}">${r.horario}${r.horarioFim&&r.horarioFim!==r.horario?" → "+r.horarioFim:""}</p></div><div style="flex:1"><p style="font-weight:700;font-size:13px;color:${c.navy}">${r.espaco}</p><p style="font-size:12px;color:${c.textMid}">${r.professor} · ${r.turmaInicio||r.turma||"—"}</p><p style="font-size:12px;color:${c.textMuted}">${r.conteudo||""}</p></div></div>`;});
+      corpo+=`</div>`;
+    });
   }
   $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="no">
     <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#0d2b1a,#1a6b47)"};padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100">
-      <div style="display:flex;align-items:center;gap:10px">${logoHTML(36)}<div><p style="font-size:13px;font-weight:800;color:#fff">📸 Equipe de Marketing</p></div></div>
-      <div style="display:flex;align-items:center;gap:8px">${avatarHTML(_usuario?.nome,30,"purple")}<button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button><button onclick="doSignOut()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">Sair</button></div>
+      <div style="display:flex;align-items:center;gap:8px">${logoHTML(36)}<p style="font-size:13px;font-weight:800;color:#fff">📸 Marketing</p></div>
+      <div style="display:flex;align-items:center;gap:6px">${avatarHTML(_usuario?.nome,28,"purple")}<button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button><button onclick="doSignOut()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">Sair</button></div>
     </header>
-    <div style="max-width:700px;margin:0 auto;padding:20px 14px">
-      <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
-        <button onclick="window._MK.historico=!window._MK.historico;re()" style="font-size:12px;padding:6px 14px;border-radius:20px;border:1.5px solid ${c.border};background:${_MK.historico?c.navy:'transparent'};color:${_MK.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_MK.historico?"Ocultar histórico":"Ver histórico"}</button>
+    <div style="max-width:700px;margin:0 auto;padding:16px 14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <div style="display:flex;gap:6px">${btnAba("minhas","📸 Minhas solicitações")}${btnAba("todos","📅 Todos agendamentos")}</div>
+        <button onclick="window._MK.historico=!window._MK.historico;re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_MK.historico?c.navy:'transparent'};color:${_MK.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_MK.historico?"Ocultar hist.":"Ver histórico"}</button>
       </div>
-      ${pendentes.length?`<div style="margin-bottom:24px"><p style="font-size:12px;font-weight:800;color:#7c3aed;text-transform:uppercase;margin-bottom:10px">⏳ Aguardando aprovação (${pendentes.length})</p>${pendentes.map(r=>mkCard(r,true)).join("")}</div>`:""}
-      ${aprovados.length?`<div><p style="font-size:12px;font-weight:800;color:${c.green};text-transform:uppercase;margin-bottom:10px">✅ Aprovados (${aprovados.length})</p>${aprovados.map(r=>mkCard(r,false)).join("")}</div>`:""}
-      ${!solicitacoes.length?`<div style="text-align:center;padding:40px;color:${c.textMuted}"><p style="font-size:32px">📸</p><p style="margin-top:12px">Nenhuma solicitação no momento.</p></div>`:""}
+      ${pendentes.length&&_MK.aba==="todos"?`<div style="background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="window._MK.aba='minhas';re()"><p style="font-size:13px;font-weight:700;color:#7c3aed">⏳ ${pendentes.length} solicitaç${pendentes.length===1?"ão":"ões"} aguardando sua aprovação — Ver agora →</p></div>`:""}
+      ${corpo}
     </div>
   </div>`;
 }
@@ -603,31 +620,39 @@ ${local} — ${dataFmt} às ${r.horario}`));
 
 function renderTI(){
   const c=C(),h=fmtHoje();
-  if(!window._TI)window._TI={historico:false};
-  const audioVisuais=_todas.filter(r=>{
-    const eo=ESPACOS.find(e=>e.nome===r.espaco);
-    return (eo?.tipo==="audiovisual"||eo?.tipo==="equipamento"&&r.espaco==="Som, Microfone e Projetor")&&(_TI.historico||r.data>=h)&&!r.reservaAutomatica;
-  }).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
-  const pendentes=audioVisuais.filter(r=>r.status==="pendente");
-  const confirmados=audioVisuais.filter(r=>r.status==="confirmado");
+  if(!window._TI)window._TI={aba:"minhas",historico:false};
+  const btnAba=(id,l)=>`<button onclick="window._TI.aba='${id}';re()" style="padding:7px 16px;font-size:12.5px;border-radius:8px;border:1.5px solid ${_TI.aba===id?'#0369a1':c.border};background:${_TI.aba===id?'#0369a1':'transparent'};color:${_TI.aba===id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${l}</button>`;
+  const minhas=_todas.filter(r=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);return eo?.tipo==="audiovisual"&&(_TI.historico||r.data>=h)&&!r.reservaAutomatica;}).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
+  const pendentes=minhas.filter(r=>r.status==="pendente");
+  const confirmados=minhas.filter(r=>r.status==="confirmado");
+  const todos=_todas.filter(r=>(_TI.historico||r.data>=h)&&r.status!=="recusado"&&!r.reservaAutomatica).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
+  let corpo="";
+  if(_TI.aba==="minhas"){
+    if(pendentes.length)corpo+=`<div style="margin-bottom:20px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="background:#ea580c;color:#fff;font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px">⏳ PENDENTES — ${pendentes.length}</span></div>${pendentes.map(r=>tiCard(r,true)).join("")}</div>`;
+    if(confirmados.length)corpo+=`<div><p style="font-size:12px;font-weight:800;color:${c.green};text-transform:uppercase;margin-bottom:10px">✅ Confirmados (${confirmados.length})</p>${confirmados.map(r=>tiCard(r,false)).join("")}</div>`;
+    if(!minhas.length)corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">🔊</p><p style="margin-top:12px;font-size:14px">Nenhum agendamento de Som, Microfone e Projetor.</p></div>`;
+  } else {
+    const pd={};todos.forEach(r=>{if(!pd[r.data])pd[r.data]=[];pd[r.data].push(r);});
+    if(!todos.length)corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">📅</p><p style="margin-top:12px">Nenhum agendamento.</p></div>`;
+    Object.entries(pd).forEach(([data,rs])=>{
+      const[a2,m2,d2]=data.split("-");const isH=data===h;
+      corpo+=`<div style="margin-bottom:14px"><div style="background:${isH?"#1a6b47":"#64748b"};color:#fff;border-radius:7px;padding:3px 12px;font-size:11.5px;font-weight:700;display:inline-block;margin-bottom:8px">${isH?"📌 Hoje":`${d2}/${m2}/${a2}`}</div>`;
+      rs.forEach(r=>{corpo+=`<div style="display:flex;gap:10px;padding:10px 14px;border-radius:10px;margin-bottom:6px;background:${c.surface};border:1px solid ${c.border}"><div style="min-width:72px"><p style="font-size:12px;font-family:'DM Mono',monospace;font-weight:800;color:${c.green}">${r.horario}${r.horarioFim&&r.horarioFim!==r.horario?" → "+r.horarioFim:""}</p></div><div style="flex:1"><p style="font-weight:700;font-size:13px;color:${c.navy}">${r.espaco}</p><p style="font-size:12px;color:${c.textMid}">${r.professor} · ${r.turmaInicio||r.turma||"—"}</p><p style="font-size:12px;color:${c.textMuted}">${r.conteudo||""}</p></div></div>`;});
+      corpo+=`</div>`;
+    });
+  }
   $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="no">
     <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#0d2b1a,#1a6b47)"};padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100">
-      <div style="display:flex;align-items:center;gap:10px">${logoHTML(36)}<div><p style="font-size:13px;font-weight:800;color:#fff">T.I. — Som, Microfone e Projetor</p></div></div>
-      <div style="display:flex;align-items:center;gap:8px">${avatarHTML(_usuario?.nome,30,"blue")}<button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button><button onclick="doSignOut()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">Sair</button></div>
+      <div style="display:flex;align-items:center;gap:8px">${logoHTML(36)}<p style="font-size:13px;font-weight:800;color:#fff">💻 T.I.</p></div>
+      <div style="display:flex;align-items:center;gap:6px">${avatarHTML(_usuario?.nome,28,"blue")}<button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button><button onclick="doSignOut()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">Sair</button></div>
     </header>
-    <div style="max-width:700px;margin:0 auto;padding:20px 14px">
-      <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
-        <button onclick="window._TI.historico=!window._TI.historico;re()" style="font-size:12px;padding:6px 14px;border-radius:20px;border:1.5px solid ${c.border};background:${_TI.historico?c.navy:'transparent'};color:${_TI.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_TI.historico?"Ocultar histórico":"Ver histórico"}</button>
+    <div style="max-width:700px;margin:0 auto;padding:16px 14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <div style="display:flex;gap:6px">${btnAba("minhas","🔊 Minhas solicitações")}${btnAba("todos","📅 Todos agendamentos")}</div>
+        <button onclick="window._TI.historico=!window._TI.historico;re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_TI.historico?c.navy:'transparent'};color:${_TI.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_TI.historico?"Ocultar hist.":"Ver histórico"}</button>
       </div>
-      ${pendentes.length?`<div style="margin-bottom:24px">
-        <p style="font-size:12px;font-weight:800;color:#ea580c;text-transform:uppercase;margin-bottom:10px">⏳ Aguardando aprovação (${pendentes.length})</p>
-        ${pendentes.map(r=>tiCard(r,true)).join("")}
-      </div>`:""}
-      ${confirmados.length?`<div>
-        <p style="font-size:12px;font-weight:800;color:${c.green};text-transform:uppercase;margin-bottom:10px">✅ Confirmados (${confirmados.length})</p>
-        ${confirmados.map(r=>tiCard(r,false)).join("")}
-      </div>`:""}
-      ${!audioVisuais.length?`<div style="text-align:center;padding:40px;color:${c.textMuted}"><p style="font-size:32px">🔊</p><p style="margin-top:12px">Nenhum agendamento de Som, Microfone e Projetor.</p></div>`:""}
+      ${pendentes.length&&_TI.aba==="todos"?`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="window._TI.aba='minhas';re()"><p style="font-size:13px;font-weight:700;color:#c2410c">⏳ ${pendentes.length} agendamento${pendentes.length===1?"":"s"} aguardando aprovação — Ver agora →</p></div>`:""}
+      ${corpo}
     </div>
   </div>`;
 }
