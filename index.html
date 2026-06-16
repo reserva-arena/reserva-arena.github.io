@@ -1721,6 +1721,30 @@ window.maSalvar=async()=>{
 
     // 5. Commit do batch — uma única operação de rede!
     await batch.commit();
+
+    // 6. Notificações push para equipes responsáveis
+    try {
+      const dataFmt=data.split("-").reverse().join("/");
+      const horFmt=blocos[0]?.horario||"";
+      const profNome=_usuario?.nome||"Professor";
+
+      // Marketing: agendamento com foto, vídeo ou espaço Equipe de Marketing
+      if(temMidia){
+        const msgMK=`📸 Nova solicitação de ${(blocos[0]?.precisaFoto&&blocos[0]?.precisaVideo)?"foto e vídeo":blocos[0]?.precisaFoto?"foto":"vídeo"}\n${profNome} · ${eoSalvar?.tipo==="marketing"?(blocos[0]?.salaAtividade||espaco):espaco} · ${dataFmt} às ${horFmt}`;
+        _usuarios.filter(u=>(u.perfil==="marketing"||u.perfil==="fotografo")&&u.fcmToken&&u.ativo!==false).forEach(u=>{
+          fetch("https://fcm.googleapis.com/fcm/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:u.fcmToken,notification:{title:"📸 Reserva Arena — Marketing",body:msgMK}})}).catch(()=>{});
+        });
+      }
+
+      // TI: agendamento de Som, Microfone e Projetor pendente
+      if(st==="pendente"&&eoSalvar?.tipo==="audiovisual"){
+        const msgTI=`🔊 Novo agendamento pendente\n${profNome} · ${espaco} · ${dataFmt} às ${horFmt}`;
+        _usuarios.filter(u=>u.perfil==="ti"&&u.fcmToken&&u.ativo!==false).forEach(u=>{
+          fetch("https://fcm.googleapis.com/fcm/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:u.fcmToken,notification:{title:"💻 Reserva Arena — T.I.",body:msgTI}})}).catch(()=>{});
+        });
+      }
+    } catch(ne){ console.warn("Notificação push falhou:",ne); }
+
     _MA.sucesso=st;_MA.salvando=false;re();
 
   }catch(e){
