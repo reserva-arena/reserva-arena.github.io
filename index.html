@@ -516,6 +516,7 @@ window.recuperarSenha=async()=>{
 // ════════════════════════════════════════════════════════════════════════════
 // FOTÓGRAFO
 // ════════════════════════════════════════════════════════════════════════════
+window.mkSetAba=(v)=>{if(!window._MK)window._MK={aba:"minhas",historico:false};_MK.aba=v;re();};
 function renderMarketingInline(){
   const c=C(),h=fmtHoje();
   if(!window._MK)window._MK={aba:"minhas",historico:false};
@@ -553,7 +554,7 @@ function renderMarketingInline(){
   const minhas=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&(_MK.historico||r.data>=h)&&r.status!=="recusado").sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
   const pendentes=minhas.filter(r=>r.statusMarketing==="pendente"||!r.statusMarketing);
   const aprovados=minhas.filter(r=>r.statusMarketing==="aprovado");
-  const btnAba=(id,l)=>`<button onclick="window._MK.aba='${id}';re()" style="padding:7px 16px;font-size:12.5px;border-radius:8px;border:1.5px solid ${_MK.aba===id?'#7c3aed':c.border};background:${_MK.aba===id?'#7c3aed':'transparent'};color:${_MK.aba===id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${l}</button>`;
+  const btnAba=(id,l)=>`<button onclick="mkSetAba('${id}')" style="padding:7px 16px;font-size:12.5px;border-radius:8px;border:1.5px solid ${_MK.aba===id?'#7c3aed':c.border};background:${_MK.aba===id?'#7c3aed':'transparent'};color:${_MK.aba===id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${l}</button>`;
   let corpo="";
   if(_MK.aba==="minhas"){
     if(pendentes.length)corpo+=`<div style="margin-bottom:20px"><div style="margin-bottom:10px"><span style="background:#7c3aed;color:#fff;font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px">⏳ PENDENTES — ${pendentes.length}</span></div>${pendentes.map(r=>mkCard(r,true)).join("")}</div>`;
@@ -570,7 +571,7 @@ function renderMarketingInline(){
       <div style="display:flex;gap:6px">${btnAba("minhas","📸 Minhas solicitações")}${btnAba("todos","📅 Todos agendamentos")}</div>
       <button onclick="window._MK.historico=!window._MK.historico;re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_MK.historico?c.navy:'transparent'};color:${_MK.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_MK.historico?"Ocultar hist.":"Ver histórico"}</button>
     </div>
-    ${pendentes.length&&_MK.aba==="todos"?`<div style="background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="window._MK.aba='minhas';re()"><p style="font-size:13px;font-weight:700;color:#7c3aed">⏳ ${pendentes.length} solicitaç${pendentes.length===1?"ão":"ões"} aguardando aprovação — Ver agora →</p></div>`:""}
+    ${pendentes.length&&_MK.aba==="todos"?`<div style="background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="mkSetAba('minhas')"><p style="font-size:13px;font-weight:700;color:#7c3aed">⏳ ${pendentes.length} solicitaç${pendentes.length===1?"ão":"ões"} aguardando aprovação — Ver agora →</p></div>`:""}
     ${corpo}
   </div>`;
 }
@@ -578,7 +579,8 @@ function renderMarketingInline(){
 function renderTIInline(){
   const c=C(),h=fmtHoje();
   if(!window._TI)window._TI={aba:"minhas",historico:false};
-  const btnAba=(id,l)=>`<button onclick="window._TI.aba='${id}';re()" style="padding:7px 16px;font-size:12.5px;border-radius:8px;border:1.5px solid ${_TI.aba===id?'#0369a1':c.border};background:${_TI.aba===id?'#0369a1':'transparent'};color:${_TI.aba===id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${l}</button>`;
+  const btnAba=(id,l)=>`<button onclick="tiSetAba('${id}')" style="padding:7px 16px;font-size:12.5px;border-radius:8px;border:1.5px solid ${_TI.aba===id?'#0369a1':c.border};background:${_TI.aba===id?'#0369a1':'transparent'};color:${_TI.aba===id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${l}</button>`;
+  window.tiSetAba=(v)=>{_TI.aba=v;re();};
   const minhas=_todas.filter(r=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);return eo?.tipo==="audiovisual"&&(_TI.historico||r.data>=h)&&!r.reservaAutomatica;}).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
   const pendentes=minhas.filter(r=>r.status==="pendente");
   const confirmados=minhas.filter(r=>r.status==="confirmado");
@@ -598,7 +600,7 @@ function renderTIInline(){
       <div style="display:flex;gap:6px">${btnAba("minhas","🔊 Minhas solicitações")}${btnAba("todos","📅 Todos agendamentos")}</div>
       <button onclick="window._TI.historico=!window._TI.historico;re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_TI.historico?c.navy:'transparent'};color:${_TI.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_TI.historico?"Ocultar hist.":"Ver histórico"}</button>
     </div>
-    ${pendentes.length&&_TI.aba==="todos"?`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="window._TI.aba='minhas';re()"><p style="font-size:13px;font-weight:700;color:#c2410c">⏳ ${pendentes.length} agendamento${pendentes.length===1?"":"s"} aguardando aprovação — Ver agora →</p></div>`:""}
+    ${pendentes.length&&_TI.aba==="todos"?`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="tiSetAba('minhas')"><p style="font-size:13px;font-weight:700;color:#c2410c">⏳ ${pendentes.length} agendamento${pendentes.length===1?"":"s"} aguardando aprovação — Ver agora →</p></div>`:""}
     ${corpo}
   </div>`;
 }
@@ -669,7 +671,7 @@ function renderMarketing(){
         <div style="display:flex;gap:6px">${btnAba("minhas","📸 Minhas solicitações")}${btnAba("todos","📅 Todos agendamentos")}</div>
         <button onclick="window._MK.historico=!window._MK.historico;re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_MK.historico?c.navy:'transparent'};color:${_MK.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_MK.historico?"Ocultar hist.":"Ver histórico"}</button>
       </div>
-      ${pendentes.length&&_MK.aba==="todos"?`<div style="background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="window._MK.aba='minhas';re()"><p style="font-size:13px;font-weight:700;color:#7c3aed">⏳ ${pendentes.length} solicitaç${pendentes.length===1?"ão":"ões"} aguardando sua aprovação — Ver agora →</p></div>`:""}
+      ${pendentes.length&&_MK.aba==="todos"?`<div style="background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="mkSetAba('minhas')"><p style="font-size:13px;font-weight:700;color:#7c3aed">⏳ ${pendentes.length} solicitaç${pendentes.length===1?"ão":"ões"} aguardando sua aprovação — Ver agora →</p></div>`:""}
       ${corpo}
     </div>
   </div>`;
@@ -738,7 +740,7 @@ function renderTI(){
         <div style="display:flex;gap:6px">${btnAba("minhas","🔊 Minhas solicitações")}${btnAba("todos","📅 Todos agendamentos")}</div>
         <button onclick="window._TI.historico=!window._TI.historico;re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_TI.historico?c.navy:'transparent'};color:${_TI.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_TI.historico?"Ocultar hist.":"Ver histórico"}</button>
       </div>
-      ${pendentes.length&&_TI.aba==="todos"?`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="window._TI.aba='minhas';re()"><p style="font-size:13px;font-weight:700;color:#c2410c">⏳ ${pendentes.length} agendamento${pendentes.length===1?"":"s"} aguardando aprovação — Ver agora →</p></div>`:""}
+      ${pendentes.length&&_TI.aba==="todos"?`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="tiSetAba('minhas')"><p style="font-size:13px;font-weight:700;color:#c2410c">⏳ ${pendentes.length} agendamento${pendentes.length===1?"":"s"} aguardando aprovação — Ver agora →</p></div>`:""}
       ${corpo}
     </div>
   </div>`;
