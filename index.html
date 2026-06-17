@@ -87,28 +87,34 @@ try { _messaging = getMessaging(app); } catch(e) { console.warn('FCM não dispon
 const VAPID_KEY = 'BLa94Zm3M-nrytcapsPLPcMYMCkbe11OOAo-DJwUPZE6qzrYxFHRwW_E0aeysaN1BXmGgL4SRUUtO-pTRINzBNc';
 
 async function iniciarNotificacoes(userId) {
-  if (!_messaging || !('Notification' in window)) return;
+  if (!_messaging || !('Notification' in window)) {
+    console.warn('FCM: messaging indisponível ou Notification não suportado');
+    return;
+  }
   try {
-    // Registrar o SW do FCM
     const swReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
+    console.log('FCM SW registrado:', swReg.scope);
     const perm = await Notification.requestPermission();
-    if (perm !== 'granted') { console.log('Notificações negadas'); return; }
+    console.log('FCM permissão:', perm);
+    if (perm !== 'granted') return;
     const fcmToken = await getToken(_messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
+    console.log('FCM token:', fcmToken ? fcmToken.slice(0,20)+'...' : 'VAZIO');
     if (fcmToken) {
       await updateDoc(doc(db, 'usuarios', userId), { fcmToken });
-      console.log('✅ FCM token salvo');
+      console.log('✅ FCM token salvo no Firestore');
+    } else {
+      console.warn('FCM: token vazio — verifique VAPID key e SW');
     }
-    // Notificação em foreground (app aberto)
     onMessage(_messaging, payload => {
       const { title, body } = payload.notification || {};
       if (title) {
-        const n = new Notification(title, {
-          body, icon: '/icon-192.png', badge: '/icon-192.png'
-        });
+        const n = new Notification(title, { body, icon: '/icon-192.png', badge: '/icon-192.png' });
         n.onclick = () => { window.focus(); n.close(); };
       }
     });
-  } catch(e) { console.warn('FCM erro:', e); }
+  } catch(e) {
+    console.warn('FCM erro:', e.code, e.message);
+  }
 }
 
 // ─── CONSTANTES ──────────────────────────────────────────────────────────────
