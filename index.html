@@ -1858,10 +1858,11 @@ window.maSalvar=async()=>{
           eqPromises.push(
             getDocs(query(collection(db,"reservas"),where("espaco","==",nomeEquip),where("data","==",data),where("horario","==",h)))
             .then(snap=>({nomeEquip,h,snap}))
+            .catch(()=>({nomeEquip,h,snap:{docs:[]}}))
           );
         }
       }
-      const eqResults=await Promise.all(eqPromises);
+      const eqResults=await Promise.all(eqPromises).catch(()=>[]);
       eqResults.forEach(({nomeEquip,h,snap})=>{
         if(!equipSnaps[nomeEquip])equipSnaps[nomeEquip]={};
         equipSnaps[nomeEquip][h]=!snap.docs.find(d=>d.data()?.status!=="recusado");
@@ -1953,7 +1954,10 @@ window.maSalvar=async()=>{
     }
 
     // 5. Commit do batch — uma única operação de rede!
-    await batch.commit();
+    await Promise.race([
+      batch.commit(),
+      new Promise((_,rej)=>setTimeout(()=>rej(new Error("Timeout ao salvar")),15000))
+    ]);
     _MA.sucesso=st;_MA.salvando=false;re();
 
     // 6. Notificações push (background) para equipes responsáveis
