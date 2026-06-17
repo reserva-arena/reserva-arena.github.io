@@ -86,7 +86,50 @@ try { _messaging = getMessaging(app); } catch(e) { console.warn('FCM não dispon
 // VAPID_KEY será substituída quando o usuário fornecer
 const VAPID_KEY = 'BLa94Zm3M-nrytcapsPLPcMYMCkbe11OOAo-DJwUPZE6qzrYxFHRwW_E0aeysaN1BXmGgL4SRUUtO-pTRINzBNc';
 
-window.ativarNotificacoes=async()=>{const uid=_usuario?.uid;if(!uid){alert("Faça login primeiro.");return;}if(!("Notification" in window)){alert("Seu navegador não suporta notificações.");return;}try{const btn=document.getElementById("btn-ativar-notif");if(btn){btn.textContent="⏳ Ativando...";btn.disabled=true;}const swReg=await navigator.serviceWorker.register("/firebase-messaging-sw.js",{scope:"/"});const perm=await Notification.requestPermission();if(perm!=="granted"){if(btn){btn.textContent="🔔 Ativar notificações";btn.disabled=false;}alert("Permissão negada. Ative nas configurações do dispositivo.");return;}const fcmToken=await getToken(_messaging,{vapidKey:VAPID_KEY,serviceWorkerRegistration:swReg});if(fcmToken){await updateDoc(doc(db,"usuarios",uid),{fcmToken});if(btn){btn.textContent="✅ Notificações ativas!";btn.style.background="#1a6b47";btn.style.color="#fff";}setTimeout(()=>re(),1500);}else{if(btn){btn.textContent="🔔 Ativar notificações";btn.disabled=false;}alert("Não foi possível ativar. Tente novamente.");}}catch(e){console.warn("FCM erro:",e);const btn=document.getElementById("btn-ativar-notif");if(btn){btn.textContent="🔔 Ativar notificações";btn.disabled=false;}alert("Erro: "+e.message);}};
+window.ativarNotificacoes=async()=>{
+  const uid=_usuario?.uid;
+  if(!uid){alert("Faça login primeiro.");return;}
+  if(!("Notification" in window)){alert("Seu navegador não suporta notificações.");return;}
+  const btn=document.getElementById("btn-ativar-notif");
+  try{
+    if(btn){btn.textContent="⏳ Ativando...";btn.disabled=true;}
+    // Pedir permissão primeiro
+    const perm=await Notification.requestPermission();
+    if(perm!=="granted"){
+      if(btn){btn.textContent="🔔 Ativar notificações";btn.disabled=false;}
+      alert("Permissão negada. Vá em Configurações → Reserva Arena → Notificações e ative.");
+      return;
+    }
+    // Registrar SW e aguardar estar ativo
+    const swReg=await navigator.serviceWorker.register("/firebase-messaging-sw.js",{scope:"/"});
+    await navigator.serviceWorker.ready;
+    // Tentar obter token sem passar serviceWorkerRegistration (compatibilidade iOS)
+    let fcmToken=null;
+    try{
+      fcmToken=await getToken(_messaging,{vapidKey:VAPID_KEY,serviceWorkerRegistration:swReg});
+    }catch(e1){
+      console.warn("FCM tentativa 1 falhou:",e1.message);
+      try{
+        fcmToken=await getToken(_messaging,{vapidKey:VAPID_KEY});
+      }catch(e2){
+        console.warn("FCM tentativa 2 falhou:",e2.message);
+        throw e2;
+      }
+    }
+    if(fcmToken){
+      await updateDoc(doc(db,"usuarios",uid),{fcmToken});
+      if(btn){btn.textContent="✅ Notificações ativas!";btn.style.background="#1a6b47";btn.style.color="#fff";btn.style.border="none";}
+      setTimeout(()=>re(),2000);
+    }else{
+      if(btn){btn.textContent="🔔 Ativar notificações";btn.disabled=false;}
+      alert("Não foi possível obter token. Tente novamente.");
+    }
+  }catch(e){
+    console.warn("FCM erro:",e.code,e.message);
+    if(btn){btn.textContent="🔔 Ativar notificações";btn.disabled=false;}
+    alert("Erro ao ativar: "+e.message);
+  }
+};
 async function iniciarNotificacoes(userId) {
   if (!_messaging || !('Notification' in window)) {
     console.warn('FCM: messaging indisponível ou Notification não suportado');
