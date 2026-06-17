@@ -1496,14 +1496,23 @@ function maBlocoMultiHTML(b,i,eo){
     return turmasOk&&!!b.conteudo;
   };
 
-  // Helper para select de turma
-  const selTurma=(horario,val)=>`
-    <select onchange="maSetTurmaPorHorario(${i},'${horario}',this.value)" style="${sel()};font-size:13px;padding:7px 10px">
+  // Helper para select de turma (com propagação automática da turma anterior)
+  const selTurma=(horario,val)=>{
+    // Se vazio, herda a última turma selecionada nos horários anteriores
+    if(!val&&b.horario&&b.horarioFim){
+      const range=horariosRange(b.horario,b.horarioFim);
+      for(let k=range.indexOf(horario)-1;k>=0;k--){
+        const prev=b.turmasPorHorario?.[range[k]];
+        if(prev){val=prev;if(!b.turmasPorHorario)b.turmasPorHorario={};b.turmasPorHorario[horario]=val;break;}
+      }
+    }
+    return`<select onchange="maSetTurmaPorHorario(${i},'${horario}',this.value)" style="${sel()};font-size:13px;padding:7px 10px">
       <option value="">Turma...</option>
       <optgroup label="Ed. Infantil">${TURMAS_EDUCACAO_INFANTIL.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup>
       <optgroup label="Fund. 1">${TURMAS_FUND1.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup>
       <optgroup label="Fund. 2">${TURMAS_FUND2.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup>
     </select>`;
+  };
 
   let html=`<div style="background:${c.bg};border:1.5px solid ${bValMulti(b)?c.blueMid+"55":c.border};border-radius:12px;padding:16px;margin-bottom:12px">
     <div style="display:grid;gap:14px">`;
