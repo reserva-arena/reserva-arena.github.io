@@ -1879,8 +1879,18 @@ window.maSetBloco=(i,k,v)=>{_MA.blocos[i][k]=v;};
 window.maIncEquip=(i,campo,max)=>{_MA.blocos[i][campo]=Math.min(max,(_MA.blocos[i][campo]||0)+1);re();};
 window.maDecEquip=(i,campo)=>{_MA.blocos[i][campo]=Math.max(0,(_MA.blocos[i][campo]||0)-1);re();};
 window.maSetTurmaPorHorario=(i,horario,turma)=>{
-  if(!_MA.blocos[i].turmasPorHorario)_MA.blocos[i].turmasPorHorario={};
-  _MA.blocos[i].turmasPorHorario[horario]=turma;
+  const b=_MA.blocos[i];
+  if(!b.turmasPorHorario)b.turmasPorHorario={};
+  b.turmasPorHorario[horario]=turma;
+  // Preencher horários seguintes que ainda estão vazios com a mesma turma
+  if(turma&&b.horario&&b.horarioFim){
+    const range=horariosRange(b.horario,b.horarioFim);
+    let passou=false;
+    for(const h of range){
+      if(h===horario){passou=true;continue;}
+      if(passou&&!b.turmasPorHorario[h])b.turmasPorHorario[h]=turma;
+    }
+  }
   re();
 };
 window.maSetBlocoRe=(i,k,v)=>{_MA.blocos[i][k]=v;re();};
