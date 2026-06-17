@@ -1878,8 +1878,9 @@ window.maSalvar=async()=>{
 
     // 5. Commit do batch — uma única operação de rede!
     await batch.commit();
+    _MA.sucesso=st;_MA.salvando=false;re();
 
-    // 6. Notificações push para equipes responsáveis
+    // 6. Notificações push (background) para equipes responsáveis
     try {
       const dataFmt=data.split("-").reverse().join("/");
       const horFmt=blocos[0]?.horario||"";
@@ -1907,9 +1908,7 @@ window.maSalvar=async()=>{
       _usuarios.filter(u=>u.perfil==="admin"&&u.fcmToken&&u.ativo!==false).forEach(u=>{
         fetch("https://fcm.googleapis.com/fcm/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:u.fcmToken,notification:{title:"📅 Reserva Arena",body:msgAdmin}})}).catch(()=>{});
       });
-    } catch(ne){ console.warn("Notificação push falhou:",ne); }
-
-    _MA.sucesso=st;_MA.salvando=false;re();
+    } catch(ne){ console.warn("Push:",ne); }
 
   }catch(e){
     console.error(e);
