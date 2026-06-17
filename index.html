@@ -1159,6 +1159,15 @@ window.pClicarDia=data=>{
     _P.diaSel=_P.diaSel===data?null:data;re();
   }
 };
+// Função de limpeza — use no console: limparHorariosTravados("Lab. de Matemática","2026-06-17")
+window.limparHorariosTravados=async(espaco,data)=>{
+  const snap=await getDocs(query(collection(db,"reservas"),where("espaco","==",espaco),where("data","==",data)));
+  if(!snap.docs.length){console.log("Nenhuma reserva encontrada");return;}
+  const b=writeBatch(db);
+  snap.docs.forEach(d=>b.delete(doc(db,"reservas",d.id)));
+  await b.commit();
+  console.log(`✅ ${snap.docs.length} reservas removidas de ${espaco} em ${data}`);
+};
 window.cancelarR=async id=>{
   if(!confirm("Cancelar esta reserva?"))return;
   // Buscar a reserva principal para saber espaco, data, horario
@@ -2374,7 +2383,16 @@ window.aSetModo=v=>{_A.modoVisu=v;re();};
 window.aSetAba=v=>{_A.aba=v;re();};
 window.aNavMes=dir=>{let nm=_A.mesCal.m+dir,na=_A.mesCal.a;if(nm>11){nm=0;na++;}if(nm<0){nm=11;na--;}_A.mesCal={a:na,m:nm};_A.diaSel=null;re();};
 window.aModerar=async(id,status)=>{if(!confirm(`${status==="confirmado"?"Aprovar":"Recusar"} esta reserva?`))return;await updateDoc(doc(db,"reservas",id),{status});};
-window.aExcluir=async id=>{if(!confirm("Excluir esta reserva?"))return;await deleteDoc(doc(db,"reservas",id));};
+window.aExcluir=async id=>{
+  if(!confirm("Excluir esta reserva?"))return;
+  const r=_todas.find(r=>r.id===id);
+  if(!r){await deleteDoc(doc(db,"reservas",id));return;}
+  const b=writeBatch(db);
+  b.delete(doc(db,"reservas",id));
+  _todas.filter(a=>a.reservaAutomatica&&a.espaco===r.espaco&&a.data===r.data&&a.professorId===r.professorId)
+    .forEach(a=>b.delete(doc(db,"reservas",a.id)));
+  await b.commit();
+};
 
 // ════════════════════════════════════════════════════════════════════════════
 // GERENCIAR USUÁRIOS
