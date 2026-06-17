@@ -47,6 +47,8 @@ select option{font-family:'DM Sans',system-ui,sans-serif}
   #main-content{padding:6px 4px!important}
   h1{font-size:15px!important}
 }
+  @media(min-width:600px){#header-nome-block{display:block!important}}
+  @media(max-width:599px){.header-nome{display:none!important}}
 </style>
 </head>
 <body>
@@ -836,11 +838,11 @@ function renderApp(){
       </div>
       <div style="display:flex;align-items:center;gap:8px">
         <button onclick="irInicio()" title="Início" style="background:${_dark?c.surface:'rgba(255,255,255,.15)'};border:1.5px solid ${_dark?c.border:'rgba(255,255,255,.3)'};border-radius:20px;padding:4px 10px;height:34px;cursor:pointer;display:flex;align-items:center;gap:5px;font-size:15px;flex-shrink:0;font-family:inherit">🏠</button>
-        ${isAdmin?`<select onchange="setAdminVisu(this.value)" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);border-radius:20px;padding:4px 10px;height:34px;cursor:pointer;font-size:12px;font-family:inherit;font-weight:700;color:#fff;outline:none"><option value="admin" ${_adminVisu==="admin"?"selected":""} style="color:#132318;background:#fff">🔧 Admin</option><option value="professor" ${_adminVisu==="professor"?"selected":""} style="color:#132318;background:#fff">👨‍🏫 Prof.</option><option value="ti" ${_adminVisu==="ti"?"selected":""} style="color:#132318;background:#fff">💻 T.I.</option><option value="marketing" ${_adminVisu==="marketing"?"selected":""} style="color:#132318;background:#fff">📸 Marketing</option></select>`:""}
-        ${avatarHTML(_usuario?.nome,30,isAdmin?"purple":"navy")}
-        <div class="header-nome" style="line-height:1.2"><p style="font-size:13px;font-weight:700;color:${_dark?c.navy:'#ffffff'}">${_usuario?.nome||""}</p><p style="font-size:10px;color:${_dark?(isAdmin?"#6d28d9":c.blueMid):'rgba(255,255,255,.8)'};font-weight:700;text-transform:uppercase">${_usuario?.perfil||""}</p></div>
-        <button onclick="location.reload()" title="Atualizar" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:34px;height:34px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0">🔄</button>
-        <button onclick="toggleDark()" title="${_dark?'Modo claro':'Modo escuro'}" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:34px;height:34px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0">${_dark?"☀️":"🌙"}</button>
+        ${isAdmin?`<select onchange="setAdminVisu(this.value)" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);border-radius:20px;padding:4px 8px;height:32px;cursor:pointer;font-size:11px;font-family:inherit;font-weight:700;color:#fff;outline:none;max-width:110px"><option value="admin" ${_adminVisu==="admin"?"selected":""} style="color:#132318;background:#fff">🔧 Admin</option><option value="professor" ${_adminVisu==="professor"?"selected":""} style="color:#132318;background:#fff">👨‍🏫 Prof.</option><option value="ti" ${_adminVisu==="ti"?"selected":""} style="color:#132318;background:#fff">💻 T.I.</option><option value="marketing" ${_adminVisu==="marketing"?"selected":""} style="color:#132318;background:#fff">📸 Mkt</option></select>`:""}
+        ${avatarHTML(_usuario?.nome,28,isAdmin?"purple":"navy")}
+        <div class="header-nome" style="line-height:1.2;display:none" id="header-nome-block"><p style="font-size:12px;font-weight:700;color:${_dark?c.navy:'#ffffff'}">${_usuario?.nome||""}</p><p style="font-size:10px;color:${_dark?(isAdmin?"#6d28d9":c.blueMid):'rgba(255,255,255,.8)'};font-weight:700;text-transform:uppercase">${_usuario?.perfil||""}</p></div>
+        <button onclick="location.reload()" title="Atualizar" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0">🔄</button>
+        <button onclick="toggleDark()" title="${_dark?'Modo claro':'Modo escuro'}" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0">${_dark?"☀️":"🌙"}</button>
         <button onclick="doSignOut()" style="background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.3);border-radius:20px;color:rgba(255,255,255,.9);font-size:12px;font-weight:700;padding:5px 10px;cursor:pointer;font-family:inherit;flex-shrink:0">Sair</button>
       </div>
     </header>
