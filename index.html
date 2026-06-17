@@ -1114,7 +1114,7 @@ const bVazio=()=>({
   horario:"",horarioFim:"",
   turma:"",turmaInicio:"",turmaFim:"",
   conteudo:"",paginas:"",laboratorista:"",quantidade:1,
-  precisaFoto:false,precisaVideo:false,objetivoMidia:"",descritivo:"",salaAtividade:"",observacoes:"",localMontagem:"",
+  precisaFoto:false,precisaVideo:false,objetivoMidia:"",descritivo:"",salaAtividade:"",observacoes:"",localMontagem:"",bibMic:0,bibCaixa:0,bibProj:0,
   microfones:0,caixasom:0,projetor:0,
   multTablets:0,multNotebooks:0,multProjetor:0,
   tipoAtividade:"",
@@ -1230,10 +1230,24 @@ function renderProfAgendar(){
     if(_espacosComAV.includes(m.espaco)){
       html+=`<div style="background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:10px;padding:12px 14px;margin-bottom:14px">
         <p style="font-size:13px;font-weight:800;color:#0369a1;margin-bottom:6px">🔊 Precisa de Som, Microfone e Projetor?</p>
-        <div style="display:flex;gap:8px">
+        <div style="display:flex;gap:8px;margin-bottom:${_MA.bibAV===true?'12px':'0'}">
           <button onclick="setBibAV(true)" style="flex:1;padding:9px;border-radius:8px;border:2px solid ${_MA.bibAV===true?'#0369a1':'#bae6fd'};background:${_MA.bibAV===true?'#e0f2fe':'#fff'};font-weight:700;font-size:13px;cursor:pointer;color:#0369a1">✓ Sim</button>
           <button onclick="setBibAV(false)" style="flex:1;padding:9px;border-radius:8px;border:2px solid ${_MA.bibAV===false?'#64748b':'#e2e8f0'};background:${_MA.bibAV===false?'#f1f5f9':'#fff'};font-weight:700;font-size:13px;cursor:pointer;color:#64748b">✕ Não</button>
         </div>
+        ${_MA.bibAV===true?`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:4px">
+          <div style="text-align:center">
+            <p style="font-size:10px;font-weight:700;color:#0369a1;text-transform:uppercase;margin-bottom:4px">🎤 Microfones</p>
+            <input type="number" min="0" max="10" value="${_MA.bibMic||0}" onchange="window._MA.bibMic=parseInt(this.value)||0" style="width:100%;padding:8px;border-radius:8px;border:1.5px solid #bae6fd;font-size:16px;font-weight:700;text-align:center;outline:none;box-sizing:border-box">
+          </div>
+          <div style="text-align:center">
+            <p style="font-size:10px;font-weight:700;color:#0369a1;text-transform:uppercase;margin-bottom:4px">🔊 Caixas</p>
+            <input type="number" min="0" max="10" value="${_MA.bibCaixa||0}" onchange="window._MA.bibCaixa=parseInt(this.value)||0" style="width:100%;padding:8px;border-radius:8px;border:1.5px solid #bae6fd;font-size:16px;font-weight:700;text-align:center;outline:none;box-sizing:border-box">
+          </div>
+          <div style="text-align:center">
+            <p style="font-size:10px;font-weight:700;color:#0369a1;text-transform:uppercase;margin-bottom:4px">📽️ Projetores</p>
+            <input type="number" min="0" max="5" value="${_MA.bibProj||0}" onchange="window._MA.bibProj=parseInt(this.value)||0" style="width:100%;padding:8px;border-radius:8px;border:1.5px solid #bae6fd;font-size:16px;font-weight:700;text-align:center;outline:none;box-sizing:border-box">
+          </div>
+        </div>`:""}
       </div>`;
     }
 
@@ -1807,7 +1821,7 @@ window.maSalvar=async()=>{
       local:b.local||"",localMontagem:b.local||"",localDevolucao:b.localDevolucao||"",
       quantidade:eo?.tipo==="equipamento"?Number(b.quantidade):null,
       microfones:Number(b.microfones)||0,caixasom:Number(b.caixasom)||0,projetor:Number(b.projetor)||0,
-      status:st,criadoEm:ts,precisaFoto:b.precisaFoto||false,precisaVideo:b.precisaVideo||false,objetivoMidia:b.objetivoMidia||"",descritivo:b.descritivo||"",salaAtividade:b.salaAtividade||"",...(statusMarketing?{statusMarketing}:{}),
+      status:st,criadoEm:ts,precisaFoto:b.precisaFoto||false,precisaVideo:b.precisaVideo||false,objetivoMidia:b.objetivoMidia||"",descritivo:b.descritivo||"",salaAtividade:b.salaAtividade||"",...(statusMarketing?{statusMarketing}:{}),...(_MA.bibAV===true?{bibMic:_MA.bibMic||0,bibCaixa:_MA.bibCaixa||0,bibProj:_MA.bibProj||0}:{}),
       paginas:"",laboratorista:"",reservaAutomatica:false,
       qtdTablets:Number(b.qtdTablets)||0,qtdNotebooks:Number(b.qtdNotebooks)||0,
     };
