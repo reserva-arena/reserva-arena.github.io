@@ -126,6 +126,7 @@ window.ativarNotificacoes=async()=>{
     }
     if(fcmToken){
       await updateDoc(doc(db,"usuarios",uid),{fcmToken});
+      if(_usuario)_usuario.fcmToken=fcmToken; // atualiza estado local
       if(btn){btn.textContent="✅ Notificações ativas!";btn.style.background="#1a6b47";btn.style.color="#fff";btn.style.border="none";}
       setTimeout(()=>re(),2000);
     }else{
