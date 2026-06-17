@@ -1301,15 +1301,15 @@ function renderProfAgendar(){
         ${_MA.bibAV===true?`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:4px">
           <div style="text-align:center">
             <p style="font-size:10px;font-weight:700;color:#0369a1;text-transform:uppercase;margin-bottom:4px">🎤 Microfones</p>
-            <input type="number" min="0" max="10" value="${_MA.bibMic||0}" onchange="window._MA.bibMic=parseInt(this.value)||0" style="width:100%;padding:8px;border-radius:8px;border:1.5px solid #bae6fd;font-size:16px;font-weight:700;text-align:center;outline:none;box-sizing:border-box">
+            <input type="number" min="0" max="10" value="${_MA.bibMic||0}" oninput="window._MA.bibMic=parseInt(this.value)||0" onblur="window._MA.bibMic=parseInt(this.value)||0;re()" style="width:100%;padding:8px;border-radius:8px;border:1.5px solid #bae6fd;font-size:16px;font-weight:700;text-align:center;outline:none;box-sizing:border-box">
           </div>
           <div style="text-align:center">
             <p style="font-size:10px;font-weight:700;color:#0369a1;text-transform:uppercase;margin-bottom:4px">🔊 Caixas</p>
-            <input type="number" min="0" max="10" value="${_MA.bibCaixa||0}" onchange="window._MA.bibCaixa=parseInt(this.value)||0" style="width:100%;padding:8px;border-radius:8px;border:1.5px solid #bae6fd;font-size:16px;font-weight:700;text-align:center;outline:none;box-sizing:border-box">
+            <input type="number" min="0" max="10" value="${_MA.bibCaixa||0}" oninput="window._MA.bibCaixa=parseInt(this.value)||0" onblur="window._MA.bibCaixa=parseInt(this.value)||0;re()" style="width:100%;padding:8px;border-radius:8px;border:1.5px solid #bae6fd;font-size:16px;font-weight:700;text-align:center;outline:none;box-sizing:border-box">
           </div>
           <div style="text-align:center">
             <p style="font-size:10px;font-weight:700;color:#0369a1;text-transform:uppercase;margin-bottom:4px">📽️ Projetores</p>
-            <input type="number" min="0" max="5" value="${_MA.bibProj||0}" onchange="window._MA.bibProj=parseInt(this.value)||0" style="width:100%;padding:8px;border-radius:8px;border:1.5px solid #bae6fd;font-size:16px;font-weight:700;text-align:center;outline:none;box-sizing:border-box">
+            <input type="number" min="0" max="5" value="${_MA.bibProj||0}" oninput="window._MA.bibProj=parseInt(this.value)||0" onblur="window._MA.bibProj=parseInt(this.value)||0;re()" style="width:100%;padding:8px;border-radius:8px;border:1.5px solid #bae6fd;font-size:16px;font-weight:700;text-align:center;outline:none;box-sizing:border-box">
           </div>
         </div>`:""}
       </div>`;
