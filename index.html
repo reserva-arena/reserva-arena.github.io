@@ -1159,7 +1159,23 @@ window.pClicarDia=data=>{
     _P.diaSel=_P.diaSel===data?null:data;re();
   }
 };
-window.cancelarR=async id=>{if(!confirm("Cancelar esta reserva?"))return;await deleteDoc(doc(db,"reservas",id));};
+window.cancelarR=async id=>{
+  if(!confirm("Cancelar esta reserva?"))return;
+  // Buscar a reserva principal para saber espaco, data, horario
+  const r=_todas.find(r=>r.id===id);
+  if(!r){await deleteDoc(doc(db,"reservas",id));return;}
+  // Deletar reserva principal
+  const b=writeBatch(db);
+  b.delete(doc(db,"reservas",id));
+  // Deletar todas as reservas automáticas do mesmo espaco+data+professor
+  _todas.filter(a=>
+    a.reservaAutomatica&&
+    a.espaco===r.espaco&&
+    a.data===r.data&&
+    a.professorId===r.professorId
+  ).forEach(a=>b.delete(doc(db,"reservas",a.id)));
+  await b.commit();
+};
 
 // ════════════════════════════════════════════════════════════════════════════
 // MODAL AGENDAR (inline no perfil professor)
