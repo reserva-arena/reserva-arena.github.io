@@ -86,6 +86,7 @@ try { _messaging = getMessaging(app); } catch(e) { console.warn('FCM não dispon
 // VAPID_KEY será substituída quando o usuário fornecer
 const VAPID_KEY = 'BLa94Zm3M-nrytcapsPLPcMYMCkbe11OOAo-DJwUPZE6qzrYxFHRwW_E0aeysaN1BXmGgL4SRUUtO-pTRINzBNc';
 
+window.ativarNotificacoes=async()=>{const uid=_usuario?.uid;if(!uid){alert("Faça login primeiro.");return;}if(!("Notification" in window)){alert("Seu navegador não suporta notificações.");return;}try{const btn=document.getElementById("btn-ativar-notif");if(btn){btn.textContent="⏳ Ativando...";btn.disabled=true;}const swReg=await navigator.serviceWorker.register("/firebase-messaging-sw.js",{scope:"/"});const perm=await Notification.requestPermission();if(perm!=="granted"){if(btn){btn.textContent="🔔 Ativar notificações";btn.disabled=false;}alert("Permissão negada. Ative nas configurações do dispositivo.");return;}const fcmToken=await getToken(_messaging,{vapidKey:VAPID_KEY,serviceWorkerRegistration:swReg});if(fcmToken){await updateDoc(doc(db,"usuarios",uid),{fcmToken});if(btn){btn.textContent="✅ Notificações ativas!";btn.style.background="#1a6b47";btn.style.color="#fff";}setTimeout(()=>re(),1500);}else{if(btn){btn.textContent="🔔 Ativar notificações";btn.disabled=false;}alert("Não foi possível ativar. Tente novamente.");}}catch(e){console.warn("FCM erro:",e);const btn=document.getElementById("btn-ativar-notif");if(btn){btn.textContent="🔔 Ativar notificações";btn.disabled=false;}alert("Erro: "+e.message);}};
 async function iniciarNotificacoes(userId) {
   if (!_messaging || !('Notification' in window)) {
     console.warn('FCM: messaging indisponível ou Notification não suportado');
@@ -904,6 +905,11 @@ function renderProfessorView(){
   const pendentes=_minhas.filter(r=>r.status==="pendente"&&!r.reservaAutomatica&&(!_P.filtroEspaco||r.espaco===_P.filtroEspaco));
 
   let html=`<div>`;
+
+  // Botão ativar notificações
+  if(!_usuario?.fcmToken){
+    html+=`<button id="btn-ativar-notif" onclick="ativarNotificacoes()" style="width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid #fde68a;background:#fffbeb;color:#92400e;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px;font-family:inherit">🔔 Toque aqui para ativar as notificações do app</button>`;
+  }
 
   html+=`<div class="kpi-3col" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:12px 12px 0;background:${c.surface};border-radius:14px;border:1px solid ${c.border};margin-bottom:20px">
     <button onclick="pSetModoProf('agendar')"
