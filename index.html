@@ -432,7 +432,12 @@ window.marcarTodasLidas=async()=>{
 
 function atualizarBadge(){
   const badge=document.getElementById('notif-badge');
+  const sino=document.getElementById('btn-notif-sino');
   if(badge){badge.textContent=_notifsNaoLidas;badge.style.display=_notifsNaoLidas>0?'flex':'none';}
+  if(sino){
+    sino.style.background=_notifsNaoLidas>0?'#ef4444':'rgba(255,255,255,.15)';
+    sino.style.borderColor=_notifsNaoLidas>0?'#ef4444':'rgba(255,255,255,.3)';
+  }
 }
 
 function renderNotifPanel(){
@@ -489,7 +494,7 @@ function renderPublica(){
     <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#0d2b1a,#1a6b47)"};border-bottom:1px solid ${_dark?c.border:"transparent"};padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(13,43,26,.25)">
       <div style="display:flex;align-items:center;gap:10px">${logoHTML(36)}<div style="min-width:0"><p style="font-size:12px;font-weight:800;color:#ffffff;white-space:nowrap">Reserva de Espaços</p><p style="font-size:10px;color:rgba(255,255,255,.75);white-space:nowrap">Colégio Arena</p></div></div>
       <div style="display:flex;gap:8px;align-items:center">
-        <button onclick="toggleNotifPanel()" title="Notificações" style="position:relative;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;flex-shrink:0">🔔<span id="notif-badge" style="display:none;position:absolute;top:-3px;right:-3px;background:#ef4444;color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:8px;align-items:center;justify-content:center;padding:0 3px">${_notifsNaoLidas}</span></button>
+        <button id="btn-notif-sino" onclick="toggleNotifPanel()" title="Notificações" style="position:relative;background:${_notifsNaoLidas>0?'#ef4444':'rgba(255,255,255,.15)'};border:1px solid ${_notifsNaoLidas>0?'#ef4444':'rgba(255,255,255,.3)'};border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;flex-shrink:0">🔔<span id="notif-badge" style="display:${_notifsNaoLidas>0?'flex':'none'};position:absolute;top:-3px;right:-3px;background:#fff;color:#ef4444;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:8px;align-items:center;justify-content:center;padding:0 3px">${_notifsNaoLidas}</span></button>
         <button onclick="location.reload()" title="Atualizar" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:34px;height:34px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center">🔄</button>
         <button onclick="toggleDark()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:34px;height:34px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center">${_dark?"☀️":"🌙"}</button>
         <button onclick="abrirLogin()" style="background:rgba(255,255,255,.15);color:#fff;border:1.5px solid rgba(255,255,255,.35);border-radius:8px;font-weight:700;cursor:pointer;padding:7px 14px;font-size:13px;font-family:inherit">Entrar</button>
