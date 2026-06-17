@@ -1299,18 +1299,15 @@ function renderProfAgendar(){
           <button onclick="setBibAV(false)" style="flex:1;padding:9px;border-radius:8px;border:2px solid ${_MA.bibAV===false?'#64748b':'#e2e8f0'};background:${_MA.bibAV===false?'#f1f5f9':'#fff'};font-weight:700;font-size:13px;cursor:pointer;color:#64748b">✕ Não</button>
         </div>
         ${_MA.bibAV===true?`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:4px">
-          <div style="text-align:center">
-            <p style="font-size:10px;font-weight:700;color:#0369a1;text-transform:uppercase;margin-bottom:4px">🎤 Microfones</p>
-            <input type="number" min="0" max="10" value="${_MA.bibMic||0}" oninput="window._MA.bibMic=parseInt(this.value)||0" onblur="window._MA.bibMic=parseInt(this.value)||0;re()" style="width:100%;padding:8px;border-radius:8px;border:1.5px solid #bae6fd;font-size:16px;font-weight:700;text-align:center;outline:none;box-sizing:border-box">
-          </div>
-          <div style="text-align:center">
-            <p style="font-size:10px;font-weight:700;color:#0369a1;text-transform:uppercase;margin-bottom:4px">🔊 Caixas</p>
-            <input type="number" min="0" max="10" value="${_MA.bibCaixa||0}" oninput="window._MA.bibCaixa=parseInt(this.value)||0" onblur="window._MA.bibCaixa=parseInt(this.value)||0;re()" style="width:100%;padding:8px;border-radius:8px;border:1.5px solid #bae6fd;font-size:16px;font-weight:700;text-align:center;outline:none;box-sizing:border-box">
-          </div>
-          <div style="text-align:center">
-            <p style="font-size:10px;font-weight:700;color:#0369a1;text-transform:uppercase;margin-bottom:4px">📽️ Projetores</p>
-            <input type="number" min="0" max="5" value="${_MA.bibProj||0}" oninput="window._MA.bibProj=parseInt(this.value)||0" onblur="window._MA.bibProj=parseInt(this.value)||0;re()" style="width:100%;padding:8px;border-radius:8px;border:1.5px solid #bae6fd;font-size:16px;font-weight:700;text-align:center;outline:none;box-sizing:border-box">
-          </div>
+          ${[{k:'bibMic',icon:'🎤',label:'Microfones',max:10},{k:'bibCaixa',icon:'🔊',label:'Caixas',max:10},{k:'bibProj',icon:'📽️',label:'Projetores',max:5}].map(eq=>`
+            <div style="text-align:center">
+              <p style="font-size:10px;font-weight:700;color:#0369a1;text-transform:uppercase;margin-bottom:6px">${eq.icon} ${eq.label}</p>
+              <div style="display:flex;align-items:center;justify-content:center;gap:0;border:1.5px solid #bae6fd;border-radius:10px;overflow:hidden">
+                <button onclick="window._MA['${eq.k}']=Math.max(0,(window._MA['${eq.k}']||0)-1);re()" style="width:36px;height:44px;border:none;background:#e0f2fe;color:#0369a1;font-size:20px;font-weight:700;cursor:pointer;flex-shrink:0">−</button>
+                <span style="flex:1;font-size:18px;font-weight:800;color:#0369a1;text-align:center">${_MA['${eq.k}']||0}</span>
+                <button onclick="window._MA['${eq.k}']=Math.min(${eq.max},(window._MA['${eq.k}']||0)+1);re()" style="width:36px;height:44px;border:none;background:#e0f2fe;color:#0369a1;font-size:20px;font-weight:700;cursor:pointer;flex-shrink:0">+</button>
+              </div>
+            </div>`).join("")}
         </div>`:""}
       </div>`;
     }
