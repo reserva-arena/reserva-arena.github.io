@@ -60,7 +60,7 @@ select option{font-family:'DM Sans',system-ui,sans-serif}
 <script type="module">
 import{initializeApp,getApps}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,onAuthStateChanged,sendPasswordResetEmail}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import{getFirestore,collection,addDoc,onSnapshot,doc,updateDoc,query,where,getDocs,orderBy,limit,Timestamp,setDoc,getDoc,deleteDoc,writeBatch}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import{getFirestore,collection,addDoc,onSnapshot,doc,updateDoc,query,where,getDocs,Timestamp,setDoc,getDoc,deleteDoc,writeBatch}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import{getMessaging,getToken,onMessage}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
 
 const firebaseConfig = {
@@ -395,76 +395,6 @@ function calMensalHTML(cid,ano,mes,porData,dataSel){
 
 // ─── ESTADO GLOBAL ────────────────────────────────────────────────────────────
 let _usuario=null,_todas=[],_minhas=[],_usuarios=[];
-let _notifs=[],_notifsNaoLidas=0,_notifPanelOpen=false;
-
-async function salvarNotificacao(uid,texto,tipo,reservaId=''){
-  if(!uid)return;
-  try{
-    await addDoc(collection(db,'notificacoes',uid,'items'),{
-      texto,tipo,reservaId,criadaEm:new Date().toISOString(),lida:false
-    });
-  }catch(e){console.warn('Notif salvar erro:',e);}
-}
-
-async function carregarNotificacoes(){
-  if(!_usuario?.uid)return;
-  try{
-    const snap=await getDocs(query(collection(db,'notificacoes',_usuario.uid,'items'),orderBy('criadaEm','desc'),limit(30)));
-    _notifs=snap.docs.map(d=>({id:d.id,...d.data()}));
-    _notifsNaoLidas=_notifs.filter(n=>!n.lida).length;
-  }catch(e){_notifs=[];_notifsNaoLidas=0;}
-}
-
-window.toggleNotifPanel=()=>{_notifPanelOpen=!_notifPanelOpen;renderNotifPanel();};
-
-window.fecharNotifPanel=()=>{_notifPanelOpen=false;renderNotifPanel();};
-
-window.marcarTodasLidas=async()=>{
-  if(!_usuario?.uid)return;
-  const unread=_notifs.filter(n=>!n.lida);
-  for(const n of unread){
-    try{await updateDoc(doc(db,'notificacoes',_usuario.uid,'items',n.id),{lida:true});}catch(e){}
-  }
-  await carregarNotificacoes();
-  renderNotifPanel();
-  atualizarBadge();
-};
-
-function atualizarBadge(){
-  const badge=document.getElementById('notif-badge');
-  const sino=document.getElementById('btn-notif-sino');
-  if(badge){badge.textContent=_notifsNaoLidas;badge.style.display=_notifsNaoLidas>0?'flex':'none';}
-  if(sino){
-    sino.style.background=_notifsNaoLidas>0?'#ef4444':'rgba(255,255,255,.15)';
-    sino.style.borderColor=_notifsNaoLidas>0?'#ef4444':'rgba(255,255,255,.3)';
-  }
-}
-
-function renderNotifPanel(){
-  const el=document.getElementById('notif-panel');
-  if(!el)return;
-  if(!_notifPanelOpen){el.style.display='none';return;}
-  const c=C();
-  el.style.display='flex';
-  const itens=_notifs.length?_notifs.map(n=>`
-    <div style="padding:10px 14px;border-bottom:1px solid ${c.border};background:${n.lida?'transparent':(c.bg)};border-radius:8px;margin-bottom:4px">
-      <p style="font-size:13px;color:${c.text};white-space:pre-line">${n.texto}</p>
-      <p style="font-size:10px;color:${c.textMuted};margin-top:3px">${new Date(n.criadaEm).toLocaleString('pt-BR')}</p>
-    </div>`).join('')
-    :`<div style="text-align:center;padding:32px;color:${c.textMuted}"><p style="font-size:32px">🔔</p><p style="margin-top:8px;font-size:13px">Sem notificações</p></div>`;
-  el.innerHTML=`
-    <div style="position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:998" onclick="fecharNotifPanel()"></div>
-    <div style="position:fixed;top:60px;right:8px;width:min(360px,calc(100vw - 16px));max-height:70vh;background:${c.surface};border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.2);z-index:999;display:flex;flex-direction:column;overflow:hidden">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid ${c.border}">
-        <p style="font-weight:800;font-size:14px;color:${c.text}">🔔 Notificações</p>
-        <div style="display:flex;gap:8px;align-items:center">
-          ${_notifsNaoLidas>0?`<button onclick="marcarTodasLidas()" style="font-size:11px;color:#1a6b47;background:none;border:none;cursor:pointer;font-weight:700">Marcar todas lidas</button>`:''}
-          <button onclick="fecharNotifPanel()" style="background:none;border:none;font-size:18px;cursor:pointer;color:${c.textMuted}">✕</button>
-        </div>
-      </div>
-      <div style="overflow-y:auto;padding:8px">${itens}</div>
-    </div>`;
-}
 let _unsub1=null,_unsub2=null,_unsub3=null;
 
 function re(){
@@ -494,7 +424,6 @@ function renderPublica(){
     <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#0d2b1a,#1a6b47)"};border-bottom:1px solid ${_dark?c.border:"transparent"};padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(13,43,26,.25)">
       <div style="display:flex;align-items:center;gap:10px">${logoHTML(36)}<div style="min-width:0"><p style="font-size:12px;font-weight:800;color:#ffffff;white-space:nowrap">Reserva de Espaços</p><p style="font-size:10px;color:rgba(255,255,255,.75);white-space:nowrap">Colégio Arena</p></div></div>
       <div style="display:flex;gap:8px;align-items:center">
-        <button id="btn-notif-sino" onclick="toggleNotifPanel()" title="Notificações" style="position:relative;background:${_notifsNaoLidas>0?'#ef4444':'rgba(255,255,255,.15)'};border:1px solid ${_notifsNaoLidas>0?'#ef4444':'rgba(255,255,255,.3)'};border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;flex-shrink:0">🔔<span id="notif-badge" style="display:${_notifsNaoLidas>0?'flex':'none'};position:absolute;top:-3px;right:-3px;background:#fff;color:#ef4444;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:8px;align-items:center;justify-content:center;padding:0 3px">${_notifsNaoLidas}</span></button>
         <button onclick="location.reload()" title="Atualizar" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:34px;height:34px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center">🔄</button>
         <button onclick="toggleDark()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:34px;height:34px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center">${_dark?"☀️":"🌙"}</button>
         <button onclick="abrirLogin()" style="background:rgba(255,255,255,.15);color:#fff;border:1.5px solid rgba(255,255,255,.35);border-radius:8px;font-weight:700;cursor:pointer;padding:7px 14px;font-size:13px;font-family:inherit">Entrar</button>
@@ -826,8 +755,6 @@ window.mkAprovar=async(id)=>{
   if(r){
     const local=r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco;
     const dataFmt=r.data.split("-").reverse().join("/");
-    salvarNotificacao(r.professorId,`✅ Sua solicitação de foto/vídeo foi aprovada!
-📍 ${local} — ${dataFmt} às ${r.horario}`,"aprovado",id);
     const push=(tk,title,body)=>fetch("https://fcm.googleapis.com/fcm/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:tk,notification:{title,body}})}).catch(()=>{});
     _usuarios.filter(u=>u.uid===r.professorId&&u.fcmToken).forEach(u=>push(u.fcmToken,"📸 Marketing — Aprovado!",`✅ Sua solicitação de foto/vídeo foi aprovada!
 ${local} — ${dataFmt} às ${r.horario}`));
@@ -843,8 +770,6 @@ window.mkRecusar=async(id)=>{
   if(r){
     const local=r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco;
     const dataFmt=r.data.split("-").reverse().join("/");
-    salvarNotificacao(r.professorId,`❌ Sua solicitação de foto/vídeo não foi aprovada.
-📍 ${local} — ${dataFmt} às ${r.horario}`,"recusado",id);
     const push=(tk,title,body)=>fetch("https://fcm.googleapis.com/fcm/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:tk,notification:{title,body}})}).catch(()=>{});
     _usuarios.filter(u=>u.uid===r.professorId&&u.fcmToken).forEach(u=>push(u.fcmToken,"📸 Marketing — Recusado",`❌ Sua solicitação de foto/vídeo não foi aprovada.
 ${local} — ${dataFmt} às ${r.horario}`));
@@ -933,8 +858,6 @@ window.tiAprovar=async(id)=>{
     const dataFmt=r.data.split("-").reverse().join("/");
     // Professor
     const msgProf=`✅ Agendamento de ${r.espaco} aprovado pelo T.I.\n${dataFmt} às ${r.horario}`;
-    salvarNotificacao(r.professorId,`✅ Agendamento aprovado pelo T.I.!
-📍 ${r.espaco} — ${dataFmt} às ${r.horario}`,"aprovado",id);
     _usuarios.filter(u=>u.uid===r.professorId&&u.fcmToken).forEach(u=>{
       fetch("https://fcm.googleapis.com/fcm/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:u.fcmToken,notification:{title:"💻 T.I. — Aprovado!",body:msgProf}})}).catch(()=>{});
     });
@@ -954,8 +877,6 @@ window.tiRecusar=async(id)=>{
     const dataFmt=r.data.split("-").reverse().join("/");
     // Professor
     const msgProf=`❌ Agendamento de ${r.espaco} não aprovado pelo T.I.\n${dataFmt} às ${r.horario}`;
-    salvarNotificacao(r.professorId,`❌ Agendamento recusado pelo T.I.
-📍 ${r.espaco} — ${dataFmt} às ${r.horario}`,"recusado",id);
     _usuarios.filter(u=>u.uid===r.professorId&&u.fcmToken).forEach(u=>{
       fetch("https://fcm.googleapis.com/fcm/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:u.fcmToken,notification:{title:"💻 T.I. — Recusado",body:msgProf}})}).catch(()=>{});
     });
@@ -1005,10 +926,8 @@ function renderApp(){
     ${modalEdicaoHTML()}
     ${modalAgendarHTML()}
     ${modalGerenciarHTML()}
-  <div id="notif-panel" style="display:none"></div>
   </div>`;
   isAdmin?bindAdmin():bindProf();
-  carregarNotificacoes().then(()=>{atualizarBadge();renderNotifPanel();});
 }
 window.doSignOut=()=>signOut(auth);
 window.toggleAdminVisu=()=>{};
@@ -1317,7 +1236,7 @@ function renderProfAgendar(){
       <div style="width:64px;height:64px;border-radius:50%;background:${m.sucesso==="confirmado"?"#1a6b47":"#fff7ed"};color:${m.sucesso==="confirmado"?"#fff":"#7c2d12"};display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 16px">${m.sucesso==="confirmado"?"✓":"⏳"}</div>
       <h3 style="font-size:20px;font-weight:800;color:${m.sucesso==="confirmado"?c.green:c.amber};margin-bottom:8px">${m.sucesso==="confirmado"?"Confirmado!":"Pendente — aguardando aprovação"}</h3>
       <p style="font-size:13px;color:${c.textMuted};margin-bottom:${m.sucesso==="pendente"?"8px":"20px"}">${m.espaco} · ${m.data.split("-").reverse().join("/")}</p>
-      ${m.sucesso==="pendente"?`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:12px 14px;margin-bottom:20px;text-align:left"><p style="font-size:12px;color:#92400e;font-weight:700;margin-bottom:4px">⏳ O que acontece agora?</p><p style="font-size:12px;color:#92400e;line-height:1.5">A <strong>Equipe de Marketing</strong> vai analisar sua solicitação e confirmar ou recusar o horário. Você receberá uma notificação assim que houver uma resposta.</p></div>`:""}
+      ${m.sucesso==="pendente"&&(temMidia||eoSalvar?.tipo==="marketing")?`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:12px 14px;margin-bottom:20px;text-align:left"><p style="font-size:12px;color:#92400e;font-weight:700;margin-bottom:4px">⏳ O que acontece agora?</p><p style="font-size:12px;color:#92400e;line-height:1.5">A <strong>Equipe de Marketing</strong> vai analisar sua solicitação e confirmar ou recusar o horário. Você receberá uma notificação assim que houver uma resposta.</p></div>`:m.sucesso==="pendente"?`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:12px 14px;margin-bottom:20px;text-align:left"><p style="font-size:12px;color:#92400e;font-weight:700;margin-bottom:4px">⏳ O que acontece agora?</p><p style="font-size:12px;color:#92400e;line-height:1.5">Este agendamento precisa de aprovação pois foi feito com menos de 24h de antecedência. Você receberá uma notificação assim que for aprovado.</p></div>`:""}
       <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
         <button onclick="pSetModoProf('agendar')" style="${btn("success")};padding:10px 24px">＋ Novo agendamento</button>
         <button onclick="pSetModoProf('ver')" style="${btn("ghost")};padding:10px 24px">Ver agendamentos</button>
@@ -1496,23 +1415,14 @@ function maBlocoMultiHTML(b,i,eo){
     return turmasOk&&!!b.conteudo;
   };
 
-  // Helper para select de turma (com propagação automática da turma anterior)
-  const selTurma=(horario,val)=>{
-    // Se vazio, herda a última turma selecionada nos horários anteriores
-    if(!val&&b.horario&&b.horarioFim){
-      const range=horariosRange(b.horario,b.horarioFim);
-      for(let k=range.indexOf(horario)-1;k>=0;k--){
-        const prev=b.turmasPorHorario?.[range[k]];
-        if(prev){val=prev;if(!b.turmasPorHorario)b.turmasPorHorario={};b.turmasPorHorario[horario]=val;break;}
-      }
-    }
-    return`<select onchange="maSetTurmaPorHorario(${i},'${horario}',this.value)" style="${sel()};font-size:13px;padding:7px 10px">
+  // Helper para select de turma
+  const selTurma=(horario,val)=>`
+    <select onchange="maSetTurmaPorHorario(${i},'${horario}',this.value)" style="${sel()};font-size:13px;padding:7px 10px">
       <option value="">Turma...</option>
       <optgroup label="Ed. Infantil">${TURMAS_EDUCACAO_INFANTIL.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup>
       <optgroup label="Fund. 1">${TURMAS_FUND1.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup>
       <optgroup label="Fund. 2">${TURMAS_FUND2.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup>
     </select>`;
-  };
 
   let html=`<div style="background:${c.bg};border:1.5px solid ${bValMulti(b)?c.blueMid+"55":c.border};border-radius:12px;padding:16px;margin-bottom:12px">
     <div style="display:grid;gap:14px">`;
@@ -1888,18 +1798,8 @@ window.maSetBloco=(i,k,v)=>{_MA.blocos[i][k]=v;};
 window.maIncEquip=(i,campo,max)=>{_MA.blocos[i][campo]=Math.min(max,(_MA.blocos[i][campo]||0)+1);re();};
 window.maDecEquip=(i,campo)=>{_MA.blocos[i][campo]=Math.max(0,(_MA.blocos[i][campo]||0)-1);re();};
 window.maSetTurmaPorHorario=(i,horario,turma)=>{
-  const b=_MA.blocos[i];
-  if(!b.turmasPorHorario)b.turmasPorHorario={};
-  b.turmasPorHorario[horario]=turma;
-  // Preencher horários seguintes que ainda estão vazios com a mesma turma
-  if(turma&&b.horario&&b.horarioFim){
-    const range=horariosRange(b.horario,b.horarioFim);
-    let passou=false;
-    for(const h of range){
-      if(h===horario){passou=true;continue;}
-      if(passou&&!b.turmasPorHorario[h])b.turmasPorHorario[h]=turma;
-    }
-  }
+  if(!_MA.blocos[i].turmasPorHorario)_MA.blocos[i].turmasPorHorario={};
+  _MA.blocos[i].turmasPorHorario[horario]=turma;
   re();
 };
 window.maSetBlocoRe=(i,k,v)=>{_MA.blocos[i][k]=v;re();};
@@ -2097,54 +1997,6 @@ window.maSalvar=async()=>{
       new Promise((_,rej)=>setTimeout(()=>rej(new Error("Timeout ao salvar")),15000))
     ]);
     _MA.sucesso=st;_MA.salvando=false;re();
-
-    // 6b. Fila de e-mails de confirmação (professor + admins)
-    try {
-      const dataFmtEmail=data.split("-").reverse().join("/");
-      const horFmtEmail=blocos[0]?.horario||"";
-      const turmaEmail=tph[blocos[0]?.horario]||"";
-      const statusLabelEmail=st==="pendente"?"⏳ Aguardando aprovação":"✅ Confirmado";
-
-      // E-mail para o professor
-      if(_usuario?.email){
-        await addDoc(collection(db,"email_queue"),{
-          para:_usuario.email,
-          assunto:`📅 Agendamento criado — ${espaco}`,
-          texto:`Olá, ${_usuario.nome}!
-
-Seu agendamento foi criado com sucesso.
-
-📍 Espaço: ${espaco}
-🎓 Turma: ${turmaEmail||"-"}
-📅 Data: ${dataFmtEmail}
-⏰ Horário: ${horFmtEmail}
-🔖 Status: ${statusLabelEmail}
-
-Acesse o app para ver os detalhes.`,
-          criadoEm:new Date().toISOString(),enviado:false
-        });
-      }
-
-      // E-mails para admins
-      const admins=_usuarios.filter(u=>u.perfil==="admin"&&u.email&&u.ativo!==false);
-      for(const adm of admins){
-        await addDoc(collection(db,"email_queue"),{
-          para:adm.email,
-          assunto:`📅 Novo agendamento — ${_usuario.nome}`,
-          texto:`Novo agendamento criado:
-
-👤 Professor: ${_usuario.nome}
-📍 Espaço: ${espaco}
-🎓 Turma: ${turmaEmail||"-"}
-📅 Data: ${dataFmtEmail}
-⏰ Horário: ${horFmtEmail}
-🔖 Status: ${statusLabelEmail}
-
-Acesse o app para gerenciar.`,
-          criadoEm:new Date().toISOString(),enviado:false
-        });
-      }
-    } catch(eq){console.warn("email_queue:",eq);}
 
     // 6. Notificações push (background) para equipes responsáveis
     try {
@@ -2540,20 +2392,7 @@ window.admDayLeave=function(){const tip=document.getElementById("adm-tip");if(ti
 window.aSetModo=v=>{_A.modoVisu=v;re();};
 window.aSetAba=v=>{_A.aba=v;re();};
 window.aNavMes=dir=>{let nm=_A.mesCal.m+dir,na=_A.mesCal.a;if(nm>11){nm=0;na++;}if(nm<0){nm=11;na--;}_A.mesCal={a:na,m:nm};_A.diaSel=null;re();};
-window.aModerar=async(id,status)=>{
-  if(!confirm(`${status==="confirmado"?"Aprovar":"Recusar"} esta reserva?`))return;
-  await updateDoc(doc(db,"reservas",id),{status});
-  const r=_todas.find(r=>r.id===id);
-  if(r){
-    const dataFmt=r.data.split("-").reverse().join("/");
-    const texto=status==="confirmado"
-      ?`✅ Sua reserva foi aprovada!
-📍 ${r.espaco} — ${dataFmt} às ${r.horario}`
-      :`❌ Sua reserva foi recusada.
-📍 ${r.espaco} — ${dataFmt} às ${r.horario}`;
-    await salvarNotificacao(r.professorId,texto,status==="confirmado"?"aprovado":"recusado",id);
-  }
-};
+window.aModerar=async(id,status)=>{if(!confirm(`${status==="confirmado"?"Aprovar":"Recusar"} esta reserva?`))return;await updateDoc(doc(db,"reservas",id),{status});};
 window.aExcluir=async id=>{
   if(!confirm("Excluir esta reserva?"))return;
   const r=_todas.find(r=>r.id===id);
