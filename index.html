@@ -85,6 +85,14 @@ try { _messaging = getMessaging(app); } catch(e) { console.warn('FCM não dispon
 
 // VAPID_KEY será substituída quando o usuário fornecer
 const VAPID_KEY = 'BLa94Zm3M-nrytcapsPLPcMYMCkbe11OOAo-DJwUPZE6qzrYxFHRwW_E0aeysaN1BXmGgL4SRUUtO-pTRINzBNc';
+function vapidToUint8(base64String){
+  const padding='='.repeat((4-base64String.length%4)%4);
+  const base64=(base64String+padding).replace(/-/g,'+').replace(/_/g,'/');
+  const rawData=window.atob(base64);
+  const outputArray=new Uint8Array(rawData.length);
+  for(let i=0;i<rawData.length;++i)outputArray[i]=rawData.charCodeAt(i);
+  return outputArray;
+}
 
 window.ativarNotificacoes=async()=>{
   const uid=_usuario?.uid;
@@ -106,11 +114,11 @@ window.ativarNotificacoes=async()=>{
     // Tentar obter token sem passar serviceWorkerRegistration (compatibilidade iOS)
     let fcmToken=null;
     try{
-      fcmToken=await getToken(_messaging,{vapidKey:VAPID_KEY,serviceWorkerRegistration:swReg});
+      fcmToken=await getToken(_messaging,{applicationServerKey:vapidToUint8(VAPID_KEY),serviceWorkerRegistration:swReg});
     }catch(e1){
       console.warn("FCM tentativa 1 falhou:",e1.message);
       try{
-        fcmToken=await getToken(_messaging,{vapidKey:VAPID_KEY});
+        fcmToken=await getToken(_messaging,{applicationServerKey:vapidToUint8(VAPID_KEY)});
       }catch(e2){
         console.warn("FCM tentativa 2 falhou:",e2.message);
         throw e2;
@@ -141,7 +149,7 @@ async function iniciarNotificacoes(userId) {
     const perm = await Notification.requestPermission();
     console.log('FCM permissão:', perm);
     if (perm !== 'granted') return;
-    const fcmToken = await getToken(_messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
+    const fcmToken = await getToken(_messaging, { applicationServerKey: vapidToUint8(VAPID_KEY), serviceWorkerRegistration: swReg });
     console.log('FCM token:', fcmToken ? fcmToken.slice(0,20)+'...' : 'VAZIO');
     if (fcmToken) {
       await updateDoc(doc(db, 'usuarios', userId), { fcmToken });
