@@ -2079,6 +2079,54 @@ window.maSalvar=async()=>{
     ]);
     _MA.sucesso=st;_MA.salvando=false;re();
 
+    // 6b. Fila de e-mails de confirmação (professor + admins)
+    try {
+      const dataFmtEmail=data.split("-").reverse().join("/");
+      const horFmtEmail=blocos[0]?.horario||"";
+      const turmaEmail=tph[blocos[0]?.horario]||"";
+      const statusLabelEmail=st==="pendente"?"⏳ Aguardando aprovação":"✅ Confirmado";
+
+      // E-mail para o professor
+      if(_usuario?.email){
+        await addDoc(collection(db,"email_queue"),{
+          para:_usuario.email,
+          assunto:`📅 Agendamento criado — ${espaco}`,
+          texto:`Olá, ${_usuario.nome}!
+
+Seu agendamento foi criado com sucesso.
+
+📍 Espaço: ${espaco}
+🎓 Turma: ${turmaEmail||"-"}
+📅 Data: ${dataFmtEmail}
+⏰ Horário: ${horFmtEmail}
+🔖 Status: ${statusLabelEmail}
+
+Acesse o app para ver os detalhes.`,
+          criadoEm:new Date().toISOString(),enviado:false
+        });
+      }
+
+      // E-mails para admins
+      const admins=_usuarios.filter(u=>u.perfil==="admin"&&u.email&&u.ativo!==false);
+      for(const adm of admins){
+        await addDoc(collection(db,"email_queue"),{
+          para:adm.email,
+          assunto:`📅 Novo agendamento — ${_usuario.nome}`,
+          texto:`Novo agendamento criado:
+
+👤 Professor: ${_usuario.nome}
+📍 Espaço: ${espaco}
+🎓 Turma: ${turmaEmail||"-"}
+📅 Data: ${dataFmtEmail}
+⏰ Horário: ${horFmtEmail}
+🔖 Status: ${statusLabelEmail}
+
+Acesse o app para gerenciar.`,
+          criadoEm:new Date().toISOString(),enviado:false
+        });
+      }
+    } catch(eq){console.warn("email_queue:",eq);}
+
     // 6. Notificações push (background) para equipes responsáveis
     try {
       const dataFmt=data.split("-").reverse().join("/");
