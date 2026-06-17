@@ -79,12 +79,22 @@ window.__db__ = db; // exposto para scripts de migração
 const secApp  = getApps().find(a=>a.name==="secondary")||initializeApp(firebaseConfig,"secondary");
 const secAuth = getAuth(secApp);
 
-// ── FCM Messaging ──
+// ── FCM Messaging — usa projeto 7add0 para push notifications ──
 let _messaging = null;
-try { _messaging = getMessaging(app); } catch(e) { console.warn('FCM não disponível:', e); }
+try {
+  const fcmApp = getApps().find(a=>a.name==="fcm") || initializeApp({
+    apiKey: "AIzaSyDoimc11ZR1WzzW9uwWQ2Bj9Eyk46at-Ks",
+    authDomain: "reserva-escolar-7add0.firebaseapp.com",
+    projectId: "reserva-escolar-7add0",
+    storageBucket: "reserva-escolar-7add0.firebasestorage.app",
+    messagingSenderId: "775804714188",
+    appId: "1:775804714188:web:e72408571e26ad00199669"
+  }, "fcm");
+  _messaging = getMessaging(fcmApp);
+} catch(e) { console.warn('FCM não disponível:', e); }
 
 // VAPID_KEY será substituída quando o usuário fornecer
-const VAPID_KEY = 'BLa94Zm3M-nrytcapsPLPcMYMCkbe11OOAo-DJwUPZE6qzrYxFHRwW_E0aeysaN1BXmGgL4SRUUtO-pTRINzBNc';
+const VAPID_KEY = 'BO5D83LxYFQjyl-zzE9GmCZJRohOS61ergMKSSBbrBSOfuLpLsvEBnrRYtU-mru7jU-Oi7O1K1Wuz8mtsW_YMvk';
 function vapidToUint8(base64String){
   const padding='='.repeat((4-base64String.length%4)%4);
   const base64=(base64String+padding).replace(/-/g,'+').replace(/_/g,'/');
