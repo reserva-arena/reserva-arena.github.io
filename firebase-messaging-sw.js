@@ -15,7 +15,6 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Notificação em background (app fechado)
 messaging.onBackgroundMessage(payload => {
   const { title, body, icon } = payload.notification || {};
   self.registration.showNotification(title || 'Reserva Arena', {
@@ -27,7 +26,6 @@ messaging.onBackgroundMessage(payload => {
   });
 });
 
-// Clique na notificação → abre o app
 self.addEventListener('notificationclick', evt => {
   evt.notification.close();
   evt.waitUntil(
