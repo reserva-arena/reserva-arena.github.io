@@ -208,9 +208,15 @@ const ESPACOS = [
 ];
 
 const TURMAS_EDUCACAO_INFANTIL = [
-  "Maternal",
-  "Infantil 1","Infantil 2","Infantil 3","Infantil 4","Infantil 5",
+  // Matutino
+  "Inf. 2A Mat","Inf. 2B Mat","Inf. 3A Mat","Inf. 3B Mat",
+  "Inf. 4A Mat","Inf. 4B Mat","Inf. 5A Mat","Inf. 5B Mat","Inf. 5C Mat",
+  // Vespertino
+  "Inf. 1A Vesp","Inf. 2A Vesp","Inf. 3A Vesp",
+  "Inf. 4A Vesp","Inf. 4B Vesp","Inf. 5A Vesp",
 ];
+const TURMAS_INFANTIL_MAT = TURMAS_EDUCACAO_INFANTIL.filter(t=>t.includes("Mat"));
+const TURMAS_INFANTIL_VESP = TURMAS_EDUCACAO_INFANTIL.filter(t=>t.includes("Vesp"));
 const TURMAS_FUND1 = (()=>{const t=[];for(let a=1;a<=5;a++)["A","B","C","D","E"].forEach(l=>t.push(`${a}º${l}`));return t;})();
 const TURMAS_FUND2 = (()=>{const t=[];for(let a=6;a<=9;a++)["A","B","C","D","E","F","G","H"].forEach(l=>t.push(`${a}º${l}`));return t;})();
 const TURMAS_EXTRAS = ["Extra Música"];
@@ -1518,13 +1524,28 @@ function maBlocoMultiHTML(b,i,eo){
   };
 
   // Helper para select de turma
-  const selTurma=(horario,val)=>`
-    <select onchange="maSetTurmaPorHorario(${i},'${horario}',this.value)" style="${sel()};font-size:13px;padding:7px 10px">
+  const SEGMENTOS=[
+  {id:"infantil",l:"Infantil",turmas:[
+    {label:"Matutino",items:TURMAS_INFANTIL_MAT},
+    {label:"Vespertino",items:TURMAS_INFANTIL_VESP}
+  ]},
+  {id:"fund1",l:"Fund. 1",turmas:[{label:"Fund. 1",items:TURMAS_FUND1}]},
+  {id:"fund2",l:"Fund. 2",turmas:[{label:"Fund. 2",items:TURMAS_FUND2}]},
+  {id:"integral",l:"Integral",turmas:[{label:"Integral",items:TURMAS_INTEGRAL}]},
+  {id:"extras",l:"Extras",turmas:[{label:"Extras",items:TURMAS_EXTRAS}]},
+];
+const segAtual=b._segmento||"";
+const turmasSeg=segAtual?SEGMENTOS.find(s=>s.id===segAtual)?.turmas||[]:[]; 
+const selTurma=(horario,val)=>`
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <div style="display:flex;gap:5px;flex-wrap:wrap">
+      ${SEGMENTOS.map(s=>`<button onclick="window.maSetSegmento(${i},'${s.id}')" style="padding:5px 10px;font-size:11px;font-weight:700;border-radius:20px;border:1.5px solid ${segAtual===s.id?'#1a6b47':'#cbd5e1'};background:${segAtual===s.id?'#1a6b47':'transparent'};color:${segAtual===s.id?'#fff':'#475569'};cursor:pointer;font-family:inherit">${s.l}</button>`).join("")}
+    </div>
+    ${segAtual?`<select onchange="maSetTurmaPorHorario(${i},'${horario}',this.value)" style="${sel()};font-size:13px;padding:7px 10px">
       <option value="">Turma...</option>
-      <optgroup label="Ed. Infantil">${TURMAS_EDUCACAO_INFANTIL.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup>
-      <optgroup label="Fund. 1">${TURMAS_FUND1.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup>
-      <optgroup label="Fund. 2">${TURMAS_FUND2.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup><optgroup label="Aulas Extras">${TURMAS_EXTRAS.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup><optgroup label="Integral">${TURMAS_INTEGRAL.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup>
-    </select>`;
+      ${turmasSeg.map(g=>`<optgroup label="${g.label}">${g.items.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup>`).join("")}
+    </select>`:""}
+  </div>`;
 
   let html=`<div style="background:${c.bg};border:1.5px solid ${bValMulti(b)?c.blueMid+"55":c.border};border-radius:12px;padding:16px;margin-bottom:12px">
     <div style="display:grid;gap:14px">`;
@@ -1940,6 +1961,13 @@ window.maSetTurmaPorHorario=(i,horario,turma)=>{
   re();
 };
 window.maSetBlocoRe=(i,k,v)=>{_MA.blocos[i][k]=v;re();};
+window.maSetSegmento=(i,seg)=>{
+  if(!_MA.blocos[i])return;
+  _MA.blocos[i]._segmento=seg;
+  _MA.blocos[i].turma="";
+  _MA.blocos[i].turmaInicio="";
+  re();
+};
 window.toggleRecorrente=()=>{_MA.recorrente=!_MA.recorrente;re();};
 window.maAddBloco=()=>{_MA.blocos.push(bVazio());re();};
 window.maRemBloco=i=>{_MA.blocos.splice(i,1);re();};
