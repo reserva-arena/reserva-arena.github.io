@@ -60,7 +60,7 @@ select option{font-family:'DM Sans',system-ui,sans-serif}
 <script type="module">
 import{initializeApp,getApps}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,onAuthStateChanged,sendPasswordResetEmail}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import{getFirestore,collection,addDoc,onSnapshot,doc,updateDoc,query,where,getDocs,Timestamp,setDoc,getDoc,deleteDoc,writeBatch}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import{getFirestore,collection,addDoc,onSnapshot,doc,updateDoc,query,where,orderBy,getDocs,Timestamp,setDoc,getDoc,deleteDoc,writeBatch}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import{getMessaging,getToken,onMessage}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
 
 const firebaseConfig = {
@@ -755,11 +755,10 @@ window.mkAprovar=async(id)=>{
   if(r){
     const local=r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco;
     const dataFmt=r.data.split("-").reverse().join("/");
-    const push=(tk,title,body)=>fetch("https://fcm.googleapis.com/fcm/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:tk,notification:{title,body}})}).catch(()=>{});
-    _usuarios.filter(u=>u.uid===r.professorId&&u.fcmToken).forEach(u=>push(u.fcmToken,"📸 Marketing — Aprovado!",`✅ Sua solicitação de foto/vídeo foi aprovada!
-${local} — ${dataFmt} às ${r.horario}`));
-    _usuarios.filter(u=>u.perfil==="admin"&&u.fcmToken).forEach(u=>push(u.fcmToken,"📸 Reserva Arena — Marketing",`✅ Marketing aprovou: ${r.professor}
-${local} — ${dataFmt} às ${r.horario}`));
+    await gravarNotif(r.professorId,"📸 Solicitação de foto/vídeo aprovada!",`${local} — ${dataFmt} às ${r.horario}`,"aprovacao");
+    _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
+      gravarNotif(u.uid,"📸 Marketing aprovou solicitação",`${r.professor} — ${local} ${dataFmt} às ${r.horario}`,"info")
+    );
   }
   re();
 };
@@ -770,11 +769,10 @@ window.mkRecusar=async(id)=>{
   if(r){
     const local=r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco;
     const dataFmt=r.data.split("-").reverse().join("/");
-    const push=(tk,title,body)=>fetch("https://fcm.googleapis.com/fcm/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:tk,notification:{title,body}})}).catch(()=>{});
-    _usuarios.filter(u=>u.uid===r.professorId&&u.fcmToken).forEach(u=>push(u.fcmToken,"📸 Marketing — Recusado",`❌ Sua solicitação de foto/vídeo não foi aprovada.
-${local} — ${dataFmt} às ${r.horario}`));
-    _usuarios.filter(u=>u.perfil==="admin"&&u.fcmToken).forEach(u=>push(u.fcmToken,"📸 Reserva Arena — Marketing",`❌ Marketing recusou: ${r.professor}
-${local} — ${dataFmt} às ${r.horario}`));
+    await gravarNotif(r.professorId,"📸 Solicitação de foto/vídeo recusada",`${local} — ${dataFmt} às ${r.horario}`,"recusa");
+    _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
+      gravarNotif(u.uid,"📸 Marketing recusou solicitação",`${r.professor} — ${local} ${dataFmt} às ${r.horario}`,"info")
+    );
   }
   re();
 };
@@ -856,16 +854,12 @@ window.tiAprovar=async(id)=>{
   await updateDoc(doc(db,"reservas",id),{status:"confirmado"});
   if(r){
     const dataFmt=r.data.split("-").reverse().join("/");
-    // Professor
-    const msgProf=`✅ Agendamento de ${r.espaco} aprovado pelo T.I.\n${dataFmt} às ${r.horario}`;
-    _usuarios.filter(u=>u.uid===r.professorId&&u.fcmToken).forEach(u=>{
-      fetch("https://fcm.googleapis.com/fcm/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:u.fcmToken,notification:{title:"💻 T.I. — Aprovado!",body:msgProf}})}).catch(()=>{});
-    });
-    // Admins
-    const msgAdmin=`✅ T.I. aprovou: ${r.professor}\n${r.espaco} — ${dataFmt} às ${r.horario}`;
-    _usuarios.filter(u=>u.perfil==="admin"&&u.fcmToken).forEach(u=>{
-      fetch("https://fcm.googleapis.com/fcm/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:u.fcmToken,notification:{title:"💻 Reserva Arena — T.I.",body:msgAdmin}})}).catch(()=>{});
-    });
+    // Notif in-app para o professor
+    await gravarNotif(r.professorId,"✅ Agendamento aprovado pelo T.I.",`${r.espaco} — ${dataFmt} às ${r.horario}`,"aprovacao");
+    // Notif in-app para admins
+    _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
+      gravarNotif(u.uid,"✅ T.I. aprovou agendamento",`${r.professor} — ${r.espaco} ${dataFmt} às ${r.horario}`,"info")
+    );
   }
   re();
 };
@@ -875,16 +869,12 @@ window.tiRecusar=async(id)=>{
   await updateDoc(doc(db,"reservas",id),{status:"recusado"});
   if(r){
     const dataFmt=r.data.split("-").reverse().join("/");
-    // Professor
-    const msgProf=`❌ Agendamento de ${r.espaco} não aprovado pelo T.I.\n${dataFmt} às ${r.horario}`;
-    _usuarios.filter(u=>u.uid===r.professorId&&u.fcmToken).forEach(u=>{
-      fetch("https://fcm.googleapis.com/fcm/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:u.fcmToken,notification:{title:"💻 T.I. — Recusado",body:msgProf}})}).catch(()=>{});
-    });
-    // Admins
-    const msgAdmin=`❌ T.I. recusou: ${r.professor}\n${r.espaco} — ${dataFmt} às ${r.horario}`;
-    _usuarios.filter(u=>u.perfil==="admin"&&u.fcmToken).forEach(u=>{
-      fetch("https://fcm.googleapis.com/fcm/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:u.fcmToken,notification:{title:"💻 Reserva Arena — T.I.",body:msgAdmin}})}).catch(()=>{});
-    });
+    // Notif in-app para o professor
+    await gravarNotif(r.professorId,"❌ Agendamento recusado pelo T.I.",`${r.espaco} — ${dataFmt} às ${r.horario}`,"recusa");
+    // Notif in-app para admins
+    _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
+      gravarNotif(u.uid,"❌ T.I. recusou agendamento",`${r.professor} — ${r.espaco} ${dataFmt} às ${r.horario}`,"info")
+    );
   }
   re();
 };
@@ -911,6 +901,7 @@ function renderApp(){
         ${isAdmin?`<select onchange="setAdminVisu(this.value)" class="admin-visu-select" style="background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.4);border-radius:20px;padding:3px 8px;height:30px;cursor:pointer;font-size:11px;font-family:inherit;font-weight:700;color:#fff;outline:none"><option value="admin" ${_adminVisu==="admin"?"selected":""} style="color:#132318;background:#fff">🔧 Adm</option><option value="professor" ${_adminVisu==="professor"?"selected":""} style="color:#132318;background:#fff">👨‍🏫 Prof</option><option value="ti" ${_adminVisu==="ti"?"selected":""} style="color:#132318;background:#fff">💻 TI</option><option value="marketing" ${_adminVisu==="marketing"?"selected":""} style="color:#132318;background:#fff">📸 Mkt</option></select>`:""}
         ${avatarHTML(_usuario?.nome,28,isAdmin?"purple":"navy")}
         <div class="header-nome" style="line-height:1.2;display:none" id="header-nome-block"><p style="font-size:12px;font-weight:700;color:${_dark?c.navy:'#ffffff'}">${_usuario?.nome||""}</p><p style="font-size:10px;color:${_dark?(isAdmin?"#6d28d9":c.blueMid):'rgba(255,255,255,.8)'};font-weight:700;text-transform:uppercase">${_usuario?.perfil||""}</p></div>
+        <div id="sino-btn" onclick="abrirPainelNotif()" title="Notificações" style="display:none;position:relative;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:30px;height:30px;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;font-size:16px">🔔<span id="sino-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:#dc2626;color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:99px;align-items:center;justify-content:center;padding:0 3px;font-family:inherit"></span></div>
         <button onclick="location.reload()" title="Atualizar" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0">🔄</button>
         <button onclick="toggleDark()" title="${_dark?'Modo claro':'Modo escuro'}" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0">${_dark?"☀️":"🌙"}</button>
         <button onclick="doSignOut()" style="background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.3);border-radius:20px;color:rgba(255,255,255,.9);font-size:12px;font-weight:700;padding:5px 10px;cursor:pointer;font-family:inherit;flex-shrink:0">Sair</button>
@@ -1204,7 +1195,94 @@ function modalAgendarHTML(){const c=C();return`<div id="mod-ag" style="display:n
 
 // ─── ESTADO DO FORMULÁRIO DE AGENDAMENTO ──────────────────────────────────
 let _MA={step:1,espaco:"",data:"",blocos:[],resumo:false,salvando:false,sucesso:null,erro:"",avisoConflito:"",calA:new Date().getFullYear(),calM:new Date().getMonth(),bibAV:null};
-let _adminVisu="admin"; // admin|professor|ti|marketing
+let _adminVisu="admin";
+let _notifNaoLidas=0;
+let _notifListener=null;
+
+// ── Notificações in-app ──
+async function gravarNotif(userId, titulo, corpo, tipo){
+  try{
+    await addDoc(collection(db,"notificacoes"),{
+      userId, titulo, corpo, tipo,
+      lida: false,
+      criadoEm: Timestamp.now()
+    });
+  }catch(e){console.warn("gravarNotif erro:",e);}
+}
+
+function iniciarSinoListener(userId){
+  if(_notifListener)_notifListener();
+  const q=query(collection(db,"notificacoes"),where("userId","==",userId),where("lida","==",false));
+  _notifListener=onSnapshot(q,snap=>{
+    _notifNaoLidas=snap.size;
+    const badge=document.getElementById("sino-badge");
+    const btn=document.getElementById("sino-btn");
+    if(badge){
+      badge.textContent=_notifNaoLidas>9?"9+":_notifNaoLidas;
+      badge.style.display=_notifNaoLidas>0?"flex":"none";
+    }
+    if(btn)btn.style.display="flex";
+  });
+}
+
+async function abrirPainelNotif(){
+  const userId=_usuario?.uid;
+  if(!userId)return;
+  const q=query(collection(db,"notificacoes"),where("userId","==",userId),orderBy("criadoEm","desc"));
+  const snap=await getDocs(q);
+  const notifs=snap.docs.map(d=>({id:d.id,...d.data()}));
+  const c=C();
+  const overlay=document.createElement("div");
+  overlay.id="notif-overlay";
+  overlay.style.cssText="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.45);display:flex;align-items:flex-start;justify-content:flex-end;padding:64px 16px 0";
+  overlay.onclick=e=>{if(e.target===overlay)fecharPainelNotif();};
+  const temNaoLidas=notifs.some(n=>!n.lida);
+  const lista=notifs.length?notifs.map(n=>{
+    const cor=n.lida?c.textMuted:c.navy;
+    const bg=n.lida?c.surface:(c.bg);
+    const borda=n.lida?c.border:"#1a6b47";
+    const ts=n.criadoEm?.toDate?n.criadoEm.toDate():new Date();
+    const hora=ts.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+    const dia=ts.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"});
+    return`<div style="background:${bg};border:1.5px solid ${borda};border-radius:10px;padding:12px 14px;margin-bottom:8px">
+      ${!n.lida?`<span style="font-size:9px;font-weight:800;color:#1a6b47;text-transform:uppercase;letter-spacing:.5px">● NOVA</span>`:""}
+      <p style="font-size:13px;font-weight:700;color:${cor};margin:2px 0 4px">${n.titulo}</p>
+      <p style="font-size:12px;color:${c.textMuted};line-height:1.4">${n.corpo}</p>
+      <p style="font-size:10px;color:${c.textMuted};margin-top:4px">${dia} às ${hora}</p>
+    </div>`;
+  }).join(""):`<p style="text-align:center;color:${c.textMuted};padding:32px 0;font-size:13px">Nenhuma notificação ainda</p>`;
+  overlay.innerHTML=`<div style="background:${c.surface};border:1.5px solid ${c.border};border-radius:16px;width:100%;max-width:360px;max-height:80vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.18)">
+    <div style="padding:16px 18px;border-bottom:1px solid ${c.border};display:flex;align-items:center;justify-content:space-between">
+      <p style="font-size:15px;font-weight:800;color:${c.navy}">🔔 Notificações</p>
+      <div style="display:flex;gap:8px;align-items:center">
+        ${temNaoLidas?`<button onclick="marcarTodasLidas()" style="font-size:11px;font-weight:700;color:#1a6b47;background:none;border:1.5px solid #1a6b47;border-radius:20px;padding:3px 10px;cursor:pointer;font-family:inherit">✓ Marcar lidas</button>`:""} 
+        <button onclick="fecharPainelNotif()" style="background:none;border:none;font-size:20px;cursor:pointer;color:${c.textMuted};line-height:1">×</button>
+      </div>
+    </div>
+    <div style="overflow-y:auto;padding:14px 14px">${lista}</div>
+  </div>`;
+  document.body.appendChild(overlay);
+  // Marcar como lidas ao abrir
+  if(temNaoLidas){
+    const batch=writeBatch(db);
+    snap.docs.filter(d=>!d.data().lida).forEach(d=>batch.update(d.ref,{lida:true}));
+    await batch.commit();
+  }
+}
+
+function fecharPainelNotif(){
+  const el=document.getElementById("notif-overlay");
+  if(el)el.remove();
+}
+
+async function marcarTodasLidas(){
+  const q=query(collection(db,"notificacoes"),where("userId","==",_usuario?.uid),where("lida","==",false));
+  const snap=await getDocs(q);
+  const batch=writeBatch(db);
+  snap.docs.forEach(d=>batch.update(d.ref,{lida:true}));
+  await batch.commit();
+  fecharPainelNotif();
+} // admin|professor|ti|marketing
 
 // bVazio() cria um bloco de agendamento vazio
 // Para espaços multiHorario: horarioFim, turmaInicio, turmaFim, local, qtdTablets, qtdNotebooks
@@ -2392,7 +2470,19 @@ window.admDayLeave=function(){const tip=document.getElementById("adm-tip");if(ti
 window.aSetModo=v=>{_A.modoVisu=v;re();};
 window.aSetAba=v=>{_A.aba=v;re();};
 window.aNavMes=dir=>{let nm=_A.mesCal.m+dir,na=_A.mesCal.a;if(nm>11){nm=0;na++;}if(nm<0){nm=11;na--;}_A.mesCal={a:na,m:nm};_A.diaSel=null;re();};
-window.aModerar=async(id,status)=>{if(!confirm(`${status==="confirmado"?"Aprovar":"Recusar"} esta reserva?`))return;await updateDoc(doc(db,"reservas",id),{status});};
+window.aModerar=async(id,status)=>{
+  if(!confirm(`${status==="confirmado"?"Aprovar":"Recusar"} esta reserva?`))return;
+  const r=_todas.find(r=>r.id===id);
+  await updateDoc(doc(db,"reservas",id),{status});
+  if(r){
+    const dataFmt=r.data.split("-").reverse().join("/");
+    if(status==="confirmado"){
+      await gravarNotif(r.professorId,"✅ Agendamento aprovado",`${r.espaco} — ${dataFmt} às ${r.horario}`,"aprovacao");
+    } else {
+      await gravarNotif(r.professorId,"❌ Agendamento recusado",`${r.espaco} — ${dataFmt} às ${r.horario}`,"recusa");
+    }
+  }
+};
 window.aExcluir=async id=>{
   if(!confirm("Excluir esta reserva?"))return;
   const r=_todas.find(r=>r.id===id);
@@ -2592,7 +2682,7 @@ onAuthStateChanged(auth,async user=>{
       const snap=await getDoc(doc(db,"usuarios",user.uid));
       _usuario=snap.exists()?{uid:user.uid,...snap.data()}:{uid:user.uid,email:user.email,perfil:"sem_acesso",ativo:false};
     }catch{_usuario={uid:user.uid,email:user.email,perfil:"sem_acesso",ativo:false};}
-    if(_usuario.perfil!=="sem_acesso"&&_usuario.ativo!==false){startListeners(user.uid);iniciarNotificacoes(user.uid);}
+    if(_usuario.perfil!=="sem_acesso"&&_usuario.ativo!==false){startListeners(user.uid);iniciarNotificacoes(user.uid);iniciarSinoListener(user.uid);}
     else re();
   }else{
     _usuario=null;
