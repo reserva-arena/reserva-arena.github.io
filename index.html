@@ -1415,25 +1415,25 @@ function renderProfAgendar(){
           <div style="text-align:center">
             <p style="font-size:10px;font-weight:700;color:#0369a1;text-transform:uppercase;margin-bottom:6px">🎤 Microfones</p>
             <div style="display:flex;align-items:center;border:1.5px solid #bae6fd;border-radius:10px;overflow:hidden">
-              <button onclick="window._MA.bibMic=Math.max(0,(_MA.bibMic||0)-1);re()" style="width:36px;height:44px;border:none;background:#e0f2fe;color:#0369a1;font-size:22px;font-weight:700;cursor:pointer">−</button>
+              <button onclick="bibDec('bibMic')" style="width:36px;height:44px;border:none;background:#e0f2fe;color:#0369a1;font-size:22px;font-weight:700;cursor:pointer">−</button>
               <span style="flex:1;font-size:18px;font-weight:800;color:#0369a1;text-align:center">${_MA.bibMic||0}</span>
-              <button onclick="window._MA.bibMic=Math.min(10,(_MA.bibMic||0)+1);re()" style="width:36px;height:44px;border:none;background:#e0f2fe;color:#0369a1;font-size:22px;font-weight:700;cursor:pointer">+</button>
+              <button onclick="bibInc('bibMic')" style="width:36px;height:44px;border:none;background:#e0f2fe;color:#0369a1;font-size:22px;font-weight:700;cursor:pointer">+</button>
             </div>
           </div>
           <div style="text-align:center">
             <p style="font-size:10px;font-weight:700;color:#0369a1;text-transform:uppercase;margin-bottom:6px">🔊 Caixas</p>
             <div style="display:flex;align-items:center;border:1.5px solid #bae6fd;border-radius:10px;overflow:hidden">
-              <button onclick="window._MA.bibCaixa=Math.max(0,(_MA.bibCaixa||0)-1);re()" style="width:36px;height:44px;border:none;background:#e0f2fe;color:#0369a1;font-size:22px;font-weight:700;cursor:pointer">−</button>
+              <button onclick="bibDec('bibCaixa')" style="width:36px;height:44px;border:none;background:#e0f2fe;color:#0369a1;font-size:22px;font-weight:700;cursor:pointer">−</button>
               <span style="flex:1;font-size:18px;font-weight:800;color:#0369a1;text-align:center">${_MA.bibCaixa||0}</span>
-              <button onclick="window._MA.bibCaixa=Math.min(10,(_MA.bibCaixa||0)+1);re()" style="width:36px;height:44px;border:none;background:#e0f2fe;color:#0369a1;font-size:22px;font-weight:700;cursor:pointer">+</button>
+              <button onclick="bibInc('bibCaixa')" style="width:36px;height:44px;border:none;background:#e0f2fe;color:#0369a1;font-size:22px;font-weight:700;cursor:pointer">+</button>
             </div>
           </div>
           <div style="text-align:center">
             <p style="font-size:10px;font-weight:700;color:#0369a1;text-transform:uppercase;margin-bottom:6px">📽️ Projetores</p>
             <div style="display:flex;align-items:center;border:1.5px solid #bae6fd;border-radius:10px;overflow:hidden">
-              <button onclick="window._MA.bibProj=Math.max(0,(_MA.bibProj||0)-1);re()" style="width:36px;height:44px;border:none;background:#e0f2fe;color:#0369a1;font-size:22px;font-weight:700;cursor:pointer">−</button>
+              <button onclick="bibDec('bibProj')" style="width:36px;height:44px;border:none;background:#e0f2fe;color:#0369a1;font-size:22px;font-weight:700;cursor:pointer">−</button>
               <span style="flex:1;font-size:18px;font-weight:800;color:#0369a1;text-align:center">${_MA.bibProj||0}</span>
-              <button onclick="window._MA.bibProj=Math.min(5,(_MA.bibProj||0)+1);re()" style="width:36px;height:44px;border:none;background:#e0f2fe;color:#0369a1;font-size:22px;font-weight:700;cursor:pointer">+</button>
+              <button onclick="bibInc('bibProj',5)" style="width:36px;height:44px;border:none;background:#e0f2fe;color:#0369a1;font-size:22px;font-weight:700;cursor:pointer">+</button>
             </div>
           </div>
         </div>`:""}
@@ -1582,7 +1582,7 @@ function maBlocoMultiHTML(b,i,eo){
       ${tipo==="audiovisual"?`<div>
         <label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">🎙️ Equipamentos necessários</label>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px">
-          ${[{k:"microfones",l:"🎤 Microfones"},{k:"caixasom",l:"🔊 Caixas"},{k:"projetor",l:"📽️ Projetores"}].map(eq=>`<div style="text-align:center"><label style="font-size:10px;font-weight:700;color:${c.textMuted};text-transform:uppercase;display:block;margin-bottom:6px">${eq.l}</label><div style="display:flex;align-items:center;justify-content:center;border:1.5px solid #bae6fd;border-radius:10px;overflow:hidden"><button onclick="maSetBlocoRe(${i},'${eq.k}',Math.max(0,Number(_MA.blocos[${i}]['${eq.k}']||0)-1))" style="width:36px;height:40px;border:none;background:#e0f2fe;color:#0369a1;font-size:18px;font-weight:700;cursor:pointer">−</button><span style="flex:1;font-size:18px;font-weight:800;color:#0369a1;text-align:center">${b[eq.k]||0}</span><button onclick="maSetBlocoRe(${i},'${eq.k}',Math.min(10,Number(_MA.blocos[${i}]['${eq.k}']||0)+1))" style="width:36px;height:40px;border:none;background:#e0f2fe;color:#0369a1;font-size:18px;font-weight:700;cursor:pointer">+</button></div></div>`).join("")}
+          ${[{k:"microfones",l:"🎤 Microfones"},{k:"caixasom",l:"🔊 Caixas"},{k:"projetor",l:"📽️ Projetores"}].map(eq=>`<div style="text-align:center"><label style="font-size:10px;font-weight:700;color:${c.textMuted};text-transform:uppercase;display:block;margin-bottom:6px">${eq.l}</label><div style="display:flex;align-items:center;justify-content:center;border:1.5px solid #bae6fd;border-radius:10px;overflow:hidden"><button onclick="avDec(${i},'${eq.k}')" style="width:36px;height:40px;border:none;background:#e0f2fe;color:#0369a1;font-size:18px;font-weight:700;cursor:pointer">−</button><span style="flex:1;font-size:18px;font-weight:800;color:#0369a1;text-align:center">${b[eq.k]||0}</span><button onclick="maSetBlocoRe(${i},'${eq.k}',Math.min(10,Number(_MA.blocos[${i}]['${eq.k}']||0)+1))" style="width:36px;height:40px;border:none;background:#e0f2fe;color:#0369a1;font-size:18px;font-weight:700;cursor:pointer">+</button></div></div>`).join("")}
         </div>
       </div>`:""}
     </div>`;
@@ -1744,9 +1744,9 @@ function maBlocoHTML(b,i,eo){
               <span style="font-size:16px">${eq.l.split(" ")[0]}</span>
               <div style="flex:1"><p style="font-size:13px;font-weight:700;color:${c.navy}">${eq.l.split(" ").slice(1).join(" ")}</p><p style="font-size:11px;color:${c.textMuted}">Máx. ${eq.max} disponíveis</p></div>
               <div style="display:flex;align-items:center;gap:8px">
-                <button onclick="maSetBlocoRe(${i},'${eq.k}',Math.max(0,Number(_MA.blocos[${i}]['${eq.k}']||0)-1))" style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${c.surface};cursor:pointer;font-size:16px;font-family:inherit">−</button>
+                <button onclick="avDec(${i},'${eq.k}')" style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${c.surface};cursor:pointer;font-size:16px;font-family:inherit">−</button>
                 <span style="font-size:16px;font-weight:800;color:${c.navy};min-width:24px;text-align:center">${b[eq.k]||0}</span>
-                <button onclick="maSetBlocoRe(${i},'${eq.k}',Math.min(${eq.max},Number(_MA.blocos[${i}]['${eq.k}']||0)+1))" style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${c.surface};cursor:pointer;font-size:16px;font-family:inherit">+</button>
+                <button onclick="avInc(${i},'${eq.k}',${eq.max})" style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${c.surface};cursor:pointer;font-size:16px;font-family:inherit">+</button>
               </div>
             </div>
           `).join("")}
@@ -1874,6 +1874,11 @@ window.maSetHorarioMulti=(i,tipo,h)=>{
 };
 window.maSetBloco=(i,k,v)=>{_MA.blocos[i][k]=v;};
 window.maIncEquip=(i,campo,max)=>{_MA.blocos[i][campo]=Math.min(max,(_MA.blocos[i][campo]||0)+1);re();};
+
+window.bibInc=(campo,max)=>{_MA[campo]=Math.min(max||10,(_MA[campo]||0)+1);re();};
+window.bibDec=(campo)=>{_MA[campo]=Math.max(0,(_MA[campo]||0)-1);re();};
+window.avInc=(i,campo,max)=>{_MA.blocos[i][campo]=Math.min(max||10,Number(_MA.blocos[i][campo]||0)+1);re();};
+window.avDec=(i,campo)=>{_MA.blocos[i][campo]=Math.max(0,Number(_MA.blocos[i][campo]||0)-1);re();};
 window.maDecEquip=(i,campo)=>{_MA.blocos[i][campo]=Math.max(0,(_MA.blocos[i][campo]||0)-1);re();};
 window.maSetTurmaPorHorario=(i,horario,turma)=>{
   if(!_MA.blocos[i].turmasPorHorario)_MA.blocos[i].turmasPorHorario={};
