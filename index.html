@@ -844,10 +844,10 @@ function tiCard(r,pend){
       </div>
     </div>
     ${pend?`<div style="display:flex;gap:8px;margin-top:12px">
-      <button onclick="tiAprovar('${r.id}')" style="flex:1;padding:9px;border-radius:8px;border:none;background:#1a6b47;color:#fff;font-weight:700;font-size:13px;cursor:pointer">✅ Aprovar</button>
-      <button onclick="tiRecusar('${r.id}')" style="flex:1;padding:9px;border-radius:8px;border:none;background:#dc2626;color:#fff;font-weight:700;font-size:13px;cursor:pointer">❌ Recusar</button>
+      <button onclick="window.tiAprovar('${r.id}')" style="flex:1;padding:9px;border-radius:8px;border:none;background:#1a6b47;color:#fff;font-weight:700;font-size:13px;cursor:pointer">✅ Aprovar</button>
+      <button onclick="window.tiRecusar('${r.id}')" style="flex:1;padding:9px;border-radius:8px;border:none;background:#dc2626;color:#fff;font-weight:700;font-size:13px;cursor:pointer">❌ Recusar</button>
     </div>`:`<div style="margin-top:10px">
-      <button onclick="tiRecusar('${r.id}')" style="padding:7px 18px;border-radius:8px;border:1.5px solid #fca5a5;background:#fff;color:#dc2626;font-weight:700;font-size:12px;cursor:pointer">❌ Cancelar aprovação</button>
+      <button onclick="window.tiRecusar('${r.id}')" style="padding:7px 18px;border-radius:8px;border:1.5px solid #fca5a5;background:#fff;color:#dc2626;font-weight:700;font-size:12px;cursor:pointer">❌ Cancelar aprovação</button>
     </div>`}
   </div>`;
 }
