@@ -854,7 +854,7 @@ window.tiAprovar=async(id)=>{
   
   const r=_todas.find(r=>r.id===id);
   // Marca apenas equipamento como aprovado — NÃO altera status da reserva
-  await updateDoc(doc(db,"reservas",id),{statusEquip:"aprovado"});
+  try{await updateDoc(doc(db,"reservas",id),{statusEquip:"aprovado"});}catch(e){alert("Erro ao aprovar: "+e.message);return;}
   if(r){
     const dataFmt=r.data.split("-").reverse().join("/");
     await gravarNotif(r.professorId,"✅ Equipamento confirmado pelo T.I.",`${r.espaco} — ${dataFmt} às ${r.horario}`,"aprovacao");
@@ -868,7 +868,7 @@ window.tiRecusar=async(id)=>{
   
   const r=_todas.find(r=>r.id===id);
   // Apenas marca equipamento como recusado — NÃO altera status da reserva de espaço
-  await updateDoc(doc(db,"reservas",id),{statusEquip:"recusado"});
+  try{await updateDoc(doc(db,"reservas",id),{statusEquip:"recusado"});}catch(e){alert("Erro ao recusar: "+e.message);return;}
   if(r){
     const dataFmt=r.data.split("-").reverse().join("/");
     await gravarNotif(r.professorId,"❌ Equipamento indisponível",`T.I. informou que não haverá equipamento disponível para ${r.espaco} — ${dataFmt} às ${r.horario}. Sua reserva do espaço continua confirmada.`,"recusa");
