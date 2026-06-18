@@ -2146,17 +2146,18 @@ window.maSalvar=async()=>{
         if(isDiaLetivo(ds)){
           const tphRec={};
           rangeHors.forEach(h=>{tphRec[h]=tph[h]||Object.values(tph)[0]||""});
-          batch.set(doc(collection(db,"reservas")),{
-            ...dadosPrincipal,data:ds,
+          // Ocorrências futuras sempre confirmadas — só a primeira segue regra de urgência
+          const dadosRec={...dadosPrincipal,data:ds,status:"confirmado",
             turmasPorHorario:tphRec,
             turma:Object.values(tphRec)[0]||"",
             turmaInicio:Object.values(tphRec)[0]||"",
             turmaFim:Object.values(tphRec)[Object.values(tphRec).length-1]||""
-          });
+          };
+          batch.set(doc(collection(db,"reservas")),dadosRec);
           for(let idx2=1;idx2<rangeHors.length;idx2++){
             const hAtu=rangeHors[idx2];
             batch.set(doc(collection(db,"reservas")),{
-              ...dadosPrincipal,data:ds,horario:hAtu,horarioFim:hAtu,
+              ...dadosRec,horario:hAtu,horarioFim:hAtu,
               turma:tphRec[hAtu]||"",turmaInicio:tphRec[hAtu]||"",turmaFim:tphRec[hAtu]||"",
               reservaAutomatica:true,conteudo:"[Auto] "+b.conteudo
             });
