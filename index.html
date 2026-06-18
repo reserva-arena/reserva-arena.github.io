@@ -2298,7 +2298,7 @@ function renderAdminView(){
   const conf=_todas.filter(r=>r.status==="confirmado"&&!r.reservaAutomatica).length;
   const pend=_todas.filter(r=>r.status==="pendente"&&!r.reservaAutomatica).length;
   const hoje_rs=_todas.filter(r=>r.data===h&&r.status!=="recusado"&&!r.reservaAutomatica).length;
-  const kpis=[{l:"Hoje",v:hoje_rs,bg:"#e2f0eb",col:"#1a6b47"},{l:"Confirmadas",v:conf,bg:"#e2f4ea",col:"#0f4c2b"},{l:"Pendentes",v:pend,bg:"#fff7ed",col:"#7c2d12"},{l:"Professores",v:_usuarios.length,bg:"#e0e7ff",col:"#3730a3"}];
+  const kpis=[{l:"Hoje",v:hoje_rs,bg:"#e2f0eb",col:"#1a6b47"},{l:"Pendentes",v:pend,bg:"#fff7ed",col:"#7c2d12"}];
 
   let html=`<div>`;
   html+=`<div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px">
