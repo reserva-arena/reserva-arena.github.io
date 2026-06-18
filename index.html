@@ -1298,7 +1298,7 @@ const bVazio=()=>({
   horario:"",horarioFim:"",
   turma:"",turmaInicio:"",turmaFim:"",
   conteudo:"",paginas:"",laboratorista:"",quantidade:1,
-  precisaFoto:false,precisaVideo:false,objetivoMidia:"",descritivo:"",salaAtividade:"",observacoes:"",localMontagem:"",bibMic:0,bibCaixa:0,bibProj:0,
+  precisaFoto:false,precisaVideo:false,temMidia:null,objetivoMidia:"",descritivo:"",salaAtividade:"",observacoes:"",localMontagem:"",bibMic:0,bibCaixa:0,bibProj:0,
   microfones:0,caixasom:0,projetor:0,
   multTablets:0,multNotebooks:0,multProjetor:0,
   tipoAtividade:"",
@@ -1704,15 +1704,19 @@ function maBlocoMultiHTML(b,i,eo){
   html+=`<div style="display:flex;flex-direction:column;gap:8px">
     <p style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">📸 Registro de mídia</p>
     <div style="display:flex;gap:10px">
-      <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:${c.greenBg};border-radius:8px;border:1px solid ${c.greenBorder};cursor:pointer;flex:1">
-        <input type="checkbox" id="chk-foto-${i}" ${b.precisaFoto?"checked":""} onchange="maSetBlocoRe(${i},'precisaFoto',this.checked)" style="width:18px;height:18px;accent-color:#1a6b47;cursor:pointer;flex-shrink:0">
-        <span style="font-size:13px;font-weight:700;color:${c.navy}">📸 Solicitar foto</span>
-      </label>
-      <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:#eff6ff;border-radius:8px;border:1px solid #bfdbfe;cursor:pointer;flex:1">
-        <input type="checkbox" id="chk-video-${i}" ${b.precisaVideo?"checked":""} onchange="maSetBlocoRe(${i},'precisaVideo',this.checked)" style="width:18px;height:18px;accent-color:#1d4ed8;cursor:pointer;flex-shrink:0">
-        <span style="font-size:13px;font-weight:700;color:#1e40af">🎬 Solicitar vídeo</span>
-      </label>
+      <button onclick="maSetBlocoRe(${i},'temMidia',true);maSetBlocoRe(${i},'precisaFoto',false);maSetBlocoRe(${i},'precisaVideo',false)" style="flex:1;padding:10px;border-radius:8px;border:2px solid ${b.temMidia===true?'#1a6b47':c.border};background:${b.temMidia===true?c.greenBg:c.surface};color:${b.temMidia===true?'#1a6b47':c.text};font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">✅ Sim</button>
+      <button onclick="maSetBlocoRe(${i},'temMidia',false);maSetBlocoRe(${i},'precisaFoto',false);maSetBlocoRe(${i},'precisaVideo',false)" style="flex:1;padding:10px;border-radius:8px;border:2px solid ${b.temMidia===false?'#64748b':c.border};background:${b.temMidia===false?'#f1f5f9':c.surface};color:${b.temMidia===false?'#475569':c.text};font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">✕ Não</button>
     </div>
+    ${b.temMidia===true?`<div style="display:flex;gap:10px;margin-top:4px">
+      <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:${b.precisaFoto?c.greenBg:c.surface};border-radius:8px;border:2px solid ${b.precisaFoto?c.greenBorder:'#e2e8f0'};cursor:pointer;flex:1">
+        <input type="checkbox" id="chk-foto-${i}" ${b.precisaFoto?"checked":""} onchange="maSetBlocoRe(${i},'precisaFoto',this.checked)" style="width:18px;height:18px;accent-color:#1a6b47;cursor:pointer;flex-shrink:0">
+        <span style="font-size:13px;font-weight:700;color:${c.navy}">📸 Foto</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:${b.precisaVideo?'#eff6ff':c.surface};border-radius:8px;border:2px solid ${b.precisaVideo?'#bfdbfe':'#e2e8f0'};cursor:pointer;flex:1">
+        <input type="checkbox" id="chk-video-${i}" ${b.precisaVideo?"checked":""} onchange="maSetBlocoRe(${i},'precisaVideo',this.checked)" style="width:18px;height:18px;accent-color:#1d4ed8;cursor:pointer;flex-shrink:0">
+        <span style="font-size:13px;font-weight:700;color:#1e40af">🎬 Vídeo</span>
+      </label>
+    </div>`:``}
     ${(b.precisaFoto||b.precisaVideo)?`
     <select onchange="maSetBlocoRe(${i},'objetivoMidia',this.value)" style="${inp()};margin-top:2px">
       <option value="">🎯 Objetivo do material...</option>
