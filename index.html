@@ -653,7 +653,7 @@ function renderTIInline(){
   if(!window._TI)window._TI={aba:"minhas",historico:false};
   const btnAba=(id,l)=>`<button onclick="tiSetAba('${id}')" style="padding:7px 16px;font-size:12.5px;border-radius:8px;border:1.5px solid ${_TI.aba===id?'#0369a1':c.border};background:${_TI.aba===id?'#0369a1':'transparent'};color:${_TI.aba===id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${l}</button>`;
   window.tiSetAba=(v)=>{_TI.aba=v;re();};
-  const minhas=_todas.filter(r=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);return eo?.tipo==="audiovisual"&&(_TI.historico||r.data>=h)&&!r.reservaAutomatica;}).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
+  const minhas=_todas.filter(r=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);const temBibAV=(r.bibMic>0||r.bibCaixa>0||r.bibProj>0);return (eo?.tipo==="audiovisual"||temBibAV)&&(_TI.historico||r.data>=h)&&!r.reservaAutomatica;}).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
   const pendentes=minhas.filter(r=>r.status==="pendente");
   const confirmados=minhas.filter(r=>r.status==="confirmado");
   let corpo="";
@@ -2106,11 +2106,11 @@ window.maSalvar=async()=>{
         });
       }
 
-      // TI: agendamento de Som, Microfone e Projetor pendente
-      if(st==="pendente"&&eoSalvar?.tipo==="audiovisual"){
-        const msgTI=`🔊 Novo agendamento pendente\n${profNome} · ${espaco} · ${dataFmt} às ${horFmt}`;
-        _usuarios.filter(u=>u.perfil==="ti"&&u.fcmToken&&u.ativo!==false).forEach(u=>{
-          fetch("https://fcm.googleapis.com/fcm/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:u.fcmToken,notification:{title:"💻 Reserva Arena — T.I.",body:msgTI}})}).catch(()=>{});
+      // TI: agendamento audiovisual ou com bibAV pendente
+      const temAV=eoSalvar?.tipo==="audiovisual"||((_MA.bibAV===true)&&(_MA.bibMic>0||_MA.bibCaixa>0||_MA.bibProj>0));
+      if(st==="pendente"&&temAV){
+        _usuarios.filter(u=>u.perfil==="ti"&&u.ativo!==false).forEach(u=>{
+          gravarNotif(u.uid,"💻 Nova solicitação de equipamento",`${profNome} · ${espaco} · ${dataFmt} às ${horFmt}`,"ti");
         });
       }
 
