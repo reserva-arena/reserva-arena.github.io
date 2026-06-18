@@ -1582,7 +1582,7 @@ function maBlocoMultiHTML(b,i,eo){
       ${tipo==="audiovisual"?`<div>
         <label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">🎙️ Equipamentos necessários</label>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px">
-          ${[{k:"microfones",l:"🎤 Microfones"},{k:"caixasom",l:"🔊 Caixa de som"},{k:"projetor",l:"📽️ Projetor"}].map(eq=>`<div><label style="font-size:10px;font-weight:700;color:${c.textMuted};text-transform:uppercase">${eq.l}</label><br><input type="number" min="0" value="${b[eq.k]||0}" onchange="maSetBlocoRe(${i},'${eq.k}',this.value)" style="${inp()};margin-top:4px;text-align:center"></div>`).join("")}
+          ${[{k:"microfones",l:"🎤 Microfones"},{k:"caixasom",l:"🔊 Caixas"},{k:"projetor",l:"📽️ Projetores"}].map(eq=>`<div style="text-align:center"><label style="font-size:10px;font-weight:700;color:${c.textMuted};text-transform:uppercase;display:block;margin-bottom:6px">${eq.l}</label><div style="display:flex;align-items:center;justify-content:center;border:1.5px solid #bae6fd;border-radius:10px;overflow:hidden"><button onclick="maSetBlocoRe(${i},'${eq.k}',Math.max(0,Number(_MA.blocos[${i}]['${eq.k}']||0)-1))" style="width:36px;height:40px;border:none;background:#e0f2fe;color:#0369a1;font-size:18px;font-weight:700;cursor:pointer">−</button><span style="flex:1;font-size:18px;font-weight:800;color:#0369a1;text-align:center">${b[eq.k]||0}</span><button onclick="maSetBlocoRe(${i},'${eq.k}',Math.min(10,Number(_MA.blocos[${i}]['${eq.k}']||0)+1))" style="width:36px;height:40px;border:none;background:#e0f2fe;color:#0369a1;font-size:18px;font-weight:700;cursor:pointer">+</button></div></div>`).join("")}
         </div>
       </div>`:""}
     </div>`;
@@ -1878,6 +1878,17 @@ window.maDecEquip=(i,campo)=>{_MA.blocos[i][campo]=Math.max(0,(_MA.blocos[i][cam
 window.maSetTurmaPorHorario=(i,horario,turma)=>{
   if(!_MA.blocos[i].turmasPorHorario)_MA.blocos[i].turmasPorHorario={};
   _MA.blocos[i].turmasPorHorario[horario]=turma;
+  // Propagar para horários seguintes que ainda estão vazios
+  const b=_MA.blocos[i];
+  const eo=ESPACOS.find(e=>e.nome===_MA.espaco);
+  if(b.horario&&b.horarioFim){
+    const range=gerarRange(b.horario,b.horarioFim,eo);
+    let propagando=false;
+    for(const h of range){
+      if(h===horario){propagando=true;continue;}
+      if(propagando&&!b.turmasPorHorario[h])b.turmasPorHorario[h]=turma;
+    }
+  }
   re();
 };
 window.maSetBlocoRe=(i,k,v)=>{_MA.blocos[i][k]=v;re();};
