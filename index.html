@@ -653,7 +653,7 @@ function renderTIInline(){
   if(!window._TI)window._TI={aba:"minhas",historico:false};
   const btnAba=(id,l)=>`<button onclick="tiSetAba('${id}')" style="padding:7px 16px;font-size:12.5px;border-radius:8px;border:1.5px solid ${_TI.aba===id?'#0369a1':c.border};background:${_TI.aba===id?'#0369a1':'transparent'};color:${_TI.aba===id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${l}</button>`;
   window.tiSetAba=(v)=>{_TI.aba=v;re();};
-  const minhas=_todas.filter(r=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);const temBibAV=(r.bibMic>0||r.bibCaixa>0||r.bibProj>0);return (eo?.tipo==="audiovisual"||temBibAV)&&(_TI.historico||r.data>=h)&&!r.reservaAutomatica;}).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
+  const minhas=_todas.filter(r=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);const temBibAV=(r.bibMic>0||r.bibCaixa>0||r.bibProj>0);const visivel=r.status!=="recusado"||r.statusEquip==="recusado";return (eo?.tipo==="audiovisual"||temBibAV)&&(_TI.historico||r.data>=h)&&!r.reservaAutomatica&&visivel;}).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
   const pendentes=minhas.filter(r=>r.status==="pendente");
   const confirmados=minhas.filter(r=>r.status==="confirmado");
   let corpo="";
@@ -833,7 +833,7 @@ function tiCard(r,pend){
           <span style="font-family:'DM Mono',monospace;font-weight:800;color:${pend?"#c2410c":"#1a6b47"};font-size:14px">${r.horario}${r.horarioFim&&r.horarioFim!==r.horario?" → "+r.horarioFim:""}</span>
           <span style="font-size:13px;font-weight:700;color:${c.navy}">${r.espaco}</span>
           ${isH?`<span style="background:#1a6b47;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">📌 Hoje</span>`:""}
-          ${pend?`<span style="background:#fff7ed;color:#c2410c;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #fed7aa">⏳ Pendente</span>`:`<span style="background:#e2f4ea;color:#1a6b47;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #a7f3d0">✅ Confirmado</span>`}
+          ${pend?`<span style="background:#fff7ed;color:#c2410c;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #fed7aa">⏳ Pendente</span>`:r.statusEquip==="recusado"?`<span style="background:#fef2f2;color:#dc2626;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #fecaca">❌ Equip. recusado</span>`:`<span style="background:#e2f4ea;color:#1a6b47;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #a7f3d0">✅ Confirmado</span>`}
         </div>
         <p style="font-size:12px;color:${c.textMid};margin-bottom:2px">👤 ${r.professor} · ${r.turmaInicio||r.turma||"—"}</p>
         <p style="font-size:12px;color:${c.textMuted}">${r.conteudo}</p>
