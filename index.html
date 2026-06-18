@@ -838,6 +838,7 @@ function tiCard(r,pend){
         <p style="font-size:12px;color:${c.textMid};margin-bottom:2px">👤 ${r.professor} · ${r.turmaInicio||r.turma||"—"}</p>
         <p style="font-size:12px;color:${c.textMuted}">${r.conteudo}</p>
         ${r.local?`<p style="font-size:11px;color:#0369a1;margin-top:3px;font-weight:700">📍 ${r.local}${r.localDevolucao&&r.localDevolucao!==r.local?" → "+r.localDevolucao:""}</p>`:""}
+        ${(r.microfones>0||r.caixasom>0||r.projetor>0||r.bibMic>0||r.bibCaixa>0||r.bibProj>0)?`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px">${(r.microfones||r.bibMic)>0?`<span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #bae6fd">🎤 ${(r.microfones||0)+(r.bibMic||0)} microfone(s)</span>`:""} ${(r.caixasom||r.bibCaixa)>0?`<span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #bae6fd">🔊 ${(r.caixasom||0)+(r.bibCaixa||0)} caixa(s)</span>`:""} ${(r.projetor||r.bibProj)>0?`<span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #bae6fd">📽️ ${(r.projetor||0)+(r.bibProj||0)} projetor(es)</span>`:""}</div>`:""}
       </div>
     </div>
     ${pend?`<div style="display:flex;gap:8px;margin-top:12px">
