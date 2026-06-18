@@ -850,31 +850,31 @@ function tiCard(r,pend){
   </div>`;
 }
 window.tiAprovar=async(id)=>{
-  if(!confirm("Aprovar este agendamento?"))return;
+  if(!confirm("Confirmar disponibilidade de equipamento?"))return;
   const r=_todas.find(r=>r.id===id);
-  await updateDoc(doc(db,"reservas",id),{status:"confirmado"});
+  // Marca equipamento como aprovado — se reserva ainda pendente, confirma também
+  const updates={statusEquip:"aprovado"};
+  if(r?.status==="pendente")updates.status="confirmado";
+  await updateDoc(doc(db,"reservas",id),updates);
   if(r){
     const dataFmt=r.data.split("-").reverse().join("/");
-    // Notif in-app para o professor
-    await gravarNotif(r.professorId,"✅ Agendamento aprovado pelo T.I.",`${r.espaco} — ${dataFmt} às ${r.horario}`,"aprovacao");
-    // Notif in-app para admins
+    await gravarNotif(r.professorId,"✅ Equipamento confirmado pelo T.I.",`${r.espaco} — ${dataFmt} às ${r.horario}`,"aprovacao");
     _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
-      gravarNotif(u.uid,"✅ T.I. aprovou agendamento",`${r.professor} — ${r.espaco} ${dataFmt} às ${r.horario}`,"info")
+      gravarNotif(u.uid,"✅ T.I. confirmou equipamento",`${r.professor} — ${r.espaco} ${dataFmt} às ${r.horario}`,"info")
     );
   }
   re();
 };
 window.tiRecusar=async(id)=>{
-  if(!confirm("Recusar este agendamento?"))return;
+  if(!confirm("Recusar disponibilidade de equipamento?"))return;
   const r=_todas.find(r=>r.id===id);
-  await updateDoc(doc(db,"reservas",id),{status:"recusado"});
+  // Apenas marca equipamento como recusado — NÃO altera status da reserva de espaço
+  await updateDoc(doc(db,"reservas",id),{statusEquip:"recusado"});
   if(r){
     const dataFmt=r.data.split("-").reverse().join("/");
-    // Notif in-app para o professor
-    await gravarNotif(r.professorId,"❌ Agendamento recusado pelo T.I.",`${r.espaco} — ${dataFmt} às ${r.horario}`,"recusa");
-    // Notif in-app para admins
+    await gravarNotif(r.professorId,"❌ Equipamento indisponível",`T.I. informou que não haverá equipamento disponível para ${r.espaco} — ${dataFmt} às ${r.horario}. Sua reserva do espaço continua confirmada.`,"recusa");
     _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
-      gravarNotif(u.uid,"❌ T.I. recusou agendamento",`${r.professor} — ${r.espaco} ${dataFmt} às ${r.horario}`,"info")
+      gravarNotif(u.uid,"❌ T.I. recusou equipamento",`${r.professor} — ${r.espaco} ${dataFmt} às ${r.horario}`,"info")
     );
   }
   re();
