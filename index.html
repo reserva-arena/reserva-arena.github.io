@@ -1468,6 +1468,21 @@ function maBlocoMultiHTML(b,i,eo){
     if(r.horarioFim&&r.horarioFim!==r.horario)return horariosRange(r.horario,r.horarioFim);
     return[r.horario];
   });
+  // Bloqueios fixos por espaço (seg-sex)
+  const BLOQUEIOS_FIXOS=[
+    {espaco:"Sala de Dança",inicio:"11:45",fim:"13:45",label:"🌙 Soninho"}
+  ];
+  const [ano2,mes2,dia2]=(_MA.data||"2000-01-01").split("-").map(Number);
+  const dowData=new Date(Date.UTC(ano2,mes2-1,dia2)).getUTCDay();
+  const isDiaUtil=dowData>=1&&dowData<=5;
+  const isBloqueado=(h)=>{
+    if(m.espaco==="Sala de Dança"&&isDiaUtil){
+      const [hh,mm]=h.split(":").map(Number);
+      const minutos=hh*60+mm;
+      return minutos>=11*60+45&&minutos<13*60+45;
+    }
+    return false;
+  };
 
   // Horários disponíveis para fim (a partir do início)
   let dispFim=[];
@@ -1475,7 +1490,7 @@ function maBlocoMultiHTML(b,i,eo){
     const iIni=HORARIOS.indexOf(b.horario);
     dispFim=[b.horario];
     for(let idx=iIni+1;idx<HORARIOS.length;idx++){
-      if(ocpFire.includes(HORARIOS[idx]))break;
+      if(ocpFire.includes(HORARIOS[idx])||isBloqueado(HORARIOS[idx]))break;
       dispFim.push(HORARIOS[idx]);
     }
   }
