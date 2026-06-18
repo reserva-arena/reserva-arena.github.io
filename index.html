@@ -655,8 +655,8 @@ function renderTIInline(){
   const btnAba=(id,l)=>`<button onclick="tiSetAba('${id}')" style="padding:7px 16px;font-size:12.5px;border-radius:8px;border:1.5px solid ${_TI.aba===id?'#0369a1':c.border};background:${_TI.aba===id?'#0369a1':'transparent'};color:${_TI.aba===id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${l}</button>`;
   window.tiSetAba=(v)=>{_TI.aba=v;re();};
   const minhas=_todas.filter(r=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);const temBibAV=(Number(r.bibMic)>0||Number(r.bibCaixa)>0||Number(r.bibProj)>0);const temMic=(Number(r.microfones)>0||Number(r.caixasom)>0||Number(r.projetor)>0);const isAV=eo?.tipo==="audiovisual"||temBibAV||temMic;if(!isAV)return false;if(r.reservaAutomatica)return false;if(!_TI.historico&&r.data<h)return false;return true;}).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
-  const pendentes=minhas.filter(r=>r.status==="pendente");
-  const confirmados=minhas.filter(r=>r.status==="confirmado");
+  const pendentes=minhas.filter(r=>r.statusEquip==="pendente"||(!r.statusEquip&&(r.status==="pendente")));
+  const confirmados=minhas.filter(r=>r.statusEquip==="aprovado"||(r.status==="confirmado"&&!r.statusEquip));
   let corpo="";
   if(_TI.aba==="minhas"){
     if(pendentes.length)corpo+=`<div style="margin-bottom:20px"><div style="margin-bottom:10px"><span style="background:#ea580c;color:#fff;font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px">⏳ PENDENTES — ${pendentes.length}</span></div>${pendentes.map(r=>tiCard(r,true)).join("")}</div>`;
@@ -853,10 +853,8 @@ function tiCard(r,pend){
 window.tiAprovar=async(id)=>{
   
   const r=_todas.find(r=>r.id===id);
-  // Marca equipamento como aprovado — se reserva ainda pendente, confirma também
-  const updates={statusEquip:"aprovado"};
-  if(r?.status==="pendente")updates.status="confirmado";
-  await updateDoc(doc(db,"reservas",id),updates);
+  // Marca apenas equipamento como aprovado — NÃO altera status da reserva
+  await updateDoc(doc(db,"reservas",id),{statusEquip:"aprovado"});
   if(r){
     const dataFmt=r.data.split("-").reverse().join("/");
     await gravarNotif(r.professorId,"✅ Equipamento confirmado pelo T.I.",`${r.espaco} — ${dataFmt} às ${r.horario}`,"aprovacao");
@@ -2057,7 +2055,7 @@ window.maSalvar=async()=>{
       local:b.local||"",localMontagem:b.local||"",localDevolucao:b.localDevolucao||"",
       quantidade:eo?.tipo==="equipamento"?Number(b.quantidade):null,
       microfones:Number(b.microfones)||0,caixasom:Number(b.caixasom)||0,projetor:Number(b.projetor)||0,
-      status:st,criadoEm:ts,precisaFoto:b.precisaFoto||false,precisaVideo:b.precisaVideo||false,objetivoMidia:b.objetivoMidia||"",descritivo:b.descritivo||"",salaAtividade:b.salaAtividade||"",...(statusMarketing?{statusMarketing}:{}),...(_MA.bibAV===true?{bibMic:_MA.bibMic||0,bibCaixa:_MA.bibCaixa||0,bibProj:_MA.bibProj||0}:{}),
+      status:st,criadoEm:ts,precisaFoto:b.precisaFoto||false,precisaVideo:b.precisaVideo||false,objetivoMidia:b.objetivoMidia||"",descritivo:b.descritivo||"",salaAtividade:b.salaAtividade||"",...(statusMarketing?{statusMarketing}:{}),...(temAV?{statusEquip:"pendente"}:{}),...(_MA.bibAV===true?{bibMic:_MA.bibMic||0,bibCaixa:_MA.bibCaixa||0,bibProj:_MA.bibProj||0}:{}),
       paginas:"",laboratorista:"",reservaAutomatica:false,
       qtdTablets:Number(b.qtdTablets)||0,qtdNotebooks:Number(b.qtdNotebooks)||0,
     };
