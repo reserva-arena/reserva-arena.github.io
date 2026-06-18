@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reserva-arena-v3';
+const CACHE_NAME = 'reserva-arena-v1781795072';
 const ASSETS = [
   '/',
   '/index.html',
