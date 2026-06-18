@@ -2015,9 +2015,11 @@ window.maSalvar=async()=>{
     const dow=new Date(Date.UTC(ano,mes-1,dia)).getUTCDay();
     const eoSalvar=ESPACOS.find(e=>e.nome===espaco);
     const temMidia=blocos[0]?.precisaFoto||blocos[0]?.precisaVideo||eoSalvar?.tipo==="marketing";
+    const temAV=eoSalvar?.tipo==="audiovisual"||((_MA.bibAV===true)&&(_MA.bibMic>0||_MA.bibCaixa>0||_MA.bibProj>0));
     // Equipe de Marketing: sempre pendente (aguarda aprovação da equipe)
     const statusMarketing=temMidia?"pendente":null;
-    const st=(algUrgente||dow===0||dow===6||temMidia)?"pendente":"confirmado";
+    // Pendente se: urgente, fim de semana, mídia solicitada OU equipamento AV solicitado
+    const st=(algUrgente||dow===0||dow===6||temMidia||temAV)?"pendente":"confirmado";
 
     const tph=b.turmasPorHorario||{};
     const isEquipSalvar=eo?.tipo==="equipamento"||eo?.tipo==="audiovisual";
