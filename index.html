@@ -213,7 +213,8 @@ const TURMAS_EDUCACAO_INFANTIL = [
 ];
 const TURMAS_FUND1 = (()=>{const t=[];for(let a=1;a<=5;a++)["A","B","C","D","E"].forEach(l=>t.push(`${a}º${l}`));return t;})();
 const TURMAS_FUND2 = (()=>{const t=[];for(let a=6;a<=9;a++)["A","B","C","D","E","F","G","H"].forEach(l=>t.push(`${a}º${l}`));return t;})();
-const TURMAS = [...TURMAS_EDUCACAO_INFANTIL, ...TURMAS_FUND1, ...TURMAS_FUND2];
+const TURMAS_EXTRAS = ["Extra Música"];
+const TURMAS = [...TURMAS_EDUCACAO_INFANTIL, ...TURMAS_FUND1, ...TURMAS_FUND2, ...TURMAS_EXTRAS];
 const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 
 const NAO_LETIVOS = new Set([
@@ -1521,7 +1522,7 @@ function maBlocoMultiHTML(b,i,eo){
       <option value="">Turma...</option>
       <optgroup label="Ed. Infantil">${TURMAS_EDUCACAO_INFANTIL.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup>
       <optgroup label="Fund. 1">${TURMAS_FUND1.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup>
-      <optgroup label="Fund. 2">${TURMAS_FUND2.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup>
+      <optgroup label="Fund. 2">${TURMAS_FUND2.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup><optgroup label="Aulas Extras">${TURMAS_EXTRAS.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup>
     </select>`;
 
   let html=`<div style="background:${c.bg};border:1.5px solid ${bValMulti(b)?c.blueMid+"55":c.border};border-radius:12px;padding:16px;margin-bottom:12px">
@@ -1580,7 +1581,7 @@ function maBlocoMultiHTML(b,i,eo){
         <option value="">Selecione a turma...</option>
         <optgroup label="Ed. Infantil">${TURMAS_EDUCACAO_INFANTIL.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup>
         <optgroup label="Fund. 1">${TURMAS_FUND1.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup>
-        <optgroup label="Fund. 2">${TURMAS_FUND2.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup>
+        <optgroup label="Fund. 2">${TURMAS_FUND2.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup><optgroup label="Aulas Extras">${TURMAS_EXTRAS.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup>
       </select>`;
     const mesmaT=b.horario===b.horarioFim;
     html+=`<div style="background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:10px;padding:14px;display:grid;gap:12px">
