@@ -1228,8 +1228,15 @@ function iniciarSinoListener(userId){
 async function abrirPainelNotif(){
   const userId=_usuario?.uid;
   if(!userId)return;
-  const q=query(collection(db,"notificacoes"),where("userId","==",userId));
-  const snap=await getDocs(q);
+  let snap;
+  try{
+    const q=query(collection(db,"notificacoes"),where("userId","==",userId));
+    snap=await getDocs(q);
+  }catch(e){
+    console.error("abrirPainelNotif erro:",e);
+    alert("Erro ao abrir notificações: "+e.message);
+    return;
+  }
   const notifs=snap.docs.map(d=>({id:d.id,...d.data()}));
   const c=C();
   const overlay=document.createElement("div");
