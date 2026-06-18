@@ -850,7 +850,7 @@ function tiCard(r,pend){
   </div>`;
 }
 window.tiAprovar=async(id)=>{
-  if(!confirm("Confirmar disponibilidade de equipamento?"))return;
+  
   const r=_todas.find(r=>r.id===id);
   // Marca equipamento como aprovado — se reserva ainda pendente, confirma também
   const updates={statusEquip:"aprovado"};
@@ -866,7 +866,7 @@ window.tiAprovar=async(id)=>{
   re();
 };
 window.tiRecusar=async(id)=>{
-  if(!confirm("Recusar disponibilidade de equipamento?"))return;
+  
   const r=_todas.find(r=>r.id===id);
   // Apenas marca equipamento como recusado — NÃO altera status da reserva de espaço
   await updateDoc(doc(db,"reservas",id),{statusEquip:"recusado"});
