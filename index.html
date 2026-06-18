@@ -1531,8 +1531,10 @@ function maBlocoMultiHTML(b,i,eo){
   ]},
   {id:"fund1",l:"Fund. 1",turmas:[{label:"Fund. 1",items:TURMAS_FUND1}]},
   {id:"fund2",l:"Fund. 2",turmas:[{label:"Fund. 2",items:TURMAS_FUND2}]},
-  {id:"integral",l:"Integral",turmas:[{label:"Integral",items:TURMAS_INTEGRAL}]},
-  {id:"extras",l:"Extras",turmas:[{label:"Extras",items:TURMAS_EXTRAS}]},
+  {id:"outros",l:"Integral/Extras",turmas:[
+    {label:"Integral",items:TURMAS_INTEGRAL},
+    {label:"Extras",items:TURMAS_EXTRAS}
+  ]},
 ];
 const segAtual=b._segmento||"";
 const turmasSeg=segAtual?SEGMENTOS.find(s=>s.id===segAtual)?.turmas||[]:[]; 
