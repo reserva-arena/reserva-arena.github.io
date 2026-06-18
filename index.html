@@ -653,7 +653,7 @@ function renderTIInline(){
   if(!window._TI)window._TI={aba:"minhas",historico:false};
   const btnAba=(id,l)=>`<button onclick="tiSetAba('${id}')" style="padding:7px 16px;font-size:12.5px;border-radius:8px;border:1.5px solid ${_TI.aba===id?'#0369a1':c.border};background:${_TI.aba===id?'#0369a1':'transparent'};color:${_TI.aba===id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${l}</button>`;
   window.tiSetAba=(v)=>{_TI.aba=v;re();};
-  const minhas=_todas.filter(r=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);const temBibAV=(r.bibMic>0||r.bibCaixa>0||r.bibProj>0);const visivel=r.status!=="recusado"||r.statusEquip==="recusado";return (eo?.tipo==="audiovisual"||temBibAV)&&(_TI.historico||r.data>=h)&&!r.reservaAutomatica&&visivel;}).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
+  const minhas=_todas.filter(r=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);const temBibAV=(r.bibMic>0||r.bibCaixa>0||r.bibProj>0);const isAV=eo?.tipo==="audiovisual"||temBibAV;if(!isAV)return false;if(r.reservaAutomatica)return false;if(!_TI.historico&&r.data<h)return false;return true;}).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
   const pendentes=minhas.filter(r=>r.status==="pendente");
   const confirmados=minhas.filter(r=>r.status==="confirmado");
   let corpo="";
