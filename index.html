@@ -751,7 +751,7 @@ function renderMarketing(){
 window.mkAprovar=async(id)=>{
   if(!confirm("Aprovar esta solicitação de foto/vídeo?"))return;
   const r=_todas.find(r=>r.id===id);
-  await updateDoc(doc(db,"reservas",id),{statusMarketing:"aprovado",status:"confirmado"});
+  await updateDoc(doc(db,"reservas",id),{statusMarketing:"aprovado"});
   if(r){
     const local=r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco;
     const dataFmt=r.data.split("-").reverse().join("/");
@@ -765,7 +765,7 @@ window.mkAprovar=async(id)=>{
 window.mkRecusar=async(id)=>{
   if(!confirm("Recusar esta solicitação?"))return;
   const r=_todas.find(r=>r.id===id);
-  await updateDoc(doc(db,"reservas",id),{statusMarketing:"recusado",status:"recusado"});
+  await updateDoc(doc(db,"reservas",id),{statusMarketing:"recusado"});
   if(r){
     const local=r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco;
     const dataFmt=r.data.split("-").reverse().join("/");
