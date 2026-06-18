@@ -1225,7 +1225,7 @@ function iniciarSinoListener(userId){
   });
 }
 
-async function abrirPainelNotif(){
+window.abrirPainelNotif=async function abrirPainelNotif(){
   const userId=_usuario?.uid;
   if(!userId)return;
   let snap;
@@ -1277,12 +1277,12 @@ async function abrirPainelNotif(){
   }
 }
 
-function fecharPainelNotif(){
+window.fecharPainelNotif=function fecharPainelNotif(){
   const el=document.getElementById("notif-overlay");
   if(el)el.remove();
 }
 
-async function marcarTodasLidas(){
+window.marcarTodasLidas=async function marcarTodasLidas(){
   const q=query(collection(db,"notificacoes"),where("userId","==",_usuario?.uid),where("lida","==",false));
   const snap=await getDocs(q);
   const batch=writeBatch(db);
