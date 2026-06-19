@@ -1648,14 +1648,20 @@ const selTurma=(horario,val)=>`
       // Vários horários → linha por horário
       html+=`<div>
         <label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">🎓 Turmas por horário *</label>
-        <p style="font-size:11px;color:${c.textMuted};margin:4px 0 10px">Selecione a turma de cada horário</p>
+        <p style="font-size:11px;color:${c.textMuted};margin:4px 0 10px">Selecione o segmento e a turma de cada horário</p>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px">
+          ${SEGMENTOS.map(s=>`<button onclick="window.maSetSegmento(${i},'${s.id}')" style="padding:5px 10px;font-size:11px;font-weight:700;border-radius:20px;border:1.5px solid ${segAtual===s.id?'#1a6b47':'#cbd5e1'};background:${segAtual===s.id?'#1a6b47':'transparent'};color:${segAtual===s.id?'#fff':'#475569'};cursor:pointer;font-family:inherit">${s.l}</button>`).join("")}
+        </div>
         <div style="display:grid;gap:6px">
           ${rangeAtual.map(h=>{
             const turmaVal=(b.turmasPorHorario||{})[h]||"";
             const ok=!!turmaVal;
             return`<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;background:${ok?c.greenBg:c.surface};border:1.5px solid ${ok?c.greenBorder:c.border}">
               <span style="font-family:'DM Mono',monospace;font-weight:800;color:${ok?c.green:c.textMuted};font-size:13px;min-width:42px">${h}</span>
-              <div style="flex:1">${selTurma(h,turmaVal)}</div>
+              <div style="flex:1">${segAtual?`<select onchange="maSetTurmaPorHorario(${i},'${h}',this.value)" style="${sel()};font-size:13px;padding:7px 10px">
+                <option value="">Turma...</option>
+                ${turmasSeg.map(g=>`<optgroup label="${g.label}">${g.items.map(t=>`<option ${turmaVal===t?"selected":""}>${t}</option>`).join("")}</optgroup>`).join("")}
+              </select>`:`<span style="font-size:12px;color:${c.textMuted}">← Selecione o segmento</span>`}</div>
               ${ok?`<span style="font-size:14px">✓</span>`:`<span style="font-size:14px;color:${c.textMuted}">○</span>`}
             </div>`;
           }).join("")}
