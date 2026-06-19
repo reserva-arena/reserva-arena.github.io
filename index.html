@@ -1963,10 +1963,13 @@ window.maSetTurmaPorHorario=(i,horario,turma)=>{
 window.maSetBlocoRe=(i,k,v)=>{_MA.blocos[i][k]=v;re();};
 window.maSetConteudo=(i,v)=>{
   _MA.blocos[i].conteudo=v;
-  // Atualizar apenas o estado do botão confirmar sem re-render completo
+  const b=_MA.blocos[i];
+  const tph=b.turmasPorHorario||{};
+  const horarios=Object.keys(tph);
+  const turmasOk=horarios.length>0&&horarios.every(h=>tph[h]);
+  const ok=v.trim().length>0&&turmasOk;
   const btn=document.getElementById('btn-conf');
   const btn2=document.getElementById('btn-conf-inline');
-  const ok=v.trim().length>0;
   if(btn){btn.disabled=!ok;btn.style.background=ok?'#1a6b47':'#cbd5e1';}
   if(btn2){btn2.disabled=!ok;btn2.style.background=ok?'#1a6b47':'#cbd5e1';}
 };
