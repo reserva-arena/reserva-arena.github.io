@@ -1711,7 +1711,7 @@ const selTurma=(horario,val)=>`
 
   // ── Conteúdo ──
   html+=`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">📝 Descrição da aula *</label><br>
-    <textarea onchange="maSetBlocoRe(${i},'conteudo',this.value)" rows="4" placeholder="Descreva a atividade, conteúdo e observações..." style="${inp()};resize:vertical;line-height:1.6;margin-top:5px">${b.conteudo}</textarea>
+    <textarea oninput="maSetBlocoRe(${i},'conteudo',this.value)" rows="4" placeholder="Descreva a atividade, conteúdo e observações..." style="${inp()};resize:vertical;line-height:1.6;margin-top:5px">${b.conteudo}</textarea>
   </div>`;
 
 
