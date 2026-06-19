@@ -667,6 +667,29 @@ function renderTIInline(){
   window.tiSetAba=(v)=>{_TI.aba=v;re();};
   const minhas=_todas.filter(r=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);const temBibAV=(Number(r.bibMic)>0||Number(r.bibCaixa)>0||Number(r.bibProj)>0);const temMic=(Number(r.microfones)>0||Number(r.caixasom)>0||Number(r.projetor)>0);const isAV=eo?.tipo==="audiovisual"||temBibAV||temMic;if(!isAV)return false;if(r.reservaAutomatica)return false;if(!_TI.historico&&r.data<h)return false;return true;}).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
   const pendentes=minhas.filter(r=>r.statusEquip==="pendente"||(!r.statusEquip&&(r.status==="pendente")));
+  const proxTI=minhas.filter(r=>r.data>=h).slice(0,2);
+  let feedTIHtml="";
+  if(proxTI.length){
+    let itens="";
+    proxTI.forEach(r=>{
+      const df=r.data.split("-").reverse().join("/");
+      const isUrg=r.status==="pendente";
+      const bg=isUrg?"#fff7ed":c.bg;
+      const borda=isUrg?"#f97316":c.border;
+      let badge="";
+      if(r.statusEquip==="aprovado")badge="<span style='background:#e2f4ea;color:#1a6b47;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px'>✅ ok</span>";
+      else if(r.statusEquip==="recusado")badge="<span style='background:#fef2f2;color:#dc2626;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px'>❌ recusado</span>";
+      else if(isUrg)badge="<span style='background:#fff7ed;color:#ea580c;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px'>⏳ pendente</span>";
+      itens+="<div style='display:flex;align-items:center;gap:10px;padding:8px 10px;background:"+bg+";border:1px solid "+borda+";border-radius:8px;margin-bottom:6px'>"+
+        "<div style='flex:1;min-width:0'>"+
+        "<p style='font-size:12px;font-weight:700;color:"+c.navy+";white-space:nowrap;overflow:hidden;text-overflow:ellipsis'>"+r.horario+" &middot; "+r.espaco+"</p>"+
+        "<p style='font-size:11px;color:"+c.textMuted+";white-space:nowrap;overflow:hidden;text-overflow:ellipsis'>"+r.professor+" &middot; "+(r.turmaInicio||r.turma||"—")+" &middot; "+df+"</p>"+
+        "</div>"+badge+"</div>";
+    });
+    feedTIHtml="<div style='background:"+c.surface+";border:1px solid "+c.border+";border-radius:12px;padding:12px 16px;margin-bottom:16px'>"+
+      "<p style='font-size:12px;font-weight:800;color:"+c.textMuted+";text-transform:uppercase;margin-bottom:10px'>📅 Próximos agendamentos</p>"+
+      itens+"</div>";
+  }
   const confirmados=minhas.filter(r=>r.statusEquip==="aprovado"||(r.status==="confirmado"&&!r.statusEquip));
   let corpo="";
   if(_TI.aba==="minhas"){
@@ -824,6 +847,7 @@ function renderTI(){
         <button onclick="window._TI.historico=!window._TI.historico;re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_TI.historico?c.navy:'transparent'};color:${_TI.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_TI.historico?"Ocultar hist.":"Ver histórico"}</button>
       </div>
       ${pendentes.length&&_TI.aba==="todos"?`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="tiSetAba('minhas')"><p style="font-size:13px;font-weight:700;color:#c2410c">⏳ ${pendentes.length} agendamento${pendentes.length===1?"":"s"} aguardando aprovação — Ver agora →</p></div>`:""}
+      ${feedTIHtml}
       ${corpo}
     </div>
   </div>`;
