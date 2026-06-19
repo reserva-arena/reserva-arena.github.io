@@ -1968,6 +1968,7 @@ window.maSetSegmento=(i,seg)=>{
   re();
 };
 window.toggleRecorrente=()=>{_MA.recorrente=!_MA.recorrente;re();};
+window.toggleFeedAdmin=()=>{_A.feedExpandido=!_A.feedExpandido;re();};
 window.maAddBloco=()=>{_MA.blocos.push(bVazio());re();};
 window.maRemBloco=i=>{_MA.blocos.splice(i,1);re();};
 window.maConfirmar=()=>{_MA.resumo=true;re();};
@@ -2324,8 +2325,10 @@ function renderAdminView(){
   </div>`;
 
   // ── Feed: últimos agendamentos ──
-  const ultimos=filtradas.filter(r=>!r.reservaAutomatica).slice(0,10);
-  if(ultimos.length){
+  const todosFeed=filtradas.filter(r=>!r.reservaAutomatica);
+  const limFeed=_A.feedExpandido?todosFeed.length:5;
+  const ultimos=todosFeed.slice(0,limFeed);
+  if(todosFeed.length){
     html+=`<div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:12px 16px;margin-bottom:16px">
       <p style="font-size:12px;font-weight:800;color:${c.textMuted};text-transform:uppercase;margin-bottom:10px">🕐 Últimos agendamentos</p>
       ${ultimos.map(r=>{
@@ -2344,6 +2347,7 @@ function renderAdminView(){
           ${statusBadge}
         </div>`;
       }).join('')}
+      ${todosFeed.length>5?`<button onclick="toggleFeedAdmin()" style="width:100%;margin-top:6px;padding:8px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.textMuted};font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">${_A.feedExpandido?'▲ Ver menos':'▼ Ver mais ('+todosFeed.length+' no total)'}</button>`:''}
     </div>`;
   }
 
