@@ -645,7 +645,10 @@ function renderMarketingInline(){
     const todos=_todas.filter(r=>(_MK.historico||r.data>=h)&&r.status!=="recusado"&&!r.reservaAutomatica).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
     const pd={};todos.forEach(r=>{if(!pd[r.data])pd[r.data]=[];pd[r.data].push(r);});
     if(!todos.length)corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">📅</p><p style="margin-top:12px">Nenhum agendamento.</p></div>`;
-    Object.entries(pd).forEach(([data,rs])=>{const[a2,m2,d2]=data.split("-");const isH=data===h;corpo+=`<div style="margin-bottom:14px"><div style="background:${isH?"#1a6b47":"#64748b"};color:#fff;border-radius:7px;padding:3px 12px;font-size:11.5px;font-weight:700;display:inline-block;margin-bottom:8px">${isH?"📌 Hoje":`${d2}/${m2}/${a2}`}</div>`;rs.forEach(r=>{corpo+=`<div style="display:flex;gap:10px;padding:10px 14px;border-radius:10px;margin-bottom:6px;background:${c.surface};border:1px solid ${c.border}"><div style="min-width:72px"><p style="font-size:12px;font-family:'DM Mono',monospace;font-weight:800;color:${c.green}">${r.horario}${r.horarioFim&&r.horarioFim!==r.horario?" → "+r.horarioFim:""}</p></div><div style="flex:1"><p style="font-weight:700;font-size:13px;color:${c.navy}">${r.espaco}</p><p style="font-size:12px;color:${c.textMid}">${r.professor} · ${r.turmaInicio||r.turma||"—"}</p><p style="font-size:12px;color:${c.textMuted}">${r.conteudo||""}</p></div></div>`;});corpo+=`</div>`;});
+    // Feed compacto: 5 primeiros, expandível
+    const limTI=_TI.feedExp?todos.length:5;
+    const todosFeed=todos.slice(0,limTI);
+    Object.entries(pd).filter(([d])=>todosFeed.some(r=>r.data===d)).forEach(([data,rs])=>{const[a2,m2,d2]=data.split("-");const isH=data===h;corpo+=`<div style="margin-bottom:14px"><div style="background:${isH?"#1a6b47":"#64748b"};color:#fff;border-radius:7px;padding:3px 12px;font-size:11.5px;font-weight:700;display:inline-block;margin-bottom:8px">${isH?"📌 Hoje":`${d2}/${m2}/${a2}`}</div>`;rs.forEach(r=>{corpo+=`<div style="display:flex;gap:10px;padding:10px 14px;border-radius:10px;margin-bottom:6px;background:${c.surface};border:1px solid ${c.border}"><div style="min-width:72px"><p style="font-size:12px;font-family:'DM Mono',monospace;font-weight:800;color:${c.green}">${r.horario}${r.horarioFim&&r.horarioFim!==r.horario?" → "+r.horarioFim:""}</p></div><div style="flex:1"><p style="font-weight:700;font-size:13px;color:${c.navy}">${r.espaco}</p><p style="font-size:12px;color:${c.textMid}">${r.professor} · ${r.turmaInicio||r.turma||"—"}</p><p style="font-size:12px;color:${c.textMuted}">${r.conteudo||""}</p></div></div>`;});corpo+=`</div>`;});
   }
   return`<div style="padding:4px 0">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
@@ -659,7 +662,7 @@ function renderMarketingInline(){
 
 function renderTIInline(){
   const c=C(),h=fmtHoje();
-  if(!window._TI)window._TI={aba:"minhas",historico:false};
+  if(!window._TI)window._TI={aba:"minhas",historico:false,feedExp:false};
   const btnAba=(id,l)=>`<button onclick="tiSetAba('${id}')" style="padding:7px 16px;font-size:12.5px;border-radius:8px;border:1.5px solid ${_TI.aba===id?'#0369a1':c.border};background:${_TI.aba===id?'#0369a1':'transparent'};color:${_TI.aba===id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${l}</button>`;
   window.tiSetAba=(v)=>{_TI.aba=v;re();};
   const minhas=_todas.filter(r=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);const temBibAV=(Number(r.bibMic)>0||Number(r.bibCaixa)>0||Number(r.bibProj)>0);const temMic=(Number(r.microfones)>0||Number(r.caixasom)>0||Number(r.projetor)>0);const isAV=eo?.tipo==="audiovisual"||temBibAV||temMic;if(!isAV)return false;if(r.reservaAutomatica)return false;if(!_TI.historico&&r.data<h)return false;return true;}).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
@@ -741,6 +744,7 @@ function renderMarketing(){
       rs.forEach(r=>{corpo+=`<div style="display:flex;gap:10px;padding:10px 14px;border-radius:10px;margin-bottom:6px;background:${c.surface};border:1px solid ${c.border}"><div style="min-width:72px"><p style="font-size:12px;font-family:'DM Mono',monospace;font-weight:800;color:${c.green}">${r.horario}${r.horarioFim&&r.horarioFim!==r.horario?" → "+r.horarioFim:""}</p></div><div style="flex:1"><p style="font-weight:700;font-size:13px;color:${c.navy}">${r.espaco}</p><p style="font-size:12px;color:${c.textMid}">${r.professor} · ${r.turmaInicio||r.turma||"—"}</p><p style="font-size:12px;color:${c.textMuted}">${r.conteudo||""}</p></div></div>`;});
       corpo+=`</div>`;
     });
+    if(todos.length>5)corpo+=`<button onclick="window._TI.feedExp=!window._TI.feedExp;re()" style="width:100%;padding:8px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.textMuted};font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">${_TI.feedExp?'▲ Ver menos':'▼ Ver mais ('+todos.length+' no total)'}</button>`;
   }
   $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="no">
     <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#0d2b1a,#1a6b47)"};padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100">
