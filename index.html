@@ -2130,7 +2130,7 @@ window.maSalvar=async()=>{
     // Equipe de Marketing: sempre pendente (aguarda aprovação da equipe)
     const statusMarketing=temMidia?"pendente":null;
     // Pendente se: urgente, fim de semana, mídia solicitada OU equipamento AV solicitado
-    const st=(algUrgente||dow===0||dow===6||temMidia||temAV)?"pendente":"confirmado";
+    const st=(algUrgente||dow===0||dow===6||temAV)?"pendente":"confirmado";
 
     const tph=b.turmasPorHorario||{};
     const isEquipSalvar=eo?.tipo==="equipamento"||eo?.tipo==="audiovisual";
