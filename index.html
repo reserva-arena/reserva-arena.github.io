@@ -966,6 +966,8 @@ window.setAdminVisu=(v)=>{
   re();
 };
 window.irInicio=()=>{
+  if(window._TI){_TI.aba="minhas";_TI.historico=false;_TI.feedExp=false;}
+  if(window._MK){_MK.aba="minhas";_MK.historico=false;}
   if(_usuario?.perfil==="admin"){
     _A.modoVisu="calendario";_A.fEspaco="";_A.fProf="";_A.fStatus="";_A.fTurma="";
     _A.diaSel=null;_A.historico=false;
@@ -2009,12 +2011,7 @@ window.maSetSegmento=(i,seg)=>{
   re();
 };
 window.toggleRecorrente=()=>{_MA.recorrente=!_MA.recorrente;re();};
-window.goHome=()=>{
-  if(window._TI){_TI.aba="minhas";_TI.historico=false;_TI.feedExp=false;}
-  if(window._MK){_MK.aba="minhas";_MK.historico=false;}
-  if(window._A){_A.modoVisu="agenda";}
-  re();
-};
+window.goHome=()=>irInicio();
 window.toggleFeedAdmin=()=>{_A.feedExpandido=!_A.feedExpandido;re();};
 window.maAddBloco=()=>{_MA.blocos.push(bVazio());re();};
 window.maRemBloco=i=>{_MA.blocos.splice(i,1);re();};
