@@ -1903,6 +1903,7 @@ function renderMAResumo(){
           <p style="font-size:12px;font-weight:700;color:${c.green}">${rangeHors.length} horário${rangeHors.length!==1?"s":""} · ${m.espaco}</p>
           ${b.local&&eo?.equipAvulso?`<p style="font-size:11px;color:#0369a1;margin-top:2px;font-weight:700">🏫 ${b.local}${b.localDevolucao&&b.localDevolucao!==b.local?" → "+b.localDevolucao:""}</p>`:""}
           ${b.precisaFoto?`<p style="font-size:11px;color:#7c3aed;margin-top:2px">📸 Foto solicitada</p>`:""}${b.precisaVideo?`<p style="font-size:11px;color:#1d4ed8;margin-top:2px">🎬 Vídeo solicitado</p>`:""}
+          ${_MA.bibAV===true&&(_MA.bibMic>0||_MA.bibCaixa>0||_MA.bibProj>0)?`<p style="font-size:11px;color:#0369a1;margin-top:2px">🎤 Equipamentos: ${_MA.bibMic>0?_MA.bibMic+' mic ':''}${_MA.bibCaixa>0?_MA.bibCaixa+' caixa ':''}${_MA.bibProj>0?_MA.bibProj+' proj':''}</p>`:""}
           ${b.qtdTablets>0?`<p style="font-size:11px;color:#0369a1;margin-top:2px">📱 ${b.qtdTablets} tablet${b.qtdTablets>1?"s":""}</p>`:""}
           ${b.qtdNotebooks>0?`<p style="font-size:11px;color:#0369a1;margin-top:2px">💻 ${b.qtdNotebooks} computador${b.qtdNotebooks>1?"es":""}</p>`:""}
         </div>
