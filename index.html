@@ -1711,7 +1711,7 @@ const selTurma=(horario,val)=>`
 
   // ── Conteúdo ──
   html+=`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">📝 Descrição da aula *</label><br>
-    <textarea oninput="maSetConteudo(${i},this.value)" onblur="re()" rows="4" placeholder="Descreva a atividade, conteúdo e observações..." style="${inp()};resize:vertical;line-height:1.6;margin-top:5px">${b.conteudo}</textarea>
+    <textarea oninput="maSetConteudo(${i},this.value)" rows="4" placeholder="Descreva a atividade, conteúdo e observações..." style="${inp()};resize:vertical;line-height:1.6;margin-top:5px">${b.conteudo}</textarea>
   </div>`;
 
 
@@ -1961,17 +1961,11 @@ window.maSetTurmaPorHorario=(i,horario,turma)=>{
   re();
 };
 window.maSetBlocoRe=(i,k,v)=>{_MA.blocos[i][k]=v;re();};
+let _reTimer=null;
 window.maSetConteudo=(i,v)=>{
   _MA.blocos[i].conteudo=v;
-  const b=_MA.blocos[i];
-  const tph=b.turmasPorHorario||{};
-  const horarios=Object.keys(tph);
-  const turmasOk=horarios.length>0&&horarios.every(h=>tph[h]);
-  const ok=v.trim().length>0&&turmasOk;
-  const btn=document.getElementById('btn-conf');
-  const btn2=document.getElementById('btn-conf-inline');
-  if(btn){btn.disabled=!ok;btn.style.background=ok?'#1a6b47':'#cbd5e1';}
-  if(btn2){btn2.disabled=!ok;btn2.style.background=ok?'#1a6b47':'#cbd5e1';}
+  clearTimeout(_reTimer);
+  _reTimer=setTimeout(()=>re(),300);
 };
 window.maSetSegmento=(i,seg)=>{
   if(!_MA.blocos[i])return;
