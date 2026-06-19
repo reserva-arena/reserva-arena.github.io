@@ -1711,7 +1711,7 @@ const selTurma=(horario,val)=>`
 
   // ── Conteúdo ──
   html+=`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">📝 Descrição da aula *</label><br>
-    <textarea oninput="maSetBlocoRe(${i},'conteudo',this.value)" rows="4" placeholder="Descreva a atividade, conteúdo e observações..." style="${inp()};resize:vertical;line-height:1.6;margin-top:5px">${b.conteudo}</textarea>
+    <textarea oninput="maSetConteudo(${i},this.value)" onblur="re()" rows="4" placeholder="Descreva a atividade, conteúdo e observações..." style="${inp()};resize:vertical;line-height:1.6;margin-top:5px">${b.conteudo}</textarea>
   </div>`;
 
 
@@ -1961,6 +1961,15 @@ window.maSetTurmaPorHorario=(i,horario,turma)=>{
   re();
 };
 window.maSetBlocoRe=(i,k,v)=>{_MA.blocos[i][k]=v;re();};
+window.maSetConteudo=(i,v)=>{
+  _MA.blocos[i].conteudo=v;
+  // Atualizar apenas o estado do botão confirmar sem re-render completo
+  const btn=document.getElementById('btn-conf');
+  const btn2=document.getElementById('btn-conf-inline');
+  const ok=v.trim().length>0;
+  if(btn){btn.disabled=!ok;btn.style.background=ok?'#1a6b47':'#cbd5e1';}
+  if(btn2){btn2.disabled=!ok;btn2.style.background=ok?'#1a6b47':'#cbd5e1';}
+};
 window.maSetSegmento=(i,seg)=>{
   if(!_MA.blocos[i])return;
   _MA.blocos[i]._segmento=seg;
