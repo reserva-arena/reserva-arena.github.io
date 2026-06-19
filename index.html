@@ -667,21 +667,6 @@ function renderTIInline(){
   window.tiSetAba=(v)=>{_TI.aba=v;re();};
   const minhas=_todas.filter(r=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);const temBibAV=(Number(r.bibMic)>0||Number(r.bibCaixa)>0||Number(r.bibProj)>0);const temMic=(Number(r.microfones)>0||Number(r.caixasom)>0||Number(r.projetor)>0);const isAV=eo?.tipo==="audiovisual"||temBibAV||temMic;if(!isAV)return false;if(r.reservaAutomatica)return false;if(!_TI.historico&&r.data<h)return false;return true;}).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
   const pendentes=minhas.filter(r=>r.statusEquip==="pendente"||(!r.statusEquip&&(r.status==="pendente")));
-  const hoje3=fmtHoje();
-  const proxTI=minhas.filter(r=>r.data>=hoje3).slice(0,2);
-  let feedTIHtml="";
-  if(proxTI.length){
-    feedTIHtml=`<div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:12px 16px;margin-bottom:16px"><p style="font-size:12px;font-weight:800;color:${c.textMuted};text-transform:uppercase;margin-bottom:10px">📅 Próximos agendamentos</p>`+proxTI.map(r=>{
-      const dataFmt=r.data.split("-").reverse().join("/");
-      const isUrg=r.status==="pendente";
-      const bg=isUrg?"#fff7ed":c.bg;
-      const borda=isUrg?"#f97316":c.border;
-      const badge=r.statusEquip==="aprovado"?"<span style='background:#e2f4ea;color:#1a6b47;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px'>✅ Equip. ok</span>":
-        r.statusEquip==="recusado"?"<span style='background:#fef2f2;color:#dc2626;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px'>❌ Recusado</span>":
-        isUrg?"<span style='background:#fff7ed;color:#ea580c;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px'>⏳ Pendente</span>":"";
-      return"<div style='display:flex;align-items:center;gap:10px;padding:8px 10px;background:"+bg+";border:1px solid "+borda+";border-radius:8px;margin-bottom:6px'><div style='flex:1;min-width:0'><p style='font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap'>"+r.horario+" · "+r.espaco+"</p><p style='font-size:11px;color:"+c.textMuted+";overflow:hidden;text-overflow:ellipsis;white-space:nowrap'>"+r.professor+" · "+(r.turmaInicio||r.turma||"—")+" · "+dataFmt+"</p></div>"+badge+"</div>";
-    }).join("")+"</div>";
-  }
   const confirmados=minhas.filter(r=>r.statusEquip==="aprovado"||(r.status==="confirmado"&&!r.statusEquip));
   let corpo="";
   if(_TI.aba==="minhas"){
@@ -763,7 +748,7 @@ function renderMarketing(){
   }
   $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="no">
     <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#0d2b1a,#1a6b47)"};padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100">
-      <div style="display:flex;align-items:center;gap:8px"><button onclick="goHome()" title="Início" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center">🏠</button>${logoHTML(28)}<p style="font-size:13px;font-weight:800;color:#fff">📸 Marketing</p></div>
+      <div style="display:flex;align-items:center;gap:8px">${logoHTML(36)}<p style="font-size:13px;font-weight:800;color:#fff">📸 Marketing</p></div>
       <div style="display:flex;align-items:center;gap:6px">${avatarHTML(_usuario?.nome,28,"purple")}<button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button><button onclick="doSignOut()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">Sair</button></div>
     </header>
     <div style="max-width:700px;margin:0 auto;padding:16px 14px">
@@ -772,7 +757,6 @@ function renderMarketing(){
         <button onclick="window._MK.historico=!window._MK.historico;re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_MK.historico?c.navy:'transparent'};color:${_MK.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_MK.historico?"Ocultar hist.":"Ver histórico"}</button>
       </div>
       ${pendentes.length&&_MK.aba==="todos"?`<div style="background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="mkSetAba('minhas')"><p style="font-size:13px;font-weight:700;color:#7c3aed">⏳ ${pendentes.length} solicitaç${pendentes.length===1?"ão":"ões"} aguardando sua aprovação — Ver agora →</p></div>`:""}
-      ${feedTIHtml}
       ${corpo}
     </div>
   </div>`;
@@ -831,7 +815,7 @@ function renderTI(){
   }
   $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="no">
     <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#0d2b1a,#1a6b47)"};padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100">
-      <div style="display:flex;align-items:center;gap:8px"><button onclick="goHome()" title="Início" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center">🏠</button>${logoHTML(28)}<p style="font-size:13px;font-weight:800;color:#fff">💻 T.I.</p></div>
+      <div style="display:flex;align-items:center;gap:8px">${logoHTML(36)}<p style="font-size:13px;font-weight:800;color:#fff">💻 T.I.</p></div>
       <div style="display:flex;align-items:center;gap:6px">${avatarHTML(_usuario?.nome,28,"blue")}<button id="sino-btn" onclick="abrirPainelNotif()" title="Notificações" style="display:none;position:relative;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:30px;height:30px;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;font-family:inherit">🔔<span id="sino-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:#dc2626;color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:99px;align-items:center;justify-content:center;padding:0 3px;font-family:inherit"></span></button><button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button><button onclick="doSignOut()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">Sair</button></div>
     </header>
     <div style="max-width:700px;margin:0 auto;padding:16px 14px">
@@ -840,7 +824,7 @@ function renderTI(){
         <button onclick="window._TI.historico=!window._TI.historico;re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_TI.historico?c.navy:'transparent'};color:${_TI.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_TI.historico?"Ocultar hist.":"Ver histórico"}</button>
       </div>
       ${pendentes.length&&_TI.aba==="todos"?`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="tiSetAba('minhas')"><p style="font-size:13px;font-weight:700;color:#c2410c">⏳ ${pendentes.length} agendamento${pendentes.length===1?"":"s"} aguardando aprovação — Ver agora →</p></div>`:""}
-            ${corpo}
+      ${corpo}
     </div>
   </div>`;
 }
@@ -958,8 +942,6 @@ window.setAdminVisu=(v)=>{
   re();
 };
 window.irInicio=()=>{
-  if(window._TI){_TI.aba="minhas";_TI.historico=false;_TI.feedExp=false;}
-  if(window._MK){_MK.aba="minhas";_MK.historico=false;}
   if(_usuario?.perfil==="admin"){
     _A.modoVisu="calendario";_A.fEspaco="";_A.fProf="";_A.fStatus="";_A.fTurma="";
     _A.diaSel=null;_A.historico=false;
@@ -2003,7 +1985,6 @@ window.maSetSegmento=(i,seg)=>{
   re();
 };
 window.toggleRecorrente=()=>{_MA.recorrente=!_MA.recorrente;re();};
-window.goHome=()=>irInicio();
 window.toggleFeedAdmin=()=>{_A.feedExpandido=!_A.feedExpandido;re();};
 window.maAddBloco=()=>{_MA.blocos.push(bVazio());re();};
 window.maRemBloco=i=>{_MA.blocos.splice(i,1);re();};
