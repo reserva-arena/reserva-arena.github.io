@@ -693,7 +693,7 @@ function renderTIInline(){
         "</div>"+badge+"</div>";
     });
     feedTIHtml="<div style='background:"+c.surface+";border:1px solid "+c.border+";border-radius:12px;padding:12px 16px;margin-bottom:16px'>"+
-      "<p style='font-size:12px;font-weight:800;color:"+c.textMuted+";text-transform:uppercase;margin-bottom:10px'>📅 Próximos agendamentos</p>"+
+      "<p style='font-size:12px;font-weight:800;color:"+c.textMuted+";text-transform:uppercase;margin-bottom:10px'>🕐 Últimos agendamentos</p>"+
       itens+"</div>";
   }
   const confirmados=minhas.filter(r=>r.statusEquip==="aprovado"||(r.status==="confirmado"&&!r.statusEquip));
@@ -2370,8 +2370,7 @@ function renderAdminView(){
   </div>`;
 
   // ── Feed: últimos agendamentos ──
-  const hoje2=fmtHoje();
-  const todosFeed=_todas.filter(r=>!r.reservaAutomatica&&r.data>=hoje2).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
+  const todosFeed=_todas.filter(r=>!r.reservaAutomatica).sort((a,b)=>{const ta=a.criadoEm?.seconds||0;const tb=b.criadoEm?.seconds||0;return tb-ta;});
   const limFeed=_A.feedExpandido?todosFeed.length:2;
   const ultimos=todosFeed.slice(0,limFeed);
   if(todosFeed.length){
