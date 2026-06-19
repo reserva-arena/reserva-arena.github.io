@@ -403,9 +403,15 @@ function calMensalHTML(cid,ano,mes,porData,dataSel){
 }
 
 // ─── ESTADO GLOBAL ────────────────────────────────────────────────────────────
-let _usuario=null,_todas=[],_minhas=[],_usuarios=[];window.__getTodas=()=>_todas;
+let _usuario=null,_todas=[],_minhas=[],_usuarios=[];
 let _unsub1=null,_unsub2=null,_unsub3=null;
 
+function exigePermissao(perfisPermitidos){
+  if(!_usuario){console.warn('Acesso negado: não autenticado');return false;}
+  if(_usuario.ativo===false){console.warn('Acesso negado: conta inativa');return false;}
+  if(!perfisPermitidos.includes(_usuario.perfil)){console.warn('Acesso negado: perfil sem permissão');return false;}
+  return true;
+}
 function re(){
   const c=C();
   document.body.style.background=c.bg;
@@ -2671,6 +2677,7 @@ window.aSetModo=v=>{_A.modoVisu=v;re();};
 window.aSetAba=v=>{_A.aba=v;re();};
 window.aNavMes=dir=>{let nm=_A.mesCal.m+dir,na=_A.mesCal.a;if(nm>11){nm=0;na++;}if(nm<0){nm=11;na--;}_A.mesCal={a:na,m:nm};_A.diaSel=null;re();};
 window.aModerar=async(id,status)=>{
+  if(!exigePermissao(['admin'])){alert('Acesso negado.');return;}
   if(!confirm(`${status==="confirmado"?"Aprovar":"Recusar"} esta reserva?`))return;
   const r=_todas.find(r=>r.id===id);
   await updateDoc(doc(db,"reservas",id),{status});
@@ -2684,6 +2691,7 @@ window.aModerar=async(id,status)=>{
   }
 };
 window.aExcluir=async id=>{
+  if(!exigePermissao(['admin'])){alert('Acesso negado.');return;}
   if(!confirm("Excluir esta reserva?"))return;
   const r=_todas.find(r=>r.id===id);
   if(!r){await deleteDoc(doc(db,"reservas",id));return;}
@@ -2731,6 +2739,7 @@ function modalGerenciarHTML(){
 }
 
 window.abrirGerenciarUsuarios=()=>{
+  if(!exigePermissao(['admin'])){alert('Acesso negado.');return;}
   $("mod-gu").style.display="flex";
   setTimeout(()=>{
     const n=document.getElementById("gu-nome");const e=document.getElementById("gu-email");const s=document.getElementById("gu-senha");
@@ -2742,6 +2751,7 @@ window.abrirGerenciarUsuarios=()=>{
 window.fecharGerenciarUsuarios=()=>{$("mod-gu").style.display="none";};
 
 window.guCriarDireto=async()=>{
+  if(!exigePermissao(['admin'])){alert('Acesso negado.');return;}
   const nome=document.getElementById("gu-nome")?.value?.trim();
   const email=document.getElementById("gu-email")?.value?.trim();
   const senha=document.getElementById("gu-senha")?.value;
