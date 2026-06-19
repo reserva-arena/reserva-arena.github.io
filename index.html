@@ -2002,12 +2002,7 @@ window.maSetTurmaPorHorario=(i,horario,turma)=>{
   re();
 };
 window.maSetBlocoRe=(i,k,v)=>{_MA.blocos[i][k]=v;re();};
-let _reTimer=null;
-window.maSetConteudo=(i,v)=>{
-  _MA.blocos[i].conteudo=v;
-  clearTimeout(_reTimer);
-  _reTimer=setTimeout(()=>re(),300);
-};
+window.maSetConteudo=(i,v)=>{_MA.blocos[i].conteudo=v;};
 window.maSetSegmento=(i,seg)=>{
   if(!_MA.blocos[i])return;
   _MA.blocos[i]._segmento=seg;
