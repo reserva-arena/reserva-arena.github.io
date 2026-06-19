@@ -2326,7 +2326,7 @@ function renderAdminView(){
 
   // ── Feed: últimos agendamentos ──
   const todosFeed=filtradas.filter(r=>!r.reservaAutomatica);
-  const limFeed=_A.feedExpandido?todosFeed.length:5;
+  const limFeed=_A.feedExpandido?todosFeed.length:2;
   const ultimos=todosFeed.slice(0,limFeed);
   if(todosFeed.length){
     html+=`<div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:12px 16px;margin-bottom:16px">
@@ -2347,7 +2347,7 @@ function renderAdminView(){
           ${statusBadge}
         </div>`;
       }).join('')}
-      ${todosFeed.length>5?`<button onclick="toggleFeedAdmin()" style="width:100%;margin-top:6px;padding:8px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.textMuted};font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">${_A.feedExpandido?'▲ Ver menos':'▼ Ver mais ('+todosFeed.length+' no total)'}</button>`:''}
+      ${todosFeed.length>2?`<button onclick="toggleFeedAdmin()" style="width:100%;margin-top:6px;padding:8px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.textMuted};font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">${_A.feedExpandido?'▲ Ver menos':'▼ Ver mais ('+todosFeed.length+' no total)'}</button>`:''}
     </div>`;
   }
 
