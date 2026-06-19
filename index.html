@@ -2375,7 +2375,7 @@ function renderAdminView(){
   const ultimos=todosFeed.slice(0,limFeed);
   if(todosFeed.length){
     html+=`<div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:12px 16px;margin-bottom:16px">
-      <p style="font-size:12px;font-weight:800;color:${c.textMuted};text-transform:uppercase;margin-bottom:10px">🕐 Últimos agendamentos</p>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><p style="font-size:12px;font-weight:800;color:${c.textMuted};text-transform:uppercase">🕐 Últimos agendamentos</p>${_A.feedExpandido?`<button onclick="toggleFeedAdmin()" style="font-size:11px;font-weight:700;color:${c.textMuted};background:none;border:1.5px solid ${c.border};border-radius:20px;padding:2px 10px;cursor:pointer;font-family:inherit">▲ Ver menos</button>`:""}</div>
       ${ultimos.map(r=>{
         const dataFmt=r.data?.split('-').reverse().join('/');
         const isUrg=urgentes.find(u=>u.id===r.id);
