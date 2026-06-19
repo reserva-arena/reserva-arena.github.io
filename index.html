@@ -2126,7 +2126,8 @@ window.maSalvar=async()=>{
     const dow=new Date(Date.UTC(ano,mes-1,dia)).getUTCDay();
     const eoSalvar=ESPACOS.find(e=>e.nome===espaco);
     const temMidia=blocos[0]?.precisaFoto||blocos[0]?.precisaVideo||eoSalvar?.tipo==="marketing";
-    const temAV=eoSalvar?.tipo==="audiovisual"||((_MA.bibAV===true)&&(_MA.bibMic>0||_MA.bibCaixa>0||_MA.bibProj>0));
+    const temBibAV=(_MA.bibAV===true)&&(_MA.bibMic>0||_MA.bibCaixa>0||_MA.bibProj>0);
+    const temAV=eoSalvar?.tipo==="audiovisual";
     // Equipe de Marketing: sempre pendente (aguarda aprovação da equipe)
     const statusMarketing=temMidia?"pendente":null;
     // Pendente se: urgente, fim de semana, mídia solicitada OU equipamento AV solicitado
@@ -2151,7 +2152,7 @@ window.maSalvar=async()=>{
       local:b.local||"",localMontagem:b.local||"",localDevolucao:b.localDevolucao||"",
       quantidade:eo?.tipo==="equipamento"?Number(b.quantidade):null,
       microfones:Number(b.microfones)||0,caixasom:Number(b.caixasom)||0,projetor:Number(b.projetor)||0,
-      status:st,criadoEm:ts,precisaFoto:b.precisaFoto||false,precisaVideo:b.precisaVideo||false,objetivoMidia:b.objetivoMidia||"",descritivo:b.descritivo||"",salaAtividade:b.salaAtividade||"",...(statusMarketing?{statusMarketing}:{}),...(temAV?{statusEquip:"pendente"}:{}),...(_MA.bibAV===true?{bibMic:_MA.bibMic||0,bibCaixa:_MA.bibCaixa||0,bibProj:_MA.bibProj||0}:{}),
+      status:st,criadoEm:ts,precisaFoto:b.precisaFoto||false,precisaVideo:b.precisaVideo||false,objetivoMidia:b.objetivoMidia||"",descritivo:b.descritivo||"",salaAtividade:b.salaAtividade||"",...(statusMarketing?{statusMarketing}:{}),...((temAV||temBibAV)?{statusEquip:"pendente"}:{}),...(_MA.bibAV===true?{bibMic:_MA.bibMic||0,bibCaixa:_MA.bibCaixa||0,bibProj:_MA.bibProj||0}:{}),
       paginas:"",laboratorista:"",reservaAutomatica:false,
       qtdTablets:Number(b.qtdTablets)||0,qtdNotebooks:Number(b.qtdNotebooks)||0,
     };
@@ -2266,7 +2267,7 @@ window.maSalvar=async()=>{
 
       // TI: agendamento audiovisual ou com bibAV pendente
       const temAV=eoSalvar?.tipo==="audiovisual"||((_MA.bibAV===true)&&(_MA.bibMic>0||_MA.bibCaixa>0||_MA.bibProj>0));
-      if(st==="pendente"&&temAV){
+      if((temAV||temBibAV)&&(st==="pendente"||temBibAV)){
         _usuarios.filter(u=>u.perfil==="ti"&&u.ativo!==false).forEach(u=>{
           gravarNotif(u.uid,"💻 Nova solicitação de equipamento",`${profNome} · ${espaco} · ${dataFmt} às ${horFmt}`,"ti");
         });
