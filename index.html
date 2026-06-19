@@ -389,9 +389,9 @@ function calMensalHTML(cid,ano,mes,porData,dataSel){
   });
   return`<div style="background:${c.surface};border-radius:16px;border:1px solid ${c.border};overflow:hidden">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid ${c.border}">
-      <button onclick="calNavMA(-1)" style="background:none;border:1px solid ${c.border};border-radius:8px;width:34px;height:34px;cursor:pointer;color:${c.textMid};font-size:16px;font-family:inherit">‹</button>
+      <button onclick="calNavMA('${cid}',-1)" style="background:none;border:1px solid ${c.border};border-radius:8px;width:34px;height:34px;cursor:pointer;color:${c.textMid};font-size:16px;font-family:inherit">‹</button>
       <div style="text-align:center"><p style="font-size:17px;font-weight:800;color:${c.navy}">${MESES[mes]}</p><p style="font-size:12px;color:${c.textMuted}">${ano}</p></div>
-      <button onclick="calNavMA(1)" style="background:none;border:1px solid ${c.border};border-radius:8px;width:34px;height:34px;cursor:pointer;color:${c.textMid};font-size:16px;font-family:inherit">›</button>
+      <button onclick="calNavMA('${cid}',1)" style="background:none;border:1px solid ${c.border};border-radius:8px;width:34px;height:34px;cursor:pointer;color:${c.textMid};font-size:16px;font-family:inherit">›</button>
     </div>
     <div style="padding:12px 16px 16px">
       <div style="display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:6px">
@@ -2011,10 +2011,25 @@ window.maSetSegmento=(i,seg)=>{
   re();
 };
 window.toggleRecorrente=()=>{_MA.recorrente=!_MA.recorrente;re();};
-window.calNavMA=(dir)=>{
-  let nm=_MA.calM+dir,na=_MA.calA;
-  if(nm>11){nm=0;na++;}if(nm<0){nm=11;na--;}
-  _MA.calM=nm;_MA.calA=na;re();
+window.calNavMA=(cid,dir)=>{
+  if(cid==="pmes"&&window._P){
+    let nm=_P.mesCal.m+dir,na=_P.mesCal.a;
+    if(nm>11){nm=0;na++;}if(nm<0){nm=11;na--;}
+    _P.mesCal={a:na,m:nm};
+  } else if(cid==="pub"&&window._pubState){
+    let nm=_pubState.mesCal.m+dir,na=_pubState.mesCal.a;
+    if(nm>11){nm=0;na++;}if(nm<0){nm=11;na--;}
+    _pubState.mesCal={a:na,m:nm};
+  } else if(window._A&&(cid==="adm"||cid==="admcal")){
+    let nm=_A.mesCal.m+dir,na=_A.mesCal.a;
+    if(nm>11){nm=0;na++;}if(nm<0){nm=11;na--;}
+    _A.mesCal={a:na,m:nm};
+  } else {
+    let nm=_MA.calM+dir,na=_MA.calA;
+    if(nm>11){nm=0;na++;}if(nm<0){nm=11;na--;}
+    _MA.calM=nm;_MA.calA=na;
+  }
+  re();
 };
 window.toggleFeedAdmin=()=>{_A.feedExpandido=!_A.feedExpandido;re();};
 window.maAddBloco=()=>{_MA.blocos.push(bVazio());re();};
