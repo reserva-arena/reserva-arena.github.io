@@ -748,7 +748,7 @@ function renderMarketing(){
   }
   $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="no">
     <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#0d2b1a,#1a6b47)"};padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100">
-      <div style="display:flex;align-items:center;gap:8px"><button onclick="re()" title="Início" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center">🏠</button>${logoHTML(28)}<p style="font-size:13px;font-weight:800;color:#fff">📸 Marketing</p></div>
+      <div style="display:flex;align-items:center;gap:8px"><button onclick="goHome()" title="Início" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center">🏠</button>${logoHTML(28)}<p style="font-size:13px;font-weight:800;color:#fff">📸 Marketing</p></div>
       <div style="display:flex;align-items:center;gap:6px">${avatarHTML(_usuario?.nome,28,"purple")}<button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button><button onclick="doSignOut()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">Sair</button></div>
     </header>
     <div style="max-width:700px;margin:0 auto;padding:16px 14px">
@@ -815,7 +815,7 @@ function renderTI(){
   }
   $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="no">
     <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#0d2b1a,#1a6b47)"};padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100">
-      <div style="display:flex;align-items:center;gap:8px"><button onclick="re()" title="Início" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center">🏠</button>${logoHTML(28)}<p style="font-size:13px;font-weight:800;color:#fff">💻 T.I.</p></div>
+      <div style="display:flex;align-items:center;gap:8px"><button onclick="goHome()" title="Início" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center">🏠</button>${logoHTML(28)}<p style="font-size:13px;font-weight:800;color:#fff">💻 T.I.</p></div>
       <div style="display:flex;align-items:center;gap:6px">${avatarHTML(_usuario?.nome,28,"blue")}<button id="sino-btn" onclick="abrirPainelNotif()" title="Notificações" style="display:none;position:relative;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:30px;height:30px;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;font-family:inherit">🔔<span id="sino-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:#dc2626;color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:99px;align-items:center;justify-content:center;padding:0 3px;font-family:inherit"></span></button><button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button><button onclick="doSignOut()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">Sair</button></div>
     </header>
     <div style="max-width:700px;margin:0 auto;padding:16px 14px">
@@ -2009,6 +2009,12 @@ window.maSetSegmento=(i,seg)=>{
   re();
 };
 window.toggleRecorrente=()=>{_MA.recorrente=!_MA.recorrente;re();};
+window.goHome=()=>{
+  if(window._TI){_TI.aba="minhas";_TI.historico=false;_TI.feedExp=false;}
+  if(window._MK){_MK.aba="minhas";_MK.historico=false;}
+  if(window._A){_A.modoVisu="agenda";}
+  re();
+};
 window.toggleFeedAdmin=()=>{_A.feedExpandido=!_A.feedExpandido;re();};
 window.maAddBloco=()=>{_MA.blocos.push(bVazio());re();};
 window.maRemBloco=i=>{_MA.blocos.splice(i,1);re();};
