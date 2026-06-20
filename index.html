@@ -1923,22 +1923,35 @@ const selTurma=(horario,val)=>`
       <p style="font-size:11px;color:${c.textMuted};margin-bottom:10px">Serão entregues e recolhidos na própria sala no período ${b.horario} → ${b.horarioFim}.</p>
       <div style="display:grid;gap:8px">`;
     if(eo.equipAuto.includes("Tablets (18 disp.)")){
+      // Calcular disponibilidade real baseada em reservas existentes no mesmo período
+      const rangeAtualEquip=b.horario&&b.horarioFim?horariosRange(b.horario,b.horarioFim):[b.horario];
+      const reservasMesmoPeriodo=_todas.filter(r=>
+        r.data===_MA.data&&
+        r.id!==_MA.editandoId&&
+        r.status!=="recusado"&&r.status!=="cancelado"&&
+        (r.qtdTablets>0||r.qtdNotebooks>0)&&
+        horariosRange(r.horario,r.horarioFim||r.horario).some(h=>rangeAtualEquip.includes(h))
+      );
+      const tabletsUsados=reservasMesmoPeriodo.reduce((s,r)=>s+(r.qtdTablets||0),0);
+      const notebooksUsados=reservasMesmoPeriodo.reduce((s,r)=>s+(r.qtdNotebooks||0),0);
+      const tabletsDisp=Math.max(0,18-tabletsUsados);
+      const notebooksDisp=Math.max(0,16-notebooksUsados);
       html+=`<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:${c.bg};border-radius:8px;border:1.5px solid ${b.qtdTablets>0?c.blueMid:c.border}">
-        <span style="font-size:16px">📱</span><div style="flex:1"><p style="font-size:13px;font-weight:700;color:${c.navy}">Tablets</p><p style="font-size:11px;color:${c.textMuted}">Máx. 18 disponíveis</p></div>
+        <span style="font-size:16px">📱</span><div style="flex:1"><p style="font-size:13px;font-weight:700;color:${c.navy}">Tablets</p><p style="font-size:11px;color:${tabletsDisp===0?"#dc2626":tabletsDisp<=5?"#d97706":c.textMuted}">${tabletsDisp===0?"❌ Todos reservados":tabletsDisp<=5?"⚠️ Restam apenas "+tabletsDisp:"Máx. "+tabletsDisp+" disponíveis"}</p></div>
         <div style="display:flex;align-items:center;gap:8px">
           <button onclick="maDecEquip(${i},'qtdTablets')" style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${c.surface};cursor:pointer;font-size:16px;font-family:inherit">−</button>
           <span style="font-size:16px;font-weight:800;color:${c.navy};min-width:24px;text-align:center">${b.qtdTablets||0}</span>
-          <button onclick="maIncEquip(${i},'qtdTablets',18)" style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${c.surface};cursor:pointer;font-size:16px;font-family:inherit">+</button>
+          <button onclick="maIncEquip(${i},'qtdTablets',tabletsDisp)" style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${c.surface};cursor:pointer;font-size:16px;font-family:inherit">+</button>
         </div>
       </div>`;
     }
     if(eo.equipAuto.includes("Computadores (16 disp.)")){
       html+=`<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:${c.bg};border-radius:8px;border:1.5px solid ${b.qtdNotebooks>0?c.blueMid:c.border}">
-        <span style="font-size:16px">💻</span><div style="flex:1"><p style="font-size:13px;font-weight:700;color:${c.navy}">Computadores</p><p style="font-size:11px;color:${c.textMuted}">Máx. 16 disponíveis</p></div>
+        <span style="font-size:16px">💻</span><div style="flex:1"><p style="font-size:13px;font-weight:700;color:${c.navy}">Computadores</p><p style="font-size:11px;color:${notebooksDisp===0?'#dc2626':notebooksDisp<=5?'#d97706':c.textMuted}">${notebooksDisp===0?'❌ Todos reservados':notebooksDisp<=5?'⚠️ Restam apenas '+notebooksDisp:'Máx. '+notebooksDisp+' disponíveis'}</p></div>
         <div style="display:flex;align-items:center;gap:8px">
           <button onclick="maDecEquip(${i},'qtdNotebooks')" style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${c.surface};cursor:pointer;font-size:16px;font-family:inherit">−</button>
           <span style="font-size:16px;font-weight:800;color:${c.navy};min-width:24px;text-align:center">${b.qtdNotebooks||0}</span>
-          <button onclick="maIncEquip(${i},'qtdNotebooks',16)" style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${c.surface};cursor:pointer;font-size:16px;font-family:inherit">+</button>
+          <button onclick="maIncEquip(${i},'qtdNotebooks',notebooksDisp)" style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${c.surface};cursor:pointer;font-size:16px;font-family:inherit">+</button>
         </div>
       </div>`;
     }
