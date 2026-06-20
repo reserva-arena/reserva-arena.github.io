@@ -1793,7 +1793,7 @@ const selTurma=(horario,val)=>`
         const bloq=ocp||passado||soninho;
         return`<button onclick="maSetHorarioMulti(${i},'ini','${h}')" ${bloq?"disabled":""}
           style="padding:8px 4px;border-radius:8px;border:${sel2?"2px solid "+c.blueMid:bloq?"1.5px solid "+c.redBorder:"1.5px solid "+c.greenBorder};background:${sel2?c.greenBg:bloq?c.redBg:c.surface};color:${sel2?c.blueMid:bloq?c.red:c.green};font-size:11px;font-weight:700;cursor:${bloq?"not-allowed":"pointer"};font-family:'DM Mono',monospace;display:flex;flex-direction:column;align-items:center;gap:2px">
-          ${h}<span style="font-size:8px">${ocp?"● Ocup":passado?"● Pass":soninho?"🌙 Son":sel2?"✓ Ini":"○"}</span>
+          ${h}<span style="font-size:8px">${meuHorario?"👤 Você":ocp?"● Ocup":passado?"● Pass":soninho?"🌙 Son":sel2?"✓ Ini":"○"}</span>
         </button>`;
       }).join("")}
     </div>
