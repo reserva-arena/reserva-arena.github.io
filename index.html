@@ -499,6 +499,10 @@ window.doLogin=async()=>{
   try{
     const {signInWithEmailAndPassword}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
     await signInWithEmailAndPassword(auth,email,senha);
+    // Detectar senha padrão após login bem-sucedido
+    if(senha==='123456'){
+      renderTrocarSenha();
+    }
   }catch(e){
     const msg=e.code==='auth/invalid-credential'||e.code==='auth/wrong-password'||e.code==='auth/user-not-found'
       ?'E-mail ou senha incorretos.'
@@ -507,6 +511,60 @@ window.doLogin=async()=>{
       :'Erro ao entrar. Tente novamente.';
     const erro=document.getElementById('pub-erro');
     if(erro){erro.textContent=msg;erro.style.display='block';}
+  }
+};
+
+function renderTrocarSenha(){
+  const c=C();
+  $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg};display:flex;align-items:center;justify-content:center;padding:24px">
+    <div style="width:100%;max-width:400px">
+      <div style="background:${c.surface};border:1.5px solid #f97316;border-radius:16px;padding:28px">
+        <div style="text-align:center;margin-bottom:20px">
+          <div style="width:56px;height:56px;border-radius:50%;background:#fff7ed;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 12px">🔑</div>
+          <h2 style="font-size:17px;font-weight:800;color:${c.navy}">Defina sua senha</h2>
+          <p style="font-size:12px;color:${c.textMuted};margin-top:6px;line-height:1.5">
+            Por segurança, você precisa criar uma senha pessoal antes de continuar. Use pelo menos 6 caracteres.
+          </p>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <input id="nova-senha" type="password" placeholder="Nova senha (mín. 6 caracteres)"
+            style="padding:12px 14px;border-radius:10px;border:1.5px solid ${c.border};background:${c.bg};color:${c.text};font-size:14px;font-family:inherit;outline:none">
+          <input id="conf-senha" type="password" placeholder="Confirme a nova senha"
+            style="padding:12px 14px;border-radius:10px;border:1.5px solid ${c.border};background:${c.bg};color:${c.text};font-size:14px;font-family:inherit;outline:none"
+            onkeydown="if(event.key==='Enter')salvarNovaSenha()">
+          <button onclick="salvarNovaSenha()" style="padding:13px;border-radius:10px;border:none;background:#1a6b47;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">
+            ✓ Salvar senha e entrar
+          </button>
+        </div>
+        <div id="troca-erro" style="display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px;margin-top:12px;font-size:12px;color:#dc2626;text-align:center"></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+window.salvarNovaSenha=async()=>{
+  const nova=document.getElementById('nova-senha')?.value;
+  const conf=document.getElementById('conf-senha')?.value;
+  const erro=document.getElementById('troca-erro');
+  if(!nova||nova.length<6){
+    if(erro){erro.textContent='A senha deve ter pelo menos 6 caracteres.';erro.style.display='block';}
+    return;
+  }
+  if(nova!==conf){
+    if(erro){erro.textContent='As senhas não coincidem.';erro.style.display='block';}
+    return;
+  }
+  if(nova==='123456'){
+    if(erro){erro.textContent='Escolha uma senha diferente da senha padrão.';erro.style.display='block';}
+    return;
+  }
+  try{
+    const {updatePassword}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+    await updatePassword(auth.currentUser,nova);
+    re(); // Entrar no sistema normalmente
+  }catch(e){
+    const erro=document.getElementById('troca-erro');
+    if(erro){erro.textContent='Erro ao salvar senha. Tente novamente.';erro.style.display='block';}
   }
 };
 
