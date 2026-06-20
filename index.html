@@ -416,7 +416,7 @@ function re(){
   const c=C();
   document.body.style.background=c.bg;
   document.body.style.color=c.text;
-  if(!_usuario){renderPublica();return;}
+  if(!_usuario){renderLogin();return;}
   if(_usuario.perfil==="sem_acesso"||_usuario.ativo===false){renderSemAcesso();return;}
   if(_usuario.perfil==="fotografo"||_usuario.perfil==="marketing"){renderMarketing();return;}
   if(_usuario.perfil==="ti"){renderTI();return;}
@@ -424,7 +424,112 @@ function re(){
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// TELA PÚBLICA
+// TELA DE LOGIN / BOAS-VINDAS
+// ════════════════════════════════════════════════════════════════════════════
+function renderLogin(){
+  const c=C();
+  $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg};display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px">
+    <div style="width:100%;max-width:420px">
+      <!-- Logo e título -->
+      <div style="text-align:center;margin-bottom:32px">
+        ${logoHTML(64)}
+        <h1 style="font-size:22px;font-weight:800;color:${c.navy};margin-top:12px">Reserva Arena</h1>
+        <p style="font-size:13px;color:${c.textMuted};margin-top:4px">Colégio Arena · Reserva de Espaços e Equipamentos</p>
+      </div>
+
+      <!-- Card de login -->
+      <div style="background:${c.surface};border:1.5px solid ${c.border};border-radius:16px;padding:24px;margin-bottom:16px">
+        <h2 style="font-size:15px;font-weight:800;color:${c.navy};margin-bottom:16px;text-align:center">🔐 Acesso ao sistema</h2>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <input id="pub-email" type="email" placeholder="Seu e-mail institucional" autocomplete="email"
+            style="padding:12px 14px;border-radius:10px;border:1.5px solid ${c.border};background:${c.bg};color:${c.text};font-size:14px;font-family:inherit;outline:none"
+            onkeydown="if(event.key==='Enter')document.getElementById('pub-senha').focus()">
+          <input id="pub-senha" type="password" placeholder="Senha" autocomplete="current-password"
+            style="padding:12px 14px;border-radius:10px;border:1.5px solid ${c.border};background:${c.bg};color:${c.text};font-size:14px;font-family:inherit;outline:none"
+            onkeydown="if(event.key==='Enter')doLogin()">
+          <button onclick="doLogin()" style="padding:13px;border-radius:10px;border:none;background:#1a6b47;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:4px">
+            Entrar
+          </button>
+          <button onclick="doEsqueciSenha()" style="background:none;border:none;color:${c.textMuted};font-size:12px;cursor:pointer;font-family:inherit;padding:4px">
+            Esqueci minha senha
+          </button>
+        </div>
+        <div id="pub-erro" style="display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 12px;margin-top:12px;font-size:12px;color:#dc2626;text-align:center"></div>
+      </div>
+
+      <!-- Card de cadastro -->
+      <div style="background:${c.surface};border:1.5px solid ${c.border};border-radius:16px;padding:20px;margin-bottom:16px">
+        <h3 style="font-size:13px;font-weight:800;color:${c.navy};margin-bottom:8px">📋 Ainda não tem acesso?</h3>
+        <p style="font-size:12px;color:${c.textMuted};line-height:1.6;margin-bottom:14px">
+          Entre em contato com a equipe de Tecnologia Educacional para solicitar seu cadastro:
+        </p>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:${c.bg};border-radius:10px;border:1px solid ${c.border}">
+            <div style="width:40px;height:40px;border-radius:50%;background:#e2f4ea;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">👩‍💼</div>
+            <div>
+              <p style="font-size:12px;font-weight:700;color:${c.navy}">Maria Angélica</p>
+              <p style="font-size:11px;color:${c.textMuted}">Período Integral</p>
+              <a href="tel:6298552-0072" style="font-size:12px;color:#1a6b47;font-weight:700;text-decoration:none">(62) 98552-0072</a>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:${c.bg};border-radius:10px;border:1px solid ${c.border}">
+            <div style="width:40px;height:40px;border-radius:50%;background:#e2f4ea;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">👨‍💼</div>
+            <div>
+              <p style="font-size:12px;font-weight:700;color:${c.navy}">Luciano</p>
+              <p style="font-size:11px;color:${c.textMuted}">Matutino</p>
+              <a href="tel:6298497-9797" style="font-size:12px;color:#1a6b47;font-weight:700;text-decoration:none">(62) 98497-9797</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p style="text-align:center;font-size:11px;color:${c.textMuted}">Reserva Arena · Colégio Arena</p>
+    </div>
+  </div>`;
+}
+
+window.doLogin=async()=>{
+  const email=document.getElementById('pub-email')?.value?.trim();
+  const senha=document.getElementById('pub-senha')?.value;
+  const erro=document.getElementById('pub-erro');
+  if(!email||!senha){
+    if(erro){erro.textContent='Preencha e-mail e senha.';erro.style.display='block';}
+    return;
+  }
+  try{
+    const {signInWithEmailAndPassword}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+    await signInWithEmailAndPassword(auth,email,senha);
+  }catch(e){
+    const msg=e.code==='auth/invalid-credential'||e.code==='auth/wrong-password'||e.code==='auth/user-not-found'
+      ?'E-mail ou senha incorretos.'
+      :e.code==='auth/too-many-requests'
+      ?'Muitas tentativas. Aguarde alguns minutos.'
+      :'Erro ao entrar. Tente novamente.';
+    const erro=document.getElementById('pub-erro');
+    if(erro){erro.textContent=msg;erro.style.display='block';}
+  }
+};
+
+window.doEsqueciSenha=async()=>{
+  const email=document.getElementById('pub-email')?.value?.trim();
+  if(!email){
+    const erro=document.getElementById('pub-erro');
+    if(erro){erro.textContent='Digite seu e-mail acima primeiro.';erro.style.display='block';}
+    return;
+  }
+  try{
+    const {sendPasswordResetEmail}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+    await sendPasswordResetEmail(auth,email);
+    const erro=document.getElementById('pub-erro');
+    if(erro){erro.textContent='E-mail de redefinição enviado! Verifique sua caixa.';erro.style.display='block';erro.style.background='#e2f4ea';erro.style.borderColor='#a7f3d0';erro.style.color='#1a6b47';}
+  }catch(e){
+    const erro=document.getElementById('pub-erro');
+    if(erro){erro.textContent='Erro ao enviar e-mail. Verifique o endereço.';erro.style.display='block';}
+  }
+};
+
+// ════════════════════════════════════════════════════════════════════════════
+// TELA PÚBLICA (legado — mantida para referência)
 // ════════════════════════════════════════════════════════════════════════════
 let _pubCal={a:new Date().getFullYear(),m:new Date().getMonth()},_pubDiaSel=null;
 
@@ -2926,9 +3031,8 @@ onAuthStateChanged(auth,async user=>{
     else re();
   }else{
     _usuario=null;
-    _unsub1=onSnapshot(collection(db,"reservas"),snap=>{
-      _todas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario);re();
-    });
+    if(_unsub1){_unsub1();_unsub1=null;}
+    _todas=[];
     re();
   }
 });
