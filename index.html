@@ -791,6 +791,7 @@ function renderMarketing(){
   </div>`;
 }
 window.mkAprovar=async(id)=>{
+  if(!exigePermissao(['marketing','fotografo','admin'])){alert('Acesso negado.');return;}
   if(!confirm("Aprovar esta solicitação de foto/vídeo?"))return;
   const r=_todas.find(r=>r.id===id);
   await updateDoc(doc(db,"reservas",id),{statusMarketing:"aprovado"});
@@ -805,6 +806,7 @@ window.mkAprovar=async(id)=>{
   re();
 };
 window.mkRecusar=async(id)=>{
+  if(!exigePermissao(['marketing','fotografo','admin'])){alert('Acesso negado.');return;}
   if(!confirm("Recusar esta solicitação?"))return;
   const r=_todas.find(r=>r.id===id);
   await updateDoc(doc(db,"reservas",id),{statusMarketing:"recusado"});
@@ -893,7 +895,7 @@ function tiCard(r,pend){
   </div>`;
 }
 window.tiAprovar=async(id)=>{
-  
+  if(!exigePermissao(['ti','admin'])){alert('Acesso negado.');return;}
   const r=_todas.find(r=>r.id===id);
   // Marca apenas equipamento como aprovado — NÃO altera status da reserva
   try{await updateDoc(doc(db,"reservas",id),{statusEquip:"aprovado"});}catch(e){alert("Erro ao aprovar: "+e.message);return;}
