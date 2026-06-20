@@ -2256,6 +2256,28 @@ window.maSalvar=async()=>{
       const horFmt=blocos[0]?.horario||"";
       const profNome=_usuario?.nome||"Professor";
 
+      // E-mail de confirmação para o professor
+      if(_usuario?.email){
+        const statusTxt=st==="confirmado"?"Confirmado":"Pendente - aguardando aprovacao";
+        const turmasTxt=Object.entries(blocos[0]?.turmasPorHorario||{}).map(([h,t])=>h+": "+t).join(", ")||blocos[0]?.turma||"";
+        const assuntoEmail=st==="confirmado"?"Agendamento confirmado - "+espaco+" - "+dataFmt:"Agendamento pendente - "+espaco+" - "+dataFmt;
+        const textoEmail="Ola, "+profNome+"!
+
+Seu agendamento foi registrado:
+
+Local: "+espaco+"
+Data: "+dataFmt+"
+Horario: "+horFmt+"
+Turma: "+turmasTxt+"
+
+Status: "+statusTxt+(st==="pendente"?"
+
+Voce recebera uma notificacao assim que for aprovado.":"")+"
+
+Reserva Arena - Colegio Arena";
+        addDoc(collection(db,"email_queue"),{para:_usuario.email,assunto:assuntoEmail,texto:textoEmail,enviado:false,processando:false,criadoEm:new Date().toISOString()}).catch(()=>{});
+      }
+
       // Marketing: agendamento com foto, vídeo ou espaço Equipe de Marketing
       if(temMidia){
         const msgMK=`📸 Nova solicitação de ${(blocos[0]?.precisaFoto&&blocos[0]?.precisaVideo)?"foto e vídeo":blocos[0]?.precisaFoto?"foto":"vídeo"}\n${profNome} · ${eoSalvar?.tipo==="marketing"?(blocos[0]?.salaAtividade||espaco):espaco} · ${dataFmt} às ${horFmt}`;
