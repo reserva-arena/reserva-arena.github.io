@@ -1688,6 +1688,17 @@ function maBlocoMultiHTML(b,i,eo){
     if(r.horarioFim&&r.horarioFim!==r.horario)return horariosRange(r.horario,r.horarioFim);
     return[r.horario];
   });
+  // Horários em que o próprio professor já tem reserva em OUTRO espaço nesta data
+  const ocpProf=_todas.filter(r=>
+    r.professorId===_usuario?.uid&&
+    r.espaco!==m.espaco&&
+    r.data===m.data&&
+    r.status!=="recusado"&&
+    r.status!=="cancelado"
+  ).flatMap(r=>{
+    if(r.horarioFim&&r.horarioFim!==r.horario)return horariosRange(r.horario,r.horarioFim);
+    return[r.horario];
+  });
   // Bloqueios fixos por espaço (seg-sex)
   const BLOQUEIOS_FIXOS=[
     {espaco:"Sala de Dança",inicio:"11:45",fim:"13:45",label:"🌙 Soninho"}
@@ -1770,7 +1781,7 @@ const selTurma=(horario,val)=>`
     <label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">🕐 Horário de início *</label>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px">
       ${HORARIOS.map(h=>{
-        const ocp=ocpFire.includes(h)&&h!==b.horario;
+        const ocp=(ocpFire.includes(h)||ocpProf.includes(h))&&h!==b.horario;
         const sel2=h===b.horario;
         // Bloquear horários já passados no dia de hoje
         const agoraRef=new Date();
@@ -1778,6 +1789,7 @@ const selTurma=(horario,val)=>`
         const [hh,mm]=h.split(':').map(Number);
         const passado=_MA.data===hojeStr&&(hh<agoraRef.getHours()||(hh===agoraRef.getHours()&&mm<=agoraRef.getMinutes()));
         const soninho=isBloqueado(h)&&h!==b.horario;
+        const meuHorario=ocpProf.includes(h);
         const bloq=ocp||passado||soninho;
         return`<button onclick="maSetHorarioMulti(${i},'ini','${h}')" ${bloq?"disabled":""}
           style="padding:8px 4px;border-radius:8px;border:${sel2?"2px solid "+c.blueMid:bloq?"1.5px solid "+c.redBorder:"1.5px solid "+c.greenBorder};background:${sel2?c.greenBg:bloq?c.redBg:c.surface};color:${sel2?c.blueMid:bloq?c.red:c.green};font-size:11px;font-weight:700;cursor:${bloq?"not-allowed":"pointer"};font-family:'DM Mono',monospace;display:flex;flex-direction:column;align-items:center;gap:2px">
