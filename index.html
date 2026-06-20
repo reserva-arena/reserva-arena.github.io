@@ -1347,7 +1347,7 @@ function profRRow(r){
       </div>
     </div>
     <div style="display:flex;gap:4px;flex-shrink:0">
-      ${isMeu&&r.data>=h&&r.status!=="recusado"?`<button onclick="abrirEdicao('${r.id}')" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:13px;padding:5px 8px">✏️</button><button onclick="cancelarR('${r.id}')" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:13px;padding:5px 8px">✕</button>`:""}
+      ${isMeu&&r.data>=h&&r.status!=="recusado"?`<button onclick="abrirEdicao('${r.id}')" title="Editar agendamento" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:13px;padding:5px 8px">✏️</button><button onclick="cancelarR('${r.id}')" title="Cancelar agendamento" style="background:none;border:none;color:${c.red};cursor:pointer;font-size:13px;padding:5px 8px">✕</button>`:""}
     </div>
   </div>`;
 }
