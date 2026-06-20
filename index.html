@@ -794,7 +794,7 @@ window.mkAprovar=async(id)=>{
   if(!exigePermissao(['marketing','fotografo','admin'])){alert('Acesso negado.');return;}
   if(!confirm("Aprovar esta solicitação de foto/vídeo?"))return;
   const r=_todas.find(r=>r.id===id);
-  await updateDoc(doc(db,"reservas",id),{statusMarketing:"aprovado"});
+  try{await updateDoc(doc(db,"reservas",id),{statusMarketing:"aprovado"});}catch(e){alert("Erro: "+e.message);return;}
   if(r){
     const local=r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco;
     const dataFmt=r.data.split("-").reverse().join("/");
@@ -809,7 +809,7 @@ window.mkRecusar=async(id)=>{
   if(!exigePermissao(['marketing','fotografo','admin'])){alert('Acesso negado.');return;}
   if(!confirm("Recusar esta solicitação?"))return;
   const r=_todas.find(r=>r.id===id);
-  await updateDoc(doc(db,"reservas",id),{statusMarketing:"recusado"});
+  try{await updateDoc(doc(db,"reservas",id),{statusMarketing:"recusado"});}catch(e){alert("Erro: "+e.message);return;}
   if(r){
     const local=r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco;
     const dataFmt=r.data.split("-").reverse().join("/");
@@ -2710,7 +2710,7 @@ window.aModerar=async(id,status)=>{
   if(!exigePermissao(['admin'])){alert('Acesso negado.');return;}
   if(!confirm(`${status==="confirmado"?"Aprovar":"Recusar"} esta reserva?`))return;
   const r=_todas.find(r=>r.id===id);
-  await updateDoc(doc(db,"reservas",id),{status});
+  try{await updateDoc(doc(db,"reservas",id),{status});}catch(e){alert("Erro ao atualizar: "+e.message);return;}
   if(r){
     const dataFmt=r.data.split("-").reverse().join("/");
     if(status==="confirmado"){
