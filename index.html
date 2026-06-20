@@ -379,26 +379,47 @@ function calMensalHTML(cid,ano,mes,porData,dataSel){
     const isH=ds===h,isPast=ds<h,isSel=ds===dataSel,letivo=isDiaLetivo(ds);
     const dow=new Date(Date.UTC(ano,mes,d)).getUTCDay(),isFim=dow===0||dow===6;
     const nao=!letivo&&!isPast;
-    const bg=isSel?"#40b07a":isH?"rgba(26,107,71,.12)":nao?"rgba(239,68,68,.08)":"transparent";
+    const bg=isSel?"#1a6b47":isH?"rgba(26,107,71,.15)":nao?"rgba(239,68,68,.06)":"transparent";
     const col=isSel?"#fff":isPast?"#cbd5e1":nao?"#fca5a5":isFim?"#ef4444":c.navy;
-    const temRes=(porData[ds]||[]).length>0;
+    const reservas=porData[ds]||[];
+    const temRes=reservas.length>0;
     dias+=`<button onclick="window._calClick('${cid}','${ds}')" ${isPast||!letivo?"disabled":""}
-      style="aspect-ratio:1;border-radius:8px;border:none;cursor:${isPast||!letivo?"not-allowed":"pointer"};background:${bg};color:${col};font-weight:${isH||isSel?800:500};font-size:13.5px;position:relative;opacity:${isPast?.4:1};transition:all .15s;font-family:inherit">
-      ${d}${temRes&&!isSel?`<div style="position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:#40b07a"></div>`:""}
+      style="padding:4px 2px;border-radius:6px;border:${isSel?"2px solid #1a6b47":"1px solid transparent"};cursor:${isPast||!letivo?"not-allowed":"pointer"};background:${bg};color:${col};font-weight:${isH||isSel?800:500};font-size:12px;position:relative;opacity:${isPast?.35:1};transition:all .15s;font-family:inherit;width:100%;display:flex;flex-direction:column;align-items:center;gap:1px;min-height:32px;justify-content:center">
+      <span>${d}</span>${temRes?`<div style="display:flex;gap:1px;flex-wrap:wrap;justify-content:center">${reservas.slice(0,3).map(()=>`<div style="width:4px;height:4px;border-radius:50%;background:${isSel?"#fff":"#1a6b47"}"></div>`).join("")}${reservas.length>3?`<div style="width:4px;height:4px;border-radius:50%;background:#94a3b8"></div>`:""}</div>`:""}
     </button>`;
   });
+  // Detalhes do dia selecionado
+  let detalhesDia="";
+  if(dataSel&&porData[dataSel]&&porData[dataSel].length>0){
+    const dataFmt=dataSel.split("-").reverse().join("/");
+    const itens=porData[dataSel].sort((a,b)=>a.horario>b.horario?1:-1).map(r=>{
+      const statusCol=r.status==="confirmado"?"#1a6b47":r.status==="recusado"?"#dc2626":"#d97706";
+      return`<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;background:${c.bg};margin-bottom:4px">
+        <span style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:${statusCol};min-width:36px">${r.horario}</span>
+        <div style="flex:1;min-width:0">
+          <p style="font-size:11px;font-weight:700;color:${c.navy};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.espaco}</p>
+          <p style="font-size:10px;color:${c.textMuted};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.professor||""} · ${r.turmaInicio||r.turma||""}</p>
+        </div>
+      </div>`;
+    }).join("");
+    detalhesDia=`<div style="padding:10px 12px;border-top:1px solid ${c.border}">
+      <p style="font-size:11px;font-weight:800;color:${c.textMuted};text-transform:uppercase;margin-bottom:6px">📅 ${dataFmt}</p>
+      ${itens}
+    </div>`;
+  }
   return`<div style="background:${c.surface};border-radius:16px;border:1px solid ${c.border};overflow:hidden">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid ${c.border}">
-      <button onclick="calNavMA('${cid}',-1)" style="background:none;border:1px solid ${c.border};border-radius:8px;width:34px;height:34px;cursor:pointer;color:${c.textMid};font-size:16px;font-family:inherit">‹</button>
-      <div style="text-align:center"><p style="font-size:17px;font-weight:800;color:${c.navy}">${MESES[mes]}</p><p style="font-size:12px;color:${c.textMuted}">${ano}</p></div>
-      <button onclick="calNavMA('${cid}',1)" style="background:none;border:1px solid ${c.border};border-radius:8px;width:34px;height:34px;cursor:pointer;color:${c.textMid};font-size:16px;font-family:inherit">›</button>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid ${c.border}">
+      <button onclick="calNavMA('${cid}',-1)" style="background:none;border:1px solid ${c.border};border-radius:8px;width:30px;height:30px;cursor:pointer;color:${c.textMid};font-size:15px;font-family:inherit">‹</button>
+      <div style="text-align:center"><p style="font-size:14px;font-weight:800;color:${c.navy}">${MESES[mes]} ${ano}</p></div>
+      <button onclick="calNavMA('${cid}',1)" style="background:none;border:1px solid ${c.border};border-radius:8px;width:30px;height:30px;cursor:pointer;color:${c.textMid};font-size:15px;font-family:inherit">›</button>
     </div>
-    <div style="padding:12px 16px 16px">
-      <div style="display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:6px">
-        ${["D","S","T","Q","Q","S","S"].map((n,i)=>`<div style="text-align:center;font-size:10px;font-weight:700;color:${i===0||i===6?"#ef4444":c.textMuted};padding:4px 0">${n}</div>`).join("")}
+    <div style="padding:8px 10px">
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:4px">
+        ${["D","S","T","Q","Q","S","S"].map((n,i)=>`<div style="text-align:center;font-size:9px;font-weight:700;color:${i===0||i===6?"#ef4444":c.textMuted};padding:2px 0">${n}</div>`).join("")}
       </div>
-      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">${dias}</div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px">${dias}</div>
     </div>
+    ${detalhesDia}
   </div>`;
 }
 
