@@ -389,9 +389,9 @@ function calMensalHTML(cid,ano,mes,porData,dataSel){
   });
   return`<div style="background:${c.surface};border-radius:16px;border:1px solid ${c.border};overflow:hidden">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid ${c.border}">
-      <button onclick="window._calNav('${cid}',-1)" style="background:none;border:1px solid ${c.border};border-radius:8px;width:34px;height:34px;cursor:pointer;color:${c.textMid};font-size:16px;font-family:inherit">‹</button>
+      <button onclick="calNavMA('${cid}',-1)" style="background:none;border:1px solid ${c.border};border-radius:8px;width:34px;height:34px;cursor:pointer;color:${c.textMid};font-size:16px;font-family:inherit">‹</button>
       <div style="text-align:center"><p style="font-size:17px;font-weight:800;color:${c.navy}">${MESES[mes]}</p><p style="font-size:12px;color:${c.textMuted}">${ano}</p></div>
-      <button onclick="window._calNav('${cid}',1)" style="background:none;border:1px solid ${c.border};border-radius:8px;width:34px;height:34px;cursor:pointer;color:${c.textMid};font-size:16px;font-family:inherit">›</button>
+      <button onclick="calNavMA('${cid}',1)" style="background:none;border:1px solid ${c.border};border-radius:8px;width:34px;height:34px;cursor:pointer;color:${c.textMid};font-size:16px;font-family:inherit">›</button>
     </div>
     <div style="padding:12px 16px 16px">
       <div style="display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:6px">
@@ -416,7 +416,7 @@ function re(){
   const c=C();
   document.body.style.background=c.bg;
   document.body.style.color=c.text;
-  if(!_usuario){renderPublica();return;}
+  if(!_usuario){renderLogin();return;}
   if(_usuario.perfil==="sem_acesso"||_usuario.ativo===false){renderSemAcesso();return;}
   if(_usuario.perfil==="fotografo"||_usuario.perfil==="marketing"){renderMarketing();return;}
   if(_usuario.perfil==="ti"){renderTI();return;}
@@ -424,7 +424,172 @@ function re(){
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// TELA PÚBLICA
+// TELA DE LOGIN / BOAS-VINDAS
+// ════════════════════════════════════════════════════════════════════════════
+function renderLogin(){
+  const c=C();
+  $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg};display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px">
+    <div style="width:100%;max-width:420px">
+      <!-- Logo e título -->
+      <div style="text-align:center;margin-bottom:32px">
+        ${logoHTML(64)}
+        <h1 style="font-size:22px;font-weight:800;color:${c.navy};margin-top:12px">Reserva Arena</h1>
+        <p style="font-size:13px;color:${c.textMuted};margin-top:4px">Colégio Arena · Reserva de Espaços e Equipamentos</p>
+      </div>
+
+      <!-- Card de login -->
+      <div style="background:${c.surface};border:1.5px solid ${c.border};border-radius:16px;padding:24px;margin-bottom:16px">
+        <h2 style="font-size:15px;font-weight:800;color:${c.navy};margin-bottom:16px;text-align:center">🔐 Acesso ao sistema</h2>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <input id="pub-email" type="email" placeholder="Seu e-mail" autocomplete="email"
+            style="padding:12px 14px;border-radius:10px;border:1.5px solid ${c.border};background:${c.bg};color:${c.text};font-size:14px;font-family:inherit;outline:none"
+            onkeydown="if(event.key==='Enter')document.getElementById('pub-senha').focus()">
+          <input id="pub-senha" type="password" placeholder="Senha" autocomplete="current-password"
+            style="padding:12px 14px;border-radius:10px;border:1.5px solid ${c.border};background:${c.bg};color:${c.text};font-size:14px;font-family:inherit;outline:none"
+            onkeydown="if(event.key==='Enter')doLogin()">
+          <button onclick="doLogin()" style="padding:13px;border-radius:10px;border:none;background:#1a6b47;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:4px">
+            Entrar
+          </button>
+          <button onclick="doEsqueciSenha()" style="background:none;border:none;color:${c.textMuted};font-size:12px;cursor:pointer;font-family:inherit;padding:4px">
+            Esqueci minha senha
+          </button>
+        </div>
+        <div id="pub-erro" style="display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 12px;margin-top:12px;font-size:12px;color:#dc2626;text-align:center"></div>
+      </div>
+
+      <!-- Card de cadastro -->
+      <div style="background:${c.surface};border:1.5px solid ${c.border};border-radius:16px;padding:20px;margin-bottom:16px">
+        <h3 style="font-size:13px;font-weight:800;color:${c.navy};margin-bottom:8px">📋 Ainda não tem acesso?</h3>
+        <p style="font-size:12px;color:${c.textMuted};line-height:1.6;margin-bottom:14px">
+          Entre em contato com a equipe de Tecnologia Educacional para solicitar seu cadastro:
+        </p>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:${c.bg};border-radius:10px;border:1px solid ${c.border}">
+            <img src="https://reserva-arena.github.io/img/maria-angelica.jpg" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" style="width:44px;height:44px;border-radius:50%;object-fit:cover;flex-shrink:0">
+            <div style="width:44px;height:44px;border-radius:50%;background:#e2f4ea;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;display:none">👩‍💼</div>
+            <div>
+              <p style="font-size:12px;font-weight:700;color:${c.navy}">Maria Angélica</p>
+              <p style="font-size:11px;color:${c.textMuted}">Disponível para suporte</p>
+              <a href="tel:6298552-0072" style="font-size:12px;color:#1a6b47;font-weight:700;text-decoration:none">(62) 98552-0072</a>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:${c.bg};border-radius:10px;border:1px solid ${c.border}">
+            <img src="https://reserva-arena.github.io/img/luciano.jpg" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" style="width:44px;height:44px;border-radius:50%;object-fit:cover;flex-shrink:0">
+            <div style="width:44px;height:44px;border-radius:50%;background:#e2f4ea;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;display:none">👨‍💼</div>
+            <div>
+              <p style="font-size:12px;font-weight:700;color:${c.navy}">Luciano</p>
+              <p style="font-size:11px;color:${c.textMuted}">Disponível para suporte</p>
+              <a href="tel:6298497-9797" style="font-size:12px;color:#1a6b47;font-weight:700;text-decoration:none">(62) 98497-9797</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p style="text-align:center;font-size:11px;color:${c.textMuted}">Reserva Arena · Colégio Arena</p>
+    </div>
+  </div>`;
+}
+
+window.doLogin=async()=>{
+  const email=document.getElementById('pub-email')?.value?.trim();
+  const senha=document.getElementById('pub-senha')?.value;
+  const erro=document.getElementById('pub-erro');
+  if(!email||!senha){
+    if(erro){erro.textContent='Preencha e-mail e senha.';erro.style.display='block';}
+    return;
+  }
+  try{
+    const {signInWithEmailAndPassword}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+    await signInWithEmailAndPassword(auth,email,senha);
+    // Detectar senha padrão após login bem-sucedido
+    if(senha==='123456'){
+      renderTrocarSenha();
+    }
+  }catch(e){
+    const msg=e.code==='auth/invalid-credential'||e.code==='auth/wrong-password'||e.code==='auth/user-not-found'
+      ?'E-mail ou senha incorretos.'
+      :e.code==='auth/too-many-requests'
+      ?'Muitas tentativas. Aguarde alguns minutos.'
+      :'Erro ao entrar. Tente novamente.';
+    const erro=document.getElementById('pub-erro');
+    if(erro){erro.textContent=msg;erro.style.display='block';}
+  }
+};
+
+function renderTrocarSenha(){
+  const c=C();
+  $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg};display:flex;align-items:center;justify-content:center;padding:24px">
+    <div style="width:100%;max-width:400px">
+      <div style="background:${c.surface};border:1.5px solid #f97316;border-radius:16px;padding:28px">
+        <div style="text-align:center;margin-bottom:20px">
+          <div style="width:56px;height:56px;border-radius:50%;background:#fff7ed;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 12px">🔑</div>
+          <h2 style="font-size:17px;font-weight:800;color:${c.navy}">Defina sua senha</h2>
+          <p style="font-size:12px;color:${c.textMuted};margin-top:6px;line-height:1.5">
+            Por segurança, você precisa criar uma senha pessoal antes de continuar. Use pelo menos 6 caracteres.
+          </p>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <input id="nova-senha" type="password" placeholder="Nova senha (mín. 6 caracteres)"
+            style="padding:12px 14px;border-radius:10px;border:1.5px solid ${c.border};background:${c.bg};color:${c.text};font-size:14px;font-family:inherit;outline:none">
+          <input id="conf-senha" type="password" placeholder="Confirme a nova senha"
+            style="padding:12px 14px;border-radius:10px;border:1.5px solid ${c.border};background:${c.bg};color:${c.text};font-size:14px;font-family:inherit;outline:none"
+            onkeydown="if(event.key==='Enter')salvarNovaSenha()">
+          <button onclick="salvarNovaSenha()" style="padding:13px;border-radius:10px;border:none;background:#1a6b47;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">
+            ✓ Salvar senha e entrar
+          </button>
+        </div>
+        <div id="troca-erro" style="display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px;margin-top:12px;font-size:12px;color:#dc2626;text-align:center"></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+window.salvarNovaSenha=async()=>{
+  const nova=document.getElementById('nova-senha')?.value;
+  const conf=document.getElementById('conf-senha')?.value;
+  const erro=document.getElementById('troca-erro');
+  if(!nova||nova.length<6){
+    if(erro){erro.textContent='A senha deve ter pelo menos 6 caracteres.';erro.style.display='block';}
+    return;
+  }
+  if(nova!==conf){
+    if(erro){erro.textContent='As senhas não coincidem.';erro.style.display='block';}
+    return;
+  }
+  if(nova==='123456'){
+    if(erro){erro.textContent='Escolha uma senha diferente da senha padrão.';erro.style.display='block';}
+    return;
+  }
+  try{
+    const {updatePassword}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+    await updatePassword(auth.currentUser,nova);
+    re(); // Entrar no sistema normalmente
+  }catch(e){
+    const erro=document.getElementById('troca-erro');
+    if(erro){erro.textContent='Erro ao salvar senha. Tente novamente.';erro.style.display='block';}
+  }
+};
+
+window.doEsqueciSenha=async()=>{
+  const email=document.getElementById('pub-email')?.value?.trim();
+  if(!email){
+    const erro=document.getElementById('pub-erro');
+    if(erro){erro.textContent='Digite seu e-mail acima primeiro.';erro.style.display='block';}
+    return;
+  }
+  try{
+    const {sendPasswordResetEmail}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+    await sendPasswordResetEmail(auth,email);
+    const erro=document.getElementById('pub-erro');
+    if(erro){erro.textContent='E-mail de redefinição enviado! Verifique sua caixa.';erro.style.display='block';erro.style.background='#e2f4ea';erro.style.borderColor='#a7f3d0';erro.style.color='#1a6b47';}
+  }catch(e){
+    const erro=document.getElementById('pub-erro');
+    if(erro){erro.textContent='Erro ao enviar e-mail. Verifique o endereço.';erro.style.display='block';}
+  }
+};
+
+// ════════════════════════════════════════════════════════════════════════════
+// TELA PÚBLICA (legado — mantida para referência)
 // ════════════════════════════════════════════════════════════════════════════
 let _pubCal={a:new Date().getFullYear(),m:new Date().getMonth()},_pubDiaSel=null;
 
@@ -693,7 +858,7 @@ function renderTIInline(){
         "</div>"+badge+"</div>";
     });
     feedTIHtml="<div style='background:"+c.surface+";border:1px solid "+c.border+";border-radius:12px;padding:12px 16px;margin-bottom:16px'>"+
-      "<p style='font-size:12px;font-weight:800;color:"+c.textMuted+";text-transform:uppercase;margin-bottom:10px'>📅 Próximos agendamentos</p>"+
+      "<p style='font-size:12px;font-weight:800;color:"+c.textMuted+";text-transform:uppercase;margin-bottom:10px'>🕐 Últimos agendamentos</p>"+
       itens+"</div>";
   }
   const confirmados=minhas.filter(r=>r.statusEquip==="aprovado"||(r.status==="confirmado"&&!r.statusEquip));
@@ -791,9 +956,10 @@ function renderMarketing(){
   </div>`;
 }
 window.mkAprovar=async(id)=>{
+  if(!exigePermissao(['marketing','fotografo','admin'])){alert('Acesso negado.');return;}
   if(!confirm("Aprovar esta solicitação de foto/vídeo?"))return;
   const r=_todas.find(r=>r.id===id);
-  await updateDoc(doc(db,"reservas",id),{statusMarketing:"aprovado"});
+  try{await updateDoc(doc(db,"reservas",id),{statusMarketing:"aprovado"});}catch(e){alert("Erro: "+e.message);return;}
   if(r){
     const local=r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco;
     const dataFmt=r.data.split("-").reverse().join("/");
@@ -805,9 +971,10 @@ window.mkAprovar=async(id)=>{
   re();
 };
 window.mkRecusar=async(id)=>{
+  if(!exigePermissao(['marketing','fotografo','admin'])){alert('Acesso negado.');return;}
   if(!confirm("Recusar esta solicitação?"))return;
   const r=_todas.find(r=>r.id===id);
-  await updateDoc(doc(db,"reservas",id),{statusMarketing:"recusado"});
+  try{await updateDoc(doc(db,"reservas",id),{statusMarketing:"recusado"});}catch(e){alert("Erro: "+e.message);return;}
   if(r){
     const local=r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco;
     const dataFmt=r.data.split("-").reverse().join("/");
@@ -893,7 +1060,7 @@ function tiCard(r,pend){
   </div>`;
 }
 window.tiAprovar=async(id)=>{
-  
+  if(!exigePermissao(['ti','admin'])){alert('Acesso negado.');return;}
   const r=_todas.find(r=>r.id===id);
   // Marca apenas equipamento como aprovado — NÃO altera status da reserva
   try{await updateDoc(doc(db,"reservas",id),{statusEquip:"aprovado"});}catch(e){alert("Erro ao aprovar: "+e.message);return;}
@@ -907,7 +1074,7 @@ window.tiAprovar=async(id)=>{
   re();
 };
 window.tiRecusar=async(id)=>{
-  
+  if(!exigePermissao(['ti','admin'])){alert('Acesso negado.');return;}
   const r=_todas.find(r=>r.id===id);
   // Apenas marca equipamento como recusado — NÃO altera status da reserva de espaço
   try{await updateDoc(doc(db,"reservas",id),{statusEquip:"recusado"});}catch(e){alert("Erro ao recusar: "+e.message);return;}
@@ -920,10 +1087,20 @@ window.tiRecusar=async(id)=>{
   }
   re();
 };
+window.tiCancelar=async(id)=>{
+  if(!exigePermissao(['ti','admin'])){alert('Acesso negado.');return;}
+  const r=_todas.find(r=>r.id===id);
+  await updateDoc(doc(db,"reservas",id),{statusEquip:"pendente"});
+  if(r){
+    const dataFmt=r.data.split("-").reverse().join("/");
+    await gravarNotif(r.professorId,"↩️ Aprovação de equipamento cancelada",`${r.espaco} — ${dataFmt} às ${r.horario}`,"info");
+  }
+  re();
+};
 
 function renderSemAcesso(){
   const c=C();
-  $("app").innerHTML=`<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:${c.bg};padding:1rem"><div style="text-align:center;max-width:380px"><div style="width:72px;height:72px;border-radius:18px;background:${c.redBg};display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 20px">🔒</div><h2 style="font-size:20px;font-weight:800;color:${c.navy};margin-bottom:8px">Acesso não autorizado</h2><p style="font-size:13.5px;color:${c.textMid};margin-bottom:24px">A conta <strong>${_usuario?.email}</strong> não foi habilitada.</p><button onclick="signOut(auth)" style="${btn("navy")}">Sair</button></div></div>`;
+  $("app").innerHTML=`<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:${c.bg};padding:1rem"><div style="text-align:center;max-width:380px"><div style="width:72px;height:72px;border-radius:18px;background:${c.redBg};display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 20px">🔒</div><h2 style="font-size:20px;font-weight:800;color:${c.navy};margin-bottom:8px">Acesso não autorizado</h2><p style="font-size:13.5px;color:${c.textMid};margin-bottom:24px">A conta <strong>${_usuario?.email}</strong> não foi habilitada.</p><button onclick="doSignOut()" style="${btn("navy")}">Sair</button></div></div>`;
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -971,6 +1148,7 @@ window.setAdminVisu=(v)=>{
   if(v==="marketing"&&window._MK)_MK.aba="minhas";
   re();
 };
+window.goHome=()=>irInicio();
 window.irInicio=()=>{
   if(_usuario?.perfil==="admin"){
     _A.modoVisu="calendario";_A.fEspaco="";_A.fProf="";_A.fStatus="";_A.fTurma="";
@@ -1510,6 +1688,17 @@ function maBlocoMultiHTML(b,i,eo){
     if(r.horarioFim&&r.horarioFim!==r.horario)return horariosRange(r.horario,r.horarioFim);
     return[r.horario];
   });
+  // Horários em que o próprio professor já tem reserva em OUTRO espaço nesta data
+  const ocpProf=_todas.filter(r=>
+    r.professorId===_usuario?.uid&&
+    r.espaco!==m.espaco&&
+    r.data===m.data&&
+    r.status!=="recusado"&&
+    r.status!=="cancelado"
+  ).flatMap(r=>{
+    if(r.horarioFim&&r.horarioFim!==r.horario)return horariosRange(r.horario,r.horarioFim);
+    return[r.horario];
+  });
   // Bloqueios fixos por espaço (seg-sex)
   const BLOQUEIOS_FIXOS=[
     {espaco:"Sala de Dança",inicio:"11:45",fim:"13:45",label:"🌙 Soninho"}
@@ -1592,7 +1781,7 @@ const selTurma=(horario,val)=>`
     <label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">🕐 Horário de início *</label>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px">
       ${HORARIOS.map(h=>{
-        const ocp=ocpFire.includes(h)&&h!==b.horario;
+        const ocp=(ocpFire.includes(h)||ocpProf.includes(h))&&h!==b.horario;
         const sel2=h===b.horario;
         // Bloquear horários já passados no dia de hoje
         const agoraRef=new Date();
@@ -1600,10 +1789,11 @@ const selTurma=(horario,val)=>`
         const [hh,mm]=h.split(':').map(Number);
         const passado=_MA.data===hojeStr&&(hh<agoraRef.getHours()||(hh===agoraRef.getHours()&&mm<=agoraRef.getMinutes()));
         const soninho=isBloqueado(h)&&h!==b.horario;
+        const meuHorario=ocpProf.includes(h);
         const bloq=ocp||passado||soninho;
         return`<button onclick="maSetHorarioMulti(${i},'ini','${h}')" ${bloq?"disabled":""}
           style="padding:8px 4px;border-radius:8px;border:${sel2?"2px solid "+c.blueMid:bloq?"1.5px solid "+c.redBorder:"1.5px solid "+c.greenBorder};background:${sel2?c.greenBg:bloq?c.redBg:c.surface};color:${sel2?c.blueMid:bloq?c.red:c.green};font-size:11px;font-weight:700;cursor:${bloq?"not-allowed":"pointer"};font-family:'DM Mono',monospace;display:flex;flex-direction:column;align-items:center;gap:2px">
-          ${h}<span style="font-size:8px">${ocpProf.includes(h)?"👤 Você":ocp?"● Ocup":passado?"● Pass":soninho?"🌙 Son":sel2?"✓ Ini":"○"}</span>
+          ${h}<span style="font-size:8px">${meuHorario?"👤 Você":ocp?"● Ocup":passado?"● Pass":soninho?"🌙 Son":sel2?"✓ Ini":"○"}</span>
         </button>`;
       }).join("")}
     </div>
@@ -1903,6 +2093,7 @@ function renderMAResumo(){
           <p style="font-size:12px;font-weight:700;color:${c.green}">${rangeHors.length} horário${rangeHors.length!==1?"s":""} · ${m.espaco}</p>
           ${b.local&&eo?.equipAvulso?`<p style="font-size:11px;color:#0369a1;margin-top:2px;font-weight:700">🏫 ${b.local}${b.localDevolucao&&b.localDevolucao!==b.local?" → "+b.localDevolucao:""}</p>`:""}
           ${b.precisaFoto?`<p style="font-size:11px;color:#7c3aed;margin-top:2px">📸 Foto solicitada</p>`:""}${b.precisaVideo?`<p style="font-size:11px;color:#1d4ed8;margin-top:2px">🎬 Vídeo solicitado</p>`:""}
+          ${_MA.bibAV===true&&(_MA.bibMic>0||_MA.bibCaixa>0||_MA.bibProj>0)?`<p style="font-size:11px;color:#0369a1;margin-top:2px">🎤 Equipamentos: ${_MA.bibMic>0?_MA.bibMic+' mic ':''}${_MA.bibCaixa>0?_MA.bibCaixa+' caixa ':''}${_MA.bibProj>0?_MA.bibProj+' proj':''}</p>`:""}
           ${b.qtdTablets>0?`<p style="font-size:11px;color:#0369a1;margin-top:2px">📱 ${b.qtdTablets} tablet${b.qtdTablets>1?"s":""}</p>`:""}
           ${b.qtdNotebooks>0?`<p style="font-size:11px;color:#0369a1;margin-top:2px">💻 ${b.qtdNotebooks} computador${b.qtdNotebooks>1?"es":""}</p>`:""}
         </div>
@@ -2001,12 +2192,7 @@ window.maSetTurmaPorHorario=(i,horario,turma)=>{
   re();
 };
 window.maSetBlocoRe=(i,k,v)=>{_MA.blocos[i][k]=v;re();};
-let _reTimer=null;
-window.maSetConteudo=(i,v)=>{
-  _MA.blocos[i].conteudo=v;
-  clearTimeout(_reTimer);
-  _reTimer=setTimeout(()=>re(),300);
-};
+window.maSetConteudo=(i,v)=>{_MA.blocos[i].conteudo=v;};
 window.maSetSegmento=(i,seg)=>{
   if(!_MA.blocos[i])return;
   _MA.blocos[i]._segmento=seg;
@@ -2015,6 +2201,26 @@ window.maSetSegmento=(i,seg)=>{
   re();
 };
 window.toggleRecorrente=()=>{_MA.recorrente=!_MA.recorrente;re();};
+window.calNavMA=(cid,dir)=>{
+  if(cid==="pmes"&&window._P){
+    let nm=_P.mesCal.m+dir,na=_P.mesCal.a;
+    if(nm>11){nm=0;na++;}if(nm<0){nm=11;na--;}
+    _P.mesCal={a:na,m:nm};
+  } else if(cid==="pub"&&window._pubState){
+    let nm=_pubState.mesCal.m+dir,na=_pubState.mesCal.a;
+    if(nm>11){nm=0;na++;}if(nm<0){nm=11;na--;}
+    _pubState.mesCal={a:na,m:nm};
+  } else if(window._A&&(cid==="adm"||cid==="admcal")){
+    let nm=_A.mesCal.m+dir,na=_A.mesCal.a;
+    if(nm>11){nm=0;na++;}if(nm<0){nm=11;na--;}
+    _A.mesCal={a:na,m:nm};
+  } else {
+    let nm=_MA.calM+dir,na=_MA.calA;
+    if(nm>11){nm=0;na++;}if(nm<0){nm=11;na--;}
+    _MA.calM=nm;_MA.calA=na;
+  }
+  re();
+};
 window.toggleFeedAdmin=()=>{_A.feedExpandido=!_A.feedExpandido;re();};
 window.maAddBloco=()=>{_MA.blocos.push(bVazio());re();};
 window.maRemBloco=i=>{_MA.blocos.splice(i,1);re();};
@@ -2126,11 +2332,12 @@ window.maSalvar=async()=>{
     const dow=new Date(Date.UTC(ano,mes-1,dia)).getUTCDay();
     const eoSalvar=ESPACOS.find(e=>e.nome===espaco);
     const temMidia=blocos[0]?.precisaFoto||blocos[0]?.precisaVideo||eoSalvar?.tipo==="marketing";
-    const temAV=eoSalvar?.tipo==="audiovisual"||((_MA.bibAV===true)&&(_MA.bibMic>0||_MA.bibCaixa>0||_MA.bibProj>0));
+    const temBibAV=(_MA.bibAV===true)&&(_MA.bibMic>0||_MA.bibCaixa>0||_MA.bibProj>0);
+    const temAV=eoSalvar?.tipo==="audiovisual";
     // Equipe de Marketing: sempre pendente (aguarda aprovação da equipe)
     const statusMarketing=temMidia?"pendente":null;
     // Pendente se: urgente, fim de semana, mídia solicitada OU equipamento AV solicitado
-    const st=(algUrgente||dow===0||dow===6||temMidia||temAV)?"pendente":"confirmado";
+    const st=(algUrgente||dow===0||dow===6||(temAV&&eoSalvar?.tipo==="audiovisual"))?"pendente":"confirmado";
 
     const tph=b.turmasPorHorario||{};
     const isEquipSalvar=eo?.tipo==="equipamento"||eo?.tipo==="audiovisual";
@@ -2151,7 +2358,7 @@ window.maSalvar=async()=>{
       local:b.local||"",localMontagem:b.local||"",localDevolucao:b.localDevolucao||"",
       quantidade:eo?.tipo==="equipamento"?Number(b.quantidade):null,
       microfones:Number(b.microfones)||0,caixasom:Number(b.caixasom)||0,projetor:Number(b.projetor)||0,
-      status:st,criadoEm:ts,precisaFoto:b.precisaFoto||false,precisaVideo:b.precisaVideo||false,objetivoMidia:b.objetivoMidia||"",descritivo:b.descritivo||"",salaAtividade:b.salaAtividade||"",...(statusMarketing?{statusMarketing}:{}),...(temAV?{statusEquip:"pendente"}:{}),...(_MA.bibAV===true?{bibMic:_MA.bibMic||0,bibCaixa:_MA.bibCaixa||0,bibProj:_MA.bibProj||0}:{}),
+      status:st,criadoEm:ts,precisaFoto:b.precisaFoto||false,precisaVideo:b.precisaVideo||false,objetivoMidia:b.objetivoMidia||"",descritivo:b.descritivo||"",salaAtividade:b.salaAtividade||"",...(statusMarketing?{statusMarketing}:{}),...((temAV||temBibAV)?{statusEquip:"pendente"}:{}),...(_MA.bibAV===true?{bibMic:_MA.bibMic||0,bibCaixa:_MA.bibCaixa||0,bibProj:_MA.bibProj||0}:{}),
       paginas:"",laboratorista:"",reservaAutomatica:false,
       qtdTablets:Number(b.qtdTablets)||0,qtdNotebooks:Number(b.qtdNotebooks)||0,
     };
@@ -2258,24 +2465,31 @@ window.maSalvar=async()=>{
 
       // E-mail de confirmação para o professor
       if(_usuario?.email){
-        const statusTxt=st==="confirmado"?"Confirmado":"Pendente - aguardando aprovacao";
-        const turmasTxt=Object.entries(blocos[0]?.turmasPorHorario||{}).map(([h,t])=>h+": "+t).join(", ")||blocos[0]?.turma||"";
-        const assuntoEmail=st==="confirmado"?"Agendamento confirmado - "+espaco+" - "+dataFmt:"Agendamento pendente - "+espaco+" - "+dataFmt;
-        const textoEmail="Ola, "+profNome+"!
+        const statusTxt=st==="confirmado"?"✅ Confirmado":"⏳ Pendente — aguardando aprovação";
+        const turmasTxt=Object.entries(blocos[0]?.turmasPorHorario||{}).map(([h,t])=>`${h}: ${t}`).join(", ")||blocos[0]?.turma||"";
+        const assunto=st==="confirmado"?`✅ Agendamento confirmado — ${espaco} · ${dataFmt}`:`⏳ Agendamento pendente — ${espaco} · ${dataFmt}`;
+        const texto=`Olá, ${profNome}!
 
 Seu agendamento foi registrado:
 
-Local: "+espaco+"
-Data: "+dataFmt+"
-Horario: "+horFmt+"
-Turma: "+turmasTxt+"
+📍 Local: ${espaco}
+📅 Data: ${dataFmt}
+⏰ Horário: ${horFmt}
+🎓 Turma: ${turmasTxt}
 
-Status: "+statusTxt+(st==="pendente"?"
+Status: ${statusTxt}${st==="pendente"?"
 
-Voce recebera uma notificacao assim que for aprovado.":"")+"
+Você receberá uma notificação assim que for aprovado.":""}
 
-Reserva Arena - Colegio Arena";
-        addDoc(collection(db,"email_queue"),{para:_usuario.email,assunto:assuntoEmail,texto:textoEmail,enviado:false,processando:false,criadoEm:new Date().toISOString()}).catch(()=>{});
+Reserva Arena · Colégio Arena`;
+        await addDoc(collection(db,"email_queue"),{
+          para:_usuario.email,
+          assunto,
+          texto,
+          enviado:false,
+          processando:false,
+          criadoEm:new Date().toISOString()
+        });
       }
 
       // Marketing: agendamento com foto, vídeo ou espaço Equipe de Marketing
@@ -2288,7 +2502,7 @@ Reserva Arena - Colegio Arena";
 
       // TI: agendamento audiovisual ou com bibAV pendente
       const temAV=eoSalvar?.tipo==="audiovisual"||((_MA.bibAV===true)&&(_MA.bibMic>0||_MA.bibCaixa>0||_MA.bibProj>0));
-      if(st==="pendente"&&temAV){
+      if((temAV||temBibAV)&&(st==="pendente"||temBibAV)){
         _usuarios.filter(u=>u.perfil==="ti"&&u.ativo!==false).forEach(u=>{
           gravarNotif(u.uid,"💻 Nova solicitação de equipamento",`${profNome} · ${espaco} · ${dataFmt} às ${horFmt}`,"ti");
         });
@@ -2395,12 +2609,12 @@ function renderAdminView(){
   </div>`;
 
   // ── Feed: últimos agendamentos ──
-  const todosFeed=filtradas.filter(r=>!r.reservaAutomatica);
+  const todosFeed=_todas.filter(r=>!r.reservaAutomatica).sort((a,b)=>{const ta=a.criadoEm?.seconds||0;const tb=b.criadoEm?.seconds||0;return tb-ta;});
   const limFeed=_A.feedExpandido?todosFeed.length:2;
   const ultimos=todosFeed.slice(0,limFeed);
   if(todosFeed.length){
     html+=`<div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:12px 16px;margin-bottom:16px">
-      <p style="font-size:12px;font-weight:800;color:${c.textMuted};text-transform:uppercase;margin-bottom:10px">🕐 Últimos agendamentos</p>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><p style="font-size:12px;font-weight:800;color:${c.textMuted};text-transform:uppercase">🕐 Últimos agendamentos</p>${_A.feedExpandido?`<button onclick="toggleFeedAdmin()" style="font-size:11px;font-weight:700;color:${c.textMuted};background:none;border:1.5px solid ${c.border};border-radius:20px;padding:2px 10px;cursor:pointer;font-family:inherit">▲ Ver menos</button>`:""}</div>
       ${ultimos.map(r=>{
         const dataFmt=r.data?.split('-').reverse().join('/');
         const isUrg=urgentes.find(u=>u.id===r.id);
@@ -2702,7 +2916,7 @@ window.aModerar=async(id,status)=>{
   if(!exigePermissao(['admin'])){alert('Acesso negado.');return;}
   if(!confirm(`${status==="confirmado"?"Aprovar":"Recusar"} esta reserva?`))return;
   const r=_todas.find(r=>r.id===id);
-  await updateDoc(doc(db,"reservas",id),{status});
+  try{await updateDoc(doc(db,"reservas",id),{status});}catch(e){alert("Erro ao atualizar: "+e.message);return;}
   if(r){
     const dataFmt=r.data.split("-").reverse().join("/");
     if(status==="confirmado"){
@@ -2918,9 +3132,8 @@ onAuthStateChanged(auth,async user=>{
     else re();
   }else{
     _usuario=null;
-    _unsub1=onSnapshot(collection(db,"reservas"),snap=>{
-      _todas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario);re();
-    });
+    if(_unsub1){_unsub1();_unsub1=null;}
+    _todas=[];
     re();
   }
 });
