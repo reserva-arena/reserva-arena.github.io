@@ -384,7 +384,7 @@ function calMensalHTML(cid,ano,mes,porData,dataSel){
     const reservas=porData[ds]||[];
     const temRes=reservas.length>0;
     dias+=`<button onclick="window._calClick('${cid}','${ds}')" ${isPast||!letivo?"disabled":""}
-      style="padding:4px 2px;border-radius:6px;border:${isSel?"2px solid #1a6b47":"1px solid transparent"};cursor:${isPast||!letivo?"not-allowed":"pointer"};background:${bg};color:${col};font-weight:${isH||isSel?800:500};font-size:12px;position:relative;opacity:${isPast?.35:1};transition:all .15s;font-family:inherit;width:100%;display:flex;flex-direction:column;align-items:center;gap:1px;min-height:32px;justify-content:center">
+      style="padding:${isPast?"1px":"4px 2px"};border-radius:6px;border:${isSel?"2px solid #1a6b47":"1px solid transparent"};cursor:${isPast||!letivo?"not-allowed":"pointer"};background:${bg};color:${col};font-weight:${isH||isSel?800:500};font-size:${isPast?"9px":"12px"};position:relative;opacity:${isPast?.3:1};transition:all .15s;font-family:inherit;width:100%;display:flex;flex-direction:column;align-items:center;gap:1px;min-height:${isPast?"18px":"32px"};justify-content:center">
       <span>${d}</span>${temRes?`<div style="display:flex;gap:1px;flex-wrap:wrap;justify-content:center">${reservas.slice(0,3).map(()=>`<div style="width:4px;height:4px;border-radius:50%;background:${isSel?"#fff":"#1a6b47"}"></div>`).join("")}${reservas.length>3?`<div style="width:4px;height:4px;border-radius:50%;background:#94a3b8"></div>`:""}</div>`:""}
     </button>`;
   });
