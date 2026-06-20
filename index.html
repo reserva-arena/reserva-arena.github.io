@@ -920,10 +920,19 @@ window.tiRecusar=async(id)=>{
   }
   re();
 };
+window.tiCancelar=async(id)=>{
+  const r=_todas.find(r=>r.id===id);
+  await updateDoc(doc(db,"reservas",id),{statusEquip:"pendente"});
+  if(r){
+    const dataFmt=r.data.split("-").reverse().join("/");
+    await gravarNotif(r.professorId,"↩️ Aprovação de equipamento cancelada",`${r.espaco} — ${dataFmt} às ${r.horario}`,"info");
+  }
+  re();
+};
 
 function renderSemAcesso(){
   const c=C();
-  $("app").innerHTML=`<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:${c.bg};padding:1rem"><div style="text-align:center;max-width:380px"><div style="width:72px;height:72px;border-radius:18px;background:${c.redBg};display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 20px">🔒</div><h2 style="font-size:20px;font-weight:800;color:${c.navy};margin-bottom:8px">Acesso não autorizado</h2><p style="font-size:13.5px;color:${c.textMid};margin-bottom:24px">A conta <strong>${_usuario?.email}</strong> não foi habilitada.</p><button onclick="signOut(auth)" style="${btn("navy")}">Sair</button></div></div>`;
+  $("app").innerHTML=`<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:${c.bg};padding:1rem"><div style="text-align:center;max-width:380px"><div style="width:72px;height:72px;border-radius:18px;background:${c.redBg};display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 20px">🔒</div><h2 style="font-size:20px;font-weight:800;color:${c.navy};margin-bottom:8px">Acesso não autorizado</h2><p style="font-size:13.5px;color:${c.textMid};margin-bottom:24px">A conta <strong>${_usuario?.email}</strong> não foi habilitada.</p><button onclick="doSignOut()" style="${btn("navy")}">Sair</button></div></div>`;
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -971,6 +980,7 @@ window.setAdminVisu=(v)=>{
   if(v==="marketing"&&window._MK)_MK.aba="minhas";
   re();
 };
+window.goHome=()=>irInicio();
 window.irInicio=()=>{
   if(_usuario?.perfil==="admin"){
     _A.modoVisu="calendario";_A.fEspaco="";_A.fProf="";_A.fStatus="";_A.fTurma="";
