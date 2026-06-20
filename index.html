@@ -909,7 +909,7 @@ window.tiAprovar=async(id)=>{
   re();
 };
 window.tiRecusar=async(id)=>{
-  
+  if(!exigePermissao(['ti','admin'])){alert('Acesso negado.');return;}
   const r=_todas.find(r=>r.id===id);
   // Apenas marca equipamento como recusado — NÃO altera status da reserva de espaço
   try{await updateDoc(doc(db,"reservas",id),{statusEquip:"recusado"});}catch(e){alert("Erro ao recusar: "+e.message);return;}
