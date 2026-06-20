@@ -921,6 +921,7 @@ window.tiRecusar=async(id)=>{
   re();
 };
 window.tiCancelar=async(id)=>{
+  if(!exigePermissao(['ti','admin'])){alert('Acesso negado.');return;}
   const r=_todas.find(r=>r.id===id);
   await updateDoc(doc(db,"reservas",id),{statusEquip:"pendente"});
   if(r){
