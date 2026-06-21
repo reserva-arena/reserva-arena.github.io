@@ -59,7 +59,7 @@ select option{font-family:'DM Sans',system-ui,sans-serif}
 
 <script type="module">
 import{initializeApp,getApps}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,onAuthStateChanged,sendPasswordResetEmail}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,onAuthStateChanged,sendPasswordResetEmail,updatePassword}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import{getFirestore,collection,addDoc,onSnapshot,doc,updateDoc,query,where,orderBy,getDocs,Timestamp,setDoc,getDoc,deleteDoc,writeBatch}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import{getMessaging,getToken,onMessage}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
 
@@ -416,12 +416,107 @@ function re(){
   const c=C();
   document.body.style.background=c.bg;
   document.body.style.color=c.text;
-  if(!_usuario){renderPublica();return;}
+  if(!_usuario){renderLogin();return;}
   if(_usuario.perfil==="sem_acesso"||_usuario.ativo===false){renderSemAcesso();return;}
   if(_usuario.perfil==="fotografo"||_usuario.perfil==="marketing"){renderMarketing();return;}
   if(_usuario.perfil==="ti"){renderTI();return;}
   renderApp();
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// TELA DE LOGIN
+// ════════════════════════════════════════════════════════════════════════════
+function renderLogin(){
+  const c=C();
+  let html="<div style='min-height:100vh;background:"+c.bg+";display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px'>";
+  html+="<div style='width:100%;max-width:420px'>";
+  html+="<div style='text-align:center;margin-bottom:24px'>"+logoHTML(56)+"<h1 style='font-size:20px;font-weight:800;color:"+c.navy+";margin-top:10px'>Reserva Arena</h1>";
+  html+="<p style='font-size:12px;color:"+c.textMuted+";margin-top:2px'>Colégio Arena · Reserva de Espaços e Equipamentos</p></div>";
+  html+="<div style='background:"+c.surface+";border:1.5px solid "+c.border+";border-radius:16px;padding:24px;margin-bottom:14px'>";
+  html+="<h2 style='font-size:14px;font-weight:800;color:"+c.navy+";margin-bottom:14px;text-align:center'>🔐 Acesso ao sistema</h2>";
+  html+="<div style='display:flex;flex-direction:column;gap:10px'>";
+  html+="<input id='pub-email' type='email' placeholder='Seu e-mail' autocomplete='email' style='padding:12px 14px;border-radius:10px;border:1.5px solid "+c.border+";background:"+c.bg+";color:"+c.text+";font-size:14px;font-family:inherit;outline:none'>";
+  html+="<input id='pub-senha' type='password' placeholder='Senha' autocomplete='current-password' style='padding:12px 14px;border-radius:10px;border:1.5px solid "+c.border+";background:"+c.bg+";color:"+c.text+";font-size:14px;font-family:inherit;outline:none'>";
+  html+="<button onclick='doLogin()' style='padding:13px;border-radius:10px;border:none;background:#1a6b47;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit'>Entrar</button>";
+  html+="<button onclick='doEsqueciSenha()' style='background:none;border:none;color:"+c.textMuted+";font-size:12px;cursor:pointer;font-family:inherit;padding:4px'>Esqueci minha senha</button>";
+  html+="</div><div id='pub-erro' style='display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px;margin-top:10px;font-size:12px;color:#dc2626;text-align:center'></div></div>";
+  html+="<div style='background:"+c.surface+";border:1.5px solid "+c.border+";border-radius:16px;padding:18px'>";
+  html+="<h3 style='font-size:12px;font-weight:800;color:"+c.navy+";margin-bottom:8px'>📋 Ainda não tem acesso?</h3>";
+  html+="<p style='font-size:11px;color:"+c.textMuted+";line-height:1.6;margin-bottom:12px'>Entre em contato com a equipe de Tecnologia Educacional:</p>";
+  html+="<div style='display:flex;flex-direction:column;gap:8px'>";
+  html+="<div style='display:flex;align-items:center;gap:10px;padding:10px 12px;background:"+c.bg+";border-radius:10px;border:1px solid "+c.border+"'>";
+  html+="<img src='https://reserva-arena.github.io/img/maria-angelica.jpg' style='width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0' onerror="this.style.display='none'">";
+  html+="<div><p style='font-size:12px;font-weight:700;color:"+c.navy+"'>Maria Angélica</p>";
+  html+="<p style='font-size:11px;color:"+c.textMuted+"'>Disponível para suporte</p>";
+  html+="<a href='tel:6298552-0072' style='font-size:12px;color:#1a6b47;font-weight:700;text-decoration:none'>(62) 98552-0072</a></div></div>";
+  html+="<div style='display:flex;align-items:center;gap:10px;padding:10px 12px;background:"+c.bg+";border-radius:10px;border:1px solid "+c.border+"'>";
+  html+="<img src='https://reserva-arena.github.io/img/luciano.jpg' style='width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0' onerror="this.style.display='none'">";
+  html+="<div><p style='font-size:12px;font-weight:700;color:"+c.navy+"'>Luciano</p>";
+  html+="<p style='font-size:11px;color:"+c.textMuted+"'>Disponível para suporte</p>";
+  html+="<a href='tel:6298497-9797' style='font-size:12px;color:#1a6b47;font-weight:700;text-decoration:none'>(62) 98497-9797</a></div></div>";
+  html+="</div></div>";
+  html+="<p style='text-align:center;font-size:10px;color:"+c.textMuted+";margin-top:12px'>Reserva Arena · Colégio Arena</p>";
+  html+="</div></div>";
+  $("app").innerHTML=html;
+}
+
+window.doLogin=async()=>{
+  const email=document.getElementById("pub-email")?.value?.trim();
+  const senha=document.getElementById("pub-senha")?.value;
+  const erro=document.getElementById("pub-erro");
+  if(!email||!senha){if(erro){erro.textContent="Preencha e-mail e senha.";erro.style.display="block";}return;}
+  try{
+    await signInWithEmailAndPassword(auth,email,senha);
+    if(senha==="123456"){renderTrocarSenha();}
+  }catch(e){
+    const msg=e.code==="auth/invalid-credential"||e.code==="auth/wrong-password"||e.code==="auth/user-not-found"?"E-mail ou senha incorretos.":e.code==="auth/too-many-requests"?"Muitas tentativas. Aguarde alguns minutos.":"Erro ao entrar. Tente novamente.";
+    if(erro){erro.textContent=msg;erro.style.display="block";}
+  }
+};
+
+window.doEsqueciSenha=async()=>{
+  const email=document.getElementById("pub-email")?.value?.trim();
+  const erro=document.getElementById("pub-erro");
+  if(!email){if(erro){erro.textContent="Digite seu e-mail acima primeiro.";erro.style.display="block";}return;}
+  try{
+    await sendPasswordResetEmail(auth,email);
+    if(erro){erro.textContent="E-mail de redefinição enviado!";erro.style.display="block";erro.style.background="#e2f4ea";erro.style.color="#1a6b47";}
+  }catch(e){
+    if(erro){erro.textContent="Erro ao enviar e-mail.";erro.style.display="block";}
+  }
+};
+
+function renderTrocarSenha(){
+  const c=C();
+  let html="<div style='min-height:100vh;background:"+c.bg+";display:flex;align-items:center;justify-content:center;padding:24px'>";
+  html+="<div style='width:100%;max-width:400px;background:"+c.surface+";border:1.5px solid #f97316;border-radius:16px;padding:28px'>";
+  html+="<div style='text-align:center;margin-bottom:20px'>";
+  html+="<div style='width:56px;height:56px;border-radius:50%;background:#fff7ed;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 12px'>🔑</div>";
+  html+="<h2 style='font-size:16px;font-weight:800;color:"+c.navy+"'>Defina sua senha pessoal</h2>";
+  html+="<p style='font-size:12px;color:"+c.textMuted+";margin-top:6px;line-height:1.5'>Por segurança, crie uma senha pessoal antes de continuar. Use pelo menos 6 caracteres.</p></div>";
+  html+="<div style='display:flex;flex-direction:column;gap:10px'>";
+  html+="<input id='nova-senha' type='password' placeholder='Nova senha (mín. 6 caracteres)' style='padding:12px 14px;border-radius:10px;border:1.5px solid "+c.border+";background:"+c.bg+";color:"+c.text+";font-size:14px;font-family:inherit;outline:none'>";
+  html+="<input id='conf-senha' type='password' placeholder='Confirme a nova senha' style='padding:12px 14px;border-radius:10px;border:1.5px solid "+c.border+";background:"+c.bg+";color:"+c.text+";font-size:14px;font-family:inherit;outline:none'>";
+  html+="<button onclick='salvarNovaSenha()' style='padding:13px;border-radius:10px;border:none;background:#1a6b47;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit'>✓ Salvar senha e entrar</button>";
+  html+="</div><div id='troca-erro' style='display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px;margin-top:10px;font-size:12px;color:#dc2626;text-align:center'></div>";
+  html+="</div></div>";
+  $("app").innerHTML=html;
+}
+
+window.salvarNovaSenha=async()=>{
+  const nova=document.getElementById("nova-senha")?.value;
+  const conf=document.getElementById("conf-senha")?.value;
+  const erro=document.getElementById("troca-erro");
+  if(!nova||nova.length<6){if(erro){erro.textContent="A senha deve ter pelo menos 6 caracteres.";erro.style.display="block";}return;}
+  if(nova!==conf){if(erro){erro.textContent="As senhas não coincidem.";erro.style.display="block";}return;}
+  if(nova==="123456"){if(erro){erro.textContent="Escolha uma senha diferente da padrão.";erro.style.display="block";}return;}
+  try{
+    await updatePassword(auth.currentUser,nova);
+    re();
+  }catch(e){
+    if(erro){erro.textContent="Erro ao salvar. Tente novamente.";erro.style.display="block";}
+  }
+};
 
 // ════════════════════════════════════════════════════════════════════════════
 // TELA PÚBLICA
@@ -2896,9 +2991,8 @@ onAuthStateChanged(auth,async user=>{
     else re();
   }else{
     _usuario=null;
-    _unsub1=onSnapshot(collection(db,"reservas"),snap=>{
-      _todas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario);re();
-    });
+    if(_unsub1){_unsub1();_unsub1=null;}
+    _todas=[];
     re();
   }
 });
