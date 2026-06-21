@@ -1428,7 +1428,12 @@ function renderProfAgendar(){
     html+=`<div style="padding:20px 14px;text-align:center">
       <div style="width:64px;height:64px;border-radius:50%;background:${m.sucesso==="confirmado"?"#1a6b47":"#fff7ed"};color:${m.sucesso==="confirmado"?"#fff":"#7c2d12"};display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 16px">${m.sucesso==="confirmado"?"✓":"⏳"}</div>
       <h3 style="font-size:20px;font-weight:800;color:${m.sucesso==="confirmado"?c.green:c.amber};margin-bottom:8px">${m.sucesso==="confirmado"?"Confirmado!":"Pendente — aguardando aprovação"}</h3>
-      ${m.recorrente&&m.serieDataInicio&&m.serieDataFim?`<p style="font-size:13px;font-weight:700;color:#1a6b47;background:#e2f4ea;border-radius:8px;padding:8px 12px;margin-bottom:8px">🔁 Série criada de ${m.serieDataInicio.split("-").reverse().join("/")} até ${m.serieDataFim.split("-").reverse().join("/")}</p>`:""}
+      ${m.recorrente&&m.serieDataInicio&&m.serieDataFim?`<div style="background:#e0f2fe;border:1.5px solid #bae6fd;border-radius:10px;padding:12px 14px;margin-bottom:12px;text-align:left">
+        <p style="font-size:13px;font-weight:800;color:#0369a1;margin-bottom:6px">🔁 Série semanal criada!</p>
+        <p style="font-size:12px;color:#0369a1;margin-bottom:2px">📅 De ${m.serieDataInicio.split("-").reverse().join("/")} até ${m.serieDataFim.split("-").reverse().join("/")}</p>
+        <p style="font-size:12px;color:#0369a1;margin-bottom:2px">⏰ ${m.blocos?.[0]?.horario||""} — ${m.espaco}</p>
+        <p style="font-size:12px;font-weight:700;color:#0369a1">📋 ${m.serieTotal||"20"} agendamentos criados</p>
+      </div>`:""}
       <p style="font-size:13px;color:${c.textMuted};margin-bottom:${m.sucesso==="pendente"?"8px":"20px"}">${m.espaco} · ${m.data.split("-").reverse().join("/")}</p>
       ${(m.temMidia||m.tipoEspaco==="marketing")?`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:12px 14px;margin-bottom:20px;text-align:left"><p style="font-size:12px;color:#92400e;font-weight:700;margin-bottom:4px">⏳ O que acontece agora?</p><p style="font-size:12px;color:#92400e;line-height:1.5">A <strong>Equipe de Marketing</strong> vai analisar sua solicitação de foto/vídeo e confirmar ou recusar. Você receberá uma notificação assim que houver uma resposta.</p></div>`:m.sucesso==="pendente"?`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:12px 14px;margin-bottom:20px;text-align:left"><p style="font-size:12px;color:#92400e;font-weight:700;margin-bottom:4px">⏳ O que acontece agora?</p><p style="font-size:12px;color:#92400e;line-height:1.5">Este agendamento precisa de aprovação pois foi feito com menos de 24h de antecedência. Você receberá uma notificação assim que for aprovado.</p></div>`:""}
       <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
@@ -2355,6 +2360,8 @@ window.maSalvar=async()=>{
       let cursor=new Date(Date.UTC(anoR,mesR-1,diaR));
       cursor.setUTCDate(cursor.getUTCDate()+7);
       const FIM_SEMESTRE="2026-12-10";
+      let serieUltimaData=data;
+      let serieCount=1;
       while(true){
         const y=cursor.getUTCFullYear(),mo=String(cursor.getUTCMonth()+1).padStart(2,'0'),d2=String(cursor.getUTCDate()).padStart(2,'0');
         const ds=`${y}-${mo}-${d2}`;
@@ -2370,6 +2377,7 @@ window.maSalvar=async()=>{
             turmaFim:Object.values(tphRec)[Object.values(tphRec).length-1]||""
           };
           batch.set(doc(collection(db,"reservas")),dadosRec);
+          serieUltimaData=ds;serieCount++;
           for(let idx2=1;idx2<rangeHors.length;idx2++){
             const hAtu=rangeHors[idx2];
             batch.set(doc(collection(db,"reservas")),{
@@ -2381,6 +2389,9 @@ window.maSalvar=async()=>{
         }
         cursor.setUTCDate(cursor.getUTCDate()+7);
       }
+      _MA.serieDataInicio=data;
+      _MA.serieDataFim=serieUltimaData;
+      _MA.serieTotal=serieCount;
     }
 
     // 5. Commit do batch — uma única operação de rede!
