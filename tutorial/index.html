@@ -9,6 +9,14 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f7f3; color: #0f172a; }
 
+  /* DESKTOP */
+  @media (min-width: 640px) {
+    .container { max-width: 480px; margin: 0 auto; }
+    .capa { border-radius: 0 0 20px 20px; }
+    body { background: #d1fae5; }
+    .passo img { max-height: 520px; }
+  }
+
   /* CAPA */
   .capa { background: linear-gradient(135deg, #0a3d23, #1a6b47); padding: 40px 24px 32px; text-align: center; }
   .capa img.logo { width: 64px; height: 64px; border-radius: 16px; margin-bottom: 16px; }
@@ -52,13 +60,14 @@
 </head>
 <body>
 
+<div class="container">
 <!-- CAPA -->
 <div class="capa">
   <img class="logo" src="https://reserva-arena.github.io/img/arena-192.png" onerror="this.style.display='none'">
   <h1>Reserva Arena</h1>
   <p>Tutorial do Professor</p>
   <p style="color:#6ee7b7">Colégio Arena · 2026</p>
-  <div class="desc">Este tutorial mostra como agendar espaços e equipamentos do colégio diretamente pelo celular, passo a passo.</div>
+  <div class="desc">Passo a passo para agendar espaços e equipamentos do colégio.<br><br>📱 <strong style="color:#6ee7b7">Celular</strong> — role a tela para baixo<br>💻 <strong style="color:#6ee7b7">Computador</strong> — navegue pelo índice ou role a página</div>
 </div>
 
 <!-- ÍNDICE -->
@@ -298,5 +307,6 @@
 </div>
 
 <div style="height:20px"></div>
+</div><!-- fim container -->
 </body>
 </html>
