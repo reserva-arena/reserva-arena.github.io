@@ -1235,7 +1235,7 @@ function profRRow(r){
       </div>
     </div>
     <div style="display:flex;gap:4px;flex-shrink:0">
-      ${isMeu&&r.data>=h&&r.status!=="recusado"?`<button onclick="abrirEdicao('${r.id}')" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:13px;padding:5px 8px">✏️</button><button onclick="cancelarR('${r.id}')" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:13px;padding:5px 8px">✕</button>`:""}
+      ${isMeu&&r.data>=h&&r.status!=="recusado"?`<button onclick="abrirEdicao('${r.id}')" title="Editar agendamento" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:13px;padding:5px 8px">✏️</button><button onclick="cancelarR('${r.id}')" title="Cancelar agendamento" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:13px;padding:5px 8px">✕</button>`:""}
     </div>
   </div>`;
 }
@@ -2781,7 +2781,7 @@ function admRow(r,showDate=false){
       </div>
     </div>
     <div style="display:flex;gap:5px;flex-shrink:0;align-items:center">
-      <button onclick="abrirEdicao('${r.id}')" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:13px;padding:5px 8px">✏️</button>
+      <button onclick="abrirEdicao('${r.id}')" title="Editar agendamento" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:13px;padding:5px 8px">✏️</button>
       ${r.status==="pendente"?`<button onclick="aModerar('${r.id}','confirmado')" style="${btn("success","","sm")}">✓</button><button onclick="aModerar('${r.id}','recusado')" style="${btn("danger","","sm")}">✗</button>`:""}
       ${r.status==="confirmado"?`<button onclick="aModerar('${r.id}','recusado')" style="${btn("danger","","sm")}">✕</button>`:""}
       <button onclick="aExcluir('${r.id}')" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:13px;padding:4px">🗑</button>
