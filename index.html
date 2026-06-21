@@ -1302,7 +1302,7 @@ function fabHTML(){return'';}
 function modalAgendarHTML(){const c=C();return`<div id="mod-ag" style="display:none;position:fixed;inset:0;z-index:1100;align-items:flex-end;justify-content:center"><div onclick="fecharModalAgendar()" style="position:absolute;inset:0;background:rgba(0,0,0,.5)"></div><div id="mod-ag-inner" style="position:relative;background:${c.surface};border-radius:20px 20px 0 0;width:100%;max-width:600px;max-height:92vh;overflow-y:auto;box-shadow:0 -8px 40px rgba(0,0,0,.25)"><div id="mod-ag-body"></div></div></div>`;}
 
 // ─── ESTADO DO FORMULÁRIO DE AGENDAMENTO ──────────────────────────────────
-let _MA={step:1,espaco:"",data:"",blocos:[],resumo:false,salvando:false,sucesso:null,erro:"",avisoConflito:"",calA:new Date().getFullYear(),calM:new Date().getMonth(),bibAV:null,recorrente:false};
+let _MA={step:1,espaco:"",data:"",blocos:[],resumo:false,salvando:false,sucesso:null,erro:"",avisoConflito:"",calA:new Date().getFullYear(),calM:new Date().getMonth(),bibAV:null,recorrente:false,dispEquip:{tablets:18,notebooks:16}};
 let _adminVisu="admin";
 let _notifNaoLidas=0;
 let _notifListener=null;
@@ -1778,22 +1778,26 @@ const selTurma=(horario,val)=>`
       <p style="font-size:11px;color:${c.textMuted};margin-bottom:10px">Serão entregues e recolhidos na própria sala no período ${b.horario} → ${b.horarioFim}.</p>
       <div style="display:grid;gap:8px">`;
     if(eo.equipAuto.includes("Tablets (18 disp.)")){
+      const dispT=(_MA.dispEquip?.tablets??18);
+      const esgT=dispT===0;
       html+=`<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:${c.bg};border-radius:8px;border:1.5px solid ${b.qtdTablets>0?c.blueMid:c.border}">
-        <span style="font-size:16px">📱</span><div style="flex:1"><p style="font-size:13px;font-weight:700;color:${c.navy}">Tablets</p><p style="font-size:11px;color:${c.textMuted}">Máx. 18 disponíveis</p></div>
+        <span style="font-size:16px">📱</span><div style="flex:1"><p style="font-size:13px;font-weight:700;color:${c.navy}">Tablets</p><p style="font-size:11px;color:${esgT?'#dc2626':c.textMuted}">${esgT?'❌ Nenhum disponível neste horário':`${dispT} disponível${dispT!==1?'s':''} de 18`}</p></div>
         <div style="display:flex;align-items:center;gap:8px">
           <button onclick="maDecEquip(${i},'qtdTablets')" style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${c.surface};cursor:pointer;font-size:16px;font-family:inherit">−</button>
           <span style="font-size:16px;font-weight:800;color:${c.navy};min-width:24px;text-align:center">${b.qtdTablets||0}</span>
-          <button onclick="maIncEquip(${i},'qtdTablets',18)" style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${c.surface};cursor:pointer;font-size:16px;font-family:inherit">+</button>
+          <button onclick="maIncEquip(${i},'qtdTablets',${dispT})" ${esgT?'disabled':''} style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${esgT?'#f1f5f9':c.surface};cursor:${esgT?'not-allowed':'pointer'};font-size:16px;font-family:inherit">+</button>
         </div>
       </div>`;
     }
     if(eo.equipAuto.includes("Computadores (16 disp.)")){
+      const dispN=(_MA.dispEquip?.notebooks??16);
+      const esgN=dispN===0;
       html+=`<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:${c.bg};border-radius:8px;border:1.5px solid ${b.qtdNotebooks>0?c.blueMid:c.border}">
-        <span style="font-size:16px">💻</span><div style="flex:1"><p style="font-size:13px;font-weight:700;color:${c.navy}">Computadores</p><p style="font-size:11px;color:${c.textMuted}">Máx. 16 disponíveis</p></div>
+        <span style="font-size:16px">💻</span><div style="flex:1"><p style="font-size:13px;font-weight:700;color:${c.navy}">Computadores</p><p style="font-size:11px;color:${esgN?'#dc2626':c.textMuted}">${esgN?'❌ Nenhum disponível neste horário':`${dispN} disponível${dispN!==1?'s':''} de 16`}</p></div>
         <div style="display:flex;align-items:center;gap:8px">
           <button onclick="maDecEquip(${i},'qtdNotebooks')" style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${c.surface};cursor:pointer;font-size:16px;font-family:inherit">−</button>
           <span style="font-size:16px;font-weight:800;color:${c.navy};min-width:24px;text-align:center">${b.qtdNotebooks||0}</span>
-          <button onclick="maIncEquip(${i},'qtdNotebooks',16)" style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${c.surface};cursor:pointer;font-size:16px;font-family:inherit">+</button>
+          <button onclick="maIncEquip(${i},'qtdNotebooks',${dispN})" ${esgN?'disabled':''} style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${esgN?'#f1f5f9':c.surface};cursor:${esgN?'not-allowed':'pointer'};font-size:16px;font-family:inherit">+</button>
         </div>
       </div>`;
     }
@@ -2013,7 +2017,7 @@ window.maBack=()=>{
   else if(_MA.step===2)_MA.espaco="";
   _MA.step--;re();
 };
-window.maSetHorario=(i,h)=>{_MA.blocos[i].horario=h;re();setTimeout(atualizarBotoesAgendar,50);};
+window.maSetHorario=(i,h)=>{_MA.blocos[i].horario=h;re();setTimeout(atualizarBotoesAgendar,50);consultaDispEquip();};
 window.maSetHorarioMulti=(i,tipo,h)=>{
   if(tipo==="ini"){
     _MA.blocos[i].horario=h;
@@ -2041,6 +2045,7 @@ window.maSetHorarioMulti=(i,tipo,h)=>{
     }
   }
   re();
+  consultaDispEquip();
 };
 window.maSetBloco=(i,k,v)=>{_MA.blocos[i][k]=v;};
 window.maIncEquip=(i,campo,max)=>{_MA.blocos[i][campo]=Math.min(max,(_MA.blocos[i][campo]||0)+1);re();};
@@ -2067,6 +2072,39 @@ window.maSetTurmaPorHorario=(i,horario,turma)=>{
   re();
 };
 window.maSetBlocoRe=(i,k,v)=>{_MA.blocos[i][k]=v;re();};
+
+// Consulta disponibilidade real de tablets e computadores no Firestore
+window.consultaDispEquip=async()=>{
+  const b=_MA.blocos[0];
+  const eo=ESPACOS.find(e=>e.nome===_MA.espaco);
+  if(!eo||!eo.equipAuto||eo.equipAuto.length===0)return;
+  if(!_MA.data||!b||!b.horario||!b.horarioFim)return;
+  const range=gerarRange(b.horario,b.horarioFim,eo);
+  if(!range||range.length===0)return;
+  // Busca reservas ativas (não recusadas) de tablets e computadores nos horários do range
+  let usadoTablets=0,usadoNotebooks=0;
+  try{
+    const snaps=await Promise.all(range.map(h=>
+      getDocs(query(collection(db,"reservas"),
+        where("data","==",_MA.data),
+        where("horario","==",h),
+        where("status","in",["confirmado","pendente"])
+      ))
+    ));
+    snaps.forEach(snap=>{
+      snap.docs.forEach(d=>{
+        const r=d.data();
+        if(r.espaco&&r.espaco.includes("Tablet"))usadoTablets+=Number(r.quantidade)||Number(r.qtdTablets)||0;
+        if(r.espaco&&r.espaco.includes("Computador"))usadoNotebooks+=Number(r.quantidade)||Number(r.qtdNotebooks)||0;
+        // equipamentos automáticos embutidos na reserva do espaço
+        if(Number(r.qtdTablets)>0)usadoTablets+=Number(r.qtdTablets);
+        if(Number(r.qtdNotebooks)>0)usadoNotebooks+=Number(r.qtdNotebooks);
+      });
+    });
+  }catch(e){return;}
+  _MA.dispEquip={tablets:Math.max(0,18-usadoTablets),notebooks:Math.max(0,16-usadoNotebooks)};
+  re();
+};
 let _reTimer=null;
 window.maSetConteudo=(i,v)=>{
   _MA.blocos[i].conteudo=v;
@@ -2162,28 +2200,40 @@ window.maSalvar=async()=>{
       }
     }
 
-    // 2. Verificar conflitos de equipamentos automáticos em paralelo
+    // 2. Verificar disponibilidade de equipamentos automáticos por quantidade
     const equipAuto=eo.equipAuto||[];
-    const equipSnaps={};
-    // Só consulta equipamentos se professor selecionou alguma quantidade
     const qtdTablets=Number(blocos[0]?.qtdTablets)||0;
     const qtdNotebooks=Number(blocos[0]?.qtdNotebooks)||0;
     if(equipAuto.length>0&&(qtdTablets>0||qtdNotebooks>0)){
-      const eqPromises=[];
-      for(const nomeEquip of equipAuto){
-        for(const h of rangeHors){
-          eqPromises.push(
-            getDocs(query(collection(db,"reservas"),where("espaco","==",nomeEquip),where("data","==",data),where("horario","==",h)))
-            .then(snap=>({nomeEquip,h,snap}))
-            .catch(()=>({nomeEquip,h,snap:{docs:[]}}))
-          );
-        }
+      let usadoT=0,usadoN=0;
+      try{
+        const snapsEq=await Promise.all(rangeHors.map(h=>
+          getDocs(query(collection(db,"reservas"),
+            where("data","==",data),
+            where("horario","==",h),
+            where("status","in",["confirmado","pendente"])
+          ))
+        ));
+        snapsEq.forEach(snap=>{
+          snap.docs.forEach(d=>{
+            const r=d.data();
+            if(r.espaco&&r.espaco.includes("Tablet"))usadoT+=Number(r.quantidade)||Number(r.qtdTablets)||0;
+            if(r.espaco&&r.espaco.includes("Computador"))usadoN+=Number(r.quantidade)||Number(r.qtdNotebooks)||0;
+            if(Number(r.qtdTablets)>0)usadoT+=Number(r.qtdTablets);
+            if(Number(r.qtdNotebooks)>0)usadoN+=Number(r.qtdNotebooks);
+          });
+        });
+      }catch(e){/* falha silenciosa */}
+      const dispT=Math.max(0,18-usadoT);
+      const dispN=Math.max(0,16-usadoN);
+      if(qtdTablets>dispT){
+        _MA.erro=`Tablets insuficientes. Pedido: ${qtdTablets}, disponível: ${dispT}.`;
+        _MA.salvando=false;_MA.resumo=false;re();return;
       }
-      const eqResults=await Promise.all(eqPromises).catch(()=>[]);
-      eqResults.forEach(({nomeEquip,h,snap})=>{
-        if(!equipSnaps[nomeEquip])equipSnaps[nomeEquip]={};
-        equipSnaps[nomeEquip][h]=!snap.docs.find(d=>d.data()?.status!=="recusado");
-      });
+      if(qtdNotebooks>dispN){
+        _MA.erro=`Computadores insuficientes. Pedido: ${qtdNotebooks}, disponível: ${dispN}.`;
+        _MA.salvando=false;_MA.resumo=false;re();return;
+      }
     }
 
     // 3. Determinar status
