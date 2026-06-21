@@ -2524,10 +2524,10 @@ function renderAdminView(){
   </div>`;
 
   // ── Feed: últimos agendamentos criados ──
-  const todosFeed=filtradas.filter(r=>!r.reservaAutomatica).sort((a,b)=>{
+  const todosFeed=filtradas.filter(r=>!r.reservaAutomatica&&r.data>=h).sort((a,b)=>{
     const ka=(a.data||"")+(a.horario||"");
     const kb=(b.data||"")+(b.horario||"");
-    return kb.localeCompare(ka);
+    return ka.localeCompare(kb);
   });
   const limFeed=_A.feedExpandido?todosFeed.length:2;
   const ultimos=todosFeed.slice(0,limFeed);
