@@ -2652,9 +2652,9 @@ function renderAdminView(){
 
   // ── AGENDA ──
   if(_A.modoVisu==="agenda"){
-    const urg=filtradas.filter(r=>r.status==="pendente"&&isUrgente(r.data,r.horario));
-    const pend=filtradas.filter(r=>r.status==="pendente"&&!isUrgente(r.data,r.horario));
-    const conf=filtradas.filter(r=>r.status!=="pendente"&&(_A.historico||r.data>=h));
+    const urg=filtradas.filter(r=>r.status==="pendente"&&isUrgente(r.data,r.horario)&&(!_A.fData||r.data===_A.fData));
+    const pend=filtradas.filter(r=>r.status==="pendente"&&!isUrgente(r.data,r.horario)&&(!_A.fData||r.data===_A.fData));
+    const conf=filtradas.filter(r=>r.status!=="pendente"&&(_A.historico||r.data>=h)&&(!_A.fData||r.data===_A.fData)&&(!_A.fDataAte||r.data<=_A.fDataAte));
 
     html+=`<div style="display:flex;gap:4px;margin-bottom:16px;background:${c.surface};border-radius:10px;padding:4px;border:1px solid ${c.border};width:fit-content;flex-wrap:wrap">
       ${[{id:"reservas",l:"📋 Reservas"},{id:"espacos",l:"🏛️ Por Espaço"},{id:"marketing",l:"📸 Marketing"},{id:"ti",l:"💻 T.I."}].map(t=>`<button onclick="aSetAba('${t.id}')" style="padding:6px 13px;font-size:12px;white-space:nowrap;border-radius:8px;border:1.5px solid ${_A.aba===t.id?(_dark?'#1a6b47':c.navy):c.border};background:${_A.aba===t.id?(_dark?'#1a6b47':c.navy):'transparent'};color:${_A.aba===t.id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${t.l}</button>`).join("")}
@@ -2720,15 +2720,15 @@ function renderAdminView(){
 
   html+=`<div style="position:sticky;top:16px">
     <div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:10px 12px;margin-bottom:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      <div onclick="aSetModo('agenda');_A.aba='reservas';_A.fStatus='';_A.historico=false;re()" style="text-align:center;padding:8px;background:${c.bg};border-radius:8px;cursor:pointer" title="Ver agendamentos de hoje">
+      <div onclick="aSetModo('agenda');_A.aba='reservas';_A.fStatus='';_A.fData=fmtHoje();_A.historico=true;re()" style="text-align:center;padding:8px;background:${c.bg};border-radius:8px;cursor:pointer" title="Ver agendamentos de hoje">
         <p style="font-size:20px;font-weight:900;color:#1a6b47">${hoje_rs}</p>
         <p style="font-size:10px;color:${c.textMuted};font-weight:600">Hoje ↗</p>
       </div>
-      <div onclick="aSetModo('agenda');_A.aba='reservas';_A.fStatus='pendente';re()" style="text-align:center;padding:8px;background:${pend>0?"#fff7ed":c.bg};border-radius:8px;cursor:pointer" title="Ver pendentes">
+      <div onclick="aSetModo('agenda');_A.aba='reservas';_A.fStatus='pendente';_A.fData='';_A.fDataAte='';re()" style="text-align:center;padding:8px;background:${pend>0?"#fff7ed":c.bg};border-radius:8px;cursor:pointer" title="Ver pendentes">
         <p style="font-size:20px;font-weight:900;color:${pend>0?"#ea580c":c.textMuted}">${pend}</p>
         <p style="font-size:10px;color:${c.textMuted};font-weight:600">Pendentes ↗</p>
       </div>
-      <div onclick="aSetModo('agenda');_A.aba='reservas';_A.fStatus='';_A.historico=false;re()" style="text-align:center;padding:8px;background:${c.bg};border-radius:8px;cursor:pointer" title="Ver esta semana">
+      <div onclick="aSetModo('agenda');_A.aba='reservas';_A.fStatus='';_A.fData='';_A.fDataAte=h7;_A.historico=false;re()" style="text-align:center;padding:8px;background:${c.bg};border-radius:8px;cursor:pointer" title="Ver esta semana">
         <p style="font-size:20px;font-weight:900;color:#7c3aed">${semana_rs}</p>
         <p style="font-size:10px;color:${c.textMuted};font-weight:600">Esta semana ↗</p>
       </div>
