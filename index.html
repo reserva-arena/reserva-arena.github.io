@@ -1425,17 +1425,29 @@ function renderProfAgendar(){
   let html="";
 
   if(m.sucesso){
+    const b0=m.blocos?.[0];
+    const turmasSucesso=b0?.turmasPorHorario?Object.values(b0.turmasPorHorario).filter(Boolean):[b0?.turma||""].filter(Boolean);
+    const turmaTxt=turmasSucesso.length>1?`${turmasSucesso[0]} → ${turmasSucesso[turmasSucesso.length-1]} (${turmasSucesso.length} turmas)`:turmasSucesso[0]||"";
+    const horTxt=b0?.horario?(b0.horarioFim&&b0.horarioFim!==b0.horario?`${b0.horario} → ${b0.horarioFim}`:b0.horario):"";
     html+=`<div style="padding:20px 14px;text-align:center">
       <div style="width:64px;height:64px;border-radius:50%;background:${m.sucesso==="confirmado"?"#1a6b47":"#fff7ed"};color:${m.sucesso==="confirmado"?"#fff":"#7c2d12"};display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 16px">${m.sucesso==="confirmado"?"✓":"⏳"}</div>
-      <h3 style="font-size:20px;font-weight:800;color:${m.sucesso==="confirmado"?c.green:c.amber};margin-bottom:8px">${m.sucesso==="confirmado"?"Confirmado!":"Pendente — aguardando aprovação"}</h3>
+      <h3 style="font-size:20px;font-weight:800;color:${m.sucesso==="confirmado"?c.green:c.amber};margin-bottom:12px">${m.sucesso==="confirmado"?"Confirmado!":"Pendente — aguardando aprovação"}</h3>
+      <div style="background:${c.bg};border:1.5px solid ${c.border};border-radius:10px;padding:12px 14px;margin-bottom:12px;text-align:left">
+        <p style="font-size:13px;font-weight:700;color:${c.navy};margin-bottom:6px">${tipoIcon(m.tipoEspaco,m.espaco)} ${m.espaco}</p>
+        <p style="font-size:12px;color:${c.textMid};margin-bottom:3px">📅 ${m.data?.split("-").reverse().join("/")}</p>
+        ${horTxt?`<p style="font-size:12px;color:${c.textMid};margin-bottom:3px">⏰ ${horTxt}</p>`:""}
+        ${turmaTxt?`<p style="font-size:12px;color:${c.textMid};margin-bottom:3px">🎓 ${turmaTxt}</p>`:""}
+        ${b0?.qtdTablets>0?`<p style="font-size:12px;color:#0369a1;margin-bottom:2px">📱 ${b0.qtdTablets} tablet${b0.qtdTablets>1?"s":""}</p>`:""}
+        ${b0?.qtdNotebooks>0?`<p style="font-size:12px;color:#0369a1;margin-bottom:2px">💻 ${b0.qtdNotebooks} computador${b0.qtdNotebooks>1?"es":""}</p>`:""}
+        ${m.bibAV===true&&(m.bibMic>0||m.bibCaixa>0||m.bibProj>0)?`<p style="font-size:12px;color:#0369a1;margin-bottom:2px">🔊 Som/Mic/Projetor solicitado</p>`:""}
+        ${b0?.precisaFoto||b0?.precisaVideo?`<p style="font-size:12px;color:#7c3aed;margin-bottom:2px">📸 Mídia solicitada</p>`:""}
+      </div>
       ${m.recorrente&&m.serieDataInicio&&m.serieDataFim?`<div style="background:#e0f2fe;border:1.5px solid #bae6fd;border-radius:10px;padding:12px 14px;margin-bottom:12px;text-align:left">
         <p style="font-size:13px;font-weight:800;color:#0369a1;margin-bottom:6px">🔁 Série semanal criada!</p>
         <p style="font-size:12px;color:#0369a1;margin-bottom:2px">📅 De ${m.serieDataInicio.split("-").reverse().join("/")} até ${m.serieDataFim.split("-").reverse().join("/")}</p>
-        <p style="font-size:12px;color:#0369a1;margin-bottom:2px">⏰ ${m.blocos?.[0]?.horario||""} — ${m.espaco}</p>
         <p style="font-size:12px;font-weight:700;color:#0369a1">📋 ${m.serieTotal||"20"} agendamentos criados</p>
       </div>`:""}
-      <p style="font-size:13px;color:${c.textMuted};margin-bottom:${m.sucesso==="pendente"?"8px":"20px"}">${m.espaco} · ${m.data.split("-").reverse().join("/")}</p>
-      ${(m.temMidia||m.tipoEspaco==="marketing")?`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:12px 14px;margin-bottom:20px;text-align:left"><p style="font-size:12px;color:#92400e;font-weight:700;margin-bottom:4px">⏳ O que acontece agora?</p><p style="font-size:12px;color:#92400e;line-height:1.5">A <strong>Equipe de Marketing</strong> vai analisar sua solicitação de foto/vídeo e confirmar ou recusar. Você receberá uma notificação assim que houver uma resposta.</p></div>`:m.sucesso==="pendente"?`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:12px 14px;margin-bottom:20px;text-align:left"><p style="font-size:12px;color:#92400e;font-weight:700;margin-bottom:4px">⏳ O que acontece agora?</p><p style="font-size:12px;color:#92400e;line-height:1.5">Este agendamento precisa de aprovação pois foi feito com menos de 24h de antecedência. Você receberá uma notificação assim que for aprovado.</p></div>`:""}
+      ${(m.temMidia||m.tipoEspaco==="marketing")?`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:12px 14px;margin-bottom:12px;text-align:left"><p style="font-size:12px;color:#92400e;font-weight:700;margin-bottom:4px">⏳ O que acontece agora?</p><p style="font-size:12px;color:#92400e;line-height:1.5">A <strong>Equipe de Marketing</strong> vai analisar sua solicitação de foto/vídeo e confirmar ou recusar. Você receberá uma notificação assim que houver uma resposta.</p></div>`:m.sucesso==="pendente"?`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:12px 14px;margin-bottom:12px;text-align:left"><p style="font-size:12px;color:#92400e;font-weight:700;margin-bottom:4px">⏳ O que acontece agora?</p><p style="font-size:12px;color:#92400e;line-height:1.5">Este agendamento precisa de aprovação pois foi feito com menos de 24h de antecedência. Você receberá uma notificação assim que for aprovado.</p></div>`:""}
       <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
         <button onclick="pSetModoProf('agendar')" style="${btn("success")};padding:10px 24px">＋ Novo agendamento</button>
         <button onclick="pSetModoProf('ver')" style="${btn("ghost")};padding:10px 24px">Ver agendamentos</button>
