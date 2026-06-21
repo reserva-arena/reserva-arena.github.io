@@ -2561,13 +2561,13 @@ function renderAdminView(){
   </div>`;
 
   // ── FILTROS ──
-  html+=`<div style="background:${c.surface};border-radius:12px;border:1px solid ${c.border};padding:10px 14px;margin-bottom:16px">
-    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-      <select id="adm-sel-espaco" style="${sel()};font-size:12px;padding:5px 8px;flex:1;min-width:120px"><option value="">🏛️ Todos os espaços</option>${ESPACOS.map(e=>`<option value="${e.nome}" ${_A.fEspaco===e.nome?"selected":""}>${e.nome}</option>`).join("")}</select>
-      <select id="adm-sel-prof" style="${sel()};font-size:12px;padding:5px 8px;flex:1;min-width:120px"><option value="">👤 Todos os professores</option>${_usuarios.map(u=>`<option value="${u.nome}" ${_A.fProf===u.nome?"selected":""}>${u.nome}</option>`).join("")}</select>
-      <select id="adm-sel-turma" style="${sel()};font-size:12px;padding:5px 8px;flex:1;min-width:110px"><option value="">🎓 Todas as turmas</option>${TURMAS.map(t=>`<option value="${t}" ${_A.fTurma===t?"selected":""}>${t}</option>`).join("")}</select>
-      <select id="adm-sel-status" style="${sel()};font-size:12px;padding:5px 8px;min-width:110px"><option value="">● Todos status</option><option value="confirmado" ${_A.fStatus==="confirmado"?"selected":""}>✅ Confirmado</option><option value="pendente" ${_A.fStatus==="pendente"?"selected":""}>⏳ Pendente</option><option value="recusado" ${_A.fStatus==="recusado"?"selected":""}>❌ Recusado</option></select>
-      ${_A.fEspaco||_A.fProf||_A.fStatus||_A.fTurma?`<button id="adm-btn-limpar" style="${btn("ghost")};padding:5px 10px;font-size:12px">✕ Limpar</button>`:""}
+  html+=`<div style="background:${c.surface};border-radius:12px;border:1px solid ${c.border};padding:8px 12px;margin-bottom:16px">
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+      <select id="adm-sel-espaco" style="${sel()};font-size:12px;padding:5px 8px;flex:1;min-width:100px"><option value="">🏛️ Espaço</option>${ESPACOS.map(e=>`<option value="${e.nome}" ${_A.fEspaco===e.nome?"selected":""}>${e.nome}</option>`).join("")}</select>
+      <select id="adm-sel-prof" style="${sel()};font-size:12px;padding:5px 8px;flex:1;min-width:100px"><option value="">👤 Professor</option>${_usuarios.map(u=>`<option value="${u.nome}" ${_A.fProf===u.nome?"selected":""}>${u.nome}</option>`).join("")}</select>
+      <select id="adm-sel-turma" style="${sel()};font-size:12px;padding:5px 8px;flex:1;min-width:90px"><option value="">🎓 Turma</option>${TURMAS.map(t=>`<option value="${t}" ${_A.fTurma===t?"selected":""}>${t}</option>`).join("")}</select>
+      <select id="adm-sel-status" style="${sel()};font-size:12px;padding:5px 8px;min-width:90px"><option value="">● Status</option><option value="confirmado" ${_A.fStatus==="confirmado"?"selected":""}>✅ Confirmado</option><option value="pendente" ${_A.fStatus==="pendente"?"selected":""}>⏳ Pendente</option><option value="recusado" ${_A.fStatus==="recusado"?"selected":""}>❌ Recusado</option></select>
+      ${_A.fEspaco||_A.fProf||_A.fStatus||_A.fTurma?`<button id="adm-btn-limpar" style="${btn("ghost")};padding:5px 10px;font-size:12px">✕</button>`:""}
       <button id="adm-btn-hist" style="background:${_A.historico?c.navy:"transparent"};border:1.5px solid ${_A.historico?c.navy:c.border};border-radius:8px;color:${_A.historico?"#fff":c.textMuted};font-size:12px;padding:5px 10px;cursor:pointer;font-weight:600;white-space:nowrap;margin-left:auto">🕐 ${_A.historico?"Ocultar":"Histórico"}</button>
     </div>
   </div>`;
@@ -2709,28 +2709,38 @@ function renderAdminView(){
     const kb=(b.data||"")+(b.horario||"");
     return ka.localeCompare(kb);
   });
-  const limFeed=_A.feedExpandido?todosFeed.length:8;
-  const ultimos=todosFeed.slice(0,limFeed);
+  // Próximos 7 dias
+  const d7=new Date();d7.setDate(d7.getDate()+7);
+  const h7=d7.toISOString().slice(0,10);
+  const feedSemana=todosFeed.filter(r=>r.data<=h7);
+  const feedVer=_A.feedExpandido?todosFeed:feedSemana;
+
+  // Esta semana
+  const semana_rs=feedSemana.length;
 
   html+=`<div style="position:sticky;top:16px">
-    <div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:12px 14px;margin-bottom:12px;display:flex;gap:10px">
-      <div style="flex:1;text-align:center;padding:8px;background:${c.bg};border-radius:8px">
-        <p style="font-size:22px;font-weight:900;color:#1a6b47">${hoje_rs}</p>
-        <p style="font-size:11px;color:${c.textMuted};font-weight:600">Hoje</p>
+    <div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:10px 12px;margin-bottom:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div style="text-align:center;padding:8px;background:${c.bg};border-radius:8px">
+        <p style="font-size:20px;font-weight:900;color:#1a6b47">${hoje_rs}</p>
+        <p style="font-size:10px;color:${c.textMuted};font-weight:600">Hoje</p>
       </div>
-      <div style="flex:1;text-align:center;padding:8px;background:${pend>0?"#fff7ed":c.bg};border-radius:8px">
-        <p style="font-size:22px;font-weight:900;color:${pend>0?"#ea580c":c.textMuted}">${pend}</p>
-        <p style="font-size:11px;color:${c.textMuted};font-weight:600">Pendentes</p>
+      <div style="text-align:center;padding:8px;background:${pend>0?"#fff7ed":c.bg};border-radius:8px">
+        <p style="font-size:20px;font-weight:900;color:${pend>0?"#ea580c":c.textMuted}">${pend}</p>
+        <p style="font-size:10px;color:${c.textMuted};font-weight:600">Pendentes</p>
       </div>
-      <div style="flex:1;text-align:center;padding:8px;background:${c.bg};border-radius:8px">
-        <p style="font-size:22px;font-weight:900;color:#0369a1">${todosFeed.length}</p>
-        <p style="font-size:11px;color:${c.textMuted};font-weight:600">Próximos</p>
+      <div style="text-align:center;padding:8px;background:${c.bg};border-radius:8px">
+        <p style="font-size:20px;font-weight:900;color:#7c3aed">${semana_rs}</p>
+        <p style="font-size:10px;color:${c.textMuted};font-weight:600">Esta semana</p>
+      </div>
+      <div style="text-align:center;padding:8px;background:${c.bg};border-radius:8px">
+        <p style="font-size:20px;font-weight:900;color:#0369a1">${todosFeed.length}</p>
+        <p style="font-size:10px;color:${c.textMuted};font-weight:600">Total</p>
       </div>
     </div>
 
     <div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:12px 14px">
       <p style="font-size:11px;font-weight:800;color:${c.textMuted};text-transform:uppercase;margin-bottom:10px">🕐 Próximos agendamentos</p>
-      ${ultimos.map(r=>{
+      ${feedVer.map(r=>{
         const dataFmt=r.data?.split('-').reverse().join('/');
         const isUrg=urgentes.find(u=>u.id===r.id);
         const bg=isUrg?'#fff7ed':r.status==='pendente'?'#fffbeb':c.bg;
@@ -2746,7 +2756,7 @@ function renderAdminView(){
           ${badge}
         </div>`;
       }).join('')}
-      ${todosFeed.length>8?`<button onclick="toggleFeedAdmin()" style="width:100%;margin-top:6px;padding:7px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.textMuted};font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">${_A.feedExpandido?'▲ Ver menos':'▼ Ver mais ('+todosFeed.length+' no total)'}</button>`:''}
+      ${todosFeed.length>feedSemana.length?`<button onclick="toggleFeedAdmin()" style="width:100%;margin-top:6px;padding:7px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.textMuted};font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">${_A.feedExpandido?'▲ Só esta semana':'▼ Ver todos ('+todosFeed.length+')'}</button>`:''}
     </div>
   </div>`;
 
