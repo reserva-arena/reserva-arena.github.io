@@ -382,8 +382,8 @@ function calMensalHTML(cid,ano,mes,porData,dataSel){
     const bg=isSel?"#40b07a":isH?"rgba(26,107,71,.12)":nao?"rgba(239,68,68,.08)":"transparent";
     const col=isSel?"#fff":isPast?"#cbd5e1":nao?"#fca5a5":isFim?"#ef4444":c.navy;
     const temRes=(porData[ds]||[]).length>0;
-    dias+=`<button onclick="window._calClick('${cid}','${ds}')" ${isPast||!letivo?"disabled":""}
-      style="aspect-ratio:1;border-radius:${isPast?"50%":"8px"};border:none;cursor:${isPast||!letivo?"not-allowed":"pointer"};background:${bg};color:${col};font-weight:${isH||isSel?800:600};font-size:${isPast?"9px":"13.5px"};position:relative;opacity:${isPast?.2:1};transition:all .15s;font-family:inherit;padding:${isPast?"1px":"0"}">
+    dias+=isPast?`<div style="aspect-ratio:1;width:6px;height:6px;border-radius:50%;background:#cbd5e1;opacity:.3;margin:auto"></div>`:`<button onclick="window._calClick('${cid}','${ds}')" ${!letivo?"disabled":""}
+      style="aspect-ratio:1;border-radius:8px;border:none;cursor:${!letivo?"not-allowed":"pointer"};background:${bg};color:${col};font-weight:${isH||isSel?800:500};font-size:13.5px;position:relative;opacity:1;transition:all .15s;font-family:inherit">
       ${d}${temRes&&!isSel?`<div style="position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:#40b07a"></div>`:""}
     </button>`;
   });
