@@ -1732,47 +1732,6 @@ const selTurma=(horario,val)=>`
     }
   }
 
-  // ── Equipamentos automáticos (Sala Multifuncional e Lab. Mat.) ──
-  // O local já é a própria sala — professor só informa início/fim (já selecionado) e quantidade
-  if(temEquipAuto&&b.horario&&b.horarioFim){
-    const usaEquip=b.usaEquip===true;
-    html+=`<div style="background:${c.surface};border-radius:10px;padding:12px;border:1.5px solid #bae6fd">
-      <p style="font-size:13px;font-weight:800;color:#0369a1;margin-bottom:8px">💻 Equipamentos para o período</p>
-      <div style="display:flex;gap:8px;margin-bottom:${usaEquip?'10px':'0'}">
-        <button onclick="maSetBlocoRe(${i},'usaEquip',true);maSetBlocoRe(${i},'qtdTablets',0);maSetBlocoRe(${i},'qtdNotebooks',0);consultaDispEquip();" style="flex:1;padding:9px;border-radius:8px;border:2px solid ${usaEquip?'#0369a1':c.border};background:${usaEquip?'#e0f2fe':c.bg};color:${usaEquip?'#0369a1':c.textMid};font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">✅ Sim</button>
-        <button onclick="maSetBlocoRe(${i},'usaEquip',false);maSetBlocoRe(${i},'qtdTablets',0);maSetBlocoRe(${i},'qtdNotebooks',0);" style="flex:1;padding:9px;border-radius:8px;border:2px solid ${!usaEquip?'#64748b':c.border};background:${!usaEquip?'#f1f5f9':c.bg};color:${!usaEquip?'#475569':c.textMid};font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">✕ Não</button>
-      </div>
-      ${usaEquip?`<p style="font-size:11px;color:${c.textMuted};margin-bottom:10px">Serão entregues e recolhidos na própria sala no período ${b.horario} → ${b.horarioFim}.</p><div style="display:grid;gap:8px">`:''}`;
-    if(usaEquip){
-      if(eo.equipAuto.includes("Tablets (18 disp.)")){
-        const dispT=(_MA.dispEquip?.tablets??18);
-        const esgT=dispT===0;
-        html+=`<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:${c.bg};border-radius:8px;border:1.5px solid ${b.qtdTablets>0?c.blueMid:c.border}">
-          <span style="font-size:16px">📱</span><div style="flex:1"><p style="font-size:13px;font-weight:700;color:${c.navy}">Tablets</p><p style="font-size:11px;color:${esgT?'#dc2626':c.textMuted}">${esgT?'❌ Nenhum disponível neste horário':`${dispT} disponível${dispT!==1?'s':''} de 18`}</p></div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <button onclick="maDecEquip(${i},'qtdTablets')" style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${c.surface};cursor:pointer;font-size:16px;font-family:inherit">−</button>
-            <span style="font-size:16px;font-weight:800;color:${c.navy};min-width:24px;text-align:center">${b.qtdTablets||0}</span>
-            <button onclick="maIncEquip(${i},'qtdTablets',${dispT})" ${esgT?'disabled':''} style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${esgT?'#f1f5f9':c.surface};cursor:${esgT?'not-allowed':'pointer'};font-size:16px;font-family:inherit">+</button>
-          </div>
-        </div>`;
-      }
-      if(eo.equipAuto.includes("Computadores (16 disp.)")){
-        const dispN=(_MA.dispEquip?.notebooks??16);
-        const esgN=dispN===0;
-        html+=`<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:${c.bg};border-radius:8px;border:1.5px solid ${b.qtdNotebooks>0?c.blueMid:c.border}">
-          <span style="font-size:16px">💻</span><div style="flex:1"><p style="font-size:13px;font-weight:700;color:${c.navy}">Computadores</p><p style="font-size:11px;color:${esgN?'#dc2626':c.textMuted}">${esgN?'❌ Nenhum disponível neste horário':`${dispN} disponível${dispN!==1?'s':''} de 16`}</p></div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <button onclick="maDecEquip(${i},'qtdNotebooks')" style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${c.surface};cursor:pointer;font-size:16px;font-family:inherit">−</button>
-            <span style="font-size:16px;font-weight:800;color:${c.navy};min-width:24px;text-align:center">${b.qtdNotebooks||0}</span>
-            <button onclick="maIncEquip(${i},'qtdNotebooks',${dispN})" ${esgN?'disabled':''} style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${esgN?'#f1f5f9':c.surface};cursor:${esgN?'not-allowed':'pointer'};font-size:16px;font-family:inherit">+</button>
-          </div>
-        </div>`;
-      }
-      html+=`</div>`;
-    }
-    html+=`</div>`;
-  }
-
   // ── Laboratorista (apenas Labs de Ciências) ──
   if(eo?.tipo==="laboratorio"&&b.horario){
     html+=`<div style="background:${c.bg};border-radius:10px;padding:12px 14px;border:1.5px solid ${b.laboratorista?c.greenBorder:c.border}">
