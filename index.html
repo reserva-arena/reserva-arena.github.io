@@ -1053,7 +1053,7 @@ window.irInicio=()=>{
 // ════════════════════════════════════════════════════════════════════════════
 // PROFESSOR VIEW
 // ════════════════════════════════════════════════════════════════════════════
-let _P={modoProf:"ver",modoCard:"calendario",modoVisu:"semana",filtroGrade:"meus",filtroEspaco:"",semIni:"",diaSel:null,mesCal:null,mostrarHistorico:false,filtroPendente:false};
+let _P={modoProf:"ver",modoCard:"calendario",modoVisu:"semana",filtroGrade:"meus",filtroEspaco:"",semIni:"",diaSel:null,mesCal:null,mostrarHistorico:false,filtroPendente:false,selecionados:new Set(),modoSelecao:false};
 
 function renderProfessorView(){
   const c=C(),h=fmtHoje();
@@ -1166,13 +1166,20 @@ function renderProfessorView(){
   if(_P.modoCard==="lista"){
     html+=`<div style="padding:14px">`;
     // Filtro de espaço no modo agenda
+    const meusFuturos=futuras.filter(r=>r.professorId===_usuario?.uid&&r.status!=="recusado");
     html+=`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
       <select onchange="pSetEspaco(this.value)" style="padding:7px 12px;border-radius:8px;border:1.5px solid ${c.border};background:${c.surface};color:${c.text};font-size:13px;cursor:pointer;outline:none;font-family:inherit;flex:1;min-width:160px">
         <option value="">🏛️ Todos os espaços</option>
         ${ESPACOS.map(e=>`<option value="${e.nome}" ${_P.filtroEspaco===e.nome?"selected":""}>${tipoIcon(e.tipo,e.nome)} ${e.nome}</option>`).join("")}
       </select>
       ${_P.filtroEspaco?`<button onclick="pSetEspaco('')" style="${btn('ghost')};padding:7px 12px;font-size:12px;white-space:nowrap">✕ Limpar</button>`:""}
-    </div>`;
+      ${meusFuturos.length>1?`<button onclick="_P.modoSelecao=!_P.modoSelecao;_P.selecionados=new Set();re()" style="${btn(_P.modoSelecao?'primary':'ghost')};padding:7px 12px;font-size:12px;white-space:nowrap">${_P.modoSelecao?'✕ Cancelar seleção':'☑ Selecionar'}
+      </button>`:''}
+    </div>
+    ${_P.modoSelecao&&_P.selecionados.size>0?`<div style="display:flex;align-items:center;gap:10px;background:#fef2f2;border:1.5px solid #fca5a5;border-radius:10px;padding:10px 14px;margin-bottom:12px">
+      <span style="font-size:13px;font-weight:700;color:#dc2626;flex:1">${_P.selecionados.size} agendamento${_P.selecionados.size>1?'s':''} selecionado${_P.selecionados.size>1?'s':''}</span>
+      <button onclick="cancelarSelecionados()" style="background:#dc2626;border:none;border-radius:8px;color:#fff;font-weight:800;font-size:13px;padding:8px 16px;cursor:pointer">✕ Cancelar todos</button>
+    </div>`:''}`;
     if(pendentes.length){
       html+=`<div data-filtro="pendente" style="margin-bottom:16px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="width:8px;height:8px;border-radius:50%;background:${c.amber}"></div><p style="font-size:12px;font-weight:800;color:${c.amber};text-transform:uppercase">⏳ Pendentes · ${pendentes.length}</p><div style="flex:1;height:1px;background:${c.amberBorder}"></div></div>`;
@@ -1219,7 +1226,9 @@ function profRRow(r){
   const range=r.horarioFim&&r.horarioFim!==r.horario?` → ${r.horarioFim}`:"";
   const turmaLabel=r.turmaInicio||(r.turma||"");
   const turmaFimLabel=r.turmaFim&&r.turmaFim!==r.turmaInicio?` → ${r.turmaFim}`:"";
-  return`<div class="row-hover" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;background:${bg};border:1px solid ${c.border};margin-bottom:4px;border-left:4px solid ${bl}">
+  const isSel=_P.selecionados?.has(r.id);
+  return`<div class="row-hover" onclick="${_P.modoSelecao&&isMeu&&r.data>=h&&r.status!=='recusado'?`toggleSelProf('${r.id}')`:''}" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;background:${_P.modoSelecao&&isSel?'#fef2f2':bg};border:1px solid ${_P.modoSelecao&&isSel?'#fca5a5':c.border};margin-bottom:4px;border-left:4px solid ${_P.modoSelecao&&isSel?'#dc2626':bl};${_P.modoSelecao&&isMeu&&r.data>=h&&r.status!=='recusado'?'cursor:pointer':''}">
+    ${_P.modoSelecao&&isMeu&&r.data>=h&&r.status!=='recusado'?`<div style="width:20px;height:20px;border-radius:5px;border:2px solid ${isSel?'#dc2626':c.border};background:${isSel?'#dc2626':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0">${isSel?'<span style="color:#fff;font-size:12px;font-weight:900">✓</span>':''}</div>`:''}
     <span style="font-size:13px;font-family:'DM Mono',monospace;font-weight:800;color:${isMeu?c.green:"#64748b"};min-width:42px;flex-shrink:0">${r.horario}</span>
     <div style="flex:1;min-width:0">
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px">
@@ -1235,7 +1244,7 @@ function profRRow(r){
       </div>
     </div>
     <div style="display:flex;gap:4px;flex-shrink:0">
-      ${isMeu&&r.data>=h&&r.status!=="recusado"?`<button onclick="abrirEdicao('${r.id}')" title="Editar agendamento" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:12px;padding:5px 8px;display:flex;align-items:center;gap:3px;font-family:inherit">✏️ Editar</button><button onclick="cancelarR('${r.id}')" title="Cancelar agendamento" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:12px;padding:5px 8px;display:flex;align-items:center;gap:3px;font-family:inherit">✕ Cancelar</button>`:""}
+      ${!_P.modoSelecao&&isMeu&&r.data>=h&&r.status!=="recusado"?`<button onclick="abrirEdicao('${r.id}')" title="Editar agendamento" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:12px;padding:5px 8px;display:flex;align-items:center;gap:3px;font-family:inherit">✏️ Editar</button><button onclick="cancelarR('${r.id}')" title="Cancelar agendamento" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:12px;padding:5px 8px;display:flex;align-items:center;gap:3px;font-family:inherit">✕ Cancelar</button>`:""}
     </div>
   </div>`;
 }
@@ -1252,6 +1261,19 @@ function bindProf(){
 }
 window.pSetModoProf=v=>{_P.modoProf=v;if(v==='agendar'){_MA={step:1,espaco:"",data:"",blocos:[bVazio()],resumo:false,salvando:false,sucesso:null,erro:"",calA:new Date().getFullYear(),calM:new Date().getMonth(),bibAV:null};}re();};
 window.pSetModo=v=>{_P.modoCard=v;re();};
+window.toggleSelProf=id=>{if(_P.selecionados.has(id))_P.selecionados.delete(id);else _P.selecionados.add(id);re();};
+window.cancelarSelecionados=async()=>{
+  const ids=[..._P.selecionados];
+  if(!ids.length)return;
+  if(!confirm(`Cancelar ${ids.length} agendamento${ids.length>1?'s':''}? Esta ação não pode ser desfeita.`))return;
+  try{
+    const{doc,updateDoc,collection,getDocs,query,where}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
+    await Promise.all(ids.map(id=>updateDoc(doc(db,'reservas',id),{status:'recusado'})));
+    _P.selecionados=new Set();_P.modoSelecao=false;
+    alert(`${ids.length} agendamento${ids.length>1?'s':''} cancelado${ids.length>1?'s':''}!`);
+    re();
+  }catch(e){alert('Erro ao cancelar: '+e.message);}
+};
 window.pFiltroRapido=tipo=>{
   if(tipo==='pendente'){_P.modoProf='ver';_P.modoCard='lista';_P.filtroPendente=true;re();}
   else if(tipo==='proximos'){_P.modoProf='ver';_P.modoCard='lista';re();}
