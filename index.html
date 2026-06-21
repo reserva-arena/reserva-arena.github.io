@@ -59,7 +59,7 @@ select option{font-family:'DM Sans',system-ui,sans-serif}
 
 <script type="module">
 import{initializeApp,getApps}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,onAuthStateChanged,sendPasswordResetEmail}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,onAuthStateChanged,sendPasswordResetEmail,updatePassword}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import{getFirestore,collection,addDoc,onSnapshot,doc,updateDoc,query,where,orderBy,getDocs,Timestamp,setDoc,getDoc,deleteDoc,writeBatch}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import{getMessaging,getToken,onMessage}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
 
@@ -416,7 +416,7 @@ function re(){
   const c=C();
   document.body.style.background=c.bg;
   document.body.style.color=c.text;
-  if(!_usuario){renderPublica();return;}
+  if(!_usuario){renderLogin();return;}
   if(_usuario.perfil==="sem_acesso"||_usuario.ativo===false){renderSemAcesso();return;}
   if(_usuario.perfil==="fotografo"||_usuario.perfil==="marketing"){renderMarketing();return;}
   if(_usuario.perfil==="ti"){renderTI();return;}
@@ -428,6 +428,74 @@ function re(){
 // ════════════════════════════════════════════════════════════════════════════
 let _pubCal={a:new Date().getFullYear(),m:new Date().getMonth()},_pubDiaSel=null;
 
+function renderLogin(){
+  var c=C();
+  var h="<div style='min-height:100vh;background:"+c.bg+";display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px'><div style='width:100%;max-width:400px'>";
+  h+="<div style='text-align:center;margin-bottom:20px'>"+logoHTML(50)+"<h1 style='font-size:18px;font-weight:800;color:"+c.navy+";margin-top:8px'>Reserva Arena</h1><p style='font-size:11px;color:"+c.textMuted+"'>Colégio Arena</p></div>";
+  h+="<div style='background:"+c.surface+";border:1.5px solid "+c.border+";border-radius:14px;padding:20px;margin-bottom:12px'>";
+  h+="<p style='font-size:13px;font-weight:800;color:"+c.navy+";margin-bottom:12px;text-align:center'>🔐 Acesso ao sistema</p>";
+  h+="<input id='lg-e' type='email' placeholder='Seu e-mail' style='width:100%;padding:11px;border-radius:8px;border:1.5px solid "+c.border+";background:"+c.bg+";color:"+c.text+";font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;margin-bottom:8px'>";
+  h+="<input id='lg-s' type='password' placeholder='Senha' style='width:100%;padding:11px;border-radius:8px;border:1.5px solid "+c.border+";background:"+c.bg+";color:"+c.text+";font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;margin-bottom:8px'>";
+  h+="<button onclick='doLogin()' style='width:100%;padding:12px;border-radius:8px;border:none;background:#1a6b47;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit'>Entrar</button>";
+  h+="<div style='text-align:center;margin-top:8px'><button onclick='doEsqueciSenha()' style='background:none;border:none;color:"+c.textMuted+";font-size:11px;cursor:pointer;font-family:inherit'>Esqueci minha senha</button></div>";
+  h+="<div id='lg-err' style='display:none;margin-top:8px;padding:8px;border-radius:8px;background:#fef2f2;color:#dc2626;font-size:11px;text-align:center'></div></div>";
+  h+="<div style='background:"+c.surface+";border:1.5px solid "+c.border+";border-radius:14px;padding:14px'>";
+  h+="<p style='font-size:11px;font-weight:800;color:"+c.navy+";margin-bottom:6px'>📋 Ainda não tem acesso?</p>";
+  h+="<p style='font-size:10px;color:"+c.textMuted+";margin-bottom:10px'>Fale com a equipe de T.E.:</p>";
+  h+="<div style='display:flex;align-items:center;gap:9px;padding:8px;background:"+c.bg+";border-radius:8px;border:1px solid "+c.border+";margin-bottom:6px'>";
+  h+="<img src='https://reserva-arena.github.io/img/maria-angelica.jpg' style='width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0' onerror="this.style.display='none'">";
+  h+="<div><p style='font-size:11px;font-weight:700;color:"+c.navy+"'>Maria Angélica</p><p style='font-size:10px;color:"+c.textMuted+"'>Disponível para suporte</p><a href='tel:6298552-0072' style='font-size:11px;color:#1a6b47;font-weight:700;text-decoration:none'>(62) 98552-0072</a></div></div>";
+  h+="<div style='display:flex;align-items:center;gap:9px;padding:8px;background:"+c.bg+";border-radius:8px;border:1px solid "+c.border+"'>";
+  h+="<img src='https://reserva-arena.github.io/img/luciano.jpg' style='width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0' onerror="this.style.display='none'">";
+  h+="<div><p style='font-size:11px;font-weight:700;color:"+c.navy+"'>Luciano</p><p style='font-size:10px;color:"+c.textMuted+"'>Disponível para suporte</p><a href='tel:6298497-9797' style='font-size:11px;color:#1a6b47;font-weight:700;text-decoration:none'>(62) 98497-9797</a></div></div>";
+  h+="</div><p style='text-align:center;font-size:10px;color:"+c.textMuted+";margin-top:10px'>Reserva Arena · Colégio Arena</p></div></div>";
+  $("app").innerHTML=h;
+}
+window.doLogin=async()=>{
+  var e=document.getElementById("lg-e")?.value?.trim();
+  var s=document.getElementById("lg-s")?.value;
+  var err=document.getElementById("lg-err");
+  if(!e||!s){if(err){err.textContent="Preencha e-mail e senha.";err.style.display="block";}return;}
+  try{
+    await signInWithEmailAndPassword(auth,e,s);
+    if(s==="123456"){renderTrocarSenha();}
+  }catch(ex){
+    var m=ex.code==="auth/invalid-credential"||ex.code==="auth/wrong-password"||ex.code==="auth/user-not-found"?"E-mail ou senha incorretos.":ex.code==="auth/too-many-requests"?"Muitas tentativas. Aguarde.":"Erro ao entrar.";
+    if(err){err.textContent=m;err.style.display="block";}
+  }
+};
+window.doEsqueciSenha=async()=>{
+  var e=document.getElementById("lg-e")?.value?.trim();
+  var err=document.getElementById("lg-err");
+  if(!e){if(err){err.textContent="Digite seu e-mail acima.";err.style.display="block";}return;}
+  try{
+    await sendPasswordResetEmail(auth,e);
+    if(err){err.textContent="E-mail enviado!";err.style.display="block";err.style.background="#e2f4ea";err.style.color="#1a6b47";}
+  }catch(ex){if(err){err.textContent="Erro ao enviar.";err.style.display="block";}}
+};
+function renderTrocarSenha(){
+  var c=C();
+  var h="<div style='min-height:100vh;background:"+c.bg+";display:flex;align-items:center;justify-content:center;padding:24px'>";
+  h+="<div style='width:100%;max-width:380px;background:"+c.surface+";border:2px solid #f97316;border-radius:14px;padding:22px'>";
+  h+="<div style='text-align:center;margin-bottom:14px'><div style='font-size:30px'>🔑</div>";
+  h+="<h2 style='font-size:14px;font-weight:800;color:"+c.navy+";margin-top:6px'>Defina sua senha pessoal</h2>";
+  h+="<p style='font-size:11px;color:"+c.textMuted+";margin-top:4px'>Mínimo 6 caracteres. Não pode ser 123456.</p></div>";
+  h+="<input id='nv-s' type='password' placeholder='Nova senha' style='width:100%;padding:11px;border-radius:8px;border:1.5px solid "+c.border+";background:"+c.bg+";color:"+c.text+";font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;margin-bottom:8px'>";
+  h+="<input id='cf-s' type='password' placeholder='Confirme a nova senha' style='width:100%;padding:11px;border-radius:8px;border:1.5px solid "+c.border+";background:"+c.bg+";color:"+c.text+";font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;margin-bottom:8px'>";
+  h+="<button onclick='salvarNovaSenha()' style='width:100%;padding:12px;border-radius:8px;border:none;background:#1a6b47;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit'>✓ Salvar e entrar</button>";
+  h+="<div id='tv-err' style='display:none;margin-top:8px;padding:8px;border-radius:8px;background:#fef2f2;color:#dc2626;font-size:11px;text-align:center'></div></div></div>";
+  $("app").innerHTML=h;
+}
+window.salvarNovaSenha=async()=>{
+  var n=document.getElementById("nv-s")?.value;
+  var cf=document.getElementById("cf-s")?.value;
+  var err=document.getElementById("tv-err");
+  if(!n||n.length<6){if(err){err.textContent="Mínimo 6 caracteres.";err.style.display="block";}return;}
+  if(n!==cf){if(err){err.textContent="Senhas não coincidem.";err.style.display="block";}return;}
+  if(n==="123456"){if(err){err.textContent="Escolha uma senha diferente.";err.style.display="block";}return;}
+  try{await updatePassword(auth.currentUser,n);re();}
+  catch(ex){if(err){err.textContent="Erro ao salvar.";err.style.display="block";}}
+};
 function renderPublica(){
   const c=C(),h=fmtHoje();
   if(!_pubState)_pubState={modo:"semana",filtroEspaco:"",diaSel:null,mesCal:{a:new Date().getFullYear(),m:new Date().getMonth()}};
@@ -1169,7 +1237,7 @@ function profRRow(r){
       </div>
     </div>
     <div style="display:flex;gap:4px;flex-shrink:0">
-      ${isMeu&&r.data>=h&&r.status!=="recusado"?`<button onclick="abrirEdicao('${r.id}')" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:13px;padding:5px 8px">✏️</button><button onclick="cancelarR('${r.id}')" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:13px;padding:5px 8px">✕</button>`:""}
+      ${isMeu&&r.data>=h&&r.status!=="recusado"?`<button onclick="abrirEdicao('${r.id}')" title="Editar" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:13px;padding:5px 8px">✏️</button><button onclick="cancelarR('${r.id}')" title="Cancelar" style="background:none;border:none;color:${c.red};cursor:pointer;font-size:13px;padding:5px 8px">✕</button>`:""}
     </div>
   </div>`;
 }
@@ -1510,6 +1578,10 @@ function maBlocoMultiHTML(b,i,eo){
     if(r.horarioFim&&r.horarioFim!==r.horario)return horariosRange(r.horario,r.horarioFim);
     return[r.horario];
   });
+  const ocpProf=_todas.filter(r=>r.professorId===_usuario?.uid&&r.espaco!==m.espaco&&r.data===m.data&&r.status!=="recusado"&&r.status!=="cancelado").flatMap(r=>{
+    if(r.horarioFim&&r.horarioFim!==r.horario)return horariosRange(r.horario,r.horarioFim);
+    return[r.horario];
+  });
   // Bloqueios fixos por espaço (seg-sex)
   const BLOQUEIOS_FIXOS=[
     {espaco:"Sala de Dança",inicio:"11:45",fim:"13:45",label:"🌙 Soninho"}
@@ -1592,7 +1664,7 @@ const selTurma=(horario,val)=>`
     <label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">🕐 Horário de início *</label>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px">
       ${HORARIOS.map(h=>{
-        const ocp=ocpFire.includes(h)&&h!==b.horario;
+        const ocp=(ocpFire.includes(h)||ocpProf.includes(h))&&h!==b.horario;
         const sel2=h===b.horario;
         // Bloquear horários já passados no dia de hoje
         const agoraRef=new Date();
@@ -1603,7 +1675,7 @@ const selTurma=(horario,val)=>`
         const bloq=ocp||passado||soninho;
         return`<button onclick="maSetHorarioMulti(${i},'ini','${h}')" ${bloq?"disabled":""}
           style="padding:8px 4px;border-radius:8px;border:${sel2?"2px solid "+c.blueMid:bloq?"1.5px solid "+c.redBorder:"1.5px solid "+c.greenBorder};background:${sel2?c.greenBg:bloq?c.redBg:c.surface};color:${sel2?c.blueMid:bloq?c.red:c.green};font-size:11px;font-weight:700;cursor:${bloq?"not-allowed":"pointer"};font-family:'DM Mono',monospace;display:flex;flex-direction:column;align-items:center;gap:2px">
-          ${h}<span style="font-size:8px">${ocp?"● Ocup":passado?"● Pass":soninho?"🌙 Son":sel2?"✓ Ini":"○"}</span>
+          ${h}<span style="font-size:8px">${ocpProf.includes(h)?"👤 Você":ocp?"● Ocup":passado?"● Pass":soninho?"🌙 Son":sel2?"✓ Ini":"○"}</span>
         </button>`;
       }).join("")}
     </div>
@@ -1712,22 +1784,28 @@ const selTurma=(horario,val)=>`
       <p style="font-size:11px;color:${c.textMuted};margin-bottom:10px">Serão entregues e recolhidos na própria sala no período ${b.horario} → ${b.horarioFim}.</p>
       <div style="display:grid;gap:8px">`;
     if(eo.equipAuto.includes("Tablets (18 disp.)")){
+      const rangeEq=b.horario&&b.horarioFim?horariosRange(b.horario,b.horarioFim):[b.horario];
+      const resEq=_todas.filter(r=>r.data===_MA.data&&r.id!==_MA.editandoId&&r.status!=="recusado"&&r.status!=="cancelado"&&(r.qtdTablets>0||r.qtdNotebooks>0)&&horariosRange(r.horario,r.horarioFim||r.horario).some(h=>rangeEq.includes(h)));
+      const tabUsados=resEq.reduce((s,r)=>s+(r.qtdTablets||0),0);
+      const notUsados=resEq.reduce((s,r)=>s+(r.qtdNotebooks||0),0);
+      const tabDisp=Math.max(0,18-tabUsados);
+      const notDisp=Math.max(0,16-notUsados);
       html+=`<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:${c.bg};border-radius:8px;border:1.5px solid ${b.qtdTablets>0?c.blueMid:c.border}">
-        <span style="font-size:16px">📱</span><div style="flex:1"><p style="font-size:13px;font-weight:700;color:${c.navy}">Tablets</p><p style="font-size:11px;color:${c.textMuted}">Máx. 18 disponíveis</p></div>
+        <span style="font-size:16px">📱</span><div style="flex:1"><p style="font-size:13px;font-weight:700;color:${c.navy}">Tablets</p><p style="font-size:11px;color:${tabDisp===0?'#dc2626':tabDisp<=5?'#d97706':c.textMuted}">${tabDisp===0?'❌ Todos reservados':tabDisp<=5?'⚠️ Restam '+tabDisp:'Máx. '+tabDisp+' disponíveis'}</p></div>
         <div style="display:flex;align-items:center;gap:8px">
           <button onclick="maDecEquip(${i},'qtdTablets')" style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${c.surface};cursor:pointer;font-size:16px;font-family:inherit">−</button>
           <span style="font-size:16px;font-weight:800;color:${c.navy};min-width:24px;text-align:center">${b.qtdTablets||0}</span>
-          <button onclick="maIncEquip(${i},'qtdTablets',18)" style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${c.surface};cursor:pointer;font-size:16px;font-family:inherit">+</button>
+          <button onclick="maIncEquip(${i},'qtdTablets',tabDisp)" style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${c.surface};cursor:pointer;font-size:16px;font-family:inherit">+</button>
         </div>
       </div>`;
     }
     if(eo.equipAuto.includes("Computadores (16 disp.)")){
       html+=`<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:${c.bg};border-radius:8px;border:1.5px solid ${b.qtdNotebooks>0?c.blueMid:c.border}">
-        <span style="font-size:16px">💻</span><div style="flex:1"><p style="font-size:13px;font-weight:700;color:${c.navy}">Computadores</p><p style="font-size:11px;color:${c.textMuted}">Máx. 16 disponíveis</p></div>
+        <span style="font-size:16px">💻</span><div style="flex:1"><p style="font-size:13px;font-weight:700;color:${c.navy}">Computadores</p><p style="font-size:11px;color:${notDisp===0?'#dc2626':notDisp<=5?'#d97706':c.textMuted}">${notDisp===0?'❌ Todos reservados':notDisp<=5?'⚠️ Restam '+notDisp:'Máx. '+notDisp+' disponíveis'}</p></div>
         <div style="display:flex;align-items:center;gap:8px">
           <button onclick="maDecEquip(${i},'qtdNotebooks')" style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${c.surface};cursor:pointer;font-size:16px;font-family:inherit">−</button>
           <span style="font-size:16px;font-weight:800;color:${c.navy};min-width:24px;text-align:center">${b.qtdNotebooks||0}</span>
-          <button onclick="maIncEquip(${i},'qtdNotebooks',16)" style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${c.surface};cursor:pointer;font-size:16px;font-family:inherit">+</button>
+          <button onclick="maIncEquip(${i},'qtdNotebooks',notDisp)" style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${c.surface};cursor:pointer;font-size:16px;font-family:inherit">+</button>
         </div>
       </div>`;
     }
@@ -2255,6 +2333,12 @@ window.maSalvar=async()=>{
       const dataFmt=data.split("-").reverse().join("/");
       const horFmt=blocos[0]?.horario||"";
       const profNome=_usuario?.nome||"Professor";
+      if(_usuario?.email){
+        var turmasTxt=Object.entries(blocos[0]?.turmasPorHorario||{}).map(function(e){return e[0]+": "+e[1];}).join(", ")||blocos[0]?.turma||"";
+        var assuntoEmail=(st==="confirmado"?"Agendamento confirmado":"Agendamento pendente")+" - "+espaco+" - "+dataFmt;
+        var textoEmail="Ola, "+profNome+"!\n\nSeu agendamento foi registrado:\n\nLocal: "+espaco+"\nData: "+dataFmt+"\nHorario: "+horFmt+"\nTurma: "+turmasTxt+"\n\nStatus: "+(st==="confirmado"?"Confirmado":"Pendente - aguardando aprovacao")+(st==="pendente"?"\n\nVoce recebera uma notificacao assim que for aprovado.":"")+("\n\nReserva Arena - Colegio Arena");
+        addDoc(collection(db,"email_queue"),{para:_usuario.email,assunto:assuntoEmail,texto:textoEmail,enviado:false,processando:false,criadoEm:new Date().toISOString()}).catch(function(){});
+      }
 
       // Marketing: agendamento com foto, vídeo ou espaço Equipe de Marketing
       if(temMidia){
@@ -2896,9 +2980,8 @@ onAuthStateChanged(auth,async user=>{
     else re();
   }else{
     _usuario=null;
-    _unsub1=onSnapshot(collection(db,"reservas"),snap=>{
-      _todas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario);re();
-    });
+    if(_unsub1){_unsub1();_unsub1=null;}
+    _todas=[];
     re();
   }
 });
