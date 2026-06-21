@@ -2573,8 +2573,8 @@ function renderAdminView(){
   </div>`;
 
   // ── LAYOUT DUAS COLUNAS (desktop) ──
-  html+=`<div style="display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start">
-  @media(max-width:800px){grid-template-columns:1fr}
+  const isDesktop=window.innerWidth>=900;
+  html+=`<div style="display:grid;grid-template-columns:${isDesktop?'1fr 300px':'1fr'};gap:16px;align-items:start">
   <div style="min-width:0">`;  // coluna principal
 
   // ── CALENDÁRIO ──
