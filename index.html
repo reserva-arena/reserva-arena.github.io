@@ -2069,7 +2069,7 @@ window.maSetTurmaPorHorario=(i,horario,turma)=>{
   const b=_MA.blocos[i];
   const eo=ESPACOS.find(e=>e.nome===_MA.espaco);
   if(b.horario&&b.horarioFim){
-    const range=gerarRange(b.horario,b.horarioFim,eo);
+    const range=horariosRange(b.horario,b.horarioFim||b.horario);
     let propagando=false;
     for(const h of range){
       if(h===horario){propagando=true;continue;}
@@ -2086,7 +2086,7 @@ window.consultaDispEquip=async()=>{
   const eo=ESPACOS.find(e=>e.nome===_MA.espaco);
   if(!eo||!eo.equipAuto||eo.equipAuto.length===0)return;
   if(!_MA.data||!b||!b.horario||!b.horarioFim)return;
-  const range=gerarRange(b.horario,b.horarioFim,eo);
+  const range=horariosRange(b.horario,b.horarioFim||b.horario);
   if(!range||range.length===0)return;
   // Busca reservas ativas (não recusadas) de tablets e computadores nos horários do range
   let usadoTablets=0,usadoNotebooks=0;
@@ -2297,16 +2297,14 @@ window.maSalvar=async()=>{
       const qtd=nomeEquip.includes("Tablet")?Number(b.qtdTablets):Number(b.qtdNotebooks);
       if(!qtd||qtd<=0)continue;
       for(const h of rangeHors){
-        if(equipSnaps[nomeEquip]?.[h]){
-          batch.set(doc(collection(db,"reservas")),{
-            professor:_usuario.nome,professorId:_usuario.uid,professorEmail:_usuario.email,
-            turma:tph[h]||"",espaco:nomeEquip,data,horario:h,horarioFim:h,
-            conteudo:`Vinculado à ${espaco} — ${b.conteudo}`,
-            quantidade:qtd,status:st,criadoEm:ts,
-            precisaFoto:false,observacoes:`Agendado automaticamente via ${espaco}`,
-            localMontagem:espaco,reservaAutomatica:true,paginas:"",laboratorista:"",
-          });
-        }
+        batch.set(doc(collection(db,"reservas")),{
+          professor:_usuario.nome,professorId:_usuario.uid,professorEmail:_usuario.email,
+          turma:tph[h]||"",espaco:nomeEquip,data,horario:h,horarioFim:h,
+          conteudo:`Vinculado à ${espaco} — ${b.conteudo}`,
+          quantidade:qtd,status:st,criadoEm:ts,
+          precisaFoto:false,observacoes:`Agendado automaticamente via ${espaco}`,
+          localMontagem:espaco,reservaAutomatica:true,paginas:"",laboratorista:"",
+        });
       }
     }
 
