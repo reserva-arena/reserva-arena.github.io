@@ -2377,21 +2377,22 @@ window.maSalvar=async()=>{
       const turmaEmail=Object.values(blocos[0]?.turmasPorHorario||{})[0]||"";
       const statusLabel=st==="confirmado"?"✅ Confirmado":"⏳ Aguardando aprovação";
       const extras=[];
-      if(Number(blocos[0]?.qtdTablets)>0)extras.push(`📱 ${blocos[0].qtdTablets} tablet(s)`);
-      if(Number(blocos[0]?.qtdNotebooks)>0)extras.push(`💻 ${blocos[0].qtdNotebooks} computador(es)`);
+      if(Number(blocos[0]?.qtdTablets)>0)extras.push("📱 "+blocos[0].qtdTablets+" tablet(s)");
+      if(Number(blocos[0]?.qtdNotebooks)>0)extras.push("💻 "+blocos[0].qtdNotebooks+" computador(es)");
       if(_MA.bibAV===true){
-        if(_MA.bibMic>0)extras.push(`🎤 ${_MA.bibMic} microfone(s)`);
-        if(_MA.bibCaixa>0)extras.push(`🔊 ${_MA.bibCaixa} caixa(s) de som`);
-        if(_MA.bibProj>0)extras.push(`📽️ ${_MA.bibProj} projetor(es)`);
+        if(_MA.bibMic>0)extras.push("🎤 "+_MA.bibMic+" microfone(s)");
+        if(_MA.bibCaixa>0)extras.push("🔊 "+_MA.bibCaixa+" caixa(s) de som");
+        if(_MA.bibProj>0)extras.push("📽️ "+_MA.bibProj+" projetor(es)");
       }
       if(blocos[0]?.precisaFoto)extras.push("📸 Foto solicitada");
       if(blocos[0]?.precisaVideo)extras.push("🎬 Vídeo solicitado");
-      const extrasTexto=extras.length>0?`\n\nExtras solicitados:\n${extras.map(e=>`  • ${e}`).join("\n")}`:"";
-      const textoEmail=`Olá, ${_usuario?.nome||"Professor"}!\n\nSeu agendamento foi registrado com sucesso.\n\n📍 Espaço: ${espaco}\n🎓 Turma: ${turmaEmail||"—"}\n📅 Data: ${dataFmtEmail}\n⏰ Horário: ${horFmtEmail}${horFimEmail!==horFmtEmail?` → ${horFimEmail}`:""}\n📋 Status: ${statusLabel}${extrasTexto}\n\nAcesse o app para ver todos os seus agendamentos.`;
+      const extrasTexto=extras.length>0?("\n\nExtras:\n"+extras.map(e=>"  • "+e).join("\n")):"";
+      const horarioTexto=horFimEmail!==horFmtEmail?horFmtEmail+" → "+horFimEmail:horFmtEmail;
+      const textoEmail="Olá, "+(_usuario?.nome||"Professor")+"!\n\nAgendamento registrado com sucesso.\n\n📍 Espaço: "+espaco+"\n🎓 Turma: "+(turmaEmail||"—")+"\n📅 Data: "+dataFmtEmail+"\n⏰ Horário: "+horarioTexto+"\n📋 Status: "+statusLabel+extrasTexto+"\n\nAcesse o app para ver seus agendamentos.";
       if(_usuario?.email){
-        await setDoc(doc(collection(db,"email_queue")),{
+        await addDoc(collection(db,"email_queue"),{
           para:_usuario.email,
-          assunto:`📅 Agendamento ${statusLabel} — ${espaco} · ${dataFmtEmail}`,
+          assunto:"📅 "+statusLabel+" — "+espaco+" · "+dataFmtEmail,
           texto:textoEmail,
           enviado:false,
           processando:false,
