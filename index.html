@@ -1749,7 +1749,7 @@ const selTurma=(horario,val)=>`
 
   // ── Conteúdo ──
   html+=`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">📝 Descrição da aula *</label><br>
-    <textarea oninput="maSetConteudo(${i},this.value)" rows="4" placeholder="Descreva a atividade, conteúdo e observações..." style="${inp()};resize:vertical;line-height:1.6;margin-top:5px">${b.conteudo}</textarea>
+    <textarea onchange="maSetConteudo(${i},this.value)" rows="4" placeholder="Descreva a atividade, conteúdo e observações..." style="${inp()};resize:vertical;line-height:1.6;margin-top:5px">${b.conteudo}</textarea>
   </div>`;
 
 
@@ -2113,8 +2113,7 @@ window.consultaDispEquip=async()=>{
 let _reTimer=null;
 window.maSetConteudo=(i,v)=>{
   _MA.blocos[i].conteudo=v;
-  clearTimeout(_reTimer);
-  _reTimer=setTimeout(()=>re(),300);
+  re();
 };
 window.maSetSegmento=(i,seg)=>{
   if(!_MA.blocos[i])return;
