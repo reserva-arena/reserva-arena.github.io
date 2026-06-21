@@ -2538,16 +2538,14 @@ function renderAdminView(){
     return true;
   });
   const urgentes=_todas.filter(r=>r.status==="pendente"&&!r.reservaAutomatica&&isUrgente(r.data,r.horario));
-  const conf=_todas.filter(r=>r.status==="confirmado"&&!r.reservaAutomatica).length;
   const pend=_todas.filter(r=>r.status==="pendente"&&!r.reservaAutomatica).length;
   const hoje_rs=_todas.filter(r=>r.data===h&&r.status!=="recusado"&&!r.reservaAutomatica).length;
-  const kpis=[{l:"Hoje",v:hoje_rs,bg:"#e2f0eb",col:"#1a6b47"},{l:"Pendentes",v:pend,bg:"#fff7ed",col:"#7c2d12"}];
 
-  let html=`<div>`;
-  html+=`<div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px">
-    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-      <h1 style="font-size:20px;font-weight:800;color:${c.navy}">Painel Administrativo</h1>
-    <div style="display:flex;align-items:center;gap:8px">
+  // ── HEADER ──
+  let html=`<div>
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">
+    <h1 style="font-size:20px;font-weight:800;color:${c.navy}">Painel Administrativo</h1>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <div style="display:flex;background:${c.surface};border-radius:10px;padding:3px;border:1px solid ${c.border};gap:2px">
         ${[{id:"calendario",l:"📅 Calendário"},{id:"agenda",l:"☰ Agenda"}].map(o=>`<button onclick="aSetModo('${o.id}')" style="padding:6px 14px;font-size:13px;border-radius:8px;border:1.5px solid ${_A.modoVisu===o.id?(_dark?'#1a6b47':c.navy):c.border};background:${_A.modoVisu===o.id?(_dark?'#1a6b47':c.navy):'transparent'};color:${_A.modoVisu===o.id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${o.l}</button>`).join("")}
       </div>
@@ -2555,63 +2553,34 @@ function renderAdminView(){
     </div>
   </div>`;
 
-  if(urgentes.length)html+=`<div style="background:linear-gradient(135deg,#f97316,#ea580c);border-radius:14px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;gap:14px;box-shadow:0 4px 16px rgba(249,115,22,.3)">
-    <div style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">⚡</div>
-    <div style="flex:1"><p style="font-size:14px;font-weight:800;color:#fff">${urgentes.length} agendamento${urgentes.length!==1?"s":""} urgente${urgentes.length!==1?"s":""} pendente${urgentes.length!==1?"s":""}</p><p style="font-size:12px;color:rgba(255,255,255,.8);margin-top:3px">Menos de 24h para o horário</p></div>
-    <button onclick="aSetModo('agenda');_A.fStatus='pendente';re()" style="background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.4);border-radius:10px;color:#fff;font-weight:800;font-size:13px;padding:8px 16px;cursor:pointer">Ver urgentes →</button>
+  // ── URGENTES ──
+  if(urgentes.length)html+=`<div style="background:linear-gradient(135deg,#f97316,#ea580c);border-radius:14px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;box-shadow:0 4px 16px rgba(249,115,22,.3)">
+    <div style="width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">⚡</div>
+    <div style="flex:1"><p style="font-size:13px;font-weight:800;color:#fff">${urgentes.length} agendamento${urgentes.length!==1?"s":""} urgente${urgentes.length!==1?"s":""} pendente${urgentes.length!==1?"s":""}</p><p style="font-size:11px;color:rgba(255,255,255,.8);margin-top:2px">Menos de 24h para o horário</p></div>
+    <button onclick="aSetModo('agenda');_A.fStatus='pendente';re()" style="background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.4);border-radius:10px;color:#fff;font-weight:800;font-size:12px;padding:7px 14px;cursor:pointer">Ver →</button>
   </div>`;
 
-  // ── Barra de resumo compacta ──
-  const temUrgente=urgentes.length>0;
-  html+=`<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;background:${c.surface};border:1.5px solid ${temUrgente?'#f97316':c.border};border-radius:12px;padding:10px 16px;margin-bottom:16px">
-    ${kpis.map(k=>`<span style="font-size:13px;font-weight:700;color:${k.col==='#92400e'&&urgentes.length>0?'#ea580c':k.col}">${k.l}: <strong>${k.v}</strong></span>`).join('<span style="color:'+c.border+';font-size:13px"> · </span>')}
-  </div>`;
-
-  // ── Feed: últimos agendamentos criados ──
-  const todosFeed=filtradas.filter(r=>!r.reservaAutomatica&&r.data>=h).sort((a,b)=>{
-    const ka=(a.data||"")+(a.horario||"");
-    const kb=(b.data||"")+(b.horario||"");
-    return ka.localeCompare(kb);
-  });
-  const limFeed=_A.feedExpandido?todosFeed.length:2;
-  const ultimos=todosFeed.slice(0,limFeed);
-  if(todosFeed.length){
-    html+=`<div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:12px 16px;margin-bottom:16px">
-      <p style="font-size:12px;font-weight:800;color:${c.textMuted};text-transform:uppercase;margin-bottom:10px">🕐 Próximos agendamentos</p>
-      ${ultimos.map(r=>{
-        const dataFmt=r.data?.split('-').reverse().join('/');
-        const isUrg=urgentes.find(u=>u.id===r.id);
-        const bg=isUrg?'#fff7ed':r.status==='pendente'?'#fffbeb':c.bg;
-        const borda=isUrg?'#f97316':r.status==='pendente'?'#fcd34d':c.border;
-        const statusBadge=r.status==='confirmado'?`<span style="background:#e2f4ea;color:#1a6b47;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px">✅</span>`:
-          isUrg?`<span style="background:#fff7ed;color:#ea580c;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px">⚡ Urgente</span>`:
-          `<span style="background:#fffbeb;color:#92400e;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px">⏳</span>`;
-        return`<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:${bg};border:1px solid ${borda};border-radius:8px;margin-bottom:6px">
-          <div style="flex:1;min-width:0">
-            <p style="font-size:12px;font-weight:700;color:${c.navy};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.horario} · ${r.espaco}</p>
-            <p style="font-size:11px;color:${c.textMuted};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.professor} · ${r.turmaInicio||r.turma||'-'} · ${dataFmt}</p>
-          </div>
-          ${statusBadge}
-        </div>`;
-      }).join('')}
-      ${todosFeed.length>2?`<button onclick="toggleFeedAdmin()" style="width:100%;margin-top:6px;padding:8px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.textMuted};font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">${_A.feedExpandido?'▲ Ver menos':'▼ Ver mais ('+todosFeed.length+' no total)'}</button>`:''}
-    </div>`;
-  }
-
-  html+=`<div style="background:${c.surface};border-radius:12px;border:1px solid ${c.border};padding:12px 16px;margin-bottom:20px">
-    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;width:100%">
-      <select id="adm-sel-espaco" style="${sel()};width:auto;font-size:12.5px;padding:6px 10px;flex:1;min-width:100px"><option value="">🏛️ Todos os espaços</option>${ESPACOS.map(e=>`<option value="${e.nome}" ${_A.fEspaco===e.nome?"selected":""}>${e.nome}</option>`).join("")}</select>
-      <select id="adm-sel-prof" style="${sel()};width:auto;font-size:12.5px;padding:6px 10px;flex:1;min-width:100px"><option value="">👤 Todos os professores</option>${_usuarios.map(u=>`<option value="${u.nome}" ${_A.fProf===u.nome?"selected":""}>${u.nome}</option>`).join("")}</select>
-      <select id="adm-sel-turma" style="${sel()};width:auto;font-size:12.5px;padding:6px 10px;flex:1;min-width:100px"><option value="">🎓 Todas as turmas</option>${TURMAS.map(t=>`<option value="${t}" ${_A.fTurma===t?"selected":""}>${t}</option>`).join("")}</select>
-      <select id="adm-sel-status" style="${sel()};width:auto;font-size:12.5px;padding:6px 10px;min-width:100px"><option value="">● Todos status</option><option value="confirmado" ${_A.fStatus==="confirmado"?"selected":""}>✅ Confirmado</option><option value="pendente" ${_A.fStatus==="pendente"?"selected":""}>⏳ Pendente</option><option value="recusado" ${_A.fStatus==="recusado"?"selected":""}>❌ Recusado</option></select>
-      ${_A.fEspaco||_A.fProf||_A.fStatus||_A.fTurma?`<button id="adm-btn-limpar" style="${btn("ghost")};padding:6px 12px;font-size:12px">✕ Limpar</button>`:""}
-      <button id="adm-btn-hist" style="background:${_A.historico?c.navy:"transparent"};border:1.5px solid ${_A.historico?c.navy:c.border};border-radius:8px;color:${_A.historico?"#fff":c.textMuted};font-size:12px;padding:6px 12px;cursor:pointer;font-weight:600;white-space:nowrap;margin-left:auto">🕐 ${_A.historico?"Ocultar hist.":"Ver histórico"}</button>
+  // ── FILTROS ──
+  html+=`<div style="background:${c.surface};border-radius:12px;border:1px solid ${c.border};padding:10px 14px;margin-bottom:16px">
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+      <select id="adm-sel-espaco" style="${sel()};font-size:12px;padding:5px 8px;flex:1;min-width:120px"><option value="">🏛️ Todos os espaços</option>${ESPACOS.map(e=>`<option value="${e.nome}" ${_A.fEspaco===e.nome?"selected":""}>${e.nome}</option>`).join("")}</select>
+      <select id="adm-sel-prof" style="${sel()};font-size:12px;padding:5px 8px;flex:1;min-width:120px"><option value="">👤 Todos os professores</option>${_usuarios.map(u=>`<option value="${u.nome}" ${_A.fProf===u.nome?"selected":""}>${u.nome}</option>`).join("")}</select>
+      <select id="adm-sel-turma" style="${sel()};font-size:12px;padding:5px 8px;flex:1;min-width:110px"><option value="">🎓 Todas as turmas</option>${TURMAS.map(t=>`<option value="${t}" ${_A.fTurma===t?"selected":""}>${t}</option>`).join("")}</select>
+      <select id="adm-sel-status" style="${sel()};font-size:12px;padding:5px 8px;min-width:110px"><option value="">● Todos status</option><option value="confirmado" ${_A.fStatus==="confirmado"?"selected":""}>✅ Confirmado</option><option value="pendente" ${_A.fStatus==="pendente"?"selected":""}>⏳ Pendente</option><option value="recusado" ${_A.fStatus==="recusado"?"selected":""}>❌ Recusado</option></select>
+      ${_A.fEspaco||_A.fProf||_A.fStatus||_A.fTurma?`<button id="adm-btn-limpar" style="${btn("ghost")};padding:5px 10px;font-size:12px">✕ Limpar</button>`:""}
+      <button id="adm-btn-hist" style="background:${_A.historico?c.navy:"transparent"};border:1.5px solid ${_A.historico?c.navy:c.border};border-radius:8px;color:${_A.historico?"#fff":c.textMuted};font-size:12px;padding:5px 10px;cursor:pointer;font-weight:600;white-space:nowrap;margin-left:auto">🕐 ${_A.historico?"Ocultar":"Histórico"}</button>
     </div>
   </div>`;
 
+  // ── LAYOUT DUAS COLUNAS (desktop) ──
+  html+=`<div style="display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start">
+  @media(max-width:800px){grid-template-columns:1fr}
+  <div style="min-width:0">`;  // coluna principal
+
+  // ── CALENDÁRIO ──
   if(_A.modoVisu==="calendario"){
-    const _abasBtns2=[{id:"marketing",l:"📸 Marketing"},{id:"ti",l:"💻 T.I."}].map(t=>`<button onclick="aSetAba('${t.id}');re()" style="padding:7px 15px;font-size:12.5px;white-space:nowrap;border-radius:8px;border:1.5px solid ${_A.aba===t.id?(_dark?'#1a6b47':c.navy):c.border};background:${_A.aba===t.id?(_dark?'#1a6b47':c.navy):'transparent'};color:${_A.aba===t.id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${t.l}</button>`).join("");
-    if(["marketing","ti"].includes(_A.aba)){html+=`<div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap"><button onclick="aSetAba('reservas');re()" style="padding:7px 15px;font-size:12.5px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.text};font-weight:700;cursor:pointer">📋 Reservas</button><button onclick="aSetAba('espacos');re()" style="padding:7px 15px;font-size:12.5px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.text};font-weight:700;cursor:pointer">🏛️ Por Espaço</button>${_abasBtns2}</div>`;}
+    const _abasBtns2=[{id:"marketing",l:"📸 Marketing"},{id:"ti",l:"💻 T.I."}].map(t=>`<button onclick="aSetAba('${t.id}');re()" style="padding:6px 13px;font-size:12px;white-space:nowrap;border-radius:8px;border:1.5px solid ${_A.aba===t.id?(_dark?'#1a6b47':c.navy):c.border};background:${_A.aba===t.id?(_dark?'#1a6b47':c.navy):'transparent'};color:${_A.aba===t.id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${t.l}</button>`).join("");
+    if(["marketing","ti"].includes(_A.aba)){html+=`<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap"><button onclick="aSetAba('reservas');re()" style="padding:6px 13px;font-size:12px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.text};font-weight:700;cursor:pointer">📋 Reservas</button><button onclick="aSetAba('espacos');re()" style="padding:6px 13px;font-size:12px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.text};font-weight:700;cursor:pointer">🏛️ Por Espaço</button>${_abasBtns2}</div>`;}
     const{a:ano,m:mes}=_A.mesCal;
     const porData={};
     filtradas.filter(r=>r.status!=="recusado").forEach(r=>{if(!porData[r.data])porData[r.data]=[];porData[r.data].push(r);});
@@ -2620,19 +2589,20 @@ function renderAdminView(){
     const inicioGrid=primeiroDia.getUTCDay();
     const cells=[];for(let i=0;i<inicioGrid;i++)cells.push(null);for(let d=1;d<=diasNoMes;d++)cells.push(d);
 
-    if(_A.aba==="marketing"){html+="<div id='mk-adm-inline'></div>";setTimeout(()=>{const el=document.getElementById("mk-adm-inline");if(el){const mkP=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&(r.statusMarketing==="pendente")&&r.status!=="recusado"&&!r.reservaAutomatica&&r.data>=fmtHoje()).sort((a,b)=>a.data>b.data?1:-1);const mkA=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&r.statusMarketing==="aprovado"&&r.status!=="recusado"&&!r.reservaAutomatica&&r.data>=fmtHoje()).sort((a,b)=>a.data>b.data?1:-1);let h2="";if(mkP.length)h2+=`<p style='font-size:12px;font-weight:800;color:#7c3aed;text-transform:uppercase;margin:0 0 10px'>⏳ Aguardando aprovação (${mkP.length})</p>`+mkP.map(r=>`<div style='background:#fff;border:1.5px solid #ddd6fe;border-left:4px solid #7c3aed;border-radius:10px;padding:12px 14px;margin-bottom:8px'><div style='display:flex;gap:10px;align-items:center'><span style='font-family:monospace;font-weight:800;color:#7c3aed'>${r.horario}</span><span style='font-weight:700'>${r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco}</span><span style='font-size:12px;color:#607060'>${r.professor} · ${r.data.split("-").reverse().join("/")}</span></div><div style='display:flex;gap:8px;margin-top:10px'><button onclick='mkAprovar("${r.id}")' style='flex:1;padding:8px;border-radius:8px;border:none;background:#1a6b47;color:#fff;font-weight:700;cursor:pointer'>✅ Aprovar</button><button onclick='mkRecusar("${r.id}")' style='flex:1;padding:8px;border-radius:8px;border:none;background:#dc2626;color:#fff;font-weight:700;cursor:pointer'>❌ Recusar</button></div></div>`).join("");if(mkA.length)h2+=`<p style='font-size:12px;font-weight:800;color:#1a6b47;text-transform:uppercase;margin:14px 0 10px'>✅ Aprovados (${mkA.length})</p>`+mkA.map(r=>`<div style='background:#fff;border:1.5px solid #a7f3d0;border-left:4px solid #1a6b47;border-radius:10px;padding:12px 14px;margin-bottom:8px'><span style='font-family:monospace;font-weight:800;color:#1a6b47'>${r.horario}</span> <span style='font-weight:700'>${r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco}</span> <span style='font-size:12px;color:#607060'>${r.professor} · ${r.data.split("-").reverse().join("/")}</span></div>`).join("");if(!h2)h2=`<div style='text-align:center;padding:40px;color:#607060'><p style='font-size:32px'>📸</p><p>Nenhuma solicitação.</p></div>`;el.innerHTML=h2;}},0);return html+="</div>";}
-    if(_A.aba==="ti"){html+="<div id='ti-adm-inline'></div>";setTimeout(()=>{const el=document.getElementById("ti-adm-inline");if(el){const tiP=_todas.filter(r=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);return eo?.tipo==="audiovisual"&&r.status==="pendente"&&!r.reservaAutomatica&&r.data>=fmtHoje();}).sort((a,b)=>a.data>b.data?1:-1);const tiC=_todas.filter(r=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);return eo?.tipo==="audiovisual"&&r.status==="confirmado"&&!r.reservaAutomatica&&r.data>=fmtHoje();}).sort((a,b)=>a.data>b.data?1:-1);let h2="";if(tiP.length)h2+=`<p style='font-size:12px;font-weight:800;color:#c2410c;text-transform:uppercase;margin:0 0 10px'>⏳ Aguardando aprovação (${tiP.length})</p>`+tiP.map(r=>`<div style='background:#fff;border:1.5px solid #fed7aa;border-left:4px solid #f97316;border-radius:10px;padding:12px 14px;margin-bottom:8px'><div style='display:flex;gap:10px;align-items:center'><span style='font-family:monospace;font-weight:800;color:#c2410c'>${r.horario}</span><span style='font-weight:700'>${r.espaco}</span><span style='font-size:12px;color:#607060'>${r.professor} · ${r.data.split("-").reverse().join("/")}</span></div><div style='display:flex;gap:8px;margin-top:10px'><button onclick='tiAprovar("${r.id}")' style='flex:1;padding:8px;border-radius:8px;border:none;background:#1a6b47;color:#fff;font-weight:700;cursor:pointer'>✅ Aprovar</button><button onclick='tiRecusar("${r.id}")' style='flex:1;padding:8px;border-radius:8px;border:none;background:#dc2626;color:#fff;font-weight:700;cursor:pointer'>❌ Recusar</button></div></div>`).join("");if(tiC.length)h2+=`<p style='font-size:12px;font-weight:800;color:#1a6b47;text-transform:uppercase;margin:14px 0 10px'>✅ Confirmados (${tiC.length})</p>`+tiC.map(r=>`<div style='background:#fff;border:1.5px solid #a7f3d0;border-left:4px solid #1a6b47;border-radius:10px;padding:12px 14px;margin-bottom:8px'><span style='font-family:monospace;font-weight:800;color:#1a6b47'>${r.horario}</span> <span style='font-weight:700'>${r.espaco}</span> <span style='font-size:12px;color:#607060'>${r.professor} · ${r.data.split("-").reverse().join("/")}</span></div>`).join("");if(!h2)h2=`<div style='text-align:center;padding:40px;color:#607060'><p style='font-size:32px'>🔊</p><p>Nenhum agendamento.</p></div>`;el.innerHTML=h2;}},0);return html+="</div>";}
-    html+=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
-      <div style="display:flex;align-items:center;gap:10px">
-        <button onclick="aNavMes(-1)" style="background:${c.surface};border:1px solid ${c.border};border-radius:8px;width:34px;height:34px;cursor:pointer;color:${c.textMid};font-size:16px">‹</button>
-        <div style="text-align:center;min-width:130px"><p style="font-size:18px;font-weight:800;color:${c.navy}">${MESES[mes]} ${ano}</p></div>
-        <button onclick="aNavMes(1)" style="background:${c.surface};border:1px solid ${c.border};border-radius:8px;width:34px;height:34px;cursor:pointer;color:${c.textMid};font-size:16px">›</button>
+    if(_A.aba==="marketing"){html+="<div id='mk-adm-inline'></div>";setTimeout(()=>{const el=document.getElementById("mk-adm-inline");if(el){const mkP=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&(r.statusMarketing==="pendente")&&r.status!=="recusado"&&!r.reservaAutomatica&&r.data>=fmtHoje()).sort((a,b)=>a.data>b.data?1:-1);const mkA=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&r.statusMarketing==="aprovado"&&r.status!=="recusado"&&!r.reservaAutomatica&&r.data>=fmtHoje()).sort((a,b)=>a.data>b.data?1:-1);let h2="";if(mkP.length)h2+=`<p style='font-size:12px;font-weight:800;color:#7c3aed;text-transform:uppercase;margin:0 0 10px'>⏳ Aguardando aprovação (${mkP.length})</p>`+mkP.map(r=>`<div style='background:#fff;border:1.5px solid #ddd6fe;border-left:4px solid #7c3aed;border-radius:10px;padding:12px 14px;margin-bottom:8px'><div style='display:flex;gap:10px;align-items:center'><span style='font-family:monospace;font-weight:800;color:#7c3aed'>${r.horario}</span><span style='font-weight:700'>${r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco}</span><span style='font-size:12px;color:#607060'>${r.professor} · ${r.data.split("-").reverse().join("/")}</span></div><div style='display:flex;gap:8px;margin-top:10px'><button onclick='mkAprovar("${r.id}")' style='flex:1;padding:8px;border-radius:8px;border:none;background:#1a6b47;color:#fff;font-weight:700;cursor:pointer'>✅ Aprovar</button><button onclick='mkRecusar("${r.id}")' style='flex:1;padding:8px;border-radius:8px;border:none;background:#dc2626;color:#fff;font-weight:700;cursor:pointer'>❌ Recusar</button></div></div>`).join("");if(mkA.length)h2+=`<p style='font-size:12px;font-weight:800;color:#1a6b47;text-transform:uppercase;margin:14px 0 10px'>✅ Aprovados (${mkA.length})</p>`+mkA.map(r=>`<div style='background:#fff;border:1.5px solid #a7f3d0;border-left:4px solid #1a6b47;border-radius:10px;padding:12px 14px;margin-bottom:8px'><span style='font-family:monospace;font-weight:800;color:#1a6b47'>${r.horario}</span> <span style='font-weight:700'>${r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco}</span> <span style='font-size:12px;color:#607060'>${r.professor} · ${r.data.split("-").reverse().join("/")}</span></div>`).join("");if(!h2)h2=`<div style='text-align:center;padding:40px;color:#607060'><p style='font-size:32px'>📸</p><p>Nenhuma solicitação.</p></div>`;el.innerHTML=h2;}},0);return html+="</div></div></div>";}
+    if(_A.aba==="ti"){html+="<div id='ti-adm-inline'></div>";setTimeout(()=>{const el=document.getElementById("ti-adm-inline");if(el){const tiP=_todas.filter(r=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);return eo?.tipo==="audiovisual"&&r.status==="pendente"&&!r.reservaAutomatica&&r.data>=fmtHoje();}).sort((a,b)=>a.data>b.data?1:-1);const tiC=_todas.filter(r=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);return eo?.tipo==="audiovisual"&&r.status==="confirmado"&&!r.reservaAutomatica&&r.data>=fmtHoje();}).sort((a,b)=>a.data>b.data?1:-1);let h2="";if(tiP.length)h2+=`<p style='font-size:12px;font-weight:800;color:#c2410c;text-transform:uppercase;margin:0 0 10px'>⏳ Aguardando aprovação (${tiP.length})</p>`+tiP.map(r=>`<div style='background:#fff;border:1.5px solid #fed7aa;border-left:4px solid #f97316;border-radius:10px;padding:12px 14px;margin-bottom:8px'><div style='display:flex;gap:10px;align-items:center'><span style='font-family:monospace;font-weight:800;color:#c2410c'>${r.horario}</span><span style='font-weight:700'>${r.espaco}</span><span style='font-size:12px;color:#607060'>${r.professor} · ${r.data.split("-").reverse().join("/")}</span></div><div style='display:flex;gap:8px;margin-top:10px'><button onclick='tiAprovar("${r.id}")' style='flex:1;padding:8px;border-radius:8px;border:none;background:#1a6b47;color:#fff;font-weight:700;cursor:pointer'>✅ Aprovar</button><button onclick='tiRecusar("${r.id}")' style='flex:1;padding:8px;border-radius:8px;border:none;background:#dc2626;color:#fff;font-weight:700;cursor:pointer'>❌ Recusar</button></div></div>`).join("");if(tiC.length)h2+=`<p style='font-size:12px;font-weight:800;color:#1a6b47;text-transform:uppercase;margin:14px 0 10px'>✅ Confirmados (${tiC.length})</p>`+tiC.map(r=>`<div style='background:#fff;border:1.5px solid #a7f3d0;border-left:4px solid #1a6b47;border-radius:10px;padding:12px 14px;margin-bottom:8px'><span style='font-family:monospace;font-weight:800;color:#1a6b47'>${r.horario}</span> <span style='font-weight:700'>${r.espaco}</span> <span style='font-size:12px;color:#607060'>${r.professor} · ${r.data.split("-").reverse().join("/")}</span></div>`).join("");if(!h2)h2=`<div style='text-align:center;padding:40px;color:#607060'><p style='font-size:32px'>🔊</p><p>Nenhum agendamento.</p></div>`;el.innerHTML=h2;}},0);return html+="</div></div></div>";}
+
+    html+=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <button onclick="aNavMes(-1)" style="background:${c.surface};border:1px solid ${c.border};border-radius:8px;width:32px;height:32px;cursor:pointer;color:${c.textMid};font-size:16px">‹</button>
+        <p style="font-size:17px;font-weight:800;color:${c.navy};min-width:120px;text-align:center">${MESES[mes]} ${ano}</p>
+        <button onclick="aNavMes(1)" style="background:${c.surface};border:1px solid ${c.border};border-radius:8px;width:32px;height:32px;cursor:pointer;color:${c.textMid};font-size:16px">›</button>
       </div>
-      <button onclick="const d=new Date();_A.mesCal={a:d.getFullYear(),m:d.getMonth()};_A.diaSel=null;re()" style="${btn("ghost")};padding:6px 14px;font-size:12px">Hoje</button>
+      <button onclick="const d=new Date();_A.mesCal={a:d.getFullYear(),m:d.getMonth()};_A.diaSel=null;re()" style="${btn("ghost")};padding:5px 12px;font-size:12px">Hoje</button>
     </div>
-    <div style="background:${c.surface};border-radius:16px;border:1px solid ${c.border};overflow:auto;box-shadow:${c.cardShadow}">
+    <div style="background:${c.surface};border-radius:14px;border:1px solid ${c.border};overflow:hidden;box-shadow:${c.cardShadow}">
       <div style="display:grid;grid-template-columns:repeat(7,1fr);border-bottom:2px solid ${c.border}">
-        ${["Dom.","Seg.","Ter.","Qua.","Qui.","Sexta","Sáb."].map((d,i)=>`<div style="padding:10px 0;text-align:center;font-size:11px;font-weight:700;color:${i===0||i===6?"#ef4444":c.textMuted};text-transform:uppercase">${d}</div>`).join("")}
+        ${["Dom.","Seg.","Ter.","Qua.","Qui.","Sexta","Sáb."].map((d,i)=>`<div style="padding:8px 0;text-align:center;font-size:11px;font-weight:700;color:${i===0||i===6?"#ef4444":c.textMuted};text-transform:uppercase">${d}</div>`).join("")}
       </div>
       <div style="display:grid;grid-template-columns:repeat(7,1fr)">`;
 
@@ -2646,159 +2616,144 @@ function renderAdminView(){
       const conf=rsdia.filter(r=>r.status==="confirmado");
       const dow=new Date(Date.UTC(ano,mes,d)).getUTCDay();
       const naoL=!isDiaLetivo(ds)&&!isPast&&dow!==0&&dow!==6;
-      html+=`<div onclick="_A.diaSel=_A.diaSel==='${ds}'?null:'${ds}';re()"
-        data-ds="${ds}"
-        onmouseenter="admDayHover('${ds}',event)"
-        onmouseleave="admDayLeave()"
-        style="min-height:90px;border-right:1px solid ${c.borderLight};border-bottom:1px solid ${c.borderLight};padding:6px 8px;cursor:pointer;background:${isSel?"rgba(26,107,71,.08)":isH?"rgba(26,107,71,.04)":"transparent"};transition:background .15s">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-          <span style="font-size:13.5px;font-weight:${isH?900:500};color:${isSel?"#40b07a":isH?"#40b07a":isPast?c.textMuted:naoL?"#ef4444":dow===0||dow===6?"#ef4444":c.navy};width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:${isH?"rgba(26,107,71,.15)":"transparent"}">${d}</span>
+      html+=`<div onclick="_A.diaSel=_A.diaSel==='${ds}'?null:'${ds}';re()" data-ds="${ds}" onmouseenter="admDayHover('${ds}',event)" onmouseleave="admDayLeave()" style="min-height:90px;border-right:1px solid ${c.borderLight};border-bottom:1px solid ${c.borderLight};padding:5px 6px;cursor:pointer;background:${isSel?"rgba(26,107,71,.08)":isH?"rgba(26,107,71,.04)":"transparent"};transition:background .15s">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
+          <span style="font-size:13px;font-weight:${isH?900:500};color:${isSel?"#40b07a":isH?"#40b07a":isPast?c.textMuted:naoL?"#ef4444":dow===0||dow===6?"#ef4444":c.navy};width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:${isH?"rgba(26,107,71,.15)":"transparent"}">${d}</span>
         </div>
         <div style="display:flex;flex-direction:column;gap:2px">
-          ${urg.slice(0,1).map(r=>{const range=r.horarioFim&&r.horarioFim!==r.horario?`→${r.horarioFim}`:"";return`<div style="background:#fff7ed;border:1px solid #f97316;border-radius:4px;padding:2px 4px;font-size:9px;font-weight:700;color:#c2410c;overflow:hidden"><div style="white-space:nowrap;text-overflow:ellipsis;overflow:hidden">⚡${r.horario}${range} ${r.espaco.split(" ")[0]}</div><div style="font-size:8px;font-weight:500;color:#9a3412;white-space:nowrap;text-overflow:ellipsis;overflow:hidden">${r.professor?.split(" ")[0]||""}</div></div>`;}).join("")}
-          ${pend.slice(0,1).map(r=>{const range=r.horarioFim&&r.horarioFim!==r.horario?`→${r.horarioFim}`:"";return`<div style="background:${c.amberBg};border:1px solid ${c.amberBorder};border-radius:4px;padding:2px 4px;font-size:9px;font-weight:700;color:${c.amber};overflow:hidden"><div style="white-space:nowrap;text-overflow:ellipsis;overflow:hidden">⏳${r.horario}${range} ${r.espaco.split(" ")[0]}</div><div style="font-size:8px;font-weight:500;color:#92400e;white-space:nowrap;text-overflow:ellipsis;overflow:hidden">${r.professor?.split(" ")[0]||""}</div></div>`;}).join("")}
-          ${conf.slice(0,2).map(r=>{const range=r.horarioFim&&r.horarioFim!==r.horario?`→${r.horarioFim}`:"";return`<div style="background:${c.greenBg};border:1px solid ${c.greenBorder};border-radius:4px;padding:2px 4px;font-size:9px;font-weight:600;color:${c.green};overflow:hidden"><div style="white-space:nowrap;text-overflow:ellipsis;overflow:hidden">${r.horario}${range} ${r.espaco.split(" ")[0]}</div><div style="font-size:8px;font-weight:500;color:#166534;white-space:nowrap;text-overflow:ellipsis;overflow:hidden">${r.professor?.split(" ")[0]||""}</div></div>`;}).join("")}
+          ${urg.slice(0,1).map(r=>{const range=r.horarioFim&&r.horarioFim!==r.horario?`→${r.horarioFim}`:"";return`<div style="background:#fff7ed;border:1px solid #f97316;border-radius:4px;padding:2px 4px;font-size:9px;font-weight:700;color:#c2410c;overflow:hidden"><div style="white-space:nowrap;text-overflow:ellipsis;overflow:hidden">⚡${r.horario}${range} ${r.espaco.split(" ")[0]}</div><div style="font-size:8px;color:#9a3412;white-space:nowrap;text-overflow:ellipsis;overflow:hidden">${r.professor?.split(" ")[0]||""}</div></div>`;}).join("")}
+          ${pend.slice(0,1).map(r=>{const range=r.horarioFim&&r.horarioFim!==r.horario?`→${r.horarioFim}`:"";return`<div style="background:${c.amberBg};border:1px solid ${c.amberBorder};border-radius:4px;padding:2px 4px;font-size:9px;font-weight:700;color:${c.amber};overflow:hidden"><div style="white-space:nowrap;text-overflow:ellipsis;overflow:hidden">⏳${r.horario}${range} ${r.espaco.split(" ")[0]}</div><div style="font-size:8px;color:#92400e;white-space:nowrap;text-overflow:ellipsis;overflow:hidden">${r.professor?.split(" ")[0]||""}</div></div>`;}).join("")}
+          ${conf.slice(0,2).map(r=>{const range=r.horarioFim&&r.horarioFim!==r.horario?`→${r.horarioFim}`:"";return`<div style="background:${c.greenBg};border:1px solid ${c.greenBorder};border-radius:4px;padding:2px 4px;font-size:9px;font-weight:600;color:${c.green};overflow:hidden"><div style="white-space:nowrap;text-overflow:ellipsis;overflow:hidden">${r.horario}${range} ${r.espaco.split(" ")[0]}</div><div style="font-size:8px;color:#166534;white-space:nowrap;text-overflow:ellipsis;overflow:hidden">${r.professor?.split(" ")[0]||""}</div></div>`;}).join("")}
           ${rsdia.length>3?`<div style="font-size:9px;color:${c.blueMid};font-weight:700;padding-left:2px">+${rsdia.length-3} mais</div>`:""}
         </div>
       </div>`;
     });
-    html+=`</div></div>`;
-    html+=`<div style="display:flex;gap:16px;margin-top:10px;flex-wrap:wrap;align-items:center">${[{l:"Urgente",bg:"#fff7ed",b:"#f97316"},{l:"Pendente",bg:c.amberBg,b:c.amberBorder},{l:"Confirmado",bg:c.greenBg,b:c.greenBorder}].map(l=>`<div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:${l.bg};border:1.5px solid ${l.b}"></div><span style="font-size:11.5px;color:${c.textMuted};font-weight:600">${l.l}</span></div>`).join("")}<span style="margin-left:auto;font-size:11px;color:${c.textMuted}">Clique para detalhes</span></div>`;
+
+    html+=`</div></div>
+    <div style="display:flex;gap:14px;margin-top:8px;flex-wrap:wrap;align-items:center">
+      ${[{l:"Urgente",bg:"#fff7ed",b:"#f97316"},{l:"Pendente",bg:c.amberBg,b:c.amberBorder},{l:"Confirmado",bg:c.greenBg,b:c.greenBorder}].map(l=>`<div style="display:flex;align-items:center;gap:5px"><div style="width:12px;height:12px;border-radius:3px;background:${l.bg};border:1.5px solid ${l.b}"></div><span style="font-size:11px;color:${c.textMuted};font-weight:600">${l.l}</span></div>`).join("")}
+      <span style="margin-left:auto;font-size:11px;color:${c.textMuted}">Clique para detalhes</span>
+    </div>`;
 
     if(_A.diaSel){
       const[a2,m2,d2]=_A.diaSel.split("-");
       const rsdia=(porData[_A.diaSel]||[]).sort((a,b)=>a.horario>b.horario?1:-1);
-      html+=`<div class="fade-in" style="margin-top:16px;background:${c.surface};border-radius:14px;border:1px solid ${c.border};overflow:hidden">
-        <div style="background:linear-gradient(135deg,#1a6b47,#0f4c2b);padding:12px 18px;display:flex;align-items:center;justify-content:space-between">
-          <p style="font-size:16px;font-weight:800;color:#fff">📅 ${d2}/${m2}/${a2}</p>
-          <button onclick="_A.diaSel=null;re()" style="background:rgba(255,255,255,.2);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;padding:5px 12px;cursor:pointer">✕</button>
+      html+=`<div class="fade-in" style="margin-top:14px;background:${c.surface};border-radius:14px;border:1px solid ${c.border};overflow:hidden">
+        <div style="background:linear-gradient(135deg,#1a6b47,#0f4c2b);padding:10px 16px;display:flex;align-items:center;justify-content:space-between">
+          <p style="font-size:15px;font-weight:800;color:#fff">📅 ${d2}/${m2}/${a2}</p>
+          <button onclick="_A.diaSel=null;re()" style="background:rgba(255,255,255,.2);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;padding:4px 10px;cursor:pointer">✕</button>
         </div>
-        <div style="padding:14px 18px">
-          ${!rsdia.length?`<p style="font-size:13px;color:${c.textMuted};text-align:center;padding:16px 0">🎉 Nenhum agendamento.</p>`:rsdia.map(r=>admRow(r)).join("")}
+        <div style="padding:12px 16px">
+          ${!rsdia.length?`<p style="font-size:13px;color:${c.textMuted};text-align:center;padding:14px 0">🎉 Nenhum agendamento.</p>`:rsdia.map(r=>admRow(r)).join("")}
         </div>
       </div>`;
     }
   }
 
+  // ── AGENDA ──
   if(_A.modoVisu==="agenda"){
     const urg=filtradas.filter(r=>r.status==="pendente"&&isUrgente(r.data,r.horario));
     const pend=filtradas.filter(r=>r.status==="pendente"&&!isUrgente(r.data,r.horario));
     const conf=filtradas.filter(r=>r.status!=="pendente"&&(_A.historico||r.data>=h));
 
-    html+=`<div style="display:flex;gap:2px;margin-bottom:18px;background:${c.surface};border-radius:10px;padding:4px;border:1px solid ${c.border};width:fit-content">
-      ${[{id:"reservas",l:"📋 Reservas"},{id:"espacos",l:"🏛️ Por Espaço"},{id:"marketing",l:"📸 Marketing"},{id:"ti",l:"💻 T.I."}].map(t=>`<button onclick="aSetAba('${t.id}')" style="padding:7px 15px;font-size:12.5px;white-space:nowrap;border-radius:8px;border:1.5px solid ${_A.aba===t.id?(_dark?'#1a6b47':c.navy):c.border};background:${_A.aba===t.id?(_dark?'#1a6b47':c.navy):'transparent'};color:${_A.aba===t.id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${t.l}</button>`).join("")}
+    html+=`<div style="display:flex;gap:4px;margin-bottom:16px;background:${c.surface};border-radius:10px;padding:4px;border:1px solid ${c.border};width:fit-content;flex-wrap:wrap">
+      ${[{id:"reservas",l:"📋 Reservas"},{id:"espacos",l:"🏛️ Por Espaço"},{id:"marketing",l:"📸 Marketing"},{id:"ti",l:"💻 T.I."}].map(t=>`<button onclick="aSetAba('${t.id}')" style="padding:6px 13px;font-size:12px;white-space:nowrap;border-radius:8px;border:1.5px solid ${_A.aba===t.id?(_dark?'#1a6b47':c.navy):c.border};background:${_A.aba===t.id?(_dark?'#1a6b47':c.navy):'transparent'};color:${_A.aba===t.id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${t.l}</button>`).join("")}
     </div>`;
 
     if(_A.aba==="reservas"){
       if(urg.length){
-        html+=`<div style="margin-bottom:18px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><div style="width:8px;height:8px;border-radius:50%;background:#f97316"></div><p style="font-size:12px;font-weight:800;color:#c2410c;text-transform:uppercase">⚡ Urgentes · ${urg.length}</p><div style="flex:1;height:1px;background:#fed7aa"></div></div>`;
+        html+=`<div style="margin-bottom:16px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="width:8px;height:8px;border-radius:50%;background:#f97316"></div><p style="font-size:12px;font-weight:800;color:#c2410c;text-transform:uppercase">⚡ Urgentes · ${urg.length}</p><div style="flex:1;height:1px;background:#fed7aa"></div></div>`;
         urg.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1).forEach(r=>{html+=admRow(r,true);});
         html+=`</div>`;
       }
       if(pend.length){
-        html+=`<div style="margin-bottom:18px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><div style="width:8px;height:8px;border-radius:50%;background:#d97706"></div><p style="font-size:12px;font-weight:800;color:${c.amber};text-transform:uppercase">Pendentes · ${pend.length}</p><div style="flex:1;height:1px;background:${c.amberBorder}"></div></div>`;
+        html+=`<div style="margin-bottom:16px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="width:8px;height:8px;border-radius:50%;background:#d97706"></div><p style="font-size:12px;font-weight:800;color:${c.amber};text-transform:uppercase">Pendentes · ${pend.length}</p><div style="flex:1;height:1px;background:${c.amberBorder}"></div></div>`;
         pend.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1).forEach(r=>{html+=admRow(r,true);});
         html+=`</div>`;
       }
       if(conf.length){
-        const pd={};conf.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1).forEach(r=>{if(!pd[r.data])pd[r.data]=[];pd[r.data].push(r);});
-        html+=`<div>`;
-        Object.entries(pd).forEach(([data,rs])=>{
-          const[a2,m2,d2]=data.split("-");const isH=data===h;
-          html+=`<div style="margin-bottom:14px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><div style="background:${isH?"#40b07a":c.navy};color:#fff;border-radius:7px;padding:3px 12px;font-size:11.5px;font-weight:700">${isH?"📌 Hoje":`${d2}/${m2}/${a2}`}</div><div style="flex:1;height:1px;background:${c.borderLight}"></div></div>`;
-          rs.forEach(r=>{html+=admRow(r);});
-          html+=`</div>`;
-        });
+        html+=`<div style="margin-bottom:16px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="width:8px;height:8px;border-radius:50%;background:#1a6b47"></div><p style="font-size:12px;font-weight:800;color:${c.green};text-transform:uppercase">Confirmados · ${conf.length}</p><div style="flex:1;height:1px;background:${c.greenBorder}"></div></div>`;
+        conf.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1).forEach(r=>{html+=admRow(r,true);});
         html+=`</div>`;
       }
-      if(!urg.length&&!pend.length&&!conf.length)html+=`<p style="text-align:center;padding:32px;color:${c.textMuted};font-size:13px">Nenhuma reserva encontrada.</p>`;
+      if(!urg.length&&!pend.length&&!conf.length)html+=`<div style="text-align:center;padding:40px;color:${c.textMuted}"><p style="font-size:32px">🎉</p><p>Nenhum agendamento encontrado.</p></div>`;
     }
 
     if(_A.aba==="espacos"){
-      ESPACOS.filter(e=>!_A.fEspaco||e.nome===_A.fEspaco).forEach(esp=>{
-        const rs=filtradas.filter(r=>r.espaco===esp.nome&&r.status!=="recusado").sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
-        if(!rs.length)return;
-        const pd={};rs.forEach(r=>{if(!pd[r.data])pd[r.data]=[];pd[r.data].push(r);});
-        const livresHj=HORARIOS.length-rs.filter(r=>r.data===h).length;
-        html+=`<div style="margin-bottom:16px;border-radius:12px;border:1px solid ${c.border};overflow:hidden">
-          <div style="background:linear-gradient(135deg,${c.navy},${c.navyMid});padding:12px 18px;display:flex;align-items:center;justify-content:space-between">
-            <div style="display:flex;align-items:center;gap:10px"><span style="font-size:18px">${tipoIcon(esp.tipo,esp.nome)}</span><div><p style="font-size:14px;font-weight:800;color:#fff">${esp.nome}</p><p style="font-size:11px;color:rgba(255,255,255,.65)">${rs.length} reserva${rs.length!==1?"s":""}</p></div></div>
-            <div style="text-align:right"><p style="font-size:20px;font-weight:900;color:#fff;line-height:1">${livresHj}</p><p style="font-size:10px;color:rgba(255,255,255,.7);font-weight:700">livres hoje</p></div>
+      const porEspaco={};
+      filtradas.filter(r=>r.status!=="recusado"&&(_A.historico||r.data>=h)).forEach(r=>{if(!porEspaco[r.espaco])porEspaco[r.espaco]=[];porEspaco[r.espaco].push(r);});
+      Object.entries(porEspaco).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([esp,rs])=>{
+        const eo=ESPACOS.find(e=>e.nome===esp);
+        html+=`<div style="margin-bottom:16px;background:${c.surface};border:1px solid ${c.border};border-radius:12px;overflow:hidden">
+          <div style="background:linear-gradient(135deg,#1a6b47,#0f4c2b);padding:10px 14px;display:flex;align-items:center;gap:10px">
+            <span style="font-size:18px">${eo?.icon||"🏛️"}</span>
+            <p style="font-size:14px;font-weight:800;color:#fff">${esp}</p>
+            <span style="margin-left:auto;background:rgba(255,255,255,.2);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px">${rs.length}</span>
           </div>
-          <div style="background:${c.surface};padding:10px 16px">`;
-        Object.entries(pd).forEach(([data,drs])=>{
-          const[a2,m2,d2]=data.split("-");const isH=data===h;
-          html+=`<p style="font-size:11px;font-weight:700;color:${isH?"#40b07a":c.textMuted};font-family:'DM Mono',monospace;margin-bottom:6px">${isH?"📌 Hoje":`${d2}/${m2}/${a2}`}</p><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">`;
-          drs.forEach(r=>{
-            const range=r.horarioFim&&r.horarioFim!==r.horario?` → ${r.horarioFim}`:"";
-            html+=`<div style="background:${c.bg};border:1px solid ${c.border};border-radius:8px;padding:6px 12px;font-size:12px;display:flex;align-items:center;gap:8px"><span style="font-weight:800;color:${c.blueMid};font-family:'DM Mono',monospace">${r.horario}${range}</span><span style="color:${c.textMid};font-weight:600">${r.professor.split(" ")[0]}</span><span style="color:${c.textMuted}">${r.turmaInicio||r.turma}</span>${badge(r.status)}</div>`;
-          });
-          html+=`</div>`;
-        });
-        html+=`</div></div>`;
+          <div style="padding:10px 14px">${rs.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1).map(r=>admRow(r,true)).join("")}</div>
+        </div>`;
       });
+      if(!Object.keys(porEspaco).length)html+=`<div style="text-align:center;padding:40px;color:${c.textMuted}"><p style="font-size:32px">🏛️</p><p>Nenhum agendamento.</p></div>`;
     }
 
-    if(_A.aba==="marketing"){
-      const mkPend=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&(r.statusMarketing==="pendente")&&r.status!=="recusado"&&!r.reservaAutomatica&&(_A.historico||r.data>=h)).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
-      const mkAprov=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&r.statusMarketing==="aprovado"&&r.status!=="recusado"&&!r.reservaAutomatica&&(_A.historico||r.data>=h)).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
-      function mkAdmRow(r){
-        const[a2,m2,d2]=r.data.split("-");const isH=r.data===h;
-        const range=r.horarioFim&&r.horarioFim!==r.horario?` → ${r.horarioFim}`:"";
-        const pend=r.statusMarketing!=="aprovado";
-        const midiaTags=(r.precisaFoto?`<span style="background:#f5f3ff;color:#7c3aed;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;border:1px solid #ddd6fe">📸 Foto</span>`:"")+(r.precisaVideo?`<span style="background:#eff6ff;color:#1d4ed8;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;border:1px solid #bfdbfe">🎬 Vídeo</span>`:"");
-        const objTag=r.objetivoMidia?`<span style="background:#fef9c3;color:#854d0e;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;border:1px solid #fde68a">${r.objetivoMidia==="social"?"📱 Rede Social":"📚 Pedagógico"}</span>`:"";
-        return`<div style="display:flex;gap:10px;padding:12px 14px;border-radius:10px;margin-bottom:8px;background:${c.surface};border:1.5px solid ${pend?"#ddd6fe":"#a7f3d0"};border-left:4px solid ${pend?"#7c3aed":"#1a6b47"}">
-          <div style="min-width:80px"><p style="font-size:13px;font-family:'DM Mono',monospace;font-weight:800;color:${pend?"#7c3aed":"#1a6b47"}">${r.horario}${range}</p><p style="font-size:10px;color:${c.textMuted};margin-top:2px">${d2}/${m2}</p></div>
-          <div style="flex:1">
-            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px">
-              <span style="font-weight:700;font-size:13px;color:${c.navy}">${r.espaco==="Equipe de Marketing"?(r.salaAtividade||"Sala não informada"):r.espaco}</span>
-              <span style="font-size:12px;color:${c.textMid}">${r.professor}</span>
-              <span style="font-size:12px;color:${c.textMuted}">${r.turmaInicio||r.turma||"—"}</span>
-            </div>
-            <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:4px">${midiaTags}${objTag}</div>
-            <p style="font-size:12px;color:${c.textMuted}">${r.conteudo}</p>
-            ${r.descritivo?`<p style="font-size:11px;color:#854d0e;margin-top:4px;background:#fef9c3;padding:4px 8px;border-radius:5px">📝 ${r.descritivo}</p>`:""}
-          </div>
-        </div>`;
-      }
-      if(!mkPend.length&&!mkAprov.length){html+=`<div style="text-align:center;padding:32px;color:${c.textMuted}"><p style="font-size:28px">📸</p><p style="margin-top:8px">Nenhuma solicitação de marketing.</p></div>`;}
-      else{
-        if(mkPend.length){html+=`<p style="font-size:12px;font-weight:800;color:#7c3aed;text-transform:uppercase;margin-bottom:10px">⏳ Aguardando aprovação (${mkPend.length})</p>`;mkPend.forEach(r=>{html+=mkAdmRow(r);});}
-        if(mkAprov.length){html+=`<p style="font-size:12px;font-weight:800;color:${c.green};text-transform:uppercase;margin:14px 0 10px">✅ Aprovados (${mkAprov.length})</p>`;mkAprov.forEach(r=>{html+=mkAdmRow(r);});}
-      }
-    }
-
-    if(_A.aba==="ti"){
-      const avItems=_todas.filter(r=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);return(eo?.tipo==="audiovisual")&&r.status!=="recusado"&&!r.reservaAutomatica&&(_A.historico||r.data>=h);}).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
-      const avPend=avItems.filter(r=>r.status==="pendente");
-      const avConf=avItems.filter(r=>r.status==="confirmado");
-      function tiAdmRow(r){
-        const[a2,m2,d2]=r.data.split("-");const pend=r.status==="pendente";
-        const range=r.horarioFim&&r.horarioFim!==r.horario?` → ${r.horarioFim}`:"";
-        return`<div style="display:flex;gap:10px;padding:12px 14px;border-radius:10px;margin-bottom:8px;background:${c.surface};border:1.5px solid ${pend?"#fed7aa":"#a7f3d0"};border-left:4px solid ${pend?"#f97316":"#1a6b47"}">
-          <div style="min-width:80px"><p style="font-size:13px;font-family:'DM Mono',monospace;font-weight:800;color:${pend?"#c2410c":"#1a6b47"}">${r.horario}${range}</p><p style="font-size:10px;color:${c.textMuted};margin-top:2px">${d2}/${m2}</p></div>
-          <div style="flex:1">
-            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:3px">
-              <span style="font-weight:700;font-size:13px;color:${c.navy}">${r.espaco}</span>
-              <span style="font-size:12px;color:${c.textMid}">${r.professor}</span>
-              <span style="font-size:12px;color:${c.textMuted}">${r.turmaInicio||r.turma||"—"}</span>
-              ${badge(r.status)}
-            </div>
-            <p style="font-size:12px;color:${c.textMuted}">${r.conteudo}</p>
-          </div>
-        </div>`;
-      }
-      if(!avItems.length){html+=`<div style="text-align:center;padding:32px;color:${c.textMuted}"><p style="font-size:28px">🔊</p><p style="margin-top:8px">Nenhum agendamento de Som, Microfone e Projetor.</p></div>`;}
-      else{
-        if(avPend.length){html+=`<p style="font-size:12px;font-weight:800;color:#c2410c;text-transform:uppercase;margin-bottom:10px">⏳ Pendentes T.I. (${avPend.length})</p>`;avPend.forEach(r=>{html+=tiAdmRow(r);});}
-        if(avConf.length){html+=`<p style="font-size:12px;font-weight:800;color:${c.green};text-transform:uppercase;margin:14px 0 10px">✅ Confirmados (${avConf.length})</p>`;avConf.forEach(r=>{html+=tiAdmRow(r);});}
-      }
-    }
+    if(_A.aba==="marketing"){html+="<div id='mk-adm-inline'></div>";setTimeout(()=>{const el=document.getElementById("mk-adm-inline");if(el){const mkP=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&(r.statusMarketing==="pendente")&&r.status!=="recusado"&&!r.reservaAutomatica&&r.data>=fmtHoje()).sort((a,b)=>a.data>b.data?1:-1);const mkA=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&r.statusMarketing==="aprovado"&&r.status!=="recusado"&&!r.reservaAutomatica&&r.data>=fmtHoje()).sort((a,b)=>a.data>b.data?1:-1);let h2="";if(mkP.length)h2+=`<p style='font-size:12px;font-weight:800;color:#7c3aed;text-transform:uppercase;margin:0 0 10px'>⏳ Aguardando aprovação (${mkP.length})</p>`+mkP.map(r=>`<div style='background:#fff;border:1.5px solid #ddd6fe;border-left:4px solid #7c3aed;border-radius:10px;padding:12px 14px;margin-bottom:8px'><div style='display:flex;gap:10px;align-items:center'><span style='font-family:monospace;font-weight:800;color:#7c3aed'>${r.horario}</span><span style='font-weight:700'>${r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco}</span><span style='font-size:12px;color:#607060'>${r.professor} · ${r.data.split("-").reverse().join("/")}</span></div><div style='display:flex;gap:8px;margin-top:10px'><button onclick='mkAprovar("${r.id}")' style='flex:1;padding:8px;border-radius:8px;border:none;background:#1a6b47;color:#fff;font-weight:700;cursor:pointer'>✅ Aprovar</button><button onclick='mkRecusar("${r.id}")' style='flex:1;padding:8px;border-radius:8px;border:none;background:#dc2626;color:#fff;font-weight:700;cursor:pointer'>❌ Recusar</button></div></div>`).join("");if(mkA.length)h2+=`<p style='font-size:12px;font-weight:800;color:#1a6b47;text-transform:uppercase;margin:14px 0 10px'>✅ Aprovados (${mkA.length})</p>`+mkA.map(r=>`<div style='background:#fff;border:1.5px solid #a7f3d0;border-left:4px solid #1a6b47;border-radius:10px;padding:12px 14px;margin-bottom:8px'><span style='font-family:monospace;font-weight:800;color:#1a6b47'>${r.horario}</span> <span style='font-weight:700'>${r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco}</span> <span style='font-size:12px;color:#607060'>${r.professor} · ${r.data.split("-").reverse().join("/")}</span></div>`).join("");if(!h2)h2=`<div style='text-align:center;padding:40px;color:#607060'><p style='font-size:32px'>📸</p><p>Nenhuma solicitação.</p></div>`;el.innerHTML=h2;}},0);}
+    if(_A.aba==="ti"){html+="<div id='ti-adm-inline'></div>";setTimeout(()=>{const el=document.getElementById("ti-adm-inline");if(el){const tiP=_todas.filter(r=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);return eo?.tipo==="audiovisual"&&r.status==="pendente"&&!r.reservaAutomatica&&r.data>=fmtHoje();}).sort((a,b)=>a.data>b.data?1:-1);const tiC=_todas.filter(r=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);return eo?.tipo==="audiovisual"&&r.status==="confirmado"&&!r.reservaAutomatica&&r.data>=fmtHoje();}).sort((a,b)=>a.data>b.data?1:-1);let h2="";if(tiP.length)h2+=`<p style='font-size:12px;font-weight:800;color:#c2410c;text-transform:uppercase;margin:0 0 10px'>⏳ Aguardando aprovação (${tiP.length})</p>`+tiP.map(r=>`<div style='background:#fff;border:1.5px solid #fed7aa;border-left:4px solid #f97316;border-radius:10px;padding:12px 14px;margin-bottom:8px'><div style='display:flex;gap:10px;align-items:center'><span style='font-family:monospace;font-weight:800;color:#c2410c'>${r.horario}</span><span style='font-weight:700'>${r.espaco}</span><span style='font-size:12px;color:#607060'>${r.professor} · ${r.data.split("-").reverse().join("/")}</span></div><div style='display:flex;gap:8px;margin-top:10px'><button onclick='tiAprovar("${r.id}")' style='flex:1;padding:8px;border-radius:8px;border:none;background:#1a6b47;color:#fff;font-weight:700;cursor:pointer'>✅ Aprovar</button><button onclick='tiRecusar("${r.id}")' style='flex:1;padding:8px;border-radius:8px;border:none;background:#dc2626;color:#fff;font-weight:700;cursor:pointer'>❌ Recusar</button></div></div>`).join("");if(tiC.length)h2+=`<p style='font-size:12px;font-weight:800;color:#1a6b47;text-transform:uppercase;margin:14px 0 10px'>✅ Confirmados (${tiC.length})</p>`+tiC.map(r=>`<div style='background:#fff;border:1.5px solid #a7f3d0;border-left:4px solid #1a6b47;border-radius:10px;padding:12px 14px;margin-bottom:8px'><span style='font-family:monospace;font-weight:800;color:#1a6b47'>${r.horario}</span> <span style='font-weight:700'>${r.espaco}</span> <span style='font-size:12px;color:#607060'>${r.professor} · ${r.data.split("-").reverse().join("/")}</span></div>`).join("");if(!h2)h2=`<div style='text-align:center;padding:40px;color:#607060'><p style='font-size:32px'>🔊</p><p>Nenhum agendamento.</p></div>`;el.innerHTML=h2;}},0);}
   }
+
+  // ── FECHAR COLUNA PRINCIPAL ──
   html+=`</div>`;
+
+  // ── COLUNA DIREITA: KPIs + PRÓXIMOS ──
+  const todosFeed=_todas.filter(r=>!r.reservaAutomatica&&r.data>=h&&r.status!=="recusado").sort((a,b)=>{
+    const ka=(a.data||"")+(a.horario||"");
+    const kb=(b.data||"")+(b.horario||"");
+    return ka.localeCompare(kb);
+  });
+  const limFeed=_A.feedExpandido?todosFeed.length:8;
+  const ultimos=todosFeed.slice(0,limFeed);
+
+  html+=`<div style="position:sticky;top:16px">
+    <div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:12px 14px;margin-bottom:12px;display:flex;gap:10px">
+      <div style="flex:1;text-align:center;padding:8px;background:${c.bg};border-radius:8px">
+        <p style="font-size:22px;font-weight:900;color:#1a6b47">${hoje_rs}</p>
+        <p style="font-size:11px;color:${c.textMuted};font-weight:600">Hoje</p>
+      </div>
+      <div style="flex:1;text-align:center;padding:8px;background:${pend>0?"#fff7ed":c.bg};border-radius:8px">
+        <p style="font-size:22px;font-weight:900;color:${pend>0?"#ea580c":c.textMuted}">${pend}</p>
+        <p style="font-size:11px;color:${c.textMuted};font-weight:600">Pendentes</p>
+      </div>
+      <div style="flex:1;text-align:center;padding:8px;background:${c.bg};border-radius:8px">
+        <p style="font-size:22px;font-weight:900;color:#0369a1">${todosFeed.length}</p>
+        <p style="font-size:11px;color:${c.textMuted};font-weight:600">Próximos</p>
+      </div>
+    </div>
+
+    <div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:12px 14px">
+      <p style="font-size:11px;font-weight:800;color:${c.textMuted};text-transform:uppercase;margin-bottom:10px">🕐 Próximos agendamentos</p>
+      ${ultimos.map(r=>{
+        const dataFmt=r.data?.split('-').reverse().join('/');
+        const isUrg=urgentes.find(u=>u.id===r.id);
+        const bg=isUrg?'#fff7ed':r.status==='pendente'?'#fffbeb':c.bg;
+        const borda=isUrg?'#f97316':r.status==='pendente'?'#fcd34d':c.border;
+        const badge=r.status==='confirmado'?`<span style="background:#e2f4ea;color:#1a6b47;font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px">✅</span>`:
+          isUrg?`<span style="background:#fff7ed;color:#ea580c;font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px">⚡</span>`:
+          `<span style="background:#fffbeb;color:#92400e;font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px">⏳</span>`;
+        return`<div style="display:flex;align-items:center;gap:8px;padding:7px 8px;background:${bg};border:1px solid ${borda};border-radius:8px;margin-bottom:5px">
+          <div style="flex:1;min-width:0">
+            <p style="font-size:11px;font-weight:700;color:${c.navy};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.horario} · ${r.espaco}</p>
+            <p style="font-size:10px;color:${c.textMuted};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.professor?.split(" ")[0]} · ${r.turmaInicio||r.turma||'-'} · ${dataFmt}</p>
+          </div>
+          ${badge}
+        </div>`;
+      }).join('')}
+      ${todosFeed.length>8?`<button onclick="toggleFeedAdmin()" style="width:100%;margin-top:6px;padding:7px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.textMuted};font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">${_A.feedExpandido?'▲ Ver menos':'▼ Ver mais ('+todosFeed.length+' no total)'}</button>`:''}
+    </div>
+  </div>`;
+
+  html+=`</div></div>`;
   return html;
 }
+
 
 function admRow(r,showDate=false){
   const c=C(),h=fmtHoje();
