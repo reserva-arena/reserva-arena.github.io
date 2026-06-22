@@ -441,7 +441,7 @@ function renderLogin(){
   h+="<p style='font-size:13px;font-weight:800;color:"+c.navy+";margin-bottom:12px;text-align:center'>🔐 Acesso ao sistema</p>";
   h+="<input id='lg-e' type='email' placeholder='Seu e-mail' style='width:100%;padding:11px;border-radius:8px;border:1.5px solid "+c.border+";background:"+c.bg+";color:"+c.text+";font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;margin-bottom:8px'>";
   h+="<input id='lg-s' type='password' placeholder='Senha' style='width:100%;padding:11px;border-radius:8px;border:1.5px solid "+c.border+";background:"+c.bg+";color:"+c.text+";font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;margin-bottom:8px'>";
-  h+="<button onclick='doLogin()' style='width:100%;padding:12px;border-radius:8px;border:none;background:#1a6b47;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit'>Entrar</button>";
+  h+="<button id='btn-do-login' type='button' style='width:100%;padding:12px;border-radius:8px;border:none;background:#1a6b47;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit'>Entrar</button>";
   h+="<div style='text-align:center;margin-top:8px'><button onclick='doEsqueciSenha()' style='background:none;border:none;color:"+c.textMuted+";font-size:11px;cursor:pointer;font-family:inherit'>Esqueci minha senha</button></div>";
   h+="<div id='lg-err' style='display:none;margin-top:8px;padding:8px;border-radius:8px;background:#fef2f2;color:#dc2626;font-size:11px;text-align:center'></div></div>";
   h+="<div style='background:"+c.surface+";border:1.5px solid "+c.border+";border-radius:14px;padding:14px'>";
@@ -453,8 +453,9 @@ function renderLogin(){
   h+="<div><p style='font-size:11px;font-weight:700;color:"+c.navy+"'>Maria Angélica</p><p style='font-size:10px;color:"+c.textMuted+"'>Disponível para suporte</p><a href='tel:6298552-0072' style='font-size:11px;color:#1a6b47;font-weight:700;text-decoration:none'>(62) 98552-0072</a></div></div>";
   h+="</div><p style='text-align:center;font-size:10px;color:"+c.textMuted+";margin-top:10px'>Reserva Arena · Colégio Arena</p></div></div>";
   $("app").innerHTML=h;
+  var btnLogin=document.getElementById("btn-do-login");
+  if(btnLogin)btnLogin.addEventListener("click",doLogin);
 }
-window.doLogin=async()=>{
   var e=document.getElementById("lg-e")?.value?.trim();
   var s=document.getElementById("lg-s")?.value;
   var err=document.getElementById("lg-err");
