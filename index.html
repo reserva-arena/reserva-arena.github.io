@@ -368,16 +368,19 @@ function alertHTML(type,msg){const c=C();const cfg={error:{bg:c.redBg,b:c.redBor
 // ─── CALENDÁRIO MENSAL ────────────────────────────────────────────────────────
 function calMensalHTML(cid,ano,mes,porData,dataSel){
   const c=C(),h=fmtHoje();
+  const mob=window.innerWidth<768;
   const primeiroDia=new Date(Date.UTC(ano,mes,1));
   const diasNoMes=new Date(Date.UTC(ano,mes+1,0)).getUTCDate();
   const inicioGrid=primeiroDia.getUTCDay();
   const cells=[];for(let i=0;i<inicioGrid;i++)cells.push(null);for(let d=1;d<=diasNoMes;d++)cells.push(d);
   let dias="";
   cells.forEach((d,i)=>{
-    if(!d){dias+=`<div></div>`;return;}
+    const dowVazia=i%7;
+    if(!d){if(mob&&(dowVazia===0||dowVazia===6))return;dias+=`<div></div>`;return;}
     const ds=`${ano}-${String(mes+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
     const isH=ds===h,isPast=ds<h,isSel=ds===dataSel,letivo=isDiaLetivo(ds);
     const dow=new Date(Date.UTC(ano,mes,d)).getUTCDay(),isFim=dow===0||dow===6;
+    if(mob&&(dow===0||dow===6))return;
     const nao=!letivo&&!isPast;
     const bg=isSel?"#40b07a":isH?"rgba(26,107,71,.12)":nao?"rgba(239,68,68,.08)":"transparent";
     const col=isSel?"#fff":isPast?"#cbd5e1":nao?"#fca5a5":isFim?"#ef4444":c.navy;
@@ -387,6 +390,8 @@ function calMensalHTML(cid,ano,mes,porData,dataSel){
       ${d}${temRes&&!isSel?`<div style="position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:#40b07a"></div>`:""}
     </button>`;
   });
+  const cols=mob?"repeat(5,1fr)":"repeat(7,1fr)";
+  const labels=mob?["S","T","Q","Q","S"]:["D","S","T","Q","Q","S","S"];
   return`<div style="background:${c.surface};border-radius:16px;border:1px solid ${c.border};overflow:hidden">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid ${c.border}">
       <button onclick="window._calNav('${cid}',-1)" style="background:none;border:1px solid ${c.border};border-radius:8px;width:34px;height:34px;cursor:pointer;color:${c.textMid};font-size:16px;font-family:inherit">‹</button>
@@ -394,10 +399,10 @@ function calMensalHTML(cid,ano,mes,porData,dataSel){
       <button onclick="window._calNav('${cid}',1)" style="background:none;border:1px solid ${c.border};border-radius:8px;width:34px;height:34px;cursor:pointer;color:${c.textMid};font-size:16px;font-family:inherit">›</button>
     </div>
     <div style="padding:12px 16px 16px">
-      <div style="display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:6px">
-        ${["D","S","T","Q","Q","S","S"].map((n,i)=>`<div style="text-align:center;font-size:10px;font-weight:700;color:${i===0||i===6?"#ef4444":c.textMuted};padding:4px 0">${n}</div>`).join("")}
+      <div style="display:grid;grid-template-columns:${cols};margin-bottom:6px">
+        ${labels.map((n,i)=>`<div style="text-align:center;font-size:10px;font-weight:700;color:${!mob&&(i===0||i===6)?"#ef4444":c.textMuted};padding:4px 0">${n}</div>`).join("")}
       </div>
-      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">${dias}</div>
+      <div style="display:grid;grid-template-columns:${cols};gap:3px">${dias}</div>
     </div>
   </div>`;
 }
