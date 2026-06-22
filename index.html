@@ -3084,6 +3084,9 @@ function modalGerenciarHTML(){
             <div><label style="font-size:11px;font-weight:700;color:#607060;text-transform:uppercase">Perfil</label><br>
               <select id="gu-perfil" style="width:100%;padding:10px 12px;border-radius:8px;font-size:13.5px;border:1.5px solid #c7dfd4;background:#fff;outline:none;box-sizing:border-box;cursor:pointer;margin-top:5px">
                 <option value="professor">👨‍🏫 Professor</option>
+                <option value="coord_inf">👶 Coord. Infantil</option>
+                <option value="coord_fund1">📚 Coord. Fund. 1</option>
+                <option value="coord_fund2">🎓 Coord. Fund. 2</option>
                 <option value="marketing">📸 Equipe de Marketing</option>
                 <option value="ti">💻 T.I.</option>
               </select></div>
@@ -3148,7 +3151,7 @@ function renderGuLista(){
       h+='<tr style="background:'+(i%2===0?'#fff':'#f8faf8')+'">';
       h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb;color:#132318;font-weight:600">'+u.nome+'</td>';
       h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb;color:#607060;font-size:12px">'+u.email+'</td>';
-      h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:#e0e7ff;color:#3730a3">'+(u.perfil==="fotografo"||u.perfil==="marketing"?"📸 Equipe de Marketing":u.perfil==="ti"?"💻 T.I.":"👨‍🏫 Professor")+'</span></td>';
+      h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:#e0e7ff;color:#3730a3">'+(u.perfil==="fotografo"||u.perfil==="marketing"?"📸 Marketing":u.perfil==="ti"?"💻 T.I.":u.perfil==="coord_inf"?"👶 Coord. Inf.":u.perfil==="coord_fund1"?"📚 Coord. Fund.1":u.perfil==="coord_fund2"?"🎓 Coord. Fund.2":"👨‍🏫 Professor")+'</span></td>';
       h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:'+(u.ativo!==false?'#e2f4ea':'#fef2f2')+';color:'+(u.ativo!==false?'#0f4c2b':'#7f1d1d')+'">'+(u.ativo!==false?'● Ativo':'○ Inativo')+'</span></td>';
       h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><div style="display:flex;gap:5px">';
       h+='<button data-uid="'+u.id+'" data-ativo="'+(u.ativo!==false?'1':'0')+'" data-nome="'+u.nome+'" class="gu-toggle-btn" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid '+(u.ativo!==false?'#fed7aa':'#6ee7a0')+';background:'+(u.ativo!==false?'#fff7ed':'#e2f4ea')+';color:'+(u.ativo!==false?'#7c2d12':'#0f4c2b')+';cursor:pointer;font-weight:700">'+(u.ativo!==false?'🔒 Desativar':'🔓 Ativar')+'</button>';
