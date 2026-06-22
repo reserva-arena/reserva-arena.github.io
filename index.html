@@ -1173,7 +1173,7 @@ function renderProfessorView(){
         ${ESPACOS.map(e=>`<option value="${e.nome}" ${_P.filtroEspaco===e.nome?"selected":""}>${tipoIcon(e.tipo,e.nome)} ${e.nome}</option>`).join("")}
       </select>
       ${_P.filtroEspaco?`<button onclick="pSetEspaco('')" style="${btn('ghost')};padding:7px 12px;font-size:12px;white-space:nowrap">✕ Limpar</button>`:""}
-      ${meusFuturos.length>1?`<button onclick="_P.modoSelecao=!_P.modoSelecao;_P.selecionados=new Set();re()" style="padding:7px 12px;font-size:12px;white-space:nowrap;border-radius:8px;border:1.5px solid ${_P.modoSelecao?'#dc2626':c.border};background:${_P.modoSelecao?'#fef2f2':'transparent'};color:${_P.modoSelecao?'#dc2626':c.textMuted};font-weight:700;cursor:pointer;font-family:inherit">${_P.modoSelecao?'✕ Cancelar seleção':'☑ Selecionar'}</button>`:''}
+      ${meusFuturos.length>1?'<button onclick="_P.modoSelecao=!_P.modoSelecao;_P.selecionados=new Set();re()" style="padding:7px 12px;font-size:12px;white-space:nowrap;border-radius:8px;border:1.5px solid '+(_P.modoSelecao?"#dc2626":c.border)+';background:'+(_P.modoSelecao?"#fef2f2":"transparent")+';color:'+(_P.modoSelecao?"#dc2626":c.textMuted)+';font-weight:700;cursor:pointer;font-family:inherit">'+(_P.modoSelecao?"✕ Cancelar seleção":"☑ Selecionar")+'</button>':''}
     </div>
     ${_P.modoSelecao&&_P.selecionados.size>0?`<div style="display:flex;align-items:center;gap:10px;background:#fef2f2;border:1.5px solid #fca5a5;border-radius:10px;padding:10px 14px;margin-bottom:12px">
       <span style="font-size:13px;font-weight:700;color:#dc2626;flex:1">${_P.selecionados.size} agendamento${_P.selecionados.size>1?'s':''} selecionado${_P.selecionados.size>1?'s':''}</span>
