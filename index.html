@@ -1811,10 +1811,11 @@ function maBlocoMultiHTML(b,i,eo){
     {label:"Matutino",items:TURMAS_INFANTIL_MAT},
     {label:"Vespertino",items:TURMAS_INFANTIL_VESP}
   ]},
-  {id:"fund1",l:"Fund. 1",turmas:[{label:"Fund. 1",items:TURMAS_FUND1},{label:"Integral Fund. 1",items:TURMAS_INTEGRAL_FUND1}]},
+  {id:"fund1",l:"Fund. 1",turmas:[{label:"Fund. 1",items:TURMAS_FUND1}]},
   {id:"fund2",l:"Fund. 2",turmas:[{label:"Fund. 2",items:TURMAS_FUND2}]},
   {id:"outros",l:"Integral/Extras",turmas:[
-    {label:"Integral",items:TURMAS_INTEGRAL},
+    {label:"Integral Infantil",items:TURMAS_INTEGRAL},
+    {label:"Integral Fund. 1",items:TURMAS_INTEGRAL_FUND1},
     {label:"Extras",items:TURMAS_EXTRAS}
   ]},
 ];
@@ -1887,7 +1888,7 @@ const selTurma=(horario,val)=>`
         <option value="">Selecione a turma...</option>
         <optgroup label="Ed. Infantil">${TURMAS_EDUCACAO_INFANTIL.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup>
         <optgroup label="Fund. 1">${TURMAS_FUND1.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup>
-        <optgroup label="Fund. 2">${TURMAS_FUND2.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup><optgroup label="Aulas Extras">${TURMAS_EXTRAS.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup><optgroup label="Integral">${TURMAS_INTEGRAL.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup>
+        <optgroup label="Fund. 2">${TURMAS_FUND2.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup><optgroup label="Aulas Extras">${TURMAS_EXTRAS.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup><optgroup label="Integral Infantil">${TURMAS_INTEGRAL.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup><optgroup label="Integral Fund. 1">${TURMAS_INTEGRAL_FUND1.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup>
       </select>`;
     const mesmaT=b.horario===b.horarioFim;
     html+=`<div style="background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:10px;padding:14px;display:grid;gap:12px">
