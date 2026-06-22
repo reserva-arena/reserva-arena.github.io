@@ -739,7 +739,7 @@ function renderMarketingInline(){
   return`<div style="padding:4px 0">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
       <div style="display:flex;gap:6px">${btnAba("minhas","📸 Minhas solicitações")}${btnAba("todos","📅 Todos agendamentos")}</div>
-      <button onclick="window._MK.historico=!window._MK.historico;re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_MK.historico?c.navy:'transparent'};color:${_MK.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_MK.historico?"Ocultar hist.":"Ver histórico"}</button>
+      <button onclick="window._MK.historico=!window._MK.historico;if(window._MK.historico)carregarTodas();re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_MK.historico?c.navy:'transparent'};color:${_MK.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_MK.historico?"Ocultar hist.":"Ver histórico"}</button>
     </div>
     ${pendentes.length&&_MK.aba==="todos"?`<div style="background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="mkSetAba('minhas')"><p style="font-size:13px;font-weight:700;color:#7c3aed">⏳ ${pendentes.length} solicitaç${pendentes.length===1?"ão":"ões"} aguardando aprovação — Ver agora →</p></div>`:""}
     ${corpo}
@@ -791,7 +791,7 @@ function renderTIInline(){
   return`<div style="padding:4px 0">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
       <div style="display:flex;gap:6px">${btnAba("minhas","🔊 Minhas solicitações")}${btnAba("todos","📅 Todos agendamentos")}</div>
-      <button onclick="window._TI.historico=!window._TI.historico;re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_TI.historico?c.navy:'transparent'};color:${_TI.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_TI.historico?"Ocultar hist.":"Ver histórico"}</button>
+      <button onclick="window._TI.historico=!window._TI.historico;if(window._TI.historico)carregarTodas();re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_TI.historico?c.navy:'transparent'};color:${_TI.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_TI.historico?"Ocultar hist.":"Ver histórico"}</button>
     </div>
     ${pendentes.length&&_TI.aba==="todos"?`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="tiSetAba('minhas')"><p style="font-size:13px;font-weight:700;color:#c2410c">⏳ ${pendentes.length} agendamento${pendentes.length===1?"":"s"} aguardando aprovação — Ver agora →</p></div>`:""}
     ${corpo}
@@ -863,7 +863,7 @@ function renderMarketing(){
     <div style="max-width:700px;margin:0 auto;padding:16px 14px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
         <div style="display:flex;gap:6px">${btnAba("minhas","📸 Minhas solicitações")}${btnAba("todos","📅 Todos agendamentos")}</div>
-        <button onclick="window._MK.historico=!window._MK.historico;re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_MK.historico?c.navy:'transparent'};color:${_MK.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_MK.historico?"Ocultar hist.":"Ver histórico"}</button>
+        <button onclick="window._MK.historico=!window._MK.historico;if(window._MK.historico)carregarTodas();re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_MK.historico?c.navy:'transparent'};color:${_MK.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_MK.historico?"Ocultar hist.":"Ver histórico"}</button>
       </div>
       ${pendentes.length&&_MK.aba==="todos"?`<div style="background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="mkSetAba('minhas')"><p style="font-size:13px;font-weight:700;color:#7c3aed">⏳ ${pendentes.length} solicitaç${pendentes.length===1?"ão":"ões"} aguardando sua aprovação — Ver agora →</p></div>`:""}
       ${corpo}
@@ -930,7 +930,7 @@ function renderTI(){
     <div style="max-width:700px;margin:0 auto;padding:16px 14px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
         <div style="display:flex;gap:6px">${btnAba("minhas","🔊 Minhas solicitações")}${btnAba("todos","📅 Todos agendamentos")}</div>
-        <button onclick="window._TI.historico=!window._TI.historico;re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_TI.historico?c.navy:'transparent'};color:${_TI.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_TI.historico?"Ocultar hist.":"Ver histórico"}</button>
+        <button onclick="window._TI.historico=!window._TI.historico;if(window._TI.historico)carregarTodas();re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_TI.historico?c.navy:'transparent'};color:${_TI.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_TI.historico?"Ocultar hist.":"Ver histórico"}</button>
       </div>
       ${pendentes.length&&_TI.aba==="todos"?`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="tiSetAba('minhas')"><p style="font-size:13px;font-weight:700;color:#c2410c">⏳ ${pendentes.length} agendamento${pendentes.length===1?"":"s"} aguardando aprovação — Ver agora →</p></div>`:""}
       ${feedTIHtml}
