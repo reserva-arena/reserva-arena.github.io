@@ -425,6 +425,7 @@ function re(){if(_trocandoSenha)return;
   if(_usuario.perfil==="sem_acesso"||_usuario.ativo===false){renderSemAcesso();return;}
   if(_usuario.perfil==="fotografo"||_usuario.perfil==="marketing"){renderMarketing();return;}
   if(_usuario.perfil==="ti"){renderTI();return;}
+  if(_usuario.perfil==="coord_inf"||_usuario.perfil==="coord_fund1"||_usuario.perfil==="coord_fund2"){renderCoord();return;}
   renderApp();
 }
 
@@ -997,6 +998,150 @@ window.tiRecusar=async(id)=>{
     );
   }
   re();
+};
+
+// ════════════════════════════════════════════════════════════════════════════
+// COORDENADOR
+// ════════════════════════════════════════════════════════════════════════════
+function segmentoCoord(perfil){
+  if(perfil==="coord_inf")return"inf";
+  if(perfil==="coord_fund1")return"fund1";
+  if(perfil==="coord_fund2")return"fund2";
+  return null;
+}
+function turmasDoSegmento(seg){
+  if(seg==="inf")return[...TURMAS_EDUCACAO_INFANTIL,...TURMAS_INTEGRAL];
+  if(seg==="fund1")return TURMAS_FUND1;
+  if(seg==="fund2")return TURMAS_FUND2;
+  return[];
+}
+function labelCoord(perfil){
+  if(perfil==="coord_inf")return"👶 Coord. Infantil";
+  if(perfil==="coord_fund1")return"📚 Coord. Fund. 1";
+  if(perfil==="coord_fund2")return"🎓 Coord. Fund. 2";
+  return"Coordenador";
+}
+
+if(!window._CO)window._CO={fProf:"",fTurma:"",fEspaco:"",historico:false};
+
+function renderCoord(){
+  const c=C(),h=fmtHoje();
+  if(!window._CO)window._CO={fProf:"",fTurma:"",fEspaco:"",historico:false};
+  const seg=segmentoCoord(_usuario?.perfil);
+  const turmasSeg=turmasDoSegmento(seg);
+
+  // Filtrar reservas do segmento
+  let fonte=_todas.filter(r=>{
+    if(r.reservaAutomatica)return false;
+    const turma=r.turmaInicio||r.turma||"";
+    const pertence=turmasSeg.some(t=>turma.startsWith(t.split(" ")[0])||turma===t);
+    // Extra Música vai para coord_inf por enquanto (pendente definição)
+    const isExtra=r.turmaInicio==="Extra Música"||r.turma==="Extra Música";
+    return pertence||(isExtra&&seg==="inf");
+  });
+
+  if(!_CO.historico)fonte=fonte.filter(r=>r.data>=h);
+  if(_CO.fProf)fonte=fonte.filter(r=>r.professor===_CO.fProf||r.professorId===_CO.fProf);
+  if(_CO.fTurma)fonte=fonte.filter(r=>(r.turmaInicio||r.turma||"")=== _CO.fTurma);
+  if(_CO.fEspaco)fonte=fonte.filter(r=>r.espaco===_CO.fEspaco);
+  fonte=fonte.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
+
+  // Professores do segmento (para filtro)
+  const profsSet=new Set(_todas.filter(r=>turmasSeg.some(t=>(r.turmaInicio||r.turma||"").includes(t.split(" ")[0]))).map(r=>r.professor).filter(Boolean));
+  const profs=[...profsSet].sort();
+
+  // Montar lista por data
+  const porData={};
+  fonte.forEach(r=>{if(!porData[r.data])porData[r.data]=[];porData[r.data].push(r);});
+
+  let corpo="";
+  if(!fonte.length){
+    corpo=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">📋</p><p style="margin-top:12px;font-size:14px">Nenhum agendamento encontrado.</p></div>`;
+  } else {
+    Object.entries(porData).forEach(([data,rs])=>{
+      const[,m2,d2]=data.split("-");const isH=data===h;
+      corpo+=`<div style="margin-bottom:16px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <span style="font-size:11px;font-weight:700;color:${isH?c.green:c.textMid};background:${isH?c.greenBg:"transparent"};padding:${isH?"2px 8px":"0"};border-radius:${isH?20:0}px">${isH?"📌 Hoje":`${d2}/${m2}`}</span>
+          <div style="flex:1;height:1px;background:${c.borderLight}"></div>
+        </div>`;
+      rs.forEach(r=>{corpo+=coordRow(r);});
+      corpo+=`</div>`;
+    });
+  }
+
+  $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="no">
+    <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#0d2b1a,#1a6b47)"};padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(13,43,26,.25)">
+      <div style="display:flex;align-items:center;gap:8px">${logoHTML(36)}<p style="font-size:13px;font-weight:800;color:#fff">${labelCoord(_usuario?.perfil)}</p></div>
+      <div style="display:flex;align-items:center;gap:6px">
+        ${avatarHTML(_usuario?.nome,28,"green")}
+        <button id="sino-btn" onclick="abrirPainelNotif()" style="display:none;position:relative;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:30px;height:30px;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;font-family:inherit">🔔<span id="sino-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:#dc2626;color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:99px;align-items:center;justify-content:center;padding:0 3px;font-family:inherit"></span></button>
+        <button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button>
+        <button onclick="doSignOut()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">Sair</button>
+      </div>
+    </header>
+    <div style="max-width:800px;margin:0 auto;padding:16px 14px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:14px">
+        <select onchange="window._CO.fProf=this.value;re()" style="padding:8px 10px;border-radius:8px;border:1.5px solid ${c.border};background:${c.surface};color:${c.text};font-size:12px;font-family:inherit;outline:none">
+          <option value="">👤 Todos professores</option>
+          ${profs.map(p=>`<option value="${p}" ${_CO.fProf===p?"selected":""}>${p}</option>`).join("")}
+        </select>
+        <select onchange="window._CO.fTurma=this.value;re()" style="padding:8px 10px;border-radius:8px;border:1.5px solid ${c.border};background:${c.surface};color:${c.text};font-size:12px;font-family:inherit;outline:none">
+          <option value="">🎓 Todas turmas</option>
+          ${turmasSeg.map(t=>`<option value="${t}" ${_CO.fTurma===t?"selected":""}>${t}</option>`).join("")}
+        </select>
+        <select onchange="window._CO.fEspaco=this.value;re()" style="padding:8px 10px;border-radius:8px;border:1.5px solid ${c.border};background:${c.surface};color:${c.text};font-size:12px;font-family:inherit;outline:none">
+          <option value="">🏛️ Todos espaços</option>
+          ${ESPACOS.map(e=>`<option value="${e.nome}" ${_CO.fEspaco===e.nome?"selected":""}>${e.nome}</option>`).join("")}
+        </select>
+        <button onclick="window._CO.historico=!window._CO.historico;re()" style="padding:8px 10px;border-radius:8px;border:1.5px solid ${_CO.historico?c.navy:c.border};background:${_CO.historico?c.navy:"transparent"};color:${_CO.historico?"#fff":c.textMid};font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🕐 ${_CO.historico?"Ocultar hist.":"Histórico"}</button>
+      </div>
+      <p style="font-size:11px;color:${c.textMuted};margin-bottom:12px">${fonte.length} agendamento${fonte.length!==1?"s":""} encontrado${fonte.length!==1?"s":""}</p>
+      ${corpo}
+    </div>
+  </div>`;
+}
+
+function coordRow(r){
+  const c=C(),h=fmtHoje();
+  const[,m2,d2]=r.data.split("-");
+  const isH=r.data===h;
+  const isPend=r.status==="pendente";
+  const isRec=r.status==="recusado";
+  const editadoCoord=r.editadoPorCoord?`<span style="font-size:10px;color:#7c3aed;font-weight:700">✏️ Editado pelo coord.</span>`:"";
+  return`<div style="background:${c.surface};border-radius:10px;border:1.5px solid ${isPend?c.amberBorder:isRec?"#fecaca":c.greenBorder};border-left:4px solid ${isPend?c.amber:isRec?"#dc2626":"#1a6b47"};padding:12px 14px;margin-bottom:8px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px">
+          <span style="font-family:'DM Mono',monospace;font-weight:800;color:${isPend?c.amber:"#1a6b47"};font-size:13px">${r.horario}${r.horarioFim&&r.horarioFim!==r.horario?" → "+r.horarioFim:""}</span>
+          <span style="font-size:13px;font-weight:700;color:${c.navy}">${r.espaco}</span>
+          ${isH?`<span style="background:#1a6b47;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px">Hoje</span>`:""}
+          ${isPend?`<span style="background:${c.amberBg};color:${c.amber};font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;border:1px solid ${c.amberBorder}">⏳ Pendente</span>`:isRec?`<span style="background:#fef2f2;color:#dc2626;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;border:1px solid #fecaca">❌ Recusado</span>`:`<span style="background:${c.greenBg};color:${c.green};font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;border:1px solid ${c.greenBorder}">✅ Confirmado</span>`}
+          ${editadoCoord}
+        </div>
+        <p style="font-size:12px;color:${c.textMid};margin-bottom:2px">👤 ${r.professor} · ${r.turmaInicio||r.turma||"—"}</p>
+        <p style="font-size:12px;color:${c.textMuted}">${r.conteudo||""}</p>
+      </div>
+      ${!isRec?`<button onclick="coordEditar('${r.id}')" style="padding:6px 12px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.textMid};font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit">✏️ Editar</button>`:""}
+    </div>
+  </div>`;
+}
+
+window.coordEditar=async(id)=>{
+  const r=_todas.find(r=>r.id===id);
+  if(!r)return;
+  const novoConteudo=prompt("Editar descrição da aula:",r.conteudo||"");
+  if(novoConteudo===null)return;
+  try{
+    await updateDoc(doc(db,"reservas",id),{
+      conteudo:novoConteudo,
+      editadoPorCoord:true,
+      editadoPorCoordNome:_usuario?.nome||"Coordenador",
+      editadoPorCoordEm:new Date().toISOString()
+    });
+    await gravarNotif(r.professorId,"✏️ Agendamento editado pelo coordenador",`${r.espaco} — ${r.data.split("-").reverse().join("/")} às ${r.horario}`,"info");
+    re();
+  }catch(e){alert("Erro ao editar: "+e.message);}
 };
 
 function renderSemAcesso(){
