@@ -3263,9 +3263,22 @@ function renderGuLista(){
 // FIREBASE LISTENERS
 // ════════════════════════════════════════════════════════════════════════════
 function startListeners(uid){
-  _unsub1=onSnapshot(collection(db,"reservas"),snap=>{
-    _todas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario);re();
-  });
+  const perfil=_usuario?.perfil||"professor";
+  const isProfOnly=perfil==="professor"||perfil==="coord_inf"||perfil==="coord_fund1"||perfil==="coord_fund2";
+  const hoje=new Date();hoje.setDate(hoje.getDate()-30);
+  const dataCorte=hoje.toISOString().slice(0,10);
+
+  if(isProfOnly){
+    // Professor e coord: não carrega _todas completo — usa query filtrada por data
+    _unsub1=onSnapshot(query(collection(db,"reservas"),where("data",">=",dataCorte)),snap=>{
+      _todas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario);re();
+    });
+  } else {
+    // Admin, TI, Marketing: carrega todas mas com filtro de 30 dias
+    _unsub1=onSnapshot(query(collection(db,"reservas"),where("data",">=",dataCorte)),snap=>{
+      _todas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario);re();
+    });
+  }
   _unsub2=onSnapshot(query(collection(db,"reservas"),where("professorId","==",uid)),snap=>{
     _minhas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>!r.reservaAutomatica).sort((a,b)=>a.data>b.data?1:-1);re();
   });
