@@ -424,7 +424,7 @@ function re(){if(_trocandoSenha)return;
   if(!_usuario){renderLogin();return;}
   if(_usuario.perfil==="sem_acesso"||_usuario.ativo===false){renderSemAcesso();return;}
   if(_usuario.perfil==="fotografo"||_usuario.perfil==="marketing"){renderMarketing();return;}
-  if(_usuario.perfil==="ti"){renderTI();return;}
+  if(_usuario.perfil==="ti"||_usuario.perfil==="coord_ti"){renderTI();return;}
   if(_usuario.perfil==="coord_inf"||_usuario.perfil==="coord_fund1"||_usuario.perfil==="coord_fund2"){renderCoord();return;}
   renderApp();
 }
@@ -971,6 +971,22 @@ function tiCard(r,pend){
     </div>`}
   </div>`;
 }
+window.coordTIEditar=async(id)=>{
+  const r=_todas.find(r=>r.id===id);
+  if(!r)return;
+  const novoConteudo=prompt("Editar descrição da aula:",r.conteudo||"");
+  if(novoConteudo===null)return;
+  try{
+    await updateDoc(doc(db,"reservas",id),{
+      conteudo:novoConteudo,
+      editadoPorCoord:true,
+      editadoPorCoordNome:_usuario?.nome||"Coord. T.I.",
+      editadoPorCoordEm:new Date().toISOString()
+    });
+    await gravarNotif(r.professorId,"✏️ Agendamento editado pelo Coord. T.I.",`${r.espaco} — ${r.data.split("-").reverse().join("/")} às ${r.horario}`,"info");
+    re();
+  }catch(e){alert("Erro ao editar: "+e.message);}
+};
 window.tiAprovar=async(id)=>{
   
   const r=_todas.find(r=>r.id===id);
@@ -3089,6 +3105,7 @@ function modalGerenciarHTML(){
                 <option value="coord_fund2">🎓 Coord. Fund. 2</option>
                 <option value="marketing">📸 Equipe de Marketing</option>
                 <option value="ti">💻 T.I.</option>
+                <option value="coord_ti">🖥️ Coord. T.I.</option>
               </select></div>
             <button onclick="guCriarDireto()" style="background:#1a6b47;color:#fff;border:none;border-radius:8px;font-weight:700;padding:10px 18px;font-size:13.5px;cursor:pointer;height:42px;width:100%">+ Cadastrar</button>
           </div>
@@ -3151,7 +3168,7 @@ function renderGuLista(){
       h+='<tr style="background:'+(i%2===0?'#fff':'#f8faf8')+'">';
       h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb;color:#132318;font-weight:600">'+u.nome+'</td>';
       h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb;color:#607060;font-size:12px">'+u.email+'</td>';
-      h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:#e0e7ff;color:#3730a3">'+(u.perfil==="fotografo"||u.perfil==="marketing"?"📸 Marketing":u.perfil==="ti"?"💻 T.I.":u.perfil==="coord_inf"?"👶 Coord. Inf.":u.perfil==="coord_fund1"?"📚 Coord. Fund.1":u.perfil==="coord_fund2"?"🎓 Coord. Fund.2":"👨‍🏫 Professor")+'</span></td>';
+      h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:#e0e7ff;color:#3730a3">'+(u.perfil==="fotografo"||u.perfil==="marketing"?"📸 Marketing":u.perfil==="ti"?"💻 T.I.":u.perfil==="coord_inf"?"👶 Coord. Inf.":u.perfil==="coord_fund1"?"📚 Coord. Fund.1":u.perfil==="coord_fund2"?"🎓 Coord. Fund.2":u.perfil==="coord_ti"?"🖥️ Coord. T.I.":"👨‍🏫 Professor")+'</span></td>';
       h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:'+(u.ativo!==false?'#e2f4ea':'#fef2f2')+';color:'+(u.ativo!==false?'#0f4c2b':'#7f1d1d')+'">'+(u.ativo!==false?'● Ativo':'○ Inativo')+'</span></td>';
       h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><div style="display:flex;gap:5px">';
       h+='<button data-uid="'+u.id+'" data-ativo="'+(u.ativo!==false?'1':'0')+'" data-nome="'+u.nome+'" class="gu-toggle-btn" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid '+(u.ativo!==false?'#fed7aa':'#6ee7a0')+';background:'+(u.ativo!==false?'#fff7ed':'#e2f4ea')+';color:'+(u.ativo!==false?'#7c2d12':'#0f4c2b')+';cursor:pointer;font-weight:700">'+(u.ativo!==false?'🔒 Desativar':'🔓 Ativar')+'</button>';
@@ -3183,6 +3200,7 @@ function renderGuLista(){
   h+='<option value="coord_fund2">🎓 Coord. Fund. 2</option>';
   h+='<option value="marketing">📸 Equipe de Marketing</option>';
   h+='<option value="ti">💻 T.I.</option>';
+  h+='<option value="coord_ti">🖥️ Coord. T.I.</option>';
   h+='<option value="sem_acesso">🔒 Sem acesso</option>';
   h+='</select>';
   h+='<div id="gu-edit-flash" style="margin-bottom:10px"></div>';
