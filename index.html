@@ -1455,7 +1455,7 @@ window.pFiltroRapido=tipo=>{
   else if(tipo==='proximos'){_P.modoProf='ver';_P.modoCard='lista';re();}
 };
 window.pSetVisu=v=>{_P.modoVisu=v;re();};
-window.pSetGrade=v=>{_P.filtroGrade=v;re();};
+window.pSetGrade=v=>{_P.filtroGrade=v;if(v==="todos")carregarTodas();re();};
 window.pSetEspaco=v=>{_P.filtroEspaco=v;re();};
 window.pClicarDia=data=>{
   if(data>=fmtHoje()&&isDiaLetivo(data)){
@@ -3262,21 +3262,34 @@ function renderGuLista(){
 // ════════════════════════════════════════════════════════════════════════════
 // FIREBASE LISTENERS
 // ════════════════════════════════════════════════════════════════════════════
+let _todasCarregadas=false;
+let _unsubTodas=null;
+
+function carregarTodas(){
+  if(_todasCarregadas||_unsubTodas)return;
+  const hoje=new Date();hoje.setDate(hoje.getDate()-30);
+  const dataCorte=hoje.toISOString().slice(0,10);
+  _unsubTodas=onSnapshot(query(collection(db,"reservas"),where("data",">=",dataCorte)),snap=>{
+    _todas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario);
+    _todasCarregadas=true;re();
+  });
+}
+
 function startListeners(uid){
   const perfil=_usuario?.perfil||"professor";
-  const isProfOnly=perfil==="professor"||perfil==="coord_inf"||perfil==="coord_fund1"||perfil==="coord_fund2";
+  const isProfOnly=perfil==="professor";
   const hoje=new Date();hoje.setDate(hoje.getDate()-30);
   const dataCorte=hoje.toISOString().slice(0,10);
 
   if(isProfOnly){
-    // Professor e coord: não carrega _todas completo — usa query filtrada por data
-    _unsub1=onSnapshot(query(collection(db,"reservas"),where("data",">=",dataCorte)),snap=>{
-      _todas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario);re();
-    });
+    // Professor: por padrão só carrega _minhas
+    // _todas é carregado sob demanda (botão Todos ou ao agendar)
+    _todas=[];_todasCarregadas=false;
   } else {
-    // Admin, TI, Marketing: carrega todas mas com filtro de 30 dias
+    // Admin, TI, Marketing, Coord: carrega _todas filtrada por data
     _unsub1=onSnapshot(query(collection(db,"reservas"),where("data",">=",dataCorte)),snap=>{
-      _todas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario);re();
+      _todas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario);
+      _todasCarregadas=true;re();
     });
   }
   _unsub2=onSnapshot(query(collection(db,"reservas"),where("professorId","==",uid)),snap=>{
@@ -3287,7 +3300,7 @@ function startListeners(uid){
     if(document.getElementById("mod-gu-lista"))renderGuLista();
   });
 }
-function stopListeners(){[_unsub1,_unsub2,_unsub3].forEach(u=>{try{u&&u();}catch{}});_unsub1=_unsub2=_unsub3=null;}
+function stopListeners(){[_unsub1,_unsub2,_unsub3,_unsubTodas].forEach(u=>{try{u&&u();}catch{}});_unsub1=_unsub2=_unsub3=_unsubTodas=null;_todasCarregadas=false;}
 
 // ════════════════════════════════════════════════════════════════════════════
 // AUTH
