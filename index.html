@@ -3156,7 +3156,7 @@ function renderGuLista(){
       h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><div style="display:flex;gap:5px">';
       h+='<button data-uid="'+u.id+'" data-ativo="'+(u.ativo!==false?'1':'0')+'" data-nome="'+u.nome+'" class="gu-toggle-btn" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid '+(u.ativo!==false?'#fed7aa':'#6ee7a0')+';background:'+(u.ativo!==false?'#fff7ed':'#e2f4ea')+';color:'+(u.ativo!==false?'#7c2d12':'#0f4c2b')+';cursor:pointer;font-weight:700">'+(u.ativo!==false?'🔒 Desativar':'🔓 Ativar')+'</button>';
       h+='<button data-email="'+u.email+'" class="gu-senha-btn" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid #c7dfd4;background:#fff;color:#607060;cursor:pointer;font-weight:700">🔑 Senha</button>';
-      h+='<button data-uid="'+u.id+'" data-nome="'+u.nome.replace(/"/g,'&quot;')+'" data-email="'+u.email.replace(/"/g,'&quot;')+'" class="gu-editar-btn" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid #bfdbfe;background:#eff6ff;color:#1e40af;cursor:pointer;font-weight:700">✏️ Editar</button>';
+      h+='<button data-uid="'+u.id+'" data-nome="'+u.nome.replace(/"/g,'&quot;')+'" data-email="'+u.email.replace(/"/g,'&quot;')+'" data-perfil="'+u.perfil+'" class="gu-editar-btn" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid #bfdbfe;background:#eff6ff;color:#1e40af;cursor:pointer;font-weight:700">✏️ Editar</button>';
       h+='</div></td></tr>';
     });
     h+='</tbody></table></div>';
@@ -3175,6 +3175,16 @@ function renderGuLista(){
   h+='<label style="font-size:11px;font-weight:700;color:#607060;text-transform:uppercase">E-mail</label>';
   h+='<input id="gu-edit-email" type="email" style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid #c7dfd4;font-size:13.5px;outline:none;box-sizing:border-box;margin:5px 0 6px">';
   h+='<p id="gu-edit-aviso" style="font-size:11px;color:#92400e;background:#fffbeb;border-radius:6px;padding:6px 10px;margin-bottom:14px">⚠️ Alterar o e-mail não muda o login do Firebase. O usuário continuará entrando com o e-mail antigo até fazer novo cadastro.</p>';
+  h+='<label style="font-size:11px;font-weight:700;color:#607060;text-transform:uppercase">Perfil</label>';
+  h+='<select id="gu-edit-perfil" style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid #c7dfd4;font-size:13.5px;outline:none;box-sizing:border-box;margin:5px 0 14px;cursor:pointer">';
+  h+='<option value="professor">👨‍🏫 Professor</option>';
+  h+='<option value="coord_inf">👶 Coord. Infantil</option>';
+  h+='<option value="coord_fund1">📚 Coord. Fund. 1</option>';
+  h+='<option value="coord_fund2">🎓 Coord. Fund. 2</option>';
+  h+='<option value="marketing">📸 Equipe de Marketing</option>';
+  h+='<option value="ti">💻 T.I.</option>';
+  h+='<option value="sem_acesso">🔒 Sem acesso</option>';
+  h+='</select>';
   h+='<div id="gu-edit-flash" style="margin-bottom:10px"></div>';
   h+='<div style="display:flex;gap:10px;justify-content:flex-end">';
   h+='<button id="gu-edit-cancelar" style="padding:8px 18px;border-radius:8px;border:1.5px solid #c7dfd4;background:#fff;color:#607060;cursor:pointer;font-weight:700;font-size:13px">Cancelar</button>';
@@ -3199,6 +3209,7 @@ function renderGuLista(){
       _editUID=b.getAttribute('data-uid');
       document.getElementById('gu-edit-nome').value=b.getAttribute('data-nome');
       document.getElementById('gu-edit-email').value=b.getAttribute('data-email');
+      document.getElementById('gu-edit-perfil').value=b.getAttribute('data-perfil')||'professor';
       document.getElementById('gu-edit-flash').innerHTML='';
       document.getElementById('mod-gu-edit').style.display='flex';
     });
@@ -3209,12 +3220,13 @@ function renderGuLista(){
   document.getElementById('gu-edit-salvar').addEventListener('click',()=>{
     const nome=document.getElementById('gu-edit-nome').value.trim();
     const email=document.getElementById('gu-edit-email').value.trim();
+    const perfil=document.getElementById('gu-edit-perfil').value;
     const flash=document.getElementById('gu-edit-flash');
     if(!nome||!email){flash.innerHTML='<p style="color:#7f1d1d;font-size:12px">Preencha todos os campos.</p>';return;}
     if(!_editUID){return;}
     const btn=document.getElementById('gu-edit-salvar');
     btn.disabled=true;btn.textContent='Salvando...';
-    updateDoc(doc(db,'usuarios',_editUID),{nome,email})
+    updateDoc(doc(db,'usuarios',_editUID),{nome,email,perfil})
       .then(()=>{
         flash.innerHTML='<p style="color:#0f4c2b;font-size:12px">✅ Salvo com sucesso!</p>';
         btn.disabled=false;btn.textContent='💾 Salvar';
