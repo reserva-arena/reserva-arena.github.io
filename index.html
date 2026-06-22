@@ -1138,12 +1138,13 @@ function renderProfessorView(){
         const[,,dia]=d.split("-");const isH=d===h;
         const rsD=fonte.filter(r=>r.data===d).sort((a,b)=>a.horario>b.horario?1:-1);
         const naoL=!isDiaLetivo(d)&&d>=h&&new Date(d).getDay()!==0&&new Date(d).getDay()!==6;
-        html+=`<div style="background:${isH?"rgba(26,107,71,.06)":c.bg};border:1px solid ${isH?c.blueMid:c.borderLight};border-radius:10px;padding:10px 8px;min-height:80px;cursor:pointer" onclick="pClicarDia('${d}')">
-          <div style="text-align:center;margin-bottom:6px">
+        const isMob=window.innerWidth<768,temRes=rsD.length>0;
+        html+=`<div style="background:${isH?"rgba(26,107,71,.06)":c.bg};border:1px solid ${isH?c.blueMid:c.borderLight};border-radius:10px;padding:${isMob&&!temRes?"6px 4px":"10px 8px"};min-height:${isMob&&!temRes?"auto":"80px"};cursor:pointer" onclick="pClicarDia('${d}')">
+          <div style="text-align:center;margin-bottom:${isMob&&!temRes?0:6}px">
             <p style="font-size:10px;font-weight:700;color:${naoL?"#ef4444":c.textMid};text-transform:uppercase">${nomes[i]}</p>
-            <p style="font-size:18px;font-weight:900;line-height:1;color:${isH?c.blueMid:c.text}">${dia}</p>
+            <p style="font-size:${isMob&&!temRes?14:18}px;font-weight:900;line-height:1;color:${isH?c.blueMid:c.text}">${dia}</p>
           </div>`;
-        if(!rsD.length)html+=`<p style="font-size:9px;color:${c.textMid};opacity:.6;text-align:center;margin-top:8px">livre</p>`;
+        if(!rsD.length)html+=isMob?"":`<p style="font-size:9px;color:${c.textMid};opacity:.6;text-align:center;margin-top:8px">livre</p>`;
         else rsD.forEach(r=>{
           const isMeu=ehMeu(r),isPend=r.status==="pendente";
           const range=r.horarioFim&&r.horarioFim!==r.horario?`→${r.horarioFim}`:"";
