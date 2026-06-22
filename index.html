@@ -221,7 +221,8 @@ const TURMAS_FUND1 = (()=>{const t=[];for(let a=1;a<=5;a++)["A","B","C","D","E"]
 const TURMAS_FUND2 = (()=>{const t=[];for(let a=6;a<=9;a++)["A","B","C","D","E","F","G","H"].forEach(l=>t.push(`${a}º${l}`));return t;})();
 const TURMAS_EXTRAS = ["Extra Música"];
 const TURMAS_INTEGRAL = ["Integral 3-4 anos","Integral 5 anos"];
-const TURMAS = [...TURMAS_EDUCACAO_INFANTIL, ...TURMAS_FUND1, ...TURMAS_FUND2, ...TURMAS_EXTRAS, ...TURMAS_INTEGRAL];
+const TURMAS_INTEGRAL_FUND1 = ["1º ano Integral","2º e 3º Integral","4º e 5º Integral"];
+const TURMAS = [...TURMAS_EDUCACAO_INFANTIL, ...TURMAS_FUND1, ...TURMAS_FUND2, ...TURMAS_EXTRAS, ...TURMAS_INTEGRAL, ...TURMAS_INTEGRAL_FUND1];
 const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 
 const NAO_LETIVOS = new Set([
@@ -1027,7 +1028,7 @@ function segmentoCoord(perfil){
 }
 function turmasDoSegmento(seg){
   if(seg==="inf")return[...TURMAS_EDUCACAO_INFANTIL,...TURMAS_INTEGRAL];
-  if(seg==="fund1")return TURMAS_FUND1;
+  if(seg==="fund1")return[...TURMAS_FUND1,...TURMAS_INTEGRAL_FUND1];
   if(seg==="fund2")return TURMAS_FUND2;
   return[];
 }
@@ -1810,7 +1811,7 @@ function maBlocoMultiHTML(b,i,eo){
     {label:"Matutino",items:TURMAS_INFANTIL_MAT},
     {label:"Vespertino",items:TURMAS_INFANTIL_VESP}
   ]},
-  {id:"fund1",l:"Fund. 1",turmas:[{label:"Fund. 1",items:TURMAS_FUND1}]},
+  {id:"fund1",l:"Fund. 1",turmas:[{label:"Fund. 1",items:TURMAS_FUND1},{label:"Integral Fund. 1",items:TURMAS_INTEGRAL_FUND1}]},
   {id:"fund2",l:"Fund. 2",turmas:[{label:"Fund. 2",items:TURMAS_FUND2}]},
   {id:"outros",l:"Integral/Extras",turmas:[
     {label:"Integral",items:TURMAS_INTEGRAL},
