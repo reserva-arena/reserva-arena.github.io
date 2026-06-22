@@ -2952,24 +2952,26 @@ function renderAdminView(){
     </div>
 
     <div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:12px 14px">
-      <p style="font-size:11px;font-weight:800;color:${c.textMuted};text-transform:uppercase;margin-bottom:10px">🕐 Próximos agendamentos</p>
-      ${feedVer.map(r=>{
-        const dataFmt=r.data?.split('-').reverse().join('/');
-        const isUrg=urgentes.find(u=>u.id===r.id);
-        const bg=isUrg?'#fff7ed':r.status==='pendente'?'#fffbeb':c.bg;
-        const borda=isUrg?'#f97316':r.status==='pendente'?'#fcd34d':c.border;
-        const badge=r.status==='confirmado'?`<span style="background:#e2f4ea;color:#1a6b47;font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px">✅</span>`:
-          isUrg?`<span style="background:#fff7ed;color:#ea580c;font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px">⚡</span>`:
-          `<span style="background:#fffbeb;color:#92400e;font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px">⏳</span>`;
-        return`<div style="display:flex;align-items:center;gap:8px;padding:7px 8px;background:${bg};border:1px solid ${borda};border-radius:8px;margin-bottom:5px">
-          <div style="flex:1;min-width:0">
-            <p style="font-size:11px;font-weight:700;color:${c.navy};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.horario} · ${r.espaco}</p>
-            <p style="font-size:10px;color:${c.textMuted};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.professor?.split(" ")[0]} · ${r.turmaInicio||r.turma||'-'} · ${dataFmt}</p>
-          </div>
-          ${badge}
-        </div>`;
-      }).join('')}
-      ${todosFeed.length>feedSemana.length?`<button onclick="toggleFeedAdmin()" style="width:100%;margin-top:6px;padding:7px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.textMuted};font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">${_A.feedExpandido?'▲ Só esta semana':'▼ Ver todos ('+todosFeed.length+')'}</button>`:''}
+      <p style="font-size:11px;font-weight:800;color:${c.textMuted};text-transform:uppercase;margin-bottom:10px">🏆 Espaços mais reservados</p>
+      ${(()=>{
+        const contagem={};
+        _todas.filter(r=>!r.reservaAutomatica&&r.status!=="recusado").forEach(r=>{
+          if(r.espaco)contagem[r.espaco]=(contagem[r.espaco]||0)+1;
+        });
+        const ranking=Object.entries(contagem).sort((a,b)=>b[1]-a[1]).slice(0,5);
+        const max=ranking[0]?.[1]||1;
+        const cores=["#1a6b47","#0369a1","#7c3aed","#ea580c","#d97706"];
+        return ranking.map(([espaco,total],i)=>`
+          <div style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+              <span style="font-size:11px;font-weight:700;color:${c.navy};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70%">${espaco}</span>
+              <span style="font-size:11px;font-weight:800;color:${cores[i]}">${total}</span>
+            </div>
+            <div style="height:5px;background:${c.borderLight};border-radius:99px">
+              <div style="height:5px;background:${cores[i]};border-radius:99px;width:${Math.round(total/max*100)}%"></div>
+            </div>
+          </div>`).join('');
+      })()}
     </div>
   </div>`;
 
