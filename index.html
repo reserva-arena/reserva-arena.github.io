@@ -1381,7 +1381,11 @@ window.abrirPainelNotif=async function abrirPainelNotif(){
     alert("Erro ao abrir notificações: "+e.message);
     return;
   }
-  const notifs=snap.docs.map(d=>({id:d.id,...d.data()}));
+  const notifs=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>{
+    const ta=a.criadoEm?.toDate?a.criadoEm.toDate():new Date(0);
+    const tb=b.criadoEm?.toDate?b.criadoEm.toDate():new Date(0);
+    return tb-ta;
+  });
   const c=C();
   const overlay=document.createElement("div");
   overlay.id="notif-overlay";
