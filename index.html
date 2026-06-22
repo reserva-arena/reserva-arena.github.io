@@ -1207,7 +1207,7 @@ function renderProfessorView(){
     }
     if(passadas.length){
       html+=`<div style="margin-top:16px;border-top:1px solid ${c.borderLight};padding-top:12px">
-        <button onclick="window._P.mostrarHistorico=!window._P.mostrarHistorico;re()" style="display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;font-family:inherit;width:100%;padding:4px 0">
+        <button type="button" onclick="pToggleHistorico()" style="display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;font-family:inherit;width:100%;padding:4px 0;text-align:left">
           <span style="font-size:11px;font-weight:700;color:${c.textMuted};text-transform:uppercase">🕐 Histórico (${passadas.length})</span>
           <span style="font-size:12px;color:${c.textMuted}">${_P.mostrarHistorico?"▲ fechar":"▼ ver"}</span>
         </button>
@@ -1266,6 +1266,7 @@ function bindProf(){
 }
 window.pSetModoProf=v=>{_P.modoProf=v;if(v==='agendar'){_MA={step:1,espaco:"",data:"",blocos:[bVazio()],resumo:false,salvando:false,sucesso:null,erro:"",calA:new Date().getFullYear(),calM:new Date().getMonth(),bibAV:null};}re();};
 window.pSetModo=v=>{_P.modoCard=v;re();};
+window.pToggleHistorico=()=>{_P.mostrarHistorico=!_P.mostrarHistorico;re();};
 window.toggleSelProf=id=>{if(_P.selecionados.has(id))_P.selecionados.delete(id);else _P.selecionados.add(id);re();};
 window.cancelarSelecionados=async()=>{
   const ids=[..._P.selecionados];
