@@ -408,7 +408,7 @@ function calMensalHTML(cid,ano,mes,porData,dataSel){
 }
 
 // ─── ESTADO GLOBAL ────────────────────────────────────────────────────────────
-let _usuario=null,_todas=[],_minhas=[],_usuarios=[];
+let _usuario=null,_todas=[],_minhas=[],_usuarios=[],_trocandoSenha=false;
 let _unsub1=null,_unsub2=null,_unsub3=null;
 
 function exigePermissao(perfisPermitidos){
@@ -417,7 +417,7 @@ function exigePermissao(perfisPermitidos){
   if(!perfisPermitidos.includes(_usuario.perfil)){console.warn('Acesso negado: perfil sem permissão');return false;}
   return true;
 }
-function re(){
+function re(){if(_trocandoSenha)return;
   const c=C();
   document.body.style.background=c.bg;
   document.body.style.color=c.text;
@@ -461,7 +461,7 @@ window.doLogin=async()=>{
   if(!e||!s){if(err){err.textContent="Preencha e-mail e senha.";err.style.display="block";}return;}
   try{
     await signInWithEmailAndPassword(auth,e,s);
-    if(s==="123456"){renderTrocarSenha();}
+    if(s==="123456"){_trocandoSenha=true;renderTrocarSenha();}
   }catch(ex){
     var m=ex.code==="auth/invalid-credential"||ex.code==="auth/wrong-password"||ex.code==="auth/user-not-found"?"E-mail ou senha incorretos.":ex.code==="auth/too-many-requests"?"Muitas tentativas. Aguarde.":"Erro ao entrar.";
     if(err){err.textContent=m;err.style.display="block";}
@@ -496,7 +496,7 @@ window.salvarNovaSenha=async()=>{
   if(!n||n.length<6){if(err){err.textContent="Mínimo 6 caracteres.";err.style.display="block";}return;}
   if(n!==cf){if(err){err.textContent="Senhas não coincidem.";err.style.display="block";}return;}
   if(n==="123456"){if(err){err.textContent="Escolha uma senha diferente.";err.style.display="block";}return;}
-  try{await updatePassword(auth.currentUser,n);re();}
+  try{await updatePassword(auth.currentUser,n);_trocandoSenha=false;re();}
   catch(ex){if(err){err.textContent="Erro ao salvar.";err.style.display="block";}}
 };
 function renderPublica(){
