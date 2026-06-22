@@ -2622,14 +2622,23 @@ function renderAdminView(){
       </div>
       <button onclick="const d=new Date();_A.mesCal={a:d.getFullYear(),m:d.getMonth()};_A.diaSel=null;re()" style="${btn("ghost")};padding:5px 12px;font-size:12px">Hoje</button>
     </div>
-    <div style="background:${c.surface};border-radius:14px;border:1px solid ${c.border};overflow:hidden;box-shadow:${c.cardShadow}">
-      <div style="display:grid;grid-template-columns:0.6fr repeat(5,1fr) 0.6fr;border-bottom:2px solid ${c.border}">
-        ${["Dom.","Seg.","Ter.","Qua.","Qui.","Sexta","Sáb."].map((d,i)=>`<div style="padding:8px 0;text-align:center;font-size:11px;font-weight:700;color:${i===0||i===6?"#ef4444":c.textMuted};text-transform:uppercase">${d}</div>`).join("")}
+    <div style="background:${c.surface};border-radius:14px;border:1px solid ${c.border};overflow:hidden;box-shadow:${c.cardShadow}">`;
+    const calMobile=window.innerWidth<768;
+    const calCols=calMobile?"repeat(5,1fr)":"0.6fr repeat(5,1fr) 0.6fr";
+    const calDias=calMobile?["Seg.","Ter.","Qua.","Qui.","Sexta"]:["Dom.","Seg.","Ter.","Qua.","Qui.","Sexta","Sáb."];
+    html+=`<div style="display:grid;grid-template-columns:${calCols};border-bottom:2px solid ${c.border}">
+        ${calDias.map((d,i)=>{const isWk=calMobile?(false):(i===0||i===6);return`<div style="padding:8px 0;text-align:center;font-size:11px;font-weight:700;color:${isWk?"#ef4444":c.textMuted};text-transform:uppercase">${d}</div>`;}).join("")}
       </div>
-      <div style="display:grid;grid-template-columns:0.6fr repeat(5,1fr) 0.6fr">`;
+      <div style="display:grid;grid-template-columns:${calCols}">`;
 
     cells.forEach((d,i)=>{
-      if(!d){html+=`<div style="min-height:90px;border-right:1px solid ${c.borderLight};border-bottom:1px solid ${c.borderLight}"></div>`;return;}
+      if(!d){
+        // célula vazia do grid — no mobile pular posições de Dom(0) e Sáb(6)
+        // calcular dow da célula vazia: índice i no grid começa em inicioGrid
+        const dowVazia=(i)%7;
+        if(calMobile&&(dowVazia===0||dowVazia===6))return;
+        html+=`<div style="min-height:90px;border-right:1px solid ${c.borderLight};border-bottom:1px solid ${c.borderLight}"></div>`;return;
+      }
       const ds=`${ano}-${String(mes+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
       const isPast=ds<h,isH=ds===h,isSel=ds===_A.diaSel;
       const rsdia=porData[ds]||[];
@@ -2637,6 +2646,7 @@ function renderAdminView(){
       const pend=rsdia.filter(r=>r.status==="pendente"&&!isUrgente(r.data,r.horario));
       const conf=rsdia.filter(r=>r.status==="confirmado");
       const dow=new Date(Date.UTC(ano,mes,d)).getUTCDay();
+      if(calMobile&&(dow===0||dow===6))return;
       const naoL=!isDiaLetivo(ds)&&!isPast&&dow!==0&&dow!==6;
       html+=`<div onclick="_A.diaSel=_A.diaSel==='${ds}'?null:'${ds}';re()" data-ds="${ds}" onmouseenter="admDayHover('${ds}',event)" onmouseleave="admDayLeave()" style="min-height:90px;border-right:1px solid ${c.borderLight};border-bottom:1px solid ${c.borderLight};padding:5px 6px;cursor:pointer;background:${isSel?"rgba(26,107,71,.08)":isH?"rgba(26,107,71,.04)":"transparent"};transition:background .15s">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
