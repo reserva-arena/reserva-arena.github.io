@@ -1032,7 +1032,7 @@ window.doSignOut=()=>signOut(auth);
 window.toggleAdminVisu=()=>{};
 window.setAdminVisu=(v)=>{
   _adminVisu=v;
-  if(v==="professor"){_P.modoProf="ver";_P.modoCard="calendario";_P.modoVisu="semana";_P.semIni=getSegunda(fmtHoje());_P.diaSel=null;_P.filtroGrade="meus";_P.mostrarHistorico=false;_P.filtroPendente=false;}
+  if(v==="professor"){_P.modoProf="ver";_P.modoCard="lista";_P.modoVisu="semana";_P.semIni=getSegunda(fmtHoje());_P.diaSel=null;_P.filtroGrade="meus";_P.mostrarHistorico=false;_P.filtroPendente=false;}
   if(v==="ti"&&window._TI)_TI.aba="minhas";
   if(v==="marketing"&&window._MK)_MK.aba="minhas";
   re();
@@ -1043,7 +1043,7 @@ window.irInicio=()=>{
     _A.diaSel=null;_A.historico=false;
     const d=new Date();_A.mesCal={a:d.getFullYear(),m:d.getMonth()};
   } else {
-    _P.modoProf="ver";_P.modoCard="calendario";_P.modoVisu="semana";
+    _P.modoProf="ver";_P.modoCard="lista";_P.modoVisu="semana";
     _P.semIni=getSegunda(fmtHoje());_P.diaSel=null;_P.filtroGrade="meus";
     _P.mostrarHistorico=false;_P.filtroPendente=false;
   }
@@ -1053,7 +1053,7 @@ window.irInicio=()=>{
 // ════════════════════════════════════════════════════════════════════════════
 // PROFESSOR VIEW
 // ════════════════════════════════════════════════════════════════════════════
-let _P={modoProf:"ver",modoCard:"calendario",modoVisu:"semana",filtroGrade:"meus",filtroEspaco:"",semIni:"",diaSel:null,mesCal:null,mostrarHistorico:false,filtroPendente:false,selecionados:new Set(),modoSelecao:false};
+let _P={modoProf:"ver",modoCard:"lista",modoVisu:"semana",filtroGrade:"meus",filtroEspaco:"",semIni:"",diaSel:null,mesCal:null,mostrarHistorico:false,filtroPendente:false,selecionados:new Set(),modoSelecao:false};
 
 function renderProfessorView(){
   const c=C(),h=fmtHoje();
@@ -1062,7 +1062,7 @@ function renderProfessorView(){
   // Para exibição, ignora reservas automáticas de range
   const fonteBase=(_P.filtroGrade==='todos'?_todas:_minhas).filter(r=>!r.reservaAutomatica&&(!_P.filtroEspaco||r.espaco===_P.filtroEspaco));
   const futuras=fonteBase.filter(r=>r.data>=h&&r.status!=="recusado");
-  const passadas=fonteBase.filter(r=>r.data<h&&r.status!=="recusado").reverse();
+  const passadas=fonteBase.filter(r=>r.data<h).reverse();
   const pendentes=_minhas.filter(r=>r.status==="pendente"&&!r.reservaAutomatica&&(!_P.filtroEspaco||r.espaco===_P.filtroEspaco));
 
   let html=`<div>`;
@@ -3123,3 +3123,4 @@ window.instalarPWA=async()=>{
 </script>
 </body>
 </html>
+
