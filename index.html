@@ -2952,10 +2952,13 @@ function renderAdminView(){
     </div>
 
     <div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:12px 14px">
-      <p style="font-size:11px;font-weight:800;color:${c.textMuted};text-transform:uppercase;margin-bottom:10px">🏆 Espaços mais reservados</p>
+      <p style="font-size:11px;font-weight:800;color:${c.textMuted};text-transform:uppercase;margin-bottom:10px">🏆 Espaços mais reservados — este mês</p>
       ${(()=>{
         const contagem={};
-        _todas.filter(r=>!r.reservaAutomatica&&r.status!=="recusado").forEach(r=>{
+        const agora=new Date();
+        const mesIni=`${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,'0')}-01`;
+        const mesFim=`${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,'0')}-31`;
+        _todas.filter(r=>!r.reservaAutomatica&&r.status!=="recusado"&&r.data>=mesIni&&r.data<=mesFim).forEach(r=>{
           if(r.espaco)contagem[r.espaco]=(contagem[r.espaco]||0)+1;
         });
         const ranking=Object.entries(contagem).sort((a,b)=>b[1]-a[1]).slice(0,5);
