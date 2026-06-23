@@ -2931,7 +2931,7 @@ function renderAdminView(){
     <h1 style="font-size:20px;font-weight:800;color:${c.navy}">Painel Administrativo</h1>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <div style="display:flex;background:${c.surface};border-radius:10px;padding:3px;border:1px solid ${c.border};gap:2px">
-        ${[{id:"calendario",l:"📅 Calendário"},{id:"agenda",l:"☰ Agenda"}].map(o=>`<button onclick="aSetModo('${o.id}')" style="padding:6px 14px;font-size:13px;border-radius:8px;border:1.5px solid ${_A.modoVisu===o.id?(_dark?'#1a6b47':c.navy):c.border};background:${_A.modoVisu===o.id?(_dark?'#1a6b47':c.navy):'transparent'};color:${_A.modoVisu===o.id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${o.l}</button>`).join("")}
+        ${[{id:"calendario",l:"📅 Calendário"},{id:"agenda",l:"☰ Agenda"}].map(o=>`<button data-setmodo="${o.id}" style="padding:6px 14px;font-size:13px;border-radius:8px;border:1.5px solid ${_A.modoVisu===o.id?(_dark?'#1a6b47':c.navy):c.border};background:${_A.modoVisu===o.id?(_dark?'#1a6b47':c.navy):'transparent'};color:${_A.modoVisu===o.id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${o.l}</button>`).join("")}
       </div>
       ${!isDiretor?`<button onclick="abrirGerenciarUsuarios()" style="${btn('ghost','','sm')}">👤 Usuários</button>`:""}
     </div>
@@ -2941,7 +2941,7 @@ function renderAdminView(){
   if(urgentes.length)html+=`<div style="background:linear-gradient(135deg,#f97316,#ea580c);border-radius:14px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;box-shadow:0 4px 16px rgba(249,115,22,.3)">
     <div style="width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">⚡</div>
     <div style="flex:1"><p style="font-size:13px;font-weight:800;color:#fff">${urgentes.length} agendamento${urgentes.length!==1?"s":""} urgente${urgentes.length!==1?"s":""} pendente${urgentes.length!==1?"s":""}</p><p style="font-size:11px;color:rgba(255,255,255,.8);margin-top:2px">Menos de 24h para o horário</p></div>
-    <button onclick="aVerPendentes()" style="background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.4);border-radius:10px;color:#fff;font-weight:800;font-size:12px;padding:7px 14px;cursor:pointer">Ver →</button>
+    <button id="adm-btn-ver" style="background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.4);border-radius:10px;color:#fff;font-weight:800;font-size:12px;padding:7px 14px;cursor:pointer">Ver →</button>
   </div>`;
 
   // ── FILTROS ──
@@ -3114,15 +3114,15 @@ function renderAdminView(){
 
   html+=`<div style="position:sticky;top:16px">
     <div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:10px 12px;margin-bottom:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      <div onclick="aVerHoje()" style="text-align:center;padding:8px;background:${c.bg};border-radius:8px;cursor:pointer" title="Ver agendamentos de hoje">
+      <div id="adm-kpi-hoje" style="text-align:center;padding:8px;background:${c.bg};border-radius:8px;cursor:pointer" title="Ver agendamentos de hoje">
         <p style="font-size:20px;font-weight:900;color:#1a6b47">${hoje_rs}</p>
         <p style="font-size:10px;color:${c.textMuted};font-weight:600">Hoje ↗</p>
       </div>
-      <div onclick="aVerPendentes()" style="text-align:center;padding:8px;background:${pend>0?"#fff7ed":c.bg};border-radius:8px;cursor:pointer" title="Ver pendentes">
+      <div id="adm-kpi-pend" style="text-align:center;padding:8px;background:${pend>0?"#fff7ed":c.bg};border-radius:8px;cursor:pointer" title="Ver pendentes">
         <p style="font-size:20px;font-weight:900;color:${pend>0?"#ea580c":c.textMuted}">${pend}</p>
         <p style="font-size:10px;color:${c.textMuted};font-weight:600">Pendentes ↗</p>
       </div>
-      <div onclick="aVerSemana()" style="text-align:center;padding:8px;background:${c.bg};border-radius:8px;cursor:pointer" title="Ver esta semana">
+      <div id="adm-kpi-sem" style="text-align:center;padding:8px;background:${c.bg};border-radius:8px;cursor:pointer" title="Ver esta semana">
         <p style="font-size:20px;font-weight:900;color:#7c3aed">${semana_rs}</p>
         <p style="font-size:10px;color:${c.textMuted};font-weight:600">Esta semana ↗</p>
       </div>
@@ -3203,7 +3203,7 @@ function admRow(r,showDate=false){
 }
 
 function bindAdmin(){
-  setTimeout(()=>{
+  setTimeout(()=>{ 
     const se=document.getElementById("adm-sel-espaco");
     const sp=document.getElementById("adm-sel-prof");
     const ss=document.getElementById("adm-sel-status");
@@ -3216,6 +3216,19 @@ function bindAdmin(){
     if(st2)st2.addEventListener("change",e=>{_A.fTurma=e.target.value;re();});
     if(bl)bl.addEventListener("click",()=>{_A.fEspaco="";_A.fProf="";_A.fStatus="";_A.fTurma="";re();});
     if(bh)bh.addEventListener("click",()=>{_A.historico=!_A.historico;re();});
+    // Calendário/Agenda buttons
+    document.querySelectorAll("[data-setmodo]").forEach(b=>b.addEventListener("click",()=>aSetModo(b.dataset.setmodo)));
+    // KPI buttons
+    const bHoje=document.getElementById("adm-kpi-hoje");
+    const bPend=document.getElementById("adm-kpi-pend");
+    const bSem=document.getElementById("adm-kpi-sem");
+    const bVer=document.getElementById("adm-btn-ver");
+    if(bHoje)bHoje.addEventListener("click",aVerHoje);
+    if(bPend)bPend.addEventListener("click",aVerPendentes);
+    if(bSem)bSem.addEventListener("click",aVerSemana);
+    if(bVer)bVer.addEventListener("click",aVerPendentes);
+    // Abas
+    document.querySelectorAll("[data-setaba]").forEach(b=>b.addEventListener("click",()=>aSetAba(b.dataset.setaba)));
   },50);
 }
 
