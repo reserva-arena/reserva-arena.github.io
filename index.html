@@ -182,7 +182,31 @@ async function iniciarNotificacoes(userId) {
 
 // ─── CONSTANTES ──────────────────────────────────────────────────────────────
 const ADMIN_EMAIL = "luciano.galdino@colegioarena.com.br";
-const HORARIOS    = ["07:10","08:00","09:10","10:00","11:10","12:00","12:50","13:40","14:30","15:20","16:10","17:00"];
+
+// ── HORÁRIOS COM INTERVALOS MARCADOS ──
+// tipo: "aula" = horário normal (selecionável)
+// tipo: "intervalo" = pausa entre aulas (cinza, não selecionável)
+const HORARIOS_COMPLETO = [
+  {hora:"07:10", tipo:"aula"},
+  {hora:"08:00", tipo:"aula"},
+  {hora:"08:50", tipo:"intervalo"},
+  {hora:"09:10", tipo:"aula"},
+  {hora:"10:00", tipo:"aula"},
+  {hora:"10:50", tipo:"intervalo"},
+  {hora:"11:10", tipo:"aula"},
+  {hora:"12:00", tipo:"aula"},
+  {hora:"12:50", tipo:"intervalo"},
+  {hora:"13:30", tipo:"aula"},
+  {hora:"14:30", tipo:"aula"},
+  {hora:"15:20", tipo:"aula"},
+  {hora:"16:10", tipo:"aula"},
+  {hora:"17:00", tipo:"aula"}
+];
+
+// ── HORÁRIOS (COMPATIBILIDADE) ──
+// Apenas as horas válidas de aula (sem intervalos)
+// Mantém compatibilidade com código que usa indexOf(), etc.
+const HORARIOS = HORARIOS_COMPLETO.filter(h => h.tipo === "aula").map(h => h.hora);
 
 // ── ESPAÇOS ──
 // multiHorario: true  → formulário de range (início→fim) em vez de blocos individuais
@@ -1877,7 +1901,9 @@ const selTurma=(horario,val)=>`
   html+=`<div>
     <label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">🕐 Horário de início *</label>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px">
-      ${HORARIOS.map(h=>{
+      ${HORARIOS_COMPLETO.map(item=>{
+        const h=item.hora;
+        const isIntervalo=item.tipo==="intervalo";
         const ocp=ocpFire.includes(h)&&h!==b.horario;
         const sel2=h===b.horario;
         // Bloquear horários já passados no dia de hoje
@@ -1886,11 +1912,8 @@ const selTurma=(horario,val)=>`
         const [hh,mm]=h.split(':').map(Number);
         const passado=_MA.data===hojeStr&&(hh<agoraRef.getHours()||(hh===agoraRef.getHours()&&mm<=agoraRef.getMinutes()));
         const soninho=isBloqueado(h)&&h!==b.horario;
-        const bloq=ocp||passado||soninho;
-        return`<button onclick="maSetHorarioMulti(${i},'ini','${h}')" ${bloq?"disabled":""}
-          style="padding:8px 4px;border-radius:8px;border:${sel2?"2px solid "+c.blueMid:bloq?"1.5px solid "+c.redBorder:"1.5px solid "+c.greenBorder};background:${sel2?c.greenBg:bloq?c.redBg:c.surface};color:${sel2?c.blueMid:bloq?c.red:c.green};font-size:11px;font-weight:700;cursor:${bloq?"not-allowed":"pointer"};font-family:'DM Mono',monospace;display:flex;flex-direction:column;align-items:center;gap:2px">
-          ${h}<span style="font-size:8px">${ocp?"● Ocup":passado?"● Pass":soninho?"🌙 Son":sel2?"✓ Ini":"○"}</span>
-        </button>`;
+        const bloq=ocp||passado||soninho||isIntervalo;
+        return`<button onclick="maSetHorarioMulti(${i},'ini','${h}')" ${bloq?"disabled":""}\n          style="padding:8px 4px;border-radius:8px;border:${sel2?"2px solid "+c.blueMid:isIntervalo?"1.5px solid #d1d5db":bloq?"1.5px solid "+c.redBorder:"1.5px solid "+c.greenBorder};background:${sel2?c.greenBg:isIntervalo?"#f3f4f6":bloq?c.redBg:c.surface};color:${sel2?c.blueMid:isIntervalo?"#9ca3af":bloq?c.red:c.green};font-size:11px;font-weight:700;cursor:${bloq?"not-allowed":"pointer"};font-family:'DM Mono',monospace;display:flex;flex-direction:column;align-items:center;gap:2px;opacity:${isIntervalo?"0.6":"1"}">\n          ${h}<span style="font-size:8px">${ocp?"● Ocup":passado?"● Pass":soninho?"🌙 Son":isIntervalo?"⏸️ Int":sel2?"✓ Ini":"○"}</span>\n        </button>`;
       }).join("")}
     </div>
   </div>`;
