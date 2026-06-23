@@ -445,6 +445,14 @@ document.addEventListener("click",function(e){
   else if(a==="toggle-hist"){_A.historico=!_A.historico;re();}
 },true);
 
+document.addEventListener("change",function(e){
+  const t=e.target;
+  if(t.id==="adm-sel-espaco"){_A.fEspaco=t.value;re();}
+  else if(t.id==="adm-sel-prof"){_A.fProf=t.value;re();}
+  else if(t.id==="adm-sel-status"){_A.fStatus=t.value;re();}
+  else if(t.id==="adm-sel-turma"){_A.fTurma=t.value;re();}
+},true);
+
 // ════════════════════════════════════════════════════════════════════════════
 // TELA PÚBLICA
 // ════════════════════════════════════════════════════════════════════════════
