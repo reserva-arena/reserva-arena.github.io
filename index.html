@@ -1227,7 +1227,7 @@ function renderDiretor(){
 
   let html=`<div>
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">
-    <h1 style="font-size:20px;font-weight:800;color:${c.navy}">🎓 Painel do Diretor</h1>
+    <h1 style="font-size:20px;font-weight:800;color:${c.navy}">🎓 Painel da Direção</h1>
     <div style="display:flex;background:${c.surface};border-radius:10px;padding:3px;border:1px solid ${c.border};gap:2px">
       ${[{id:"agenda",l:"☰ Agenda"},{id:"calendario",l:"📅 Calendário"}].map(o=>`<button onclick="window._DR.modoVisu='${o.id}';re()" style="padding:6px 14px;font-size:13px;border-radius:8px;border:1.5px solid ${_DR.modoVisu===o.id?c.navy:c.border};background:${_DR.modoVisu===o.id?c.navy:"transparent"};color:${_DR.modoVisu===o.id?"#fff":c.text};font-weight:700;cursor:pointer;font-family:inherit">${o.l}</button>`).join("")}
     </div>
@@ -3290,7 +3290,7 @@ function modalGerenciarHTML(){
                 <option value="marketing">📸 Equipe de Marketing</option>
                 <option value="ti">💻 T.I.</option>
                 <option value="coord_ti">🖥️ Coord. T.I.</option>
-                <option value="diretor">🎓 Diretor</option>
+                <option value="diretor">🎓 Direção</option>
               </select></div>
             <button onclick="guCriarDireto()" style="background:#1a6b47;color:#fff;border:none;border-radius:8px;font-weight:700;padding:10px 18px;font-size:13.5px;cursor:pointer;height:42px;width:100%">+ Cadastrar</button>
           </div>
@@ -3344,7 +3344,7 @@ function renderGuLista(){
   if(!window._GU_FILTRO)window._GU_FILTRO="";
   
   const perfilOrdem={"diretor":1,"coord_inf":2,"coord_fund1":3,"coord_fund2":4,"coord_ti":5,"ti":6,"marketing":7,"fotografo":7,"professor":8,"sem_acesso":9};
-  const perfilLabel=u=>u.perfil==="fotografo"||u.perfil==="marketing"?"📸 Marketing":u.perfil==="ti"?"💻 T.I.":u.perfil==="coord_inf"?"👶 Coord. Inf.":u.perfil==="coord_fund1"?"📚 Coord. Fund.1":u.perfil==="coord_fund2"?"🎓 Coord. Fund.2":u.perfil==="coord_ti"?"🖥️ Coord. T.I.":u.perfil==="diretor"?"🎓 Diretor":"👨‍🏫 Professor";
+  const perfilLabel=u=>u.perfil==="fotografo"||u.perfil==="marketing"?"📸 Marketing":u.perfil==="ti"?"💻 T.I.":u.perfil==="coord_inf"?"👶 Coord. Inf.":u.perfil==="coord_fund1"?"📚 Coord. Fund.1":u.perfil==="coord_fund2"?"🎓 Coord. Fund.2":u.perfil==="coord_ti"?"🖥️ Coord. T.I.":u.perfil==="diretor"?"🎓 Direção":"👨‍🏫 Professor";
 
   let profs=_usuarios.filter(u=>u.perfil!=="admin");
   if(_GU_FILTRO)profs=profs.filter(u=>u.perfil===_GU_FILTRO||((_GU_FILTRO==="marketing")&&(u.perfil==="fotografo"||u.perfil==="marketing")));
@@ -3356,7 +3356,7 @@ function renderGuLista(){
     <p style="font-size:12px;font-weight:800;color:#132318;text-transform:uppercase">Usuários (${profs.length})</p>
     <select onchange="window._GU_FILTRO=this.value;renderGuLista()" style="padding:6px 10px;border-radius:8px;border:1.5px solid #c7dfd4;font-size:12px;font-family:inherit;outline:none;cursor:pointer">
       <option value="">Todos os perfis</option>
-      <option value="diretor" ${_GU_FILTRO==="diretor"?"selected":""}>🎓 Diretor</option>
+      <option value="diretor" ${_GU_FILTRO==="diretor"?"selected":""}>🎓 Direção</option>
       <option value="coord_inf" ${_GU_FILTRO==="coord_inf"?"selected":""}>👶 Coord. Inf.</option>
       <option value="coord_fund1" ${_GU_FILTRO==="coord_fund1"?"selected":""}>📚 Coord. Fund.1</option>
       <option value="coord_fund2" ${_GU_FILTRO==="coord_fund2"?"selected":""}>🎓 Coord. Fund.2</option>
@@ -3409,7 +3409,7 @@ function renderGuLista(){
   h+='<option value="marketing">📸 Equipe de Marketing</option>';
   h+='<option value="ti">💻 T.I.</option>';
   h+='<option value="coord_ti">🖥️ Coord. T.I.</option>';
-  h+='<option value="diretor">🎓 Diretor</option>';
+  h+='<option value="diretor">🎓 Direção</option>';
   h+='<option value="sem_acesso">🔒 Sem acesso</option>';
   h+='</select>';
   h+='<div id="gu-edit-flash" style="margin-bottom:10px"></div>';
