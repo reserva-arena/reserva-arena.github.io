@@ -335,7 +335,7 @@ function getSegunda(s){
 function horariosRange(ini,fim){
   const iIni=HORARIOS.indexOf(ini),iFim=HORARIOS.indexOf(fim);
   if(iIni<0||iFim<0||iFim<iIni)return ini?[ini]:[];
-  return HORARIOS.slice(iIni,iFim+1);
+  return HORARIOS.slice(iIni,iFim);
 }
 
 const ESPACO_ICON={
