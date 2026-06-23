@@ -427,31 +427,8 @@ function re(){if(_trocandoSenha)return;
   if(_usuario.perfil==="fotografo"||_usuario.perfil==="marketing"){renderMarketing();return;}
   if(_usuario.perfil==="ti"||_usuario.perfil==="coord_ti"){renderTI();return;}
   if(_usuario.perfil==="coord_inf"||_usuario.perfil==="coord_fund1"||_usuario.perfil==="coord_fund2"){renderCoord();return;}
-  if(_usuario.perfil==="diretor"){carregarTodas();_adminVisu="diretor";if(!_A.mesCal){const d=new Date();_A.mesCal={a:d.getFullYear(),m:d.getMonth()};}_A.modoVisu="calendario";renderApp();return;}
   renderApp();
 }
-
-// Delegação global de eventos para botões admin
-document.addEventListener("click",function(e){
-  const t=e.target.closest("[data-action]");
-  if(!t)return;
-  const a=t.dataset.action,v=t.dataset.value||"";
-  if(a==="setmodo"&&window.aSetModo){window.aSetModo(v);}
-  else if(a==="setaba"&&window.aSetAba){window.aSetAba(v);}
-  else if(a==="ver-hoje"&&window.aVerHoje){window.aVerHoje();}
-  else if(a==="ver-pendentes"&&window.aVerPendentes){window.aVerPendentes();}
-  else if(a==="ver-semana"&&window.aVerSemana){window.aVerSemana();}
-  else if(a==="limpar-filtros"){if(window._A){_A.fEspaco="";_A.fProf="";_A.fStatus="";_A.fTurma="";}if(window.re)re();}
-  else if(a==="toggle-hist"){if(window._A)_A.historico=!_A.historico;if(window.re)re();}
-},true);
-
-document.addEventListener("change",function(e){
-  const t=e.target;
-  if(t.id==="adm-sel-espaco"){_A.fEspaco=t.value;re();}
-  else if(t.id==="adm-sel-prof"){_A.fProf=t.value;re();}
-  else if(t.id==="adm-sel-status"){_A.fStatus=t.value;re();}
-  else if(t.id==="adm-sel-turma"){_A.fTurma=t.value;re();}
-},true);
 
 // ════════════════════════════════════════════════════════════════════════════
 // TELA PÚBLICA
@@ -1184,182 +1161,6 @@ window.coordEditar=async(id)=>{
   }catch(e){alert("Erro ao editar: "+e.message);}
 };
 
-window.diretorEditar=async(id)=>{
-  const r=_todas.find(r=>r.id===id);
-  if(!r)return;
-  const novoConteudo=prompt("Editar descrição da aula:",r.conteudo||"");
-  if(novoConteudo===null)return;
-  try{
-    await updateDoc(doc(db,"reservas",id),{
-      conteudo:novoConteudo,
-      editadoPorCoord:true,
-      editadoPorCoordNome:_usuario?.nome||"Diretor",
-      editadoPorCoordEm:new Date().toISOString()
-    });
-    // Notifica apenas admins
-    _usuarios.filter(u=>u.perfil==="admin").forEach(async adm=>{
-      await gravarNotif(adm.id,"✏️ Agendamento editado pelo Diretor",`${r.espaco} — ${r.professor} — ${r.data.split("-").reverse().join("/")} às ${r.horario}`,"info");
-    });
-    re();
-  }catch(e){alert("Erro ao editar: "+e.message);}
-};
-
-window.diretorExcluir=async(id)=>{
-  const r=_todas.find(r=>r.id===id);
-  if(!r)return;
-  if(!confirm(`Excluir agendamento de ${r.professor} em ${r.espaco} no dia ${r.data.split("-").reverse().join("/")}?`))return;
-  try{
-    await deleteDoc(doc(db,"reservas",id));
-    // Notifica apenas admins
-    _usuarios.filter(u=>u.perfil==="admin").forEach(async adm=>{
-      await gravarNotif(adm.id,"🗑️ Agendamento excluído pelo Diretor",`${r.espaco} — ${r.professor} — ${r.data.split("-").reverse().join("/")} às ${r.horario}`,"info");
-    });
-    re();
-  }catch(e){alert("Erro ao excluir: "+e.message);}
-};
-
-// ════════════════════════════════════════════════════════════════════════════
-// DIRETOR
-// ════════════════════════════════════════════════════════════════════════════
-if(!window._DR)window._DR={modoVisu:"agenda",fProf:"",fTurma:"",fEspaco:"",fStatus:"",mesCal:null};
-
-function renderDiretor(){
-  const c=C(),h=fmtHoje();
-  if(!window._DR)window._DR={modoVisu:"calendario",fProf:"",fTurma:"",fEspaco:"",fStatus:"",mesCal:null};
-  if(!_DR.mesCal){const d=new Date();_DR.mesCal={a:d.getFullYear(),m:d.getMonth()};}
-
-  const filtradas=_todas.filter(r=>{
-    if(r.reservaAutomatica)return false;
-    if(_DR.fEspaco&&r.espaco!==_DR.fEspaco)return false;
-    if(_DR.fProf&&r.professor!==_DR.fProf)return false;
-    if(_DR.fStatus&&r.status!==_DR.fStatus)return false;
-    if(_DR.fTurma&&(r.turmaInicio||r.turma||"")!==_DR.fTurma)return false;
-    return true;
-  });
-
-  const pend=_todas.filter(r=>r.status==="pendente"&&!r.reservaAutomatica).length;
-  const hojeRs=_todas.filter(r=>r.data===h&&r.status!=="recusado"&&!r.reservaAutomatica).length;
-  const semIni=getSegunda(h);
-  const semFim=addDias(semIni,4);
-  const semRs=_todas.filter(r=>r.data>=semIni&&r.data<=semFim&&r.status!=="recusado"&&!r.reservaAutomatica).length;
-
-  // Profs e turmas para filtros
-  const profs=[...new Set(_todas.filter(r=>!r.reservaAutomatica).map(r=>r.professor).filter(Boolean))].sort();
-  const turmas=[...new Set(_todas.filter(r=>!r.reservaAutomatica).map(r=>r.turmaInicio||r.turma||"").filter(Boolean))].sort();
-
-  let html=`<div>
-  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">
-    <h1 style="font-size:20px;font-weight:800;color:${c.navy}">🎓 Painel do Diretor</h1>
-    <div style="display:flex;background:${c.surface};border-radius:10px;padding:3px;border:1px solid ${c.border};gap:2px">
-      ${[{id:"agenda",l:"☰ Agenda"},{id:"calendario",l:"📅 Calendário"}].map(o=>`<button onclick="window._DR.modoVisu='${o.id}';re()" style="padding:6px 14px;font-size:13px;border-radius:8px;border:1.5px solid ${_DR.modoVisu===o.id?c.navy:c.border};background:${_DR.modoVisu===o.id?c.navy:"transparent"};color:${_DR.modoVisu===o.id?"#fff":c.text};font-weight:700;cursor:pointer;font-family:inherit">${o.l}</button>`).join("")}
-    </div>
-  </div>
-
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:16px">
-    ${[{n:hojeRs,l:"Hoje 📌",c:c.green,bg:c.greenBg},{n:pend,l:"Pendentes ⏳",c:"#d97706",bg:"#fffbeb"},{n:semRs,l:"Esta semana 📅",c:c.blueMid,bg:"#eff6ff"},{n:_todas.filter(r=>!r.reservaAutomatica&&r.status!=="recusado").length,l:"Total 📊",c:c.navy,bg:c.bg}].map(k=>`
-      <div style="background:${k.bg};border:1.5px solid ${c.border};border-radius:12px;padding:14px;text-align:center">
-        <p style="font-size:26px;font-weight:900;color:${k.c}">${k.n}</p>
-        <p style="font-size:11px;color:${c.textMuted};margin-top:2px">${k.l}</p>
-      </div>`).join("")}
-  </div>
-
-  <div style="display:grid;grid-template-columns:1fr 280px;gap:16px;align-items:start">
-    <div>
-      <div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:14px;margin-bottom:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px">
-        <select onchange="window._DR.fProf=this.value;re()" style="padding:8px 10px;border-radius:8px;border:1.5px solid ${c.border};background:${c.surface};color:${c.text};font-size:12px;font-family:inherit;outline:none">
-          <option value="">👤 Todos professores</option>
-          ${profs.map(p=>`<option value="${p}" ${_DR.fProf===p?"selected":""}>${p}</option>`).join("")}
-        </select>
-        <select onchange="window._DR.fTurma=this.value;re()" style="padding:8px 10px;border-radius:8px;border:1.5px solid ${c.border};background:${c.surface};color:${c.text};font-size:12px;font-family:inherit;outline:none">
-          <option value="">🎓 Todas turmas</option>
-          ${turmas.map(t=>`<option value="${t}" ${_DR.fTurma===t?"selected":""}>${t}</option>`).join("")}
-        </select>
-        <select onchange="window._DR.fEspaco=this.value;re()" style="padding:8px 10px;border-radius:8px;border:1.5px solid ${c.border};background:${c.surface};color:${c.text};font-size:12px;font-family:inherit;outline:none">
-          <option value="">🏛️ Todos espaços</option>
-          ${ESPACOS.map(e=>`<option value="${e.nome}" ${_DR.fEspaco===e.nome?"selected":""}>${e.nome}</option>`).join("")}
-        </select>
-        <select onchange="window._DR.fStatus=this.value;re()" style="padding:8px 10px;border-radius:8px;border:1.5px solid ${c.border};background:${c.surface};color:${c.text};font-size:12px;font-family:inherit;outline:none">
-          <option value="">● Todos status</option>
-          <option value="confirmado" ${_DR.fStatus==="confirmado"?"selected":""}>✅ Confirmado</option>
-          <option value="pendente" ${_DR.fStatus==="pendente"?"selected":""}>⏳ Pendente</option>
-          <option value="recusado" ${_DR.fStatus==="recusado"?"selected":""}>❌ Recusado</option>
-        </select>
-      </div>
-      ${_DR.modoVisu==="calendario"?`<div style="padding:0">${calMensalAdminHTML(_DR.mesCal.a,_DR.mesCal.m,filtradas,h,"dr")}</div>`:diretorAgendaHTML(filtradas,h,c)}
-    </div>
-    <div style="display:flex;flex-direction:column;gap:12px">
-      <div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:12px 14px">
-        <p style="font-size:11px;font-weight:800;color:${c.textMuted};text-transform:uppercase;margin-bottom:10px">🏆 Espaços mais reservados — este mês</p>
-        ${(()=>{
-          const contagem={};
-          const agora=new Date();
-          const mesIni=`${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,"0")}-01`;
-          const mesFim=`${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,"0")}-31`;
-          _todas.filter(r=>!r.reservaAutomatica&&r.status!=="recusado"&&r.data>=mesIni&&r.data<=mesFim).forEach(r=>{
-            if(r.espaco)contagem[r.espaco]=(contagem[r.espaco]||0)+1;
-          });
-          const ranking=Object.entries(contagem).sort((a,b)=>b[1]-a[1]).slice(0,5);
-          const max=ranking[0]?.[1]||1;
-          const cores=["#1a6b47","#0369a1","#7c3aed","#ea580c","#d97706"];
-          return ranking.map(([espaco,total],i)=>`
-            <div style="margin-bottom:10px">
-              <div style="display:flex;justify-content:space-between;margin-bottom:3px">
-                <span style="font-size:11px;font-weight:700;color:${c.navy};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70%">${espaco}</span>
-                <span style="font-size:11px;font-weight:800;color:${cores[i]}">${total}</span>
-              </div>
-              <div style="height:5px;background:${c.borderLight};border-radius:99px">
-                <div style="height:5px;background:${cores[i]};border-radius:99px;width:${Math.round(total/max*100)}%"></div>
-              </div>
-            </div>`).join("");
-        })()}
-      </div>
-    </div>
-  </div>
-  </div>`;
-
-  $("app").innerHTML=html;
-}
-
-function diretorAgendaHTML(filtradas,h,c){
-  const porData={};
-  const fonte=filtradas.filter(r=>r.data>=h).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
-  fonte.forEach(r=>{if(!porData[r.data])porData[r.data]=[];porData[r.data].push(r);});
-  if(!fonte.length)return`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">📋</p><p style="margin-top:12px;font-size:14px">Nenhum agendamento encontrado.</p></div>`;
-  let html="";
-  Object.entries(porData).forEach(([data,rs])=>{
-    const[,m2,d2]=data.split("-");const isH=data===h;
-    html+=`<div style="margin-bottom:16px">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-        <span style="font-size:11px;font-weight:700;color:${isH?c.green:c.textMid};background:${isH?c.greenBg:"transparent"};padding:${isH?"2px 8px":"0"};border-radius:${isH?20:0}px">${isH?"📌 Hoje":`${d2}/${m2}`}</span>
-        <div style="flex:1;height:1px;background:${c.borderLight}"></div>
-      </div>`;
-    rs.forEach(r=>{
-      const isPend=r.status==="pendente",isRec=r.status==="recusado";
-      html+=`<div style="background:${c.surface};border-radius:10px;border:1.5px solid ${isPend?c.amberBorder:isRec?"#fecaca":c.greenBorder};border-left:4px solid ${isPend?c.amber:isRec?"#dc2626":"#1a6b47"};padding:12px 14px;margin-bottom:8px">
-        <div style="display:flex;align-items:flex-start;gap:8px">
-          <span style="font-family:'DM Mono',monospace;font-weight:800;color:${isPend?c.amber:"#1a6b47"};font-size:13px;flex-shrink:0">${r.horario}</span>
-          <div style="flex:1">
-            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px">
-              <span style="font-size:13px;font-weight:700;color:${c.navy}">${r.espaco}</span>
-              ${isPend?`<span style="background:#fffbeb;color:${c.amber};font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;border:1px solid ${c.amberBorder}">⏳ Pendente</span>`:isRec?`<span style="background:#fef2f2;color:#dc2626;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px">❌ Recusado</span>`:`<span style="background:${c.greenBg};color:${c.green};font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px">✅ Confirmado</span>`}
-              ${isPend?(()=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);const temAV=eo?.tipo==="audiovisual"||Number(r.bibMic)>0||Number(r.bibCaixa)>0||Number(r.bibProj)>0||Number(r.microfones)>0||Number(r.caixasom)>0||Number(r.projetor)>0;const temFoto=r.precisaFoto||r.precisaVideo;if(temAV)return`<span style="font-size:10px;font-weight:800;background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;padding:2px 7px;border-radius:10px">🖥️ Ag. T.I.</span>`;if(temFoto)return`<span style="font-size:10px;font-weight:800;background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe;padding:2px 7px;border-radius:10px">📸 Ag. Mkt</span>`;return`<span style="font-size:10px;font-weight:800;background:#fffbeb;color:#d97706;border:1px solid #fde68a;padding:2px 7px;border-radius:10px">👤 Ag. Admin</span>`;})():""}
-            </div>
-            <p style="font-size:12px;color:${c.textMid}">👤 ${r.professor} · ${r.turmaInicio||r.turma||"—"}</p>
-            ${r.conteudo?`<p style="font-size:12px;color:${c.textMuted};margin-top:2px">${r.conteudo}</p>`:""}
-            ${r.editadoPorCoord?`<span style="font-size:10px;color:#7c3aed;font-weight:700">✏️ Editado por ${r.editadoPorCoordNome||"Coord."}</span>`:""}
-          </div>
-          <div style="display:flex;gap:6px;flex-shrink:0">
-            <button onclick="diretorEditar('${r.id}')" style="padding:5px 10px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.textMid};font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">✏️</button>
-            <button onclick="diretorExcluir('${r.id}')" style="padding:5px 10px;border-radius:8px;border:1.5px solid #fecaca;background:transparent;color:#dc2626;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">🗑️</button>
-          </div>
-        </div>
-      </div>`;
-    });
-    html+=`</div>`;
-  });
-  return html;
-}
-
 function renderSemAcesso(){
   const c=C();
   $("app").innerHTML=`<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:${c.bg};padding:1rem"><div style="text-align:center;max-width:380px"><div style="width:72px;height:72px;border-radius:18px;background:${c.redBg};display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 20px">🔒</div><h2 style="font-size:20px;font-weight:800;color:${c.navy};margin-bottom:8px">Acesso não autorizado</h2><p style="font-size:13.5px;color:${c.textMid};margin-bottom:24px">A conta <strong>${_usuario?.email}</strong> não foi habilitada.</p><button onclick="signOut(auth)" style="${btn("navy")}">Sair</button></div></div>`;
@@ -1369,7 +1170,7 @@ function renderSemAcesso(){
 // APP PRINCIPAL
 // ════════════════════════════════════════════════════════════════════════════
 function renderApp(){
-  const c=C(),isAdmin=_usuario?.perfil==="admin"||_usuario?.perfil==="diretor";
+  const c=C(),isAdmin=_usuario?.perfil==="admin";
   $("app").innerHTML=`
   <div style="min-height:100vh;background:${c.bg};width:100%" translate="no">
     <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#0d2b1a,#1a6b47)"};border-bottom:1px solid ${_dark?c.border:"transparent"};padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100;box-shadow:0 1px 6px rgba(19,35,24,.07);width:100%;box-sizing:border-box">
@@ -1379,7 +1180,7 @@ function renderApp(){
       </div>
       <div style="display:flex;align-items:center;gap:8px">
         <button onclick="irInicio()" title="Início" style="background:${_dark?c.surface:'rgba(255,255,255,.15)'};border:1.5px solid ${_dark?c.border:'rgba(255,255,255,.3)'};border-radius:20px;padding:4px 10px;height:34px;cursor:pointer;display:flex;align-items:center;gap:5px;font-size:15px;flex-shrink:0;font-family:inherit">🏠</button>
-        ${isAdmin?`<select onchange="setAdminVisu(this.value)" class="admin-visu-select" style="background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.4);border-radius:20px;padding:3px 8px;height:30px;cursor:pointer;font-size:11px;font-family:inherit;font-weight:700;color:#fff;outline:none"><option value="admin" ${_adminVisu==="admin"?"selected":""} style="color:#132318;background:#fff">🔧 Adm</option><option value="professor" ${_adminVisu==="professor"?"selected":""} style="color:#132318;background:#fff">👨‍🏫 Prof</option><option value="ti" ${_adminVisu==="ti"?"selected":""} style="color:#132318;background:#fff">💻 TI</option><option value="marketing" ${_adminVisu==="marketing"?"selected":""} style="color:#132318;background:#fff">📸 Mkt</option><option value="diretor" ${_adminVisu==="diretor"?"selected":""} style="color:#132318;background:#fff">🎓 Dir</option></select>`:""}
+        ${isAdmin?`<select onchange="setAdminVisu(this.value)" class="admin-visu-select" style="background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.4);border-radius:20px;padding:3px 8px;height:30px;cursor:pointer;font-size:11px;font-family:inherit;font-weight:700;color:#fff;outline:none"><option value="admin" ${_adminVisu==="admin"?"selected":""} style="color:#132318;background:#fff">🔧 Adm</option><option value="professor" ${_adminVisu==="professor"?"selected":""} style="color:#132318;background:#fff">👨‍🏫 Prof</option><option value="ti" ${_adminVisu==="ti"?"selected":""} style="color:#132318;background:#fff">💻 TI</option><option value="marketing" ${_adminVisu==="marketing"?"selected":""} style="color:#132318;background:#fff">📸 Mkt</option></select>`:""}
         ${avatarHTML(_usuario?.nome,28,isAdmin?"purple":"navy")}
         <div class="header-nome" style="line-height:1.2;display:none" id="header-nome-block"><p style="font-size:12px;font-weight:700;color:${_dark?c.navy:'#ffffff'}">${_usuario?.nome||""}</p><p style="font-size:10px;color:${_dark?(isAdmin?"#6d28d9":c.blueMid):'rgba(255,255,255,.8)'};font-weight:700;text-transform:uppercase">${_usuario?.perfil||""}</p></div>
         <button id="sino-btn" onclick="abrirPainelNotif()" title="Notificações" style="display:none;position:relative;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:30px;height:30px;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;font-family:inherit">🔔<span id="sino-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:#dc2626;color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:99px;align-items:center;justify-content:center;padding:0 3px;font-family:inherit"></span></button>
@@ -1389,7 +1190,7 @@ function renderApp(){
       </div>
     </header>
     <div id="main-content" style="max-width:100%;width:100%;margin:0 auto;padding:20px 20px;overflow-x:hidden;box-sizing:border-box">
-      <div style="max-width:1200px;margin:0 auto;width:100%">${isAdmin&&_adminVisu==="admin"?renderAdminView():isAdmin&&_adminVisu==="ti"?renderTIInline():isAdmin&&_adminVisu==="marketing"?renderMarketingInline():isAdmin&&(_adminVisu==="diretor"||_usuario?.perfil==="diretor")?renderAdminView():renderProfessorView()}</div>
+      <div style="max-width:1200px;margin:0 auto;width:100%">${isAdmin&&_adminVisu==="admin"?renderAdminView():isAdmin&&_adminVisu==="ti"?renderTIInline():isAdmin&&_adminVisu==="marketing"?renderMarketingInline():renderProfessorView()}</div>
     </div>
     <footer style="margin-top:40px;padding:16px 24px;border-top:1px solid ${c.border};background:${_dark?'#0a1a12':'#0d2b1a'};text-align:center">
       <p style="font-size:10px;color:rgba(255,255,255,.5)">Reserva de Espaços e Equipamentos · Dev: Luciano Galdino · Frontend: HTML · CSS · JS · ☁️ GitHub Pages · Backend: 🔥 Firebase</p>
@@ -1408,7 +1209,6 @@ window.setAdminVisu=(v)=>{
   if(v==="professor"){_P.modoProf="ver";_P.modoCard="lista";_P.modoVisu="semana";_P.semIni=getSegunda(fmtHoje());_P.diaSel=null;_P.filtroGrade="meus";_P.mostrarHistorico=false;_P.filtroPendente=false;}
   if(v==="ti"&&window._TI)_TI.aba="minhas";
   if(v==="marketing"&&window._MK)_MK.aba="minhas";
-  if(v==="diretor"){window._DR={modoVisu:"calendario",fProf:"",fTurma:"",fEspaco:"",fStatus:"",mesCal:{a:new Date().getFullYear(),m:new Date().getMonth()}};if(!_A.mesCal){const d=new Date();_A.mesCal={a:d.getFullYear(),m:d.getMonth()};}_A.modoVisu="calendario";}
   re();
 };
 window.irInicio=()=>{
@@ -2933,14 +2733,12 @@ let _A={modoVisu:"calendario",aba:"reservas",fEspaco:"",fProf:"",fStatus:"",fTur
 
 function renderAdminView(){
   const c=C(),h=fmtHoje();
-  const isDiretor=_adminVisu==="diretor"||_usuario?.perfil==="diretor";
   if(!_A.mesCal){const d=new Date();_A.mesCal={a:d.getFullYear(),m:d.getMonth()};}
   const filtradas=_todas.filter(r=>{
     if(r.reservaAutomatica)return false;
     if(_A.fEspaco&&r.espaco!==_A.fEspaco)return false;
     if(_A.fProf&&r.professor!==_A.fProf)return false;
     if(_A.fStatus&&r.status!==_A.fStatus)return false;
-    if(_A.fTurma&&(r.turmaInicio||r.turma||"")!==_A.fTurma)return false;
     return true;
   });
   const urgentes=_todas.filter(r=>r.status==="pendente"&&!r.reservaAutomatica&&isUrgente(r.data,r.horario));
@@ -2953,9 +2751,9 @@ function renderAdminView(){
     <h1 style="font-size:20px;font-weight:800;color:${c.navy}">Painel Administrativo</h1>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <div style="display:flex;background:${c.surface};border-radius:10px;padding:3px;border:1px solid ${c.border};gap:2px">
-        ${[{id:"calendario",l:"📅 Calendário"},{id:"agenda",l:"☰ Agenda"}].map(o=>`<button data-action="setmodo" data-value="${o.id}" style="padding:6px 14px;font-size:13px;border-radius:8px;border:1.5px solid ${_A.modoVisu===o.id?(_dark?'#1a6b47':c.navy):c.border};background:${_A.modoVisu===o.id?(_dark?'#1a6b47':c.navy):'transparent'};color:${_A.modoVisu===o.id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${o.l}</button>`).join("")}
+        ${[{id:"calendario",l:"📅 Calendário"},{id:"agenda",l:"☰ Agenda"}].map(o=>`<button onclick="aSetModo('${o.id}')" style="padding:6px 14px;font-size:13px;border-radius:8px;border:1.5px solid ${_A.modoVisu===o.id?(_dark?'#1a6b47':c.navy):c.border};background:${_A.modoVisu===o.id?(_dark?'#1a6b47':c.navy):'transparent'};color:${_A.modoVisu===o.id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${o.l}</button>`).join("")}
       </div>
-      ${!isDiretor?`<button onclick="abrirGerenciarUsuarios()" style="${btn('ghost','','sm')}">👤 Usuários</button>`:""}
+      <button onclick="abrirGerenciarUsuarios()" style="${btn("ghost","","sm")}">👤 Usuários</button>
     </div>
   </div>`;
 
@@ -2963,7 +2761,7 @@ function renderAdminView(){
   if(urgentes.length)html+=`<div style="background:linear-gradient(135deg,#f97316,#ea580c);border-radius:14px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;box-shadow:0 4px 16px rgba(249,115,22,.3)">
     <div style="width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">⚡</div>
     <div style="flex:1"><p style="font-size:13px;font-weight:800;color:#fff">${urgentes.length} agendamento${urgentes.length!==1?"s":""} urgente${urgentes.length!==1?"s":""} pendente${urgentes.length!==1?"s":""}</p><p style="font-size:11px;color:rgba(255,255,255,.8);margin-top:2px">Menos de 24h para o horário</p></div>
-    <button data-action="ver-pendentes" style="background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.4);border-radius:10px;color:#fff;font-weight:800;font-size:12px;padding:7px 14px;cursor:pointer">Ver →</button>
+    <button onclick="aSetModo('agenda');_A.fStatus='pendente';re()" style="background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.4);border-radius:10px;color:#fff;font-weight:800;font-size:12px;padding:7px 14px;cursor:pointer">Ver →</button>
   </div>`;
 
   // ── FILTROS ──
@@ -2973,8 +2771,8 @@ function renderAdminView(){
       <select id="adm-sel-prof" style="${sel()};font-size:12px;padding:5px 8px;flex:1;min-width:100px"><option value="">👤 Professor</option>${_usuarios.map(u=>`<option value="${u.nome}" ${_A.fProf===u.nome?"selected":""}>${u.nome}</option>`).join("")}</select>
       <select id="adm-sel-turma" style="${sel()};font-size:12px;padding:5px 8px;flex:1;min-width:90px"><option value="">🎓 Turma</option>${TURMAS.map(t=>`<option value="${t}" ${_A.fTurma===t?"selected":""}>${t}</option>`).join("")}</select>
       <select id="adm-sel-status" style="${sel()};font-size:12px;padding:5px 8px;min-width:90px"><option value="">● Status</option><option value="confirmado" ${_A.fStatus==="confirmado"?"selected":""}>✅ Confirmado</option><option value="pendente" ${_A.fStatus==="pendente"?"selected":""}>⏳ Pendente</option><option value="recusado" ${_A.fStatus==="recusado"?"selected":""}>❌ Recusado</option></select>
-      ${_A.fEspaco||_A.fProf||_A.fStatus||_A.fTurma?`<button data-action="limpar-filtros" style="${btn("ghost")};padding:5px 10px;font-size:12px">✕</button>`:""}
-      <button data-action="toggle-hist" style="background:${_A.historico?c.navy:"transparent"};border:1.5px solid ${_A.historico?c.navy:c.border};border-radius:8px;color:${_A.historico?"#fff":c.textMuted};font-size:12px;padding:5px 10px;cursor:pointer;font-weight:600;white-space:nowrap;margin-left:auto">🕐 ${_A.historico?"Ocultar":"Histórico"}</button>
+      ${_A.fEspaco||_A.fProf||_A.fStatus||_A.fTurma?`<button id="adm-btn-limpar" style="${btn("ghost")};padding:5px 10px;font-size:12px">✕</button>`:""}
+      <button id="adm-btn-hist" style="background:${_A.historico?c.navy:"transparent"};border:1.5px solid ${_A.historico?c.navy:c.border};border-radius:8px;color:${_A.historico?"#fff":c.textMuted};font-size:12px;padding:5px 10px;cursor:pointer;font-weight:600;white-space:nowrap;margin-left:auto">🕐 ${_A.historico?"Ocultar":"Histórico"}</button>
     </div>
   </div>`;
 
@@ -3073,7 +2871,7 @@ function renderAdminView(){
     const conf=filtradas.filter(r=>r.status!=="pendente"&&(_A.historico||r.data>=h)&&(!_A.fData||r.data===_A.fData)&&(!_A.fDataAte||r.data<=_A.fDataAte));
 
     html+=`<div style="display:flex;gap:4px;margin-bottom:16px;background:${c.surface};border-radius:10px;padding:4px;border:1px solid ${c.border};width:fit-content;flex-wrap:wrap">
-      ${!isDiretor?[{id:"reservas",l:"📋 Reservas"},{id:"espacos",l:"🏛️ Por Espaço"},{id:"marketing",l:"📸 Marketing"},{id:"ti",l:"💻 T.I."}].map(t=>`<button onclick="aSetAba('${t.id}')" style="padding:6px 13px;font-size:12px;white-space:nowrap;border-radius:8px;border:1.5px solid ${_A.aba===t.id?(_dark?'#1a6b47':c.navy):c.border};background:${_A.aba===t.id?(_dark?'#1a6b47':c.navy):'transparent'};color:${_A.aba===t.id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${t.l}</button>`).join(""):""}
+      ${[{id:"reservas",l:"📋 Reservas"},{id:"espacos",l:"🏛️ Por Espaço"},{id:"marketing",l:"📸 Marketing"},{id:"ti",l:"💻 T.I."}].map(t=>`<button onclick="aSetAba('${t.id}')" style="padding:6px 13px;font-size:12px;white-space:nowrap;border-radius:8px;border:1.5px solid ${_A.aba===t.id?(_dark?'#1a6b47':c.navy):c.border};background:${_A.aba===t.id?(_dark?'#1a6b47':c.navy):'transparent'};color:${_A.aba===t.id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${t.l}</button>`).join("")}
     </div>`;
 
     if(_A.aba==="reservas"){
@@ -3136,15 +2934,15 @@ function renderAdminView(){
 
   html+=`<div style="position:sticky;top:16px">
     <div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:10px 12px;margin-bottom:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      <div data-action="ver-hoje" style="text-align:center;padding:8px;background:${c.bg};border-radius:8px;cursor:pointer" title="Ver agendamentos de hoje">
+      <div onclick="aSetModo('agenda');_A.aba='reservas';_A.fStatus='';_A.fData=fmtHoje();_A.historico=true;re()" style="text-align:center;padding:8px;background:${c.bg};border-radius:8px;cursor:pointer" title="Ver agendamentos de hoje">
         <p style="font-size:20px;font-weight:900;color:#1a6b47">${hoje_rs}</p>
         <p style="font-size:10px;color:${c.textMuted};font-weight:600">Hoje ↗</p>
       </div>
-      <div data-action="ver-pendentes" style="text-align:center;padding:8px;background:${pend>0?"#fff7ed":c.bg};border-radius:8px;cursor:pointer" title="Ver pendentes">
+      <div onclick="aSetModo('agenda');_A.aba='reservas';_A.fStatus='pendente';_A.fData='';_A.fDataAte='';re()" style="text-align:center;padding:8px;background:${pend>0?"#fff7ed":c.bg};border-radius:8px;cursor:pointer" title="Ver pendentes">
         <p style="font-size:20px;font-weight:900;color:${pend>0?"#ea580c":c.textMuted}">${pend}</p>
         <p style="font-size:10px;color:${c.textMuted};font-weight:600">Pendentes ↗</p>
       </div>
-      <div data-action="ver-semana" style="text-align:center;padding:8px;background:${c.bg};border-radius:8px;cursor:pointer" title="Ver esta semana">
+      <div onclick="aSetModo('agenda');_A.aba='reservas';_A.fStatus='';_A.fData='';_A.fDataAte=h7;_A.historico=false;re()" style="text-align:center;padding:8px;background:${c.bg};border-radius:8px;cursor:pointer" title="Ver esta semana">
         <p style="font-size:20px;font-weight:900;color:#7c3aed">${semana_rs}</p>
         <p style="font-size:10px;color:${c.textMuted};font-weight:600">Esta semana ↗</p>
       </div>
@@ -3215,17 +3013,16 @@ function admRow(r,showDate=false){
       </div>
     </div>
     <div style="display:flex;gap:5px;flex-shrink:0;align-items:center">
-      ${!isDiretor?`<button onclick="abrirEdicao('${r.id}')" title="Editar agendamento" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:12px;padding:5px 8px;display:flex;align-items:center;gap:3px;font-family:inherit">✏️ Editar</button>`:""}
-      ${isDiretor&&r.status==="pendente"?(()=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);const temAV=eo?.tipo==="audiovisual"||Number(r.bibMic)>0||Number(r.bibCaixa)>0||Number(r.bibProj)>0||Number(r.microfones)>0||Number(r.caixasom)>0||Number(r.projetor)>0;const temFoto=r.precisaFoto||r.precisaVideo;if(temAV)return`<span style="font-size:10px;font-weight:800;background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;padding:2px 8px;border-radius:10px">🖥️ Ag. T.I.</span>`;if(temFoto)return`<span style="font-size:10px;font-weight:800;background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe;padding:2px 8px;border-radius:10px">📸 Ag. Mkt</span>`;return`<span style="font-size:10px;font-weight:800;background:#fffbeb;color:#d97706;border:1px solid #fde68a;padding:2px 8px;border-radius:10px">👤 Ag. Admin</span>`;})():""}
-      ${!isDiretor&&r.status==="pendente"?`<button onclick="aModerar('${r.id}','confirmado')" style="${btn('success','','sm')}">✓</button><button onclick="aModerar('${r.id}','recusado')" style="${btn('danger','','sm')}">✗</button>`:""}
-      ${!isDiretor&&r.status==="confirmado"?`<button onclick="aModerar('${r.id}','recusado')" style="${btn('danger','','sm')}">✕</button>`:""}
-      ${!isDiretor?`<button onclick="aExcluir('${r.id}')" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:13px;padding:4px">🗑</button>`:""}
+      <button onclick="abrirEdicao('${r.id}')" title="Editar agendamento" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:12px;padding:5px 8px;display:flex;align-items:center;gap:3px;font-family:inherit">✏️ Editar</button>
+      ${r.status==="pendente"?`<button onclick="aModerar('${r.id}','confirmado')" style="${btn("success","","sm")}">✓</button><button onclick="aModerar('${r.id}','recusado')" style="${btn("danger","","sm")}">✗</button>`:""}
+      ${r.status==="confirmado"?`<button onclick="aModerar('${r.id}','recusado')" style="${btn("danger","","sm")}">✕</button>`:""}
+      <button onclick="aExcluir('${r.id}')" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:13px;padding:4px">🗑</button>
     </div>
   </div>`;
 }
 
 function bindAdmin(){
-  const bind=()=>{ 
+  setTimeout(()=>{
     const se=document.getElementById("adm-sel-espaco");
     const sp=document.getElementById("adm-sel-prof");
     const ss=document.getElementById("adm-sel-status");
@@ -3238,22 +3035,7 @@ function bindAdmin(){
     if(st2)st2.addEventListener("change",e=>{_A.fTurma=e.target.value;re();});
     if(bl)bl.addEventListener("click",()=>{_A.fEspaco="";_A.fProf="";_A.fStatus="";_A.fTurma="";re();});
     if(bh)bh.addEventListener("click",()=>{_A.historico=!_A.historico;re();});
-    const bCal=document.getElementById("adm-btn-calendario");
-    const bAgen=document.getElementById("adm-btn-agenda");
-    if(bCal)bCal.addEventListener("click",()=>aSetModo("calendario"));
-    if(bAgen)bAgen.addEventListener("click",()=>aSetModo("agenda"));
-    document.querySelectorAll("[data-setmodo]").forEach(b=>b.addEventListener("click",()=>aSetModo(b.dataset.setmodo)));
-    const bHoje=document.getElementById("adm-kpi-hoje");
-    const bPend=document.getElementById("adm-kpi-pend");
-    const bSem=document.getElementById("adm-kpi-sem");
-    const bVer=document.getElementById("adm-btn-ver");
-    if(bHoje)bHoje.addEventListener("click",aVerHoje);
-    if(bPend)bPend.addEventListener("click",aVerPendentes);
-    if(bSem)bSem.addEventListener("click",aVerSemana);
-    if(bVer)bVer.addEventListener("click",aVerPendentes);
-    document.querySelectorAll("[data-setaba]").forEach(b=>b.addEventListener("click",()=>aSetAba(b.dataset.setaba)));
-  };
-  requestAnimationFrame(()=>requestAnimationFrame(bind));
+  },50);
 }
 
 window.admDayHover=function(ds,evt){
@@ -3275,9 +3057,6 @@ window.admDayHover=function(ds,evt){
 };
 window.admDayLeave=function(){const tip=document.getElementById("adm-tip");if(tip)tip.classList.remove("show");};
 window.aSetModo=v=>{_A.modoVisu=v;re();};
-window.aVerHoje=()=>{_A.modoVisu="agenda";_A.aba="reservas";_A.fStatus="";_A.fData=fmtHoje();_A.historico=true;re();};
-window.aVerPendentes=()=>{_A.modoVisu="agenda";_A.aba="reservas";_A.fStatus="pendente";_A.fData="";_A.fDataAte="";re();};
-window.aVerSemana=()=>{const h7=addDias(fmtHoje(),7);_A.modoVisu="agenda";_A.aba="reservas";_A.fStatus="";_A.fData="";_A.fDataAte=h7;_A.historico=false;re();};
 window.aSetAba=v=>{_A.aba=v;re();};
 window.aNavMes=dir=>{let nm=_A.mesCal.m+dir,na=_A.mesCal.a;if(nm>11){nm=0;na++;}if(nm<0){nm=11;na--;}_A.mesCal={a:na,m:nm};_A.diaSel=null;re();};
 window.aModerar=async(id,status)=>{
@@ -3335,7 +3114,6 @@ function modalGerenciarHTML(){
                 <option value="marketing">📸 Equipe de Marketing</option>
                 <option value="ti">💻 T.I.</option>
                 <option value="coord_ti">🖥️ Coord. T.I.</option>
-                <option value="diretor">🎓 Diretor</option>
               </select></div>
             <button onclick="guCriarDireto()" style="background:#1a6b47;color:#fff;border:none;border-radius:8px;font-weight:700;padding:10px 18px;font-size:13.5px;cursor:pointer;height:42px;width:100%">+ Cadastrar</button>
           </div>
@@ -3386,35 +3164,10 @@ window.guCriarDireto=async()=>{
 
 function renderGuLista(){
   const lista=document.getElementById("mod-gu-lista");if(!lista)return;
-  if(!window._GU_FILTRO)window._GU_FILTRO="";
-
-  const perfilOrdem={"admin":0,"diretor":1,"coord_inf":2,"coord_fund1":3,"coord_fund2":4,"coord_ti":5,"ti":6,"marketing":7,"fotografo":7,"professor":8,"sem_acesso":9};
-  const perfilLabel=u=>u.perfil==="fotografo"||u.perfil==="marketing"?"📸 Marketing":u.perfil==="ti"?"💻 T.I.":u.perfil==="coord_inf"?"👶 Coord. Inf.":u.perfil==="coord_fund1"?"📚 Coord. Fund.1":u.perfil==="coord_fund2"?"🎓 Coord. Fund.2":u.perfil==="coord_ti"?"🖥️ Coord. T.I.":u.perfil==="diretor"?"🎓 Diretor":"👨‍🏫 Professor";
-
-  window.guSetFiltro=v=>{window._GU_FILTRO=v;renderGuLista();};
-
-  let profs=_usuarios.filter(u=>u.perfil!=="admin");
-  if(_GU_FILTRO)profs=profs.filter(u=>u.perfil===_GU_FILTRO||((_GU_FILTRO==="marketing")&&(u.perfil==="fotografo"||u.perfil==="marketing")));
-  profs=profs.sort((a,b)=>(perfilOrdem[a.perfil]||9)-(perfilOrdem[b.perfil]||9)||a.nome.localeCompare(b.nome));
-
+  const profs=_usuarios.filter(u=>u.perfil!=="admin");
   const admins=_usuarios.filter(u=>u.perfil==="admin");
-
-  let h=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-    <p style="font-size:12px;font-weight:800;color:#132318;text-transform:uppercase">Usuários (${profs.length})</p>
-    <select onchange="guSetFiltro(this.value)" style="padding:6px 10px;border-radius:8px;border:1.5px solid #c7dfd4;font-size:12px;font-family:inherit;outline:none;cursor:pointer">
-      <option value="" ${_GU_FILTRO===""?"selected":""}>Todos os perfis</option>
-      <option value="diretor" ${_GU_FILTRO==="diretor"?"selected":""}>🎓 Diretor</option>
-      <option value="coord_inf" ${_GU_FILTRO==="coord_inf"?"selected":""}>👶 Coord. Inf.</option>
-      <option value="coord_fund1" ${_GU_FILTRO==="coord_fund1"?"selected":""}>📚 Coord. Fund.1</option>
-      <option value="coord_fund2" ${_GU_FILTRO==="coord_fund2"?"selected":""}>🎓 Coord. Fund.2</option>
-      <option value="coord_ti" ${_GU_FILTRO==="coord_ti"?"selected":""}>🖥️ Coord. T.I.</option>
-      <option value="ti" ${_GU_FILTRO==="ti"?"selected":""}>💻 T.I.</option>
-      <option value="marketing" ${_GU_FILTRO==="marketing"?"selected":""}>📸 Marketing</option>
-      <option value="professor" ${_GU_FILTRO==="professor"?"selected":""}>👨‍🏫 Professor</option>
-    </select>
-  </div>`;
-
-  if(!profs.length)h+='<p style="font-size:13px;color:#607060;text-align:center;padding:20px">Nenhum usuário encontrado.</p>';
+  let h='<p style="font-size:12px;font-weight:800;color:#132318;text-transform:uppercase;margin-bottom:12px">Professores ('+profs.length+')</p>';
+  if(!profs.length)h+='<p style="font-size:13px;color:#607060;text-align:center;padding:20px">Nenhum professor cadastrado.</p>';
   else{
     h+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:#f8faf8">';
     ['Nome','E-mail','Perfil','Status','Ações'].forEach(t=>{h+='<th style="padding:8px 12px;text-align:left;color:#607060;font-weight:700;border-bottom:2px solid #c7dfd4;font-size:11px;text-transform:uppercase">'+t+'</th>';});
@@ -3423,7 +3176,7 @@ function renderGuLista(){
       h+='<tr style="background:'+(i%2===0?'#fff':'#f8faf8')+'">';
       h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb;color:#132318;font-weight:600">'+u.nome+'</td>';
       h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb;color:#607060;font-size:12px">'+u.email+'</td>';
-      h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:#e0e7ff;color:#3730a3">'+perfilLabel(u)+'</span></td>';
+      h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:#e0e7ff;color:#3730a3">'+(u.perfil==="fotografo"||u.perfil==="marketing"?"📸 Marketing":u.perfil==="ti"?"💻 T.I.":u.perfil==="coord_inf"?"👶 Coord. Inf.":u.perfil==="coord_fund1"?"📚 Coord. Fund.1":u.perfil==="coord_fund2"?"🎓 Coord. Fund.2":u.perfil==="coord_ti"?"🖥️ Coord. T.I.":"👨‍🏫 Professor")+'</span></td>';
       h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:'+(u.ativo!==false?'#e2f4ea':'#fef2f2')+';color:'+(u.ativo!==false?'#0f4c2b':'#7f1d1d')+'">'+(u.ativo!==false?'● Ativo':'○ Inativo')+'</span></td>';
       h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><div style="display:flex;gap:5px">';
       h+='<button data-uid="'+u.id+'" data-ativo="'+(u.ativo!==false?'1':'0')+'" data-nome="'+u.nome+'" class="gu-toggle-btn" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid '+(u.ativo!==false?'#fed7aa':'#6ee7a0')+';background:'+(u.ativo!==false?'#fff7ed':'#e2f4ea')+';color:'+(u.ativo!==false?'#7c2d12':'#0f4c2b')+';cursor:pointer;font-weight:700">'+(u.ativo!==false?'🔒 Desativar':'🔓 Ativar')+'</button>';
@@ -3456,7 +3209,6 @@ function renderGuLista(){
   h+='<option value="marketing">📸 Equipe de Marketing</option>';
   h+='<option value="ti">💻 T.I.</option>';
   h+='<option value="coord_ti">🖥️ Coord. T.I.</option>';
-  h+='<option value="diretor">🎓 Diretor</option>';
   h+='<option value="sem_acesso">🔒 Sem acesso</option>';
   h+='</select>';
   h+='<div id="gu-edit-flash" style="margin-bottom:10px"></div>';
@@ -3531,7 +3283,7 @@ function carregarTodas(){
 
 function startListeners(uid){
   const perfil=_usuario?.perfil||"professor";
-  const isProfOnly=perfil==="professor"||perfil==="diretor";
+  const isProfOnly=perfil==="professor";
   const hoje=new Date();hoje.setDate(hoje.getDate()-10);
   const dataCorte=hoje.toISOString().slice(0,10);
 
