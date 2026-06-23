@@ -1201,9 +1201,9 @@ window.diretorExcluir=async(id)=>{
 // ════════════════════════════════════════════════════════════════════════════
 if(!window._DR)window._DR={modoVisu:"agenda",fProf:"",fTurma:"",fEspaco:"",fStatus:"",mesCal:null};
 
-function renderDiretor(){
+function renderDiretorInline(){
   const c=C(),h=fmtHoje();
-  if(!window._DR)window._DR={modoVisu:"agenda",fProf:"",fTurma:"",fEspaco:"",fStatus:"",mesCal:null};
+  if(!window._DR)window._DR={modoVisu:"calendario",fProf:"",fTurma:"",fEspaco:"",fStatus:"",mesCal:null};
   if(!_DR.mesCal){const d=new Date();_DR.mesCal={a:d.getFullYear(),m:d.getMonth()};}
 
   const filtradas=_todas.filter(r=>{
@@ -1217,85 +1217,66 @@ function renderDiretor(){
 
   const pend=_todas.filter(r=>r.status==="pendente"&&!r.reservaAutomatica).length;
   const hojeRs=_todas.filter(r=>r.data===h&&r.status!=="recusado"&&!r.reservaAutomatica).length;
-  const semIni=getSegunda(h);
-  const semFim=addDias(semIni,4);
+  const semIni=getSegunda(h);const semFim=addDias(semIni,4);
   const semRs=_todas.filter(r=>r.data>=semIni&&r.data<=semFim&&r.status!=="recusado"&&!r.reservaAutomatica).length;
-
-  // Profs e turmas para filtros
   const profs=[...new Set(_todas.filter(r=>!r.reservaAutomatica).map(r=>r.professor).filter(Boolean))].sort();
   const turmas=[...new Set(_todas.filter(r=>!r.reservaAutomatica).map(r=>r.turmaInicio||r.turma||"").filter(Boolean))].sort();
 
-  let html=`<div>
+  return`<div>
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">
-    <h1 style="font-size:20px;font-weight:800;color:${c.navy}">🎓 Painel do Diretor</h1>
+    <h1 style="font-size:20px;font-weight:800;color:${c.navy}">🎓 Visão do Diretor</h1>
     <div style="display:flex;background:${c.surface};border-radius:10px;padding:3px;border:1px solid ${c.border};gap:2px">
-      ${[{id:"agenda",l:"☰ Agenda"},{id:"calendario",l:"📅 Calendário"}].map(o=>`<button onclick="window._DR.modoVisu='${o.id}';re()" style="padding:6px 14px;font-size:13px;border-radius:8px;border:1.5px solid ${_DR.modoVisu===o.id?c.navy:c.border};background:${_DR.modoVisu===o.id?c.navy:"transparent"};color:${_DR.modoVisu===o.id?"#fff":c.text};font-weight:700;cursor:pointer;font-family:inherit">${o.l}</button>`).join("")}
+      ${[{id:"calendario",l:"📅 Calendário"},{id:"agenda",l:"☰ Agenda"}].map(o=>`<button onclick="window._DR.modoVisu='${o.id}';re()" style="padding:6px 14px;font-size:13px;border-radius:8px;border:1.5px solid ${_DR.modoVisu===o.id?c.navy:c.border};background:${_DR.modoVisu===o.id?c.navy:"transparent"};color:${_DR.modoVisu===o.id?"#fff":c.text};font-weight:700;cursor:pointer;font-family:inherit">${o.l}</button>`).join("")}
     </div>
   </div>
 
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:16px">
-    ${[{n:hojeRs,l:"Hoje 📌",c:c.green,bg:c.greenBg},{n:pend,l:"Pendentes ⏳",c:"#d97706",bg:"#fffbeb"},{n:semRs,l:"Esta semana 📅",c:c.blueMid,bg:"#eff6ff"},{n:_todas.filter(r=>!r.reservaAutomatica&&r.status!=="recusado").length,l:"Total 📊",c:c.navy,bg:c.bg}].map(k=>`
+    ${[{n:hojeRs,l:"Hoje 📌",cl:c.green,bg:c.greenBg},{n:pend,l:"Pendentes ⏳",cl:"#d97706",bg:"#fffbeb"},{n:semRs,l:"Esta semana",cl:c.blueMid,bg:"#eff6ff"},{n:_todas.filter(r=>!r.reservaAutomatica&&r.status!=="recusado").length,l:"Total 📊",cl:c.navy,bg:c.bg}].map(k=>`
       <div style="background:${k.bg};border:1.5px solid ${c.border};border-radius:12px;padding:14px;text-align:center">
-        <p style="font-size:26px;font-weight:900;color:${k.c}">${k.n}</p>
+        <p style="font-size:26px;font-weight:900;color:${k.cl}">${k.n}</p>
         <p style="font-size:11px;color:${c.textMuted};margin-top:2px">${k.l}</p>
       </div>`).join("")}
   </div>
 
-  <div style="display:grid;grid-template-columns:1fr 280px;gap:16px;align-items:start">
-    <div>
-      <div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:14px;margin-bottom:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px">
-        <select onchange="window._DR.fProf=this.value;re()" style="padding:8px 10px;border-radius:8px;border:1.5px solid ${c.border};background:${c.surface};color:${c.text};font-size:12px;font-family:inherit;outline:none">
-          <option value="">👤 Todos professores</option>
-          ${profs.map(p=>`<option value="${p}" ${_DR.fProf===p?"selected":""}>${p}</option>`).join("")}
-        </select>
-        <select onchange="window._DR.fTurma=this.value;re()" style="padding:8px 10px;border-radius:8px;border:1.5px solid ${c.border};background:${c.surface};color:${c.text};font-size:12px;font-family:inherit;outline:none">
-          <option value="">🎓 Todas turmas</option>
-          ${turmas.map(t=>`<option value="${t}" ${_DR.fTurma===t?"selected":""}>${t}</option>`).join("")}
-        </select>
-        <select onchange="window._DR.fEspaco=this.value;re()" style="padding:8px 10px;border-radius:8px;border:1.5px solid ${c.border};background:${c.surface};color:${c.text};font-size:12px;font-family:inherit;outline:none">
-          <option value="">🏛️ Todos espaços</option>
-          ${ESPACOS.map(e=>`<option value="${e.nome}" ${_DR.fEspaco===e.nome?"selected":""}>${e.nome}</option>`).join("")}
-        </select>
-        <select onchange="window._DR.fStatus=this.value;re()" style="padding:8px 10px;border-radius:8px;border:1.5px solid ${c.border};background:${c.surface};color:${c.text};font-size:12px;font-family:inherit;outline:none">
-          <option value="">● Todos status</option>
-          <option value="confirmado" ${_DR.fStatus==="confirmado"?"selected":""}>✅ Confirmado</option>
-          <option value="pendente" ${_DR.fStatus==="pendente"?"selected":""}>⏳ Pendente</option>
-          <option value="recusado" ${_DR.fStatus==="recusado"?"selected":""}>❌ Recusado</option>
-        </select>
-      </div>
-      ${_DR.modoVisu==="calendario"?`<div style="padding:0">${calMensalAdminHTML(_DR.mesCal.a,_DR.mesCal.m,filtradas,h,"dr")}</div>`:diretorAgendaHTML(filtradas,h,c)}
-    </div>
-    <div style="display:flex;flex-direction:column;gap:12px">
-      <div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:12px 14px">
-        <p style="font-size:11px;font-weight:800;color:${c.textMuted};text-transform:uppercase;margin-bottom:10px">🏆 Espaços mais reservados — este mês</p>
-        ${(()=>{
-          const contagem={};
-          const agora=new Date();
-          const mesIni=`${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,"0")}-01`;
-          const mesFim=`${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,"0")}-31`;
-          _todas.filter(r=>!r.reservaAutomatica&&r.status!=="recusado"&&r.data>=mesIni&&r.data<=mesFim).forEach(r=>{
-            if(r.espaco)contagem[r.espaco]=(contagem[r.espaco]||0)+1;
-          });
-          const ranking=Object.entries(contagem).sort((a,b)=>b[1]-a[1]).slice(0,5);
-          const max=ranking[0]?.[1]||1;
-          const cores=["#1a6b47","#0369a1","#7c3aed","#ea580c","#d97706"];
-          return ranking.map(([espaco,total],i)=>`
-            <div style="margin-bottom:10px">
-              <div style="display:flex;justify-content:space-between;margin-bottom:3px">
-                <span style="font-size:11px;font-weight:700;color:${c.navy};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70%">${espaco}</span>
-                <span style="font-size:11px;font-weight:800;color:${cores[i]}">${total}</span>
-              </div>
-              <div style="height:5px;background:${c.borderLight};border-radius:99px">
-                <div style="height:5px;background:${cores[i]};border-radius:99px;width:${Math.round(total/max*100)}%"></div>
-              </div>
-            </div>`).join("");
-        })()}
-      </div>
-    </div>
+  <div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:14px;margin-bottom:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px">
+    <select onchange="window._DR.fProf=this.value;re()" style="padding:8px 10px;border-radius:8px;border:1.5px solid ${c.border};background:${c.surface};color:${c.text};font-size:12px;font-family:inherit;outline:none">
+      <option value="">👤 Todos professores</option>
+      ${profs.map(p=>`<option value="${p}" ${_DR.fProf===p?"selected":""}>${p}</option>`).join("")}
+    </select>
+    <select onchange="window._DR.fTurma=this.value;re()" style="padding:8px 10px;border-radius:8px;border:1.5px solid ${c.border};background:${c.surface};color:${c.text};font-size:12px;font-family:inherit;outline:none">
+      <option value="">🎓 Todas turmas</option>
+      ${turmas.map(t=>`<option value="${t}" ${_DR.fTurma===t?"selected":""}>${t}</option>`).join("")}
+    </select>
+    <select onchange="window._DR.fEspaco=this.value;re()" style="padding:8px 10px;border-radius:8px;border:1.5px solid ${c.border};background:${c.surface};color:${c.text};font-size:12px;font-family:inherit;outline:none">
+      <option value="">🏛️ Todos espaços</option>
+      ${ESPACOS.map(e=>`<option value="${e.nome}" ${_DR.fEspaco===e.nome?"selected":""}>${e.nome}</option>`).join("")}
+    </select>
+    <select onchange="window._DR.fStatus=this.value;re()" style="padding:8px 10px;border-radius:8px;border:1.5px solid ${c.border};background:${c.surface};color:${c.text};font-size:12px;font-family:inherit;outline:none">
+      <option value="">● Todos status</option>
+      <option value="confirmado" ${_DR.fStatus==="confirmado"?"selected":""}>✅ Confirmado</option>
+      <option value="pendente" ${_DR.fStatus==="pendente"?"selected":""}>⏳ Pendente</option>
+      <option value="recusado" ${_DR.fStatus==="recusado"?"selected":""}>❌ Recusado</option>
+    </select>
   </div>
-  </div>`;
 
-  $("app").innerHTML=html;
+  ${_DR.modoVisu==="calendario"?`<div>${calMensalAdminHTML(_DR.mesCal.a,_DR.mesCal.m,filtradas,h,"dr")}</div>`:diretorAgendaHTML(filtradas,h,c)}
+  </div>`;
+}
+
+function renderDiretor(){
+  const c=C();
+  $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="no">
+    <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#0d2b1a,#1a6b47)"};padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(13,43,26,.25)">
+      <div style="display:flex;align-items:center;gap:8px">${logoHTML(36)}<p style="font-size:13px;font-weight:800;color:#fff">🎓 Diretor</p></div>
+      <div style="display:flex;align-items:center;gap:6px">
+        ${avatarHTML(_usuario?.nome,28,"green")}
+        <button id="sino-btn" onclick="abrirPainelNotif()" style="display:none;position:relative;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:30px;height:30px;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;font-family:inherit">🔔<span id="sino-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:#dc2626;color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:99px;align-items:center;justify-content:center;padding:0 3px;font-family:inherit"></span></button>
+        <button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button>
+        <button onclick="doSignOut()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">Sair</button>
+      </div>
+    </header>
+    <div style="max-width:1200px;margin:0 auto;padding:16px 14px">${renderDiretorInline()}</div>
+  </div>`;
 }
 
 function diretorAgendaHTML(filtradas,h,c){
@@ -1366,7 +1347,7 @@ function renderApp(){
       </div>
     </header>
     <div id="main-content" style="max-width:100%;width:100%;margin:0 auto;padding:20px 20px;overflow-x:hidden;box-sizing:border-box">
-      <div style="max-width:1200px;margin:0 auto;width:100%">${isAdmin&&_adminVisu==="admin"?renderAdminView():isAdmin&&_adminVisu==="ti"?renderTIInline():isAdmin&&_adminVisu==="marketing"?renderMarketingInline():isAdmin&&_adminVisu==="diretor"?diretorAgendaHTML(_todas.filter(r=>!r.reservaAutomatica),fmtHoje(),C()):renderProfessorView()}</div>
+      <div style="max-width:1200px;margin:0 auto;width:100%">${isAdmin&&_adminVisu==="admin"?renderAdminView():isAdmin&&_adminVisu==="ti"?renderTIInline():isAdmin&&_adminVisu==="marketing"?renderMarketingInline():isAdmin&&_adminVisu==="diretor"?renderDiretorInline():renderProfessorView()}</div>
     </div>
     <footer style="margin-top:40px;padding:16px 24px;border-top:1px solid ${c.border};background:${_dark?'#0a1a12':'#0d2b1a'};text-align:center">
       <p style="font-size:10px;color:rgba(255,255,255,.5)">Reserva de Espaços e Equipamentos · Dev: Luciano Galdino · Frontend: HTML · CSS · JS · ☁️ GitHub Pages · Backend: 🔥 Firebase</p>
