@@ -1836,23 +1836,13 @@ function maBlocoMultiHTML(b,i,eo){
   };
 
   // Horários disponíveis para fim (a partir do início)
-  // ⚠️ IMPORTANTE: Parar antes de qualquer intervalo (não permite cruzar)
+  // ✅ Mostrar TODOS os horários de aula, pular os intervalos
   let dispFim=[];
   if(b.horario){
     const iIni=HORARIOS.indexOf(b.horario);
     for(let idx=iIni+1;idx<HORARIOS.length;idx++){
       const horAtual=HORARIOS[idx];
       if(ocpFire.includes(horAtual)||isBloqueado(horAtual))break;
-      
-      // 🔴 NOVO: Verificar se há intervalo ENTRE horário anterior e atual
-      const horAnterior=HORARIOS[idx-1];
-      const temIntervaloNoMeio=HORARIOS_COMPLETO.some((item,i)=>{
-        const nextItem=HORARIOS_COMPLETO[i+1];
-        return nextItem&&item.hora===horAnterior&&nextItem.tipo==="intervalo"&&nextItem.hora<horAtual;
-      });
-      
-      if(temIntervaloNoMeio)break; // ⛔ Para aqui, não pode cruzar intervalo
-      
       dispFim.push(horAtual);
     }
     if(dispFim.length===0)dispFim=[b.horario]; // fallback
