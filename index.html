@@ -1815,11 +1815,11 @@ function maBlocoMultiHTML(b,i,eo){
   let dispFim=[];
   if(b.horario){
     const iIni=HORARIOS.indexOf(b.horario);
-    dispFim=[b.horario];
     for(let idx=iIni+1;idx<HORARIOS.length;idx++){
       if(ocpFire.includes(HORARIOS[idx])||isBloqueado(HORARIOS[idx]))break;
       dispFim.push(HORARIOS[idx]);
     }
+    if(dispFim.length===0)dispFim=[b.horario]; // fallback se não houver próximo
   }
 
   // Range de horários selecionado
@@ -1912,7 +1912,7 @@ const selTurma=(horario,val)=>`
           const sel2=h===b.horarioFim;
           return`<button onclick="maSetHorarioMulti(${i},'fim','${h}')"
             style="padding:8px 12px;border-radius:8px;border:${sel2?"2px solid #1a6b47":"1.5px solid "+c.border};background:${sel2?"#1a6b47":c.surface};color:${sel2?"#fff":c.navy};font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Mono',monospace">
-            ${h}${h===b.horario?" (só este)":""}
+            ${h}
           </button>`;
         }).join("")}
       </div>
