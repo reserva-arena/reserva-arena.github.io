@@ -2918,6 +2918,7 @@ function renderAdminView(){
     if(_A.fEspaco&&r.espaco!==_A.fEspaco)return false;
     if(_A.fProf&&r.professor!==_A.fProf)return false;
     if(_A.fStatus&&r.status!==_A.fStatus)return false;
+    if(_A.fTurma&&(r.turmaInicio||r.turma||"")!==_A.fTurma)return false;
     return true;
   });
   const urgentes=_todas.filter(r=>r.status==="pendente"&&!r.reservaAutomatica&&isUrgente(r.data,r.horario));
