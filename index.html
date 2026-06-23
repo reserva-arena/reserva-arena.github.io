@@ -1980,26 +1980,37 @@ const selTurma=(horario,val)=>`
     </div>`;
   }
 
-  // ── TURMA ÚNICA (para todo o range de horários) ──
+  // ── ROTAÇÃO DE TURMAS por horário (espaços não-equipamento) ──
   if(!isEquip&&b.horario&&b.horarioFim){
-    // Sempre um seletor único, mesmo com vários horários no range
-    const turmaUnica=(b.turmasPorHorario||{})[rangeAtual[0]]||""; // pega do primeiro horário
-    html+=`<div>
-      <label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">🎓 Turma *</label>
-`;
-    
-    if(rangeAtual.length>1){
-      html+=`<p style="font-size:11px;color:${c.textMuted};margin:4px 0 10px">Uma turma para os horários: ${rangeAtual.join(" → ")}</p>`;
+    if(rangeAtual.length===1){
+      // Só um horário → select simples
+      html+=`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">🎓 Turma *</label>
+        ${selTurma(rangeAtual[0],(b.turmasPorHorario||{})[rangeAtual[0]]||"")}
+      </div>`;
+    } else {
+      // Vários horários → linha por horário
+      html+=`<div>
+        <label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">🎓 Turmas por horário *</label>
+        <p style="font-size:11px;color:${c.textMuted};margin:4px 0 10px">Selecione o segmento e a turma de cada horário</p>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px">
+          ${SEGMENTOS.map(s=>`<button onclick="window.maSetSegmento(${i},'${s.id}')" style="padding:5px 10px;font-size:11px;font-weight:700;border-radius:20px;border:1.5px solid ${segAtual===s.id?'#1a6b47':'#cbd5e1'};background:${segAtual===s.id?'#1a6b47':'transparent'};color:${segAtual===s.id?'#fff':'#475569'};cursor:pointer;font-family:inherit">${s.l}</button>`).join("")}
+        </div>
+        <div style="display:grid;gap:6px">
+          ${rangeAtual.map(h=>{
+            const turmaVal=(b.turmasPorHorario||{})[h]||"";
+            const ok=!!turmaVal;
+            return`<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;background:${ok?c.greenBg:c.surface};border:1.5px solid ${ok?c.greenBorder:c.border}">
+              <span style="font-family:'DM Mono',monospace;font-weight:800;color:${ok?c.green:c.textMuted};font-size:13px;min-width:42px">${h}</span>
+              <div style="flex:1">${segAtual?`<select onchange="maSetTurmaPorHorario(${i},'${h}',this.value)" style="${sel()};font-size:13px;padding:7px 10px">
+                <option value="">Turma...</option>
+                ${turmasSeg.map(g=>`<optgroup label="${g.label}">${g.items.map(t=>`<option ${turmaVal===t?"selected":""}>${t}</option>`).join("")}</optgroup>`).join("")}
+              </select>`:`<span style="font-size:12px;color:${c.textMuted}">← Selecione o segmento</span>`}</div>
+              ${ok?`<span style="font-size:14px">✓</span>`:`<span style="font-size:14px;color:${c.textMuted}">○</span>`}
+            </div>`;
+          }).join("")}
+        </div>
+      </div>`;
     }
-    
-    html+=`<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px">
-        ${SEGMENTOS.map(s=>`<button onclick="window.maSetSegmento(${i},'${s.id}')" style="padding:5px 10px;font-size:11px;font-weight:700;border-radius:20px;border:1.5px solid ${segAtual===s.id?'#1a6b47':'#cbd5e1'};background:${segAtual===s.id?'#1a6b47':'transparent'};color:${segAtual===s.id?'#fff':'#475569'};cursor:pointer;font-family:inherit">${s.l}</button>`).join("")}
-      </div>
-      ${segAtual?`<select onchange="maSetTurmaPorHorario(${i},'${rangeAtual[0]}',this.value)" style="${sel()};font-size:13px;padding:7px 10px">
-        <option value="">Turma...</option>
-        ${turmasSeg.map(g=>`<optgroup label="${g.label}">${g.items.map(t=>`<option ${turmaUnica===t?"selected":""}>${t}</option>`).join("")}</optgroup>`).join("")}
-      </select>`:"<span style="font-size:12px;color:${c.textMuted}">← Selecione o segmento</span>"}
-    </div>`;
   }
 
   // ── Laboratorista (apenas Labs de Ciências) ──
@@ -2361,12 +2372,15 @@ window.maDecEquip=(i,campo)=>{_MA.blocos[i][campo]=Math.max(0,(_MA.blocos[i][cam
 window.maSetTurmaPorHorario=(i,horario,turma)=>{
   if(!_MA.blocos[i].turmasPorHorario)_MA.blocos[i].turmasPorHorario={};
   _MA.blocos[i].turmasPorHorario[horario]=turma;
-  // NOVO: Copiar turma para TODOS os horários do range
+  // Propagar para horários seguintes que ainda estão vazios
   const b=_MA.blocos[i];
+  const eo=ESPACOS.find(e=>e.nome===_MA.espaco);
   if(b.horario&&b.horarioFim){
     const range=horariosRange(b.horario,b.horarioFim||b.horario);
+    let propagando=false;
     for(const h of range){
-      b.turmasPorHorario[h]=turma; // copia para todos
+      if(h===horario){propagando=true;continue;}
+      if(propagando&&!b.turmasPorHorario[h])b.turmasPorHorario[h]=turma;
     }
   }
   re();
