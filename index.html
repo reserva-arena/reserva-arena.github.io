@@ -3352,8 +3352,10 @@ function carregarTodas(){
 function startListeners(uid){
   const perfil=_usuario?.perfil||"professor";
   const isProfOnly=perfil==="professor";
-  const hoje=new Date();hoje.setDate(hoje.getDate()-10);
-  const dataCorte=hoje.toISOString().slice(0,10);
+  const hoje=new Date();
+  const proximosSeis=new Date(hoje);proximosSeis.setDate(proximosSeis.getDate()+6);
+  const dataCorte=hoje.toISOString().slice(0,10); // hoje
+  const dataFim=proximosSeis.toISOString().slice(0,10); // +6 dias
 
   if(isProfOnly){
     // Professor: por padrão só carrega _minhas
