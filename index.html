@@ -2027,7 +2027,8 @@ const selTurma=(horario,val)=>`
   if(temEquipAuto&&b.horario&&b.horarioFim){
     const usaEquip=b.usaEquip===true;
     html+=`<div style="background:${c.surface};border-radius:10px;padding:12px;border:1.5px solid #bae6fd">
-      <p style="font-size:13px;font-weight:800;color:#0369a1;margin-bottom:8px">📱💻 Precisa de Tablets ou Computadores?</p>
+      <p style="font-size:13px;font-weight:800;color:#0369a1;margin-bottom:4px">📱💻 Precisa de Tablets ou Computadores?</p>
+      <p style="font-size:11px;color:#607060;margin-bottom:8px">💡 Quantidade disponível no momento do agendamento. Pode variar se houver uso simultâneo em outro espaço.</p>
       <div style="display:flex;gap:8px;margin-bottom:${usaEquip?'10px':'0'}">
         <button onclick="maSetBlocoRe(${i},'usaEquip',true);maSetBlocoRe(${i},'qtdTablets',0);maSetBlocoRe(${i},'qtdNotebooks',0);consultaDispEquip();" style="flex:1;padding:9px;border-radius:8px;border:2px solid ${usaEquip?'#0369a1':c.border};background:${usaEquip?'#e0f2fe':c.bg};color:${usaEquip?'#0369a1':c.textMid};font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">✅ Sim</button>
         <button onclick="maSetBlocoRe(${i},'usaEquip',false);maSetBlocoRe(${i},'qtdTablets',0);maSetBlocoRe(${i},'qtdNotebooks',0);" style="flex:1;padding:9px;border-radius:8px;border:2px solid ${!usaEquip?'#64748b':c.border};background:${!usaEquip?'#f1f5f9':c.bg};color:${!usaEquip?'#475569':c.textMid};font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">✕ Não</button>
@@ -2066,7 +2067,8 @@ const selTurma=(horario,val)=>`
   // 2. Som/Microfone/Projetor — só para espaços com temBibAV, após horário selecionado
   if(eo?.temBibAV&&b.horario&&b.horarioFim){
     html+=`<div style="background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:10px;padding:12px 14px">
-      <p style="font-size:13px;font-weight:800;color:#0369a1;margin-bottom:8px">🔊 Precisa de Som, Microfone ou Projetor?</p>
+      <p style="font-size:13px;font-weight:800;color:#0369a1;margin-bottom:4px">🔊 Precisa de Som, Microfone ou Projetor?</p>
+      <p style="font-size:11px;color:#607060;margin-bottom:8px">💡 A equipe de T.I. confirmará a disponibilidade via notificação neste app. O agendamento do espaço não é afetado.</p>
       <div style="display:flex;gap:8px;margin-bottom:${_MA.bibAV===true?'12px':'0'}">
         <button onclick="setBibAV(true)" style="flex:1;padding:9px;border-radius:8px;border:2px solid ${_MA.bibAV===true?'#0369a1':c.border};background:${_MA.bibAV===true?'#e0f2fe':c.bg};font-weight:700;font-size:13px;cursor:pointer;color:${_MA.bibAV===true?'#0369a1':c.textMid};font-family:inherit">✅ Sim</button>
         <button onclick="setBibAV(false)" style="flex:1;padding:9px;border-radius:8px;border:2px solid ${_MA.bibAV!==true?'#64748b':c.border};background:${_MA.bibAV!==true?'#f1f5f9':c.bg};font-weight:700;font-size:13px;cursor:pointer;color:${_MA.bibAV!==true?'#475569':c.textMid};font-family:inherit">✕ Não</button>
@@ -2103,7 +2105,8 @@ const selTurma=(horario,val)=>`
   // 3. Registro de mídia — só após horário selecionado
   if(b.horario&&b.horarioFim){
   html+=`<div style="background:${c.surface};border-radius:10px;padding:12px 14px;border:1.5px solid ${b.temMidia===true?c.greenBorder:c.border}">
-    <p style="font-size:13px;font-weight:800;color:${c.navy};margin-bottom:8px">📸 Precisa de Foto ou Vídeo da aula?</p>
+    <p style="font-size:13px;font-weight:800;color:${c.navy};margin-bottom:4px">📸 Precisa de Foto ou Vídeo da aula?</p>
+    <p style="font-size:11px;color:#607060;margin-bottom:8px">💡 A equipe de Marketing confirmará via notificação neste app.</p>
     <div style="display:flex;gap:8px;margin-bottom:${b.temMidia===true?'10px':'0'}">
       <button onclick="maSetBlocoRe(${i},'temMidia',true);maSetBlocoRe(${i},'precisaFoto',false);maSetBlocoRe(${i},'precisaVideo',false)" style="flex:1;padding:9px;border-radius:8px;border:2px solid ${b.temMidia===true?'#1a6b47':c.border};background:${b.temMidia===true?c.greenBg:c.bg};color:${b.temMidia===true?'#1a6b47':c.textMid};font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">✅ Sim</button>
       <button onclick="maSetBlocoRe(${i},'temMidia',false);maSetBlocoRe(${i},'precisaFoto',false);maSetBlocoRe(${i},'precisaVideo',false)" style="flex:1;padding:9px;border-radius:8px;border:2px solid ${b.temMidia!==true?'#64748b':c.border};background:${b.temMidia!==true?'#f1f5f9':c.bg};color:${b.temMidia!==true?'#475569':c.textMid};font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">✕ Não</button>
