@@ -3342,9 +3342,11 @@ window.guCriarDireto=async()=>{
 function renderGuLista(){
   const lista=document.getElementById("mod-gu-lista");if(!lista)return;
   if(!window._GU_FILTRO)window._GU_FILTRO="";
-  
-  const perfilOrdem={"diretor":1,"coord_inf":2,"coord_fund1":3,"coord_fund2":4,"coord_ti":5,"ti":6,"marketing":7,"fotografo":7,"professor":8,"sem_acesso":9};
+
+  const perfilOrdem={"admin":0,"diretor":1,"coord_inf":2,"coord_fund1":3,"coord_fund2":4,"coord_ti":5,"ti":6,"marketing":7,"fotografo":7,"professor":8,"sem_acesso":9};
   const perfilLabel=u=>u.perfil==="fotografo"||u.perfil==="marketing"?"📸 Marketing":u.perfil==="ti"?"💻 T.I.":u.perfil==="coord_inf"?"👶 Coord. Inf.":u.perfil==="coord_fund1"?"📚 Coord. Fund.1":u.perfil==="coord_fund2"?"🎓 Coord. Fund.2":u.perfil==="coord_ti"?"🖥️ Coord. T.I.":u.perfil==="diretor"?"🎓 Diretor":"👨‍🏫 Professor";
+
+  window.guSetFiltro=v=>{window._GU_FILTRO=v;renderGuLista();};
 
   let profs=_usuarios.filter(u=>u.perfil!=="admin");
   if(_GU_FILTRO)profs=profs.filter(u=>u.perfil===_GU_FILTRO||((_GU_FILTRO==="marketing")&&(u.perfil==="fotografo"||u.perfil==="marketing")));
@@ -3354,8 +3356,8 @@ function renderGuLista(){
 
   let h=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
     <p style="font-size:12px;font-weight:800;color:#132318;text-transform:uppercase">Usuários (${profs.length})</p>
-    <select onchange="window._GU_FILTRO=this.value;renderGuLista()" style="padding:6px 10px;border-radius:8px;border:1.5px solid #c7dfd4;font-size:12px;font-family:inherit;outline:none;cursor:pointer">
-      <option value="">Todos os perfis</option>
+    <select onchange="guSetFiltro(this.value)" style="padding:6px 10px;border-radius:8px;border:1.5px solid #c7dfd4;font-size:12px;font-family:inherit;outline:none;cursor:pointer">
+      <option value="" ${_GU_FILTRO===""?"selected":""}>Todos os perfis</option>
       <option value="diretor" ${_GU_FILTRO==="diretor"?"selected":""}>🎓 Diretor</option>
       <option value="coord_inf" ${_GU_FILTRO==="coord_inf"?"selected":""}>👶 Coord. Inf.</option>
       <option value="coord_fund1" ${_GU_FILTRO==="coord_fund1"?"selected":""}>📚 Coord. Fund.1</option>
