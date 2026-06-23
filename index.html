@@ -2931,7 +2931,7 @@ function renderAdminView(){
     <h1 style="font-size:20px;font-weight:800;color:${c.navy}">Painel Administrativo</h1>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <div style="display:flex;background:${c.surface};border-radius:10px;padding:3px;border:1px solid ${c.border};gap:2px">
-        ${[{id:"calendario",l:"📅 Calendário"},{id:"agenda",l:"☰ Agenda"}].map(o=>`<button data-setmodo="${o.id}" style="padding:6px 14px;font-size:13px;border-radius:8px;border:1.5px solid ${_A.modoVisu===o.id?(_dark?'#1a6b47':c.navy):c.border};background:${_A.modoVisu===o.id?(_dark?'#1a6b47':c.navy):'transparent'};color:${_A.modoVisu===o.id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${o.l}</button>`).join("")}
+        ${[{id:"calendario",l:"📅 Calendário"},{id:"agenda",l:"☰ Agenda"}].map(o=>`<button id="adm-btn-${o.id}" data-setmodo="${o.id}" style="padding:6px 14px;font-size:13px;border-radius:8px;border:1.5px solid ${_A.modoVisu===o.id?(_dark?'#1a6b47':c.navy):c.border};background:${_A.modoVisu===o.id?(_dark?'#1a6b47':c.navy):'transparent'};color:${_A.modoVisu===o.id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${o.l}</button>`).join("")}
       </div>
       ${!isDiretor?`<button onclick="abrirGerenciarUsuarios()" style="${btn('ghost','','sm')}">👤 Usuários</button>`:""}
     </div>
@@ -3217,6 +3217,10 @@ function bindAdmin(){
     if(bl)bl.addEventListener("click",()=>{_A.fEspaco="";_A.fProf="";_A.fStatus="";_A.fTurma="";re();});
     if(bh)bh.addEventListener("click",()=>{_A.historico=!_A.historico;re();});
     // Calendário/Agenda buttons
+    const bCal=document.getElementById("adm-btn-calendario");
+    const bAgen=document.getElementById("adm-btn-agenda");
+    if(bCal)bCal.addEventListener("click",()=>aSetModo("calendario"));
+    if(bAgen)bAgen.addEventListener("click",()=>aSetModo("agenda"));
     document.querySelectorAll("[data-setmodo]").forEach(b=>b.addEventListener("click",()=>aSetModo(b.dataset.setmodo)));
     // KPI buttons
     const bHoje=document.getElementById("adm-kpi-hoje");
