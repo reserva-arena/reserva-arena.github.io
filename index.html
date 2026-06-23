@@ -335,7 +335,7 @@ function getSegunda(s){
 function horariosRange(ini,fim){
   const iIni=HORARIOS.indexOf(ini),iFim=HORARIOS.indexOf(fim);
   if(iIni<0||iFim<0||iFim<iIni)return ini?[ini]:[];
-  return HORARIOS.slice(iIni,iFim+1);
+  return HORARIOS.slice(iIni,iFim); // ← Não incluir iFim (fim é só limite, não conta como aula)
 }
 
 const ESPACO_ICON={
@@ -1836,14 +1836,16 @@ function maBlocoMultiHTML(b,i,eo){
   };
 
   // Horários disponíveis para fim (a partir do início)
+  // ✅ Mostrar TODOS os horários de aula, pular os intervalos
   let dispFim=[];
   if(b.horario){
     const iIni=HORARIOS.indexOf(b.horario);
     for(let idx=iIni+1;idx<HORARIOS.length;idx++){
-      if(ocpFire.includes(HORARIOS[idx])||isBloqueado(HORARIOS[idx]))break;
-      dispFim.push(HORARIOS[idx]);
+      const horAtual=HORARIOS[idx];
+      if(ocpFire.includes(horAtual)||isBloqueado(horAtual))break;
+      dispFim.push(horAtual);
     }
-    if(dispFim.length===0)dispFim=[b.horario]; // fallback se não houver próximo
+    if(dispFim.length===0)dispFim=[b.horario]; // fallback
   }
 
   // Range de horários selecionado
@@ -1931,11 +1933,14 @@ const selTurma=(horario,val)=>`
     html+=`<div>
       <label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">🕐 Horário de fim *</label>
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
-        ${dispFim.map(h=>{
+        ${HORARIOS_COMPLETO.map(item=>{
+          const h=item.hora;
+          const isIntervalo=item.tipo==="intervalo";
           const sel2=h===b.horarioFim;
-          return`<button onclick="maSetHorarioMulti(${i},'fim','${h}')"
-            style="padding:8px 12px;border-radius:8px;border:${sel2?"2px solid #1a6b47":"1.5px solid "+c.border};background:${sel2?"#1a6b47":c.surface};color:${sel2?"#fff":c.navy};font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Mono',monospace">
-            ${h}
+          const bloq=isIntervalo||!dispFim.includes(h);
+          return`<button onclick="maSetHorarioMulti(${i},'fim','${h}')" ${bloq?"disabled":""}
+            style="padding:8px 12px;border-radius:8px;border:${sel2?"2px solid #1a6b47":isIntervalo?"1.5px solid #d1d5db":bloq?"1.5px solid "+c.border:"1.5px solid "+c.border};background:${sel2?"#1a6b47":isIntervalo?"#f3f4f6":c.surface};color:${sel2?"#fff":isIntervalo?"#9ca3af":c.navy};font-size:12px;font-weight:700;cursor:${bloq?"not-allowed":"pointer"};font-family:'DM Mono',monospace;opacity:${isIntervalo?"0.6":"1"}">
+            ${h}${isIntervalo?"<span style="font-size:8px"> ⏸️</span>":""}
           </button>`;
         }).join("")}
       </div>
