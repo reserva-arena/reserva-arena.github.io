@@ -427,6 +427,7 @@ function re(){if(_trocandoSenha)return;
   if(_usuario.perfil==="fotografo"||_usuario.perfil==="marketing"){renderMarketing();return;}
   if(_usuario.perfil==="ti"||_usuario.perfil==="coord_ti"){renderTI();return;}
   if(_usuario.perfil==="coord_inf"||_usuario.perfil==="coord_fund1"||_usuario.perfil==="coord_fund2"){renderCoord();return;}
+  if(_usuario.perfil==="diretor"){carregarTodas();renderDiretor();return;}
   renderApp();
 }
 
@@ -1160,6 +1161,142 @@ window.coordEditar=async(id)=>{
     re();
   }catch(e){alert("Erro ao editar: "+e.message);}
 };
+
+// ════════════════════════════════════════════════════════════════════════════
+// DIRETOR
+// ════════════════════════════════════════════════════════════════════════════
+if(!window._DR)window._DR={modoVisu:"agenda",fProf:"",fTurma:"",fEspaco:"",fStatus:"",mesCal:null};
+
+function renderDiretor(){
+  const c=C(),h=fmtHoje();
+  if(!window._DR)window._DR={modoVisu:"agenda",fProf:"",fTurma:"",fEspaco:"",fStatus:"",mesCal:null};
+  if(!_DR.mesCal){const d=new Date();_DR.mesCal={a:d.getFullYear(),m:d.getMonth()};}
+
+  const filtradas=_todas.filter(r=>{
+    if(r.reservaAutomatica)return false;
+    if(_DR.fEspaco&&r.espaco!==_DR.fEspaco)return false;
+    if(_DR.fProf&&r.professor!==_DR.fProf)return false;
+    if(_DR.fStatus&&r.status!==_DR.fStatus)return false;
+    if(_DR.fTurma&&(r.turmaInicio||r.turma||"")!==_DR.fTurma)return false;
+    return true;
+  });
+
+  const pend=_todas.filter(r=>r.status==="pendente"&&!r.reservaAutomatica).length;
+  const hojeRs=_todas.filter(r=>r.data===h&&r.status!=="recusado"&&!r.reservaAutomatica).length;
+  const semIni=getSegunda(h);
+  const semFim=addDias(semIni,4);
+  const semRs=_todas.filter(r=>r.data>=semIni&&r.data<=semFim&&r.status!=="recusado"&&!r.reservaAutomatica).length;
+
+  // Profs e turmas para filtros
+  const profs=[...new Set(_todas.filter(r=>!r.reservaAutomatica).map(r=>r.professor).filter(Boolean))].sort();
+  const turmas=[...new Set(_todas.filter(r=>!r.reservaAutomatica).map(r=>r.turmaInicio||r.turma||"").filter(Boolean))].sort();
+
+  let html=`<div>
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">
+    <h1 style="font-size:20px;font-weight:800;color:${c.navy}">🎓 Painel do Diretor</h1>
+    <div style="display:flex;background:${c.surface};border-radius:10px;padding:3px;border:1px solid ${c.border};gap:2px">
+      ${[{id:"agenda",l:"☰ Agenda"},{id:"calendario",l:"📅 Calendário"}].map(o=>`<button onclick="window._DR.modoVisu='${o.id}';re()" style="padding:6px 14px;font-size:13px;border-radius:8px;border:1.5px solid ${_DR.modoVisu===o.id?c.navy:c.border};background:${_DR.modoVisu===o.id?c.navy:"transparent"};color:${_DR.modoVisu===o.id?"#fff":c.text};font-weight:700;cursor:pointer;font-family:inherit">${o.l}</button>`).join("")}
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:16px">
+    ${[{n:hojeRs,l:"Hoje 📌",c:c.green,bg:c.greenBg},{n:pend,l:"Pendentes ⏳",c:"#d97706",bg:"#fffbeb"},{n:semRs,l:"Esta semana 📅",c:c.blueMid,bg:"#eff6ff"},{n:_todas.filter(r=>!r.reservaAutomatica&&r.status!=="recusado").length,l:"Total 📊",c:c.navy,bg:c.bg}].map(k=>`
+      <div style="background:${k.bg};border:1.5px solid ${c.border};border-radius:12px;padding:14px;text-align:center">
+        <p style="font-size:26px;font-weight:900;color:${k.c}">${k.n}</p>
+        <p style="font-size:11px;color:${c.textMuted};margin-top:2px">${k.l}</p>
+      </div>`).join("")}
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 280px;gap:16px;align-items:start">
+    <div>
+      <div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:14px;margin-bottom:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px">
+        <select onchange="window._DR.fProf=this.value;re()" style="padding:8px 10px;border-radius:8px;border:1.5px solid ${c.border};background:${c.surface};color:${c.text};font-size:12px;font-family:inherit;outline:none">
+          <option value="">👤 Todos professores</option>
+          ${profs.map(p=>`<option value="${p}" ${_DR.fProf===p?"selected":""}>${p}</option>`).join("")}
+        </select>
+        <select onchange="window._DR.fTurma=this.value;re()" style="padding:8px 10px;border-radius:8px;border:1.5px solid ${c.border};background:${c.surface};color:${c.text};font-size:12px;font-family:inherit;outline:none">
+          <option value="">🎓 Todas turmas</option>
+          ${turmas.map(t=>`<option value="${t}" ${_DR.fTurma===t?"selected":""}>${t}</option>`).join("")}
+        </select>
+        <select onchange="window._DR.fEspaco=this.value;re()" style="padding:8px 10px;border-radius:8px;border:1.5px solid ${c.border};background:${c.surface};color:${c.text};font-size:12px;font-family:inherit;outline:none">
+          <option value="">🏛️ Todos espaços</option>
+          ${ESPACOS.map(e=>`<option value="${e.nome}" ${_DR.fEspaco===e.nome?"selected":""}>${e.nome}</option>`).join("")}
+        </select>
+        <select onchange="window._DR.fStatus=this.value;re()" style="padding:8px 10px;border-radius:8px;border:1.5px solid ${c.border};background:${c.surface};color:${c.text};font-size:12px;font-family:inherit;outline:none">
+          <option value="">● Todos status</option>
+          <option value="confirmado" ${_DR.fStatus==="confirmado"?"selected":""}>✅ Confirmado</option>
+          <option value="pendente" ${_DR.fStatus==="pendente"?"selected":""}>⏳ Pendente</option>
+          <option value="recusado" ${_DR.fStatus==="recusado"?"selected":""}>❌ Recusado</option>
+        </select>
+      </div>
+      ${_DR.modoVisu==="calendario"?`<div style="padding:0">${calMensalAdminHTML(_DR.mesCal.a,_DR.mesCal.m,filtradas,h,"dr")}</div>`:diretorAgendaHTML(filtradas,h,c)}
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:12px 14px">
+        <p style="font-size:11px;font-weight:800;color:${c.textMuted};text-transform:uppercase;margin-bottom:10px">🏆 Espaços mais reservados — este mês</p>
+        ${(()=>{
+          const contagem={};
+          const agora=new Date();
+          const mesIni=`${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,"0")}-01`;
+          const mesFim=`${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,"0")}-31`;
+          _todas.filter(r=>!r.reservaAutomatica&&r.status!=="recusado"&&r.data>=mesIni&&r.data<=mesFim).forEach(r=>{
+            if(r.espaco)contagem[r.espaco]=(contagem[r.espaco]||0)+1;
+          });
+          const ranking=Object.entries(contagem).sort((a,b)=>b[1]-a[1]).slice(0,5);
+          const max=ranking[0]?.[1]||1;
+          const cores=["#1a6b47","#0369a1","#7c3aed","#ea580c","#d97706"];
+          return ranking.map(([espaco,total],i)=>`
+            <div style="margin-bottom:10px">
+              <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+                <span style="font-size:11px;font-weight:700;color:${c.navy};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70%">${espaco}</span>
+                <span style="font-size:11px;font-weight:800;color:${cores[i]}">${total}</span>
+              </div>
+              <div style="height:5px;background:${c.borderLight};border-radius:99px">
+                <div style="height:5px;background:${cores[i]};border-radius:99px;width:${Math.round(total/max*100)}%"></div>
+              </div>
+            </div>`).join("");
+        })()}
+      </div>
+    </div>
+  </div>
+  </div>`;
+
+  $("app").innerHTML=html;
+}
+
+function diretorAgendaHTML(filtradas,h,c){
+  const porData={};
+  const fonte=filtradas.filter(r=>r.data>=h).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
+  fonte.forEach(r=>{if(!porData[r.data])porData[r.data]=[];porData[r.data].push(r);});
+  if(!fonte.length)return`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">📋</p><p style="margin-top:12px;font-size:14px">Nenhum agendamento encontrado.</p></div>`;
+  let html="";
+  Object.entries(porData).forEach(([data,rs])=>{
+    const[,m2,d2]=data.split("-");const isH=data===h;
+    html+=`<div style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="font-size:11px;font-weight:700;color:${isH?c.green:c.textMid};background:${isH?c.greenBg:"transparent"};padding:${isH?"2px 8px":"0"};border-radius:${isH?20:0}px">${isH?"📌 Hoje":`${d2}/${m2}`}</span>
+        <div style="flex:1;height:1px;background:${c.borderLight}"></div>
+      </div>`;
+    rs.forEach(r=>{
+      const isPend=r.status==="pendente",isRec=r.status==="recusado";
+      html+=`<div style="background:${c.surface};border-radius:10px;border:1.5px solid ${isPend?c.amberBorder:isRec?"#fecaca":c.greenBorder};border-left:4px solid ${isPend?c.amber:isRec?"#dc2626":"#1a6b47"};padding:12px 14px;margin-bottom:8px">
+        <div style="display:flex;align-items:flex-start;gap:8px">
+          <span style="font-family:'DM Mono',monospace;font-weight:800;color:${isPend?c.amber:"#1a6b47"};font-size:13px;flex-shrink:0">${r.horario}</span>
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px">
+              <span style="font-size:13px;font-weight:700;color:${c.navy}">${r.espaco}</span>
+              ${isPend?`<span style="background:#fffbeb;color:${c.amber};font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;border:1px solid ${c.amberBorder}">⏳ Pendente</span>`:isRec?`<span style="background:#fef2f2;color:#dc2626;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px">❌ Recusado</span>`:`<span style="background:${c.greenBg};color:${c.green};font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px">✅ Confirmado</span>`}
+            </div>
+            <p style="font-size:12px;color:${c.textMid}">👤 ${r.professor} · ${r.turmaInicio||r.turma||"—"}</p>
+            ${r.conteudo?`<p style="font-size:12px;color:${c.textMuted};margin-top:2px">${r.conteudo}</p>`:""}
+          </div>
+        </div>
+      </div>`;
+    });
+    html+=`</div>`;
+  });
+  return html;
+}
 
 function renderSemAcesso(){
   const c=C();
@@ -3114,6 +3251,7 @@ function modalGerenciarHTML(){
                 <option value="marketing">📸 Equipe de Marketing</option>
                 <option value="ti">💻 T.I.</option>
                 <option value="coord_ti">🖥️ Coord. T.I.</option>
+                <option value="diretor">🎓 Diretor</option>
               </select></div>
             <button onclick="guCriarDireto()" style="background:#1a6b47;color:#fff;border:none;border-radius:8px;font-weight:700;padding:10px 18px;font-size:13.5px;cursor:pointer;height:42px;width:100%">+ Cadastrar</button>
           </div>
@@ -3176,7 +3314,7 @@ function renderGuLista(){
       h+='<tr style="background:'+(i%2===0?'#fff':'#f8faf8')+'">';
       h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb;color:#132318;font-weight:600">'+u.nome+'</td>';
       h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb;color:#607060;font-size:12px">'+u.email+'</td>';
-      h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:#e0e7ff;color:#3730a3">'+(u.perfil==="fotografo"||u.perfil==="marketing"?"📸 Marketing":u.perfil==="ti"?"💻 T.I.":u.perfil==="coord_inf"?"👶 Coord. Inf.":u.perfil==="coord_fund1"?"📚 Coord. Fund.1":u.perfil==="coord_fund2"?"🎓 Coord. Fund.2":u.perfil==="coord_ti"?"🖥️ Coord. T.I.":"👨‍🏫 Professor")+'</span></td>';
+      h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:#e0e7ff;color:#3730a3">'+(u.perfil==="fotografo"||u.perfil==="marketing"?"📸 Marketing":u.perfil==="ti"?"💻 T.I.":u.perfil==="coord_inf"?"👶 Coord. Inf.":u.perfil==="coord_fund1"?"📚 Coord. Fund.1":u.perfil==="coord_fund2"?"🎓 Coord. Fund.2":u.perfil==="coord_ti"?"🖥️ Coord. T.I.":u.perfil==="diretor"?"🎓 Diretor":"👨‍🏫 Professor")+'</span></td>';
       h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:'+(u.ativo!==false?'#e2f4ea':'#fef2f2')+';color:'+(u.ativo!==false?'#0f4c2b':'#7f1d1d')+'">'+(u.ativo!==false?'● Ativo':'○ Inativo')+'</span></td>';
       h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><div style="display:flex;gap:5px">';
       h+='<button data-uid="'+u.id+'" data-ativo="'+(u.ativo!==false?'1':'0')+'" data-nome="'+u.nome+'" class="gu-toggle-btn" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid '+(u.ativo!==false?'#fed7aa':'#6ee7a0')+';background:'+(u.ativo!==false?'#fff7ed':'#e2f4ea')+';color:'+(u.ativo!==false?'#7c2d12':'#0f4c2b')+';cursor:pointer;font-weight:700">'+(u.ativo!==false?'🔒 Desativar':'🔓 Ativar')+'</button>';
@@ -3209,6 +3347,7 @@ function renderGuLista(){
   h+='<option value="marketing">📸 Equipe de Marketing</option>';
   h+='<option value="ti">💻 T.I.</option>';
   h+='<option value="coord_ti">🖥️ Coord. T.I.</option>';
+  h+='<option value="diretor">🎓 Diretor</option>';
   h+='<option value="sem_acesso">🔒 Sem acesso</option>';
   h+='</select>';
   h+='<div id="gu-edit-flash" style="margin-bottom:10px"></div>';
@@ -3283,7 +3422,7 @@ function carregarTodas(){
 
 function startListeners(uid){
   const perfil=_usuario?.perfil||"professor";
-  const isProfOnly=perfil==="professor";
+  const isProfOnly=perfil==="professor"||perfil==="diretor";
   const hoje=new Date();hoje.setDate(hoje.getDate()-10);
   const dataCorte=hoje.toISOString().slice(0,10);
 
