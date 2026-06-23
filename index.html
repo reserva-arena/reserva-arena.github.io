@@ -1366,6 +1366,7 @@ window.setAdminVisu=(v)=>{
   if(v==="professor"){_P.modoProf="ver";_P.modoCard="lista";_P.modoVisu="semana";_P.semIni=getSegunda(fmtHoje());_P.diaSel=null;_P.filtroGrade="meus";_P.mostrarHistorico=false;_P.filtroPendente=false;}
   if(v==="ti"&&window._TI)_TI.aba="minhas";
   if(v==="marketing"&&window._MK)_MK.aba="minhas";
+  if(v==="diretor"){window._DR={modoVisu:"calendario",fProf:"",fTurma:"",fEspaco:"",fStatus:"",mesCal:{a:new Date().getFullYear(),m:new Date().getMonth()}};}
   re();
 };
 window.irInicio=()=>{
