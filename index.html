@@ -427,7 +427,7 @@ function re(){if(_trocandoSenha)return;
   if(_usuario.perfil==="fotografo"||_usuario.perfil==="marketing"){renderMarketing();return;}
   if(_usuario.perfil==="ti"||_usuario.perfil==="coord_ti"){renderTI();return;}
   if(_usuario.perfil==="coord_inf"||_usuario.perfil==="coord_fund1"||_usuario.perfil==="coord_fund2"){renderCoord();return;}
-  if(_usuario.perfil==="diretor"){carregarTodas();renderDiretor();return;}
+  if(_usuario.perfil==="diretor"){carregarTodas();_adminVisu="diretor";if(!_A.mesCal){const d=new Date();_A.mesCal={a:d.getFullYear(),m:d.getMonth()};}_A.modoVisu="calendario";renderApp();return;}
   renderApp();
 }
 
@@ -1347,7 +1347,7 @@ function renderSemAcesso(){
 // APP PRINCIPAL
 // ════════════════════════════════════════════════════════════════════════════
 function renderApp(){
-  const c=C(),isAdmin=_usuario?.perfil==="admin";
+  const c=C(),isAdmin=_usuario?.perfil==="admin"||_usuario?.perfil==="diretor";
   $("app").innerHTML=`
   <div style="min-height:100vh;background:${c.bg};width:100%" translate="no">
     <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#0d2b1a,#1a6b47)"};border-bottom:1px solid ${_dark?c.border:"transparent"};padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100;box-shadow:0 1px 6px rgba(19,35,24,.07);width:100%;box-sizing:border-box">
@@ -1367,7 +1367,7 @@ function renderApp(){
       </div>
     </header>
     <div id="main-content" style="max-width:100%;width:100%;margin:0 auto;padding:20px 20px;overflow-x:hidden;box-sizing:border-box">
-      <div style="max-width:1200px;margin:0 auto;width:100%">${isAdmin&&_adminVisu==="admin"?renderAdminView():isAdmin&&_adminVisu==="ti"?renderTIInline():isAdmin&&_adminVisu==="marketing"?renderMarketingInline():isAdmin&&_adminVisu==="diretor"?diretorAgendaHTML(_todas.filter(r=>!r.reservaAutomatica),fmtHoje(),C()):renderProfessorView()}</div>
+      <div style="max-width:1200px;margin:0 auto;width:100%">${isAdmin&&_adminVisu==="admin"?renderAdminView():isAdmin&&_adminVisu==="ti"?renderTIInline():isAdmin&&_adminVisu==="marketing"?renderMarketingInline():isAdmin&&(_adminVisu==="diretor"||_usuario?.perfil==="diretor")?renderAdminView():renderProfessorView()}</div>
     </div>
     <footer style="margin-top:40px;padding:16px 24px;border-top:1px solid ${c.border};background:${_dark?'#0a1a12':'#0d2b1a'};text-align:center">
       <p style="font-size:10px;color:rgba(255,255,255,.5)">Reserva de Espaços e Equipamentos · Dev: Luciano Galdino · Frontend: HTML · CSS · JS · ☁️ GitHub Pages · Backend: 🔥 Firebase</p>
