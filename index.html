@@ -1162,6 +1162,40 @@ window.coordEditar=async(id)=>{
   }catch(e){alert("Erro ao editar: "+e.message);}
 };
 
+window.diretorEditar=async(id)=>{
+  const r=_todas.find(r=>r.id===id);
+  if(!r)return;
+  const novoConteudo=prompt("Editar descrição da aula:",r.conteudo||"");
+  if(novoConteudo===null)return;
+  try{
+    await updateDoc(doc(db,"reservas",id),{
+      conteudo:novoConteudo,
+      editadoPorCoord:true,
+      editadoPorCoordNome:_usuario?.nome||"Diretor",
+      editadoPorCoordEm:new Date().toISOString()
+    });
+    // Notifica apenas admins
+    _usuarios.filter(u=>u.perfil==="admin").forEach(async adm=>{
+      await gravarNotif(adm.id,"✏️ Agendamento editado pelo Diretor",`${r.espaco} — ${r.professor} — ${r.data.split("-").reverse().join("/")} às ${r.horario}`,"info");
+    });
+    re();
+  }catch(e){alert("Erro ao editar: "+e.message);}
+};
+
+window.diretorExcluir=async(id)=>{
+  const r=_todas.find(r=>r.id===id);
+  if(!r)return;
+  if(!confirm(`Excluir agendamento de ${r.professor} em ${r.espaco} no dia ${r.data.split("-").reverse().join("/")}?`))return;
+  try{
+    await deleteDoc(doc(db,"reservas",id));
+    // Notifica apenas admins
+    _usuarios.filter(u=>u.perfil==="admin").forEach(async adm=>{
+      await gravarNotif(adm.id,"🗑️ Agendamento excluído pelo Diretor",`${r.espaco} — ${r.professor} — ${r.data.split("-").reverse().join("/")} às ${r.horario}`,"info");
+    });
+    re();
+  }catch(e){alert("Erro ao excluir: "+e.message);}
+};
+
 // ════════════════════════════════════════════════════════════════════════════
 // DIRETOR
 // ════════════════════════════════════════════════════════════════════════════
@@ -1289,6 +1323,11 @@ function diretorAgendaHTML(filtradas,h,c){
             </div>
             <p style="font-size:12px;color:${c.textMid}">👤 ${r.professor} · ${r.turmaInicio||r.turma||"—"}</p>
             ${r.conteudo?`<p style="font-size:12px;color:${c.textMuted};margin-top:2px">${r.conteudo}</p>`:""}
+            ${r.editadoPorCoord?`<span style="font-size:10px;color:#7c3aed;font-weight:700">✏️ Editado por ${r.editadoPorCoordNome||"Coord."}</span>`:""}
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0">
+            <button onclick="diretorEditar('${r.id}')" style="padding:5px 10px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.textMid};font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">✏️</button>
+            <button onclick="diretorExcluir('${r.id}')" style="padding:5px 10px;border-radius:8px;border:1.5px solid #fecaca;background:transparent;color:#dc2626;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">🗑️</button>
           </div>
         </div>
       </div>`;
