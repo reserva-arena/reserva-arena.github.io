@@ -2941,7 +2941,7 @@ function renderAdminView(){
   if(urgentes.length)html+=`<div style="background:linear-gradient(135deg,#f97316,#ea580c);border-radius:14px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;box-shadow:0 4px 16px rgba(249,115,22,.3)">
     <div style="width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">⚡</div>
     <div style="flex:1"><p style="font-size:13px;font-weight:800;color:#fff">${urgentes.length} agendamento${urgentes.length!==1?"s":""} urgente${urgentes.length!==1?"s":""} pendente${urgentes.length!==1?"s":""}</p><p style="font-size:11px;color:rgba(255,255,255,.8);margin-top:2px">Menos de 24h para o horário</p></div>
-    <button onclick="aSetModo('agenda');_A.fStatus='pendente';re()" style="background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.4);border-radius:10px;color:#fff;font-weight:800;font-size:12px;padding:7px 14px;cursor:pointer">Ver →</button>
+    <button onclick="aVerPendentes()" style="background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.4);border-radius:10px;color:#fff;font-weight:800;font-size:12px;padding:7px 14px;cursor:pointer">Ver →</button>
   </div>`;
 
   // ── FILTROS ──
@@ -3114,15 +3114,15 @@ function renderAdminView(){
 
   html+=`<div style="position:sticky;top:16px">
     <div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:10px 12px;margin-bottom:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      <div onclick="aSetModo('agenda');_A.aba='reservas';_A.fStatus='';_A.fData=fmtHoje();_A.historico=true;re()" style="text-align:center;padding:8px;background:${c.bg};border-radius:8px;cursor:pointer" title="Ver agendamentos de hoje">
+      <div onclick="aVerHoje()" style="text-align:center;padding:8px;background:${c.bg};border-radius:8px;cursor:pointer" title="Ver agendamentos de hoje">
         <p style="font-size:20px;font-weight:900;color:#1a6b47">${hoje_rs}</p>
         <p style="font-size:10px;color:${c.textMuted};font-weight:600">Hoje ↗</p>
       </div>
-      <div onclick="aSetModo('agenda');_A.aba='reservas';_A.fStatus='pendente';_A.fData='';_A.fDataAte='';re()" style="text-align:center;padding:8px;background:${pend>0?"#fff7ed":c.bg};border-radius:8px;cursor:pointer" title="Ver pendentes">
+      <div onclick="aVerPendentes()" style="text-align:center;padding:8px;background:${pend>0?"#fff7ed":c.bg};border-radius:8px;cursor:pointer" title="Ver pendentes">
         <p style="font-size:20px;font-weight:900;color:${pend>0?"#ea580c":c.textMuted}">${pend}</p>
         <p style="font-size:10px;color:${c.textMuted};font-weight:600">Pendentes ↗</p>
       </div>
-      <div onclick="aSetModo('agenda');_A.aba='reservas';_A.fStatus='';_A.fData='';_A.fDataAte=h7;_A.historico=false;re()" style="text-align:center;padding:8px;background:${c.bg};border-radius:8px;cursor:pointer" title="Ver esta semana">
+      <div onclick="aVerSemana()" style="text-align:center;padding:8px;background:${c.bg};border-radius:8px;cursor:pointer" title="Ver esta semana">
         <p style="font-size:20px;font-weight:900;color:#7c3aed">${semana_rs}</p>
         <p style="font-size:10px;color:${c.textMuted};font-weight:600">Esta semana ↗</p>
       </div>
@@ -3238,6 +3238,9 @@ window.admDayHover=function(ds,evt){
 };
 window.admDayLeave=function(){const tip=document.getElementById("adm-tip");if(tip)tip.classList.remove("show");};
 window.aSetModo=v=>{_A.modoVisu=v;re();};
+window.aVerHoje=()=>{_A.modoVisu="agenda";_A.aba="reservas";_A.fStatus="";_A.fData=fmtHoje();_A.historico=true;re();};
+window.aVerPendentes=()=>{_A.modoVisu="agenda";_A.aba="reservas";_A.fStatus="pendente";_A.fData="";_A.fDataAte="";re();};
+window.aVerSemana=()=>{const h7=addDias(fmtHoje(),7);_A.modoVisu="agenda";_A.aba="reservas";_A.fStatus="";_A.fData="";_A.fDataAte=h7;_A.historico=false;re();};
 window.aSetAba=v=>{_A.aba=v;re();};
 window.aNavMes=dir=>{let nm=_A.mesCal.m+dir,na=_A.mesCal.a;if(nm>11){nm=0;na++;}if(nm<0){nm=11;na--;}_A.mesCal={a:na,m:nm};_A.diaSel=null;re();};
 window.aModerar=async(id,status)=>{
