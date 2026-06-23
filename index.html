@@ -3203,7 +3203,7 @@ function admRow(r,showDate=false){
 }
 
 function bindAdmin(){
-  setTimeout(()=>{ 
+  const bind=()=>{ 
     const se=document.getElementById("adm-sel-espaco");
     const sp=document.getElementById("adm-sel-prof");
     const ss=document.getElementById("adm-sel-status");
@@ -3216,13 +3216,11 @@ function bindAdmin(){
     if(st2)st2.addEventListener("change",e=>{_A.fTurma=e.target.value;re();});
     if(bl)bl.addEventListener("click",()=>{_A.fEspaco="";_A.fProf="";_A.fStatus="";_A.fTurma="";re();});
     if(bh)bh.addEventListener("click",()=>{_A.historico=!_A.historico;re();});
-    // Calendário/Agenda buttons
     const bCal=document.getElementById("adm-btn-calendario");
     const bAgen=document.getElementById("adm-btn-agenda");
     if(bCal)bCal.addEventListener("click",()=>aSetModo("calendario"));
     if(bAgen)bAgen.addEventListener("click",()=>aSetModo("agenda"));
     document.querySelectorAll("[data-setmodo]").forEach(b=>b.addEventListener("click",()=>aSetModo(b.dataset.setmodo)));
-    // KPI buttons
     const bHoje=document.getElementById("adm-kpi-hoje");
     const bPend=document.getElementById("adm-kpi-pend");
     const bSem=document.getElementById("adm-kpi-sem");
@@ -3231,9 +3229,9 @@ function bindAdmin(){
     if(bPend)bPend.addEventListener("click",aVerPendentes);
     if(bSem)bSem.addEventListener("click",aVerSemana);
     if(bVer)bVer.addEventListener("click",aVerPendentes);
-    // Abas
     document.querySelectorAll("[data-setaba]").forEach(b=>b.addEventListener("click",()=>aSetAba(b.dataset.setaba)));
-  },50);
+  };
+  requestAnimationFrame(()=>requestAnimationFrame(bind));
 }
 
 window.admDayHover=function(ds,evt){
