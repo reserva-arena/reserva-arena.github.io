@@ -1202,25 +1202,8 @@ window.diretorExcluir=async(id)=>{
 if(!window._DR)window._DR={modoVisu:"agenda",fProf:"",fTurma:"",fEspaco:"",fStatus:"",mesCal:null};
 
 function renderDiretorInline(){
-  const c=C(),h=fmtHoje();
-  if(!window._DR)window._DR={modoVisu:"calendario",fProf:"",fTurma:"",fEspaco:"",fStatus:"",mesCal:null};
-  if(!_DR.mesCal){const d=new Date();_DR.mesCal={a:d.getFullYear(),m:d.getMonth()};}
-
-  const filtradas=_todas.filter(r=>{
-    if(r.reservaAutomatica)return false;
-    if(_DR.fEspaco&&r.espaco!==_DR.fEspaco)return false;
-    if(_DR.fProf&&r.professor!==_DR.fProf)return false;
-    if(_DR.fStatus&&r.status!==_DR.fStatus)return false;
-    if(_DR.fTurma&&(r.turmaInicio||r.turma||"")!==_DR.fTurma)return false;
-    return true;
-  });
-
-  const pend=_todas.filter(r=>r.status==="pendente"&&!r.reservaAutomatica).length;
-  const hojeRs=_todas.filter(r=>r.data===h&&r.status!=="recusado"&&!r.reservaAutomatica).length;
-  const semIni=getSegunda(h);const semFim=addDias(semIni,4);
-  const semRs=_todas.filter(r=>r.data>=semIni&&r.data<=semFim&&r.status!=="recusado"&&!r.reservaAutomatica).length;
-  const profs=[...new Set(_todas.filter(r=>!r.reservaAutomatica).map(r=>r.professor).filter(Boolean))].sort();
-  const turmas=[...new Set(_todas.filter(r=>!r.reservaAutomatica).map(r=>r.turmaInicio||r.turma||"").filter(Boolean))].sort();
+  return renderAdminView();
+}
 
   return`<div>
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">
@@ -1366,7 +1349,7 @@ window.setAdminVisu=(v)=>{
   if(v==="professor"){_P.modoProf="ver";_P.modoCard="lista";_P.modoVisu="semana";_P.semIni=getSegunda(fmtHoje());_P.diaSel=null;_P.filtroGrade="meus";_P.mostrarHistorico=false;_P.filtroPendente=false;}
   if(v==="ti"&&window._TI)_TI.aba="minhas";
   if(v==="marketing"&&window._MK)_MK.aba="minhas";
-  if(v==="diretor"){window._DR={modoVisu:"calendario",fProf:"",fTurma:"",fEspaco:"",fStatus:"",mesCal:{a:new Date().getFullYear(),m:new Date().getMonth()}};}
+  if(v==="diretor"){window._DR={modoVisu:"calendario",fProf:"",fTurma:"",fEspaco:"",fStatus:"",mesCal:{a:new Date().getFullYear(),m:new Date().getMonth()}};_A.modoVisu="calendario";}
   re();
 };
 window.irInicio=()=>{
@@ -2891,6 +2874,7 @@ let _A={modoVisu:"calendario",aba:"reservas",fEspaco:"",fProf:"",fStatus:"",fTur
 
 function renderAdminView(){
   const c=C(),h=fmtHoje();
+  const isDiretor=_adminVisu==="diretor"||_usuario?.perfil==="diretor";
   if(!_A.mesCal){const d=new Date();_A.mesCal={a:d.getFullYear(),m:d.getMonth()};}
   const filtradas=_todas.filter(r=>{
     if(r.reservaAutomatica)return false;
@@ -2906,12 +2890,12 @@ function renderAdminView(){
   // ── HEADER ──
   let html=`<div>
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">
-    <h1 style="font-size:20px;font-weight:800;color:${c.navy}">Painel Administrativo</h1>
+    <h1 style="font-size:20px;font-weight:800;color:${c.navy}">${isDiretor?"🎓 Visão do Diretor":"Painel Administrativo"}</h1>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <div style="display:flex;background:${c.surface};border-radius:10px;padding:3px;border:1px solid ${c.border};gap:2px">
         ${[{id:"calendario",l:"📅 Calendário"},{id:"agenda",l:"☰ Agenda"}].map(o=>`<button onclick="aSetModo('${o.id}')" style="padding:6px 14px;font-size:13px;border-radius:8px;border:1.5px solid ${_A.modoVisu===o.id?(_dark?'#1a6b47':c.navy):c.border};background:${_A.modoVisu===o.id?(_dark?'#1a6b47':c.navy):'transparent'};color:${_A.modoVisu===o.id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${o.l}</button>`).join("")}
       </div>
-      <button onclick="abrirGerenciarUsuarios()" style="${btn("ghost","","sm")}">👤 Usuários</button>
+      ${!isDiretor?`<button onclick="abrirGerenciarUsuarios()" style="${btn("ghost","","sm")}">👤 Usuários</button>`:""}
     </div>
   </div>`;
 
@@ -3171,10 +3155,18 @@ function admRow(r,showDate=false){
       </div>
     </div>
     <div style="display:flex;gap:5px;flex-shrink:0;align-items:center">
-      <button onclick="abrirEdicao('${r.id}')" title="Editar agendamento" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:12px;padding:5px 8px;display:flex;align-items:center;gap:3px;font-family:inherit">✏️ Editar</button>
-      ${r.status==="pendente"?`<button onclick="aModerar('${r.id}','confirmado')" style="${btn("success","","sm")}">✓</button><button onclick="aModerar('${r.id}','recusado')" style="${btn("danger","","sm")}">✗</button>`:""}
-      ${r.status==="confirmado"?`<button onclick="aModerar('${r.id}','recusado')" style="${btn("danger","","sm")}">✕</button>`:""}
-      <button onclick="aExcluir('${r.id}')" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:13px;padding:4px">🗑</button>
+      ${!isDiretor?`<button onclick="abrirEdicao('${r.id}')" title="Editar agendamento" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:12px;padding:5px 8px;display:flex;align-items:center;gap:3px;font-family:inherit">✏️ Editar</button>`:""}
+      ${!isDiretor&&r.status==="pendente"?`<button onclick="aModerar('${r.id}','confirmado')" style="${btn("success","","sm")}">✓</button><button onclick="aModerar('${r.id}','recusado')" style="${btn("danger","","sm")}">✗</button>`:""}
+      ${!isDiretor&&r.status==="confirmado"?`<button onclick="aModerar('${r.id}','recusado')" style="${btn("danger","","sm")}">✕</button>`:""}
+      ${!isDiretor?`<button onclick="aExcluir('${r.id}')" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:13px;padding:4px">🗑</button>`:""}
+      ${isDiretor&&r.status==="pendente"?(()=>{
+        const eo=ESPACOS.find(e=>e.nome===r.espaco);
+        const temAV=eo?.tipo==="audiovisual"||Number(r.bibMic)>0||Number(r.bibCaixa)>0||Number(r.bibProj)>0||Number(r.microfones)>0||Number(r.caixasom)>0||Number(r.projetor)>0;
+        const temFoto=r.precisaFoto||r.precisaVideo;
+        if(temAV)return`<span style="font-size:10px;font-weight:800;background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;padding:2px 8px;border-radius:10px">⏳ Ag. T.I.</span>`;
+        if(temFoto)return`<span style="font-size:10px;font-weight:800;background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe;padding:2px 8px;border-radius:10px">⏳ Ag. Mkt</span>`;
+        return`<span style="font-size:10px;font-weight:800;background:#fffbeb;color:#d97706;border:1px solid #fde68a;padding:2px 8px;border-radius:10px">⏳ Ag. Aprovação</span>`;
+      })():""}
     </div>
   </div>`;
 }
