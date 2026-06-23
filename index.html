@@ -1206,7 +1206,7 @@ window.doSignOut=()=>signOut(auth);
 window.toggleAdminVisu=()=>{};
 window.setAdminVisu=(v)=>{
   _adminVisu=v;
-  if(v==="professor"){_P.modoProf="ver";_P.modoCard="lista";_P.modoVisu="semana";_P.semIni=getSegunda(fmtHoje());_P.diaSel=null;_P.filtroGrade="meus";_P.mostrarHistorico=false;_P.filtroPendente=false;}
+  if(v==="professor"){_P.modoProf="ver";_P.modoCard="calendario";_P.modoVisu="mes";_P.semIni=getSegunda(fmtHoje());_P.diaSel=null;_P.filtroGrade="meus";_P.mostrarHistorico=false;_P.filtroPendente=false;}
   if(v==="ti"&&window._TI)_TI.aba="minhas";
   if(v==="marketing"&&window._MK)_MK.aba="minhas";
   re();
@@ -1217,7 +1217,7 @@ window.irInicio=()=>{
     _A.diaSel=null;_A.historico=false;
     const d=new Date();_A.mesCal={a:d.getFullYear(),m:d.getMonth()};
   } else {
-    _P.modoProf="ver";_P.modoCard="lista";_P.modoVisu="semana";
+    _P.modoProf="ver";_P.modoCard="calendario";_P.modoVisu="mes";
     _P.semIni=getSegunda(fmtHoje());_P.diaSel=null;_P.filtroGrade="meus";
     _P.mostrarHistorico=false;_P.filtroPendente=false;
   }
@@ -1227,7 +1227,7 @@ window.irInicio=()=>{
 // ════════════════════════════════════════════════════════════════════════════
 // PROFESSOR VIEW
 // ════════════════════════════════════════════════════════════════════════════
-let _P={modoProf:"ver",modoCard:"lista",modoVisu:"semana",filtroGrade:"meus",filtroEspaco:"",semIni:"",diaSel:null,mesCal:null,mostrarHistorico:false,filtroPendente:false,selecionados:new Set(),modoSelecao:false};
+let _P={modoProf:"ver",modoCard:"calendario",modoVisu:"mes",filtroGrade:"meus",filtroEspaco:"",semIni:"",diaSel:null,mesCal:null,mostrarHistorico:false,filtroPendente:false,selecionados:new Set(),modoSelecao:false};
 
 function renderProfessorView(){
   const c=C(),h=fmtHoje();
@@ -1332,9 +1332,45 @@ function renderProfessorView(){
     }
 
     if(_P.modoVisu==="mes"){
+      if(!_P.mesCal){const d=new Date();_P.mesCal={a:d.getFullYear(),m:d.getMonth()};}
       const{a,m}=_P.mesCal;
       const porData={};fonte.forEach(r=>{if(!porData[r.data])porData[r.data]=[];porData[r.data].push(r);});
-      html+=`<div style="padding:10px 12px">${calMensalHTML("pmes",a,m,porData,_P.diaSel)}</div>`;
+      const primeiroDia=new Date(Date.UTC(a,m,1));
+      const diasNoMes=new Date(Date.UTC(a,m+1,0)).getUTCDate();
+      const inicioGrid=primeiroDia.getUTCDay();
+      // Calcular offset sem Dom(0) - começa na Segunda(1)
+      const offsetSeg=(inicioGrid===0?6:inicioGrid-1);
+      const cells=[];for(let i=0;i<offsetSeg;i++)cells.push(null);for(let d=1;d<=diasNoMes;d++)cells.push(d);
+      const ehMeu2=r=>r.professorId===_usuario?.uid||r.professor===_usuario?.nome;
+      html+=`<div style="background:${c.surface};border-radius:14px;border:1px solid ${c.border};overflow:hidden;margin:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid ${c.border}">
+          <button onclick="pNavMes(-1)" style="background:none;border:1px solid ${c.border};border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:16px;font-family:inherit;color:${c.textMid}">‹</button>
+          <p style="font-weight:800;font-size:16px;color:${c.navy}">${MESES[m]} ${a}</p>
+          <button onclick="pNavMes(1)" style="background:none;border:1px solid ${c.border};border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:16px;font-family:inherit;color:${c.textMid}">›</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);border-bottom:1px solid ${c.border}">
+          ${["Seg","Ter","Qua","Qui","Sex"].map(d=>`<div style="padding:8px 0;text-align:center;font-size:11px;font-weight:700;color:${c.textMuted};text-transform:uppercase">${d}</div>`).join("")}
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(5,1fr)">
+          ${cells.map(d=>{
+            if(!d)return`<div style="min-height:80px;border-right:1px solid ${c.borderLight};border-bottom:1px solid ${c.borderLight}"></div>`;
+            const ds=`${a}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+            const dow=new Date(Date.UTC(a,m,d)).getUTCDay();
+            if(dow===0||dow===6)return"";
+            const isPast=ds<h,isH=ds===h;
+            const rsdia=(porData[ds]||[]).sort((a,b)=>a.horario>b.horario?1:-1);
+            const naoL=!isDiaLetivo(ds)&&!isPast;
+            return`<div style="min-height:80px;border-right:1px solid ${c.borderLight};border-bottom:1px solid ${c.borderLight};padding:4px;background:${isH?"rgba(26,107,71,.06)":"transparent"};cursor:pointer" onclick="pClicarDia('${ds}')">
+              <p style="font-size:11px;font-weight:800;color:${isH?c.green:naoL?"#ef4444":c.textMid};padding:2px 4px;border-radius:4px;display:inline-block;background:${isH?c.greenBg:"transparent"}">${d}</p>
+              ${rsdia.slice(0,3).map(r=>{const isMeu=ehMeu2(r);return`<div style="background:${isMeu?"#bbebcd":"#e2f0eb"};border-left:2px solid ${isMeu?"#1a6b47":"#94a3b8"};border-radius:3px;padding:2px 4px;margin-top:2px;font-size:9px;overflow:hidden">
+                <p style="font-weight:700;color:${isMeu?"#1a6b47":"#475569"};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.horario} ${r.espaco.split(" ")[0]}</p>
+                <p style="color:#607060;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nomeProf(r.professor)}</p>
+              </div>`;}).join("")}
+              ${rsdia.length>3?`<p style="font-size:9px;color:${c.textMuted};padding:2px 4px">+${rsdia.length-3} mais</p>`:""}
+            </div>`;
+          }).join("")}
+        </div>
+      </div>`;
     }
   }
 
@@ -1456,6 +1492,7 @@ window.pFiltroRapido=tipo=>{
   else if(tipo==='proximos'){_P.modoProf='ver';_P.modoCard='lista';re();}
 };
 window.pSetVisu=v=>{_P.modoVisu=v;re();};
+window.pNavMes=dir=>{if(!_P.mesCal){const d=new Date();_P.mesCal={a:d.getFullYear(),m:d.getMonth()};}let nm=_P.mesCal.m+dir,na=_P.mesCal.a;if(nm>11){nm=0;na++;}if(nm<0){nm=11;na--;}_P.mesCal={a:na,m:nm};re();};
 window.pSetGrade=v=>{_P.filtroGrade=v;if(v==="todos")carregarTodas();re();};
 window.pSetEspaco=v=>{_P.filtroEspaco=v;re();};
 window.pClicarDia=data=>{
