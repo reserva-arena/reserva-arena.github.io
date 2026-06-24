@@ -3048,6 +3048,32 @@ function renderAdminView(){
           </div>`).join('');
       })()}
     </div>
+
+    <div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:12px 14px;margin-top:12px">
+      <p style="font-size:11px;font-weight:800;color:${c.textMuted};text-transform:uppercase;margin-bottom:10px">👨‍🏫 Professores que mais agendam — este mês</p>
+      ${(()=>{
+        const contagem={};
+        const agora=new Date();
+        const mesIni=`${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,'0')}-01`;
+        const mesFim=`${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,'0')}-31`;
+        _todas.filter(r=>!r.reservaAutomatica&&r.status!==="recusado"&&r.data>=mesIni&&r.data<=mesFim).forEach(r=>{
+          if(r.professor)contagem[r.professor]=(contagem[r.professor]||0)+1;
+        });
+        const ranking=Object.entries(contagem).sort((a,b)=>b[1]-a[1]).slice(0,6);
+        const max=ranking[0]?.[1]||1;
+        const cores=["#ec4899","#f59e0b","#06b6d4","#8b5cf6","#14b8a6","#f97316"];
+        return ranking.map(([prof,total],i)=>`
+          <div style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+              <span style="font-size:11px;font-weight:700;color:${c.navy};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70%">${prof}</span>
+              <span style="font-size:11px;font-weight:800;color:${cores[i]}">${total}</span>
+            </div>
+            <div style="height:5px;background:${c.borderLight};border-radius:99px">
+              <div style="height:5px;background:${cores[i]};border-radius:99px;width:${Math.round(total/max*100)}%"></div>
+            </div>
+          </div>`).join('');
+      })()}
+    </div>
   </div>`;
 
   html+=`</div></div>`;
