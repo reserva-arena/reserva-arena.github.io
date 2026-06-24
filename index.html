@@ -451,7 +451,8 @@ function re(){if(_trocandoSenha)return;
   if(_usuario.perfil==="sem_acesso"||_usuario.ativo===false){renderSemAcesso();return;}
   if(_usuario.perfil==="fotografo"||_usuario.perfil==="marketing"){renderMarketing();return;}
   if(_usuario.perfil==="ti"||_usuario.perfil==="coord_ti"){renderTI();return;}
-  if(_usuario.perfil==="coord_inf"||_usuario.perfil==="coord_fund1"||_usuario.perfil==="coord_fund2"){renderCoord();return;}
+  if(_usuario.perfil==="dir"){renderAdminView(false);return;}
+  if(_usuario.perfil==="coord_inf"||_usuario.perfil==="coord_fund1"||_usuario.perfil==="coord_fund2"){renderAdminView(false);return;}
   renderApp();
 }
 
