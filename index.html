@@ -3054,6 +3054,256 @@ function renderAdminView(){
         const max=ranking[0][1]||1;
         const cores=["#ec4899","#f59e0b","#06b6d4","#8b5cf6","#14b8a6","#f97316"];
         return ranking.map(([prof,total],i)=>`<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:11px;font-weight:700;color:${c.navy}">${prof}</span><span style="font-size:11px;font-weight:800;color:${cores[i]}">${total}</span></div><div style="height:5px;background:${c.borderLight};border-radius:99px"><div style="height:5px;background:${cores[i]};border-radius:99px;width:${Math.round(total/max*100)}%"></div></div></div>`).join('');
+    if(r.reservaAutomatica)return false;
+    if(_A.fEspaco&&r.espaco!==_A.fEspaco)return false;
+    if(_A.fProf&&r.professor!==_A.fProf)return false;
+    if(_A.fStatus&&r.status!==_A.fStatus)return false;
+    return true;
+  });
+  const urgentes=_todas.filter(r=>r.status==="pendente"&&!r.reservaAutomatica&&isUrgente(r.data,r.horario));
+  const pend=_todas.filter(r=>r.status==="pendente"&&!r.reservaAutomatica).length;
+  const hoje_rs=_todas.filter(r=>r.data===h&&r.status!=="recusado"&&!r.reservaAutomatica).length;
+
+  // ── HEADER ──
+  let html=`<div>
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">
+    <h1 style="font-size:20px;font-weight:800;color:${c.navy}">Painel Administrativo</h1>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <div style="display:flex;background:${c.surface};border-radius:10px;padding:3px;border:1px solid ${c.border};gap:2px">
+        ${[{id:"calendario",l:"📅 Calendário"},{id:"agenda",l:"☰ Agenda"}].map(o=>`<button onclick="aSetModo('${o.id}')" style="padding:6px 14px;font-size:13px;border-radius:8px;border:1.5px solid ${_A.modoVisu===o.id?(_dark?'#1a6b47':c.navy):c.border};background:${_A.modoVisu===o.id?(_dark?'#1a6b47':c.navy):'transparent'};color:${_A.modoVisu===o.id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${o.l}</button>`).join("")}
+      </div>
+    </div>
+  </div>`;
+
+  // ── URGENTES ──
+  if(urgentes.length)html+=`<div style="background:linear-gradient(135deg,#f97316,#ea580c);border-radius:14px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;box-shadow:0 4px 16px rgba(249,115,22,.3)">
+    <div style="width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">⚡</div>
+    <div style="flex:1"><p style="font-size:13px;font-weight:800;color:#fff">${urgentes.length} agendamento${urgentes.length!==1?"s":""} urgente${urgentes.length!==1?"s":""} pendente${urgentes.length!==1?"s":""}</p><p style="font-size:11px;color:rgba(255,255,255,.8);margin-top:2px">Menos de 24h para o horário</p></div>
+    <button onclick="aSetModo('agenda');_A.fStatus='pendente';re()" style="background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.4);border-radius:10px;color:#fff;font-weight:800;font-size:12px;padding:7px 14px;cursor:pointer">Ver →</button>
+  </div>`;
+
+  // ── FILTROS ──
+  html+=`<div style="background:${c.surface};border-radius:12px;border:1px solid ${c.border};padding:8px 12px;margin-bottom:16px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;align-items:center">
+      <select id="adm-sel-espaco" style="${sel()};font-size:12px;padding:5px 8px;flex:1;min-width:100px"><option value="">🏛️ Espaço</option>${ESPACOS.map(e=>`<option value="${e.nome}" ${_A.fEspaco===e.nome?"selected":""}>${e.nome}</option>`).join("")}</select>
+      <select id="adm-sel-prof" style="${sel()};font-size:12px;padding:5px 8px;flex:1;min-width:100px"><option value="">👤 Professor</option>${_usuarios.map(u=>`<option value="${u.nome}" ${_A.fProf===u.nome?"selected":""}>${u.nome}</option>`).join("")}</select>
+      <select id="adm-sel-turma" style="${sel()};font-size:12px;padding:5px 8px;flex:1;min-width:90px"><option value="">🎓 Turma</option>${TURMAS.map(t=>`<option value="${t}" ${_A.fTurma===t?"selected":""}>${t}</option>`).join("")}</select>
+      <select id="adm-sel-status" style="${sel()};font-size:12px;padding:5px 8px;min-width:90px"><option value="">● Status</option><option value="confirmado" ${_A.fStatus==="confirmado"?"selected":""}>✅ Confirmado</option><option value="pendente" ${_A.fStatus==="pendente"?"selected":""}>⏳ Pendente</option><option value="recusado" ${_A.fStatus==="recusado"?"selected":""}>❌ Recusado</option></select>
+      ${_A.fEspaco||_A.fProf||_A.fStatus||_A.fTurma?`<button id="adm-btn-limpar" style="${btn("ghost")};padding:5px 10px;font-size:12px">✕</button>`:""}
+      <button id="adm-btn-hist" style="background:${_A.historico?c.navy:"transparent"};border:1.5px solid ${_A.historico?c.navy:c.border};border-radius:8px;color:${_A.historico?"#fff":c.textMuted};font-size:12px;padding:5px 10px;cursor:pointer;font-weight:600;white-space:nowrap;">🕐 ${_A.historico?"Ocultar":"Histórico"}</button>
+    </div>
+  </div>`;
+
+  // ── LAYOUT DUAS COLUNAS (desktop) ──
+  const isDesktop=window.innerWidth>=900;
+  html+=`<div style="display:grid;grid-template-columns:${isDesktop?'1fr 300px':'1fr'};gap:16px;align-items:start">
+  <div style="min-width:0">`;  // coluna principal
+
+  // ── CALENDÁRIO ──
+  if(_A.modoVisu==="calendario"){
+    const _abasBtns2=[{id:"marketing",l:"📸 Marketing"},{id:"ti",l:"💻 T.I."}].map(t=>`<button onclick="aSetAba('${t.id}');re()" style="padding:6px 13px;font-size:12px;white-space:nowrap;border-radius:8px;border:1.5px solid ${_A.aba===t.id?(_dark?'#1a6b47':c.navy):c.border};background:${_A.aba===t.id?(_dark?'#1a6b47':c.navy):'transparent'};color:${_A.aba===t.id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${t.l}</button>`).join("");
+    if(["marketing","ti"].includes(_A.aba)){html+=`<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap"><button onclick="aSetAba('reservas');re()" style="padding:6px 13px;font-size:12px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.text};font-weight:700;cursor:pointer">📋 Reservas</button><button onclick="aSetAba('espacos');re()" style="padding:6px 13px;font-size:12px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.text};font-weight:700;cursor:pointer">🏛️ Por Espaço</button>${_abasBtns2}</div>`;}
+    const{a:ano,m:mes}=_A.mesCal;
+    const porData={};
+    filtradas.filter(r=>r.status!=="recusado").forEach(r=>{if(!porData[r.data])porData[r.data]=[];porData[r.data].push(r);});
+    const primeiroDia=new Date(Date.UTC(ano,mes,1));
+    const diasNoMes=new Date(Date.UTC(ano,mes+1,0)).getUTCDate();
+    const inicioGrid=primeiroDia.getUTCDay();
+    const cells=[];for(let i=0;i<inicioGrid;i++)cells.push(null);for(let d=1;d<=diasNoMes;d++)cells.push(d);
+
+    if(_A.aba==="marketing"){html+="<div id='mk-adm-inline'></div>";setTimeout(()=>{const el=document.getElementById("mk-adm-inline");if(el){const mkP=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&(r.statusMarketing==="pendente")&&r.status!=="recusado"&&!r.reservaAutomatica&&r.data>=fmtHoje()).sort((a,b)=>a.data>b.data?1:-1);const mkA=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&r.statusMarketing==="aprovado"&&r.status!=="recusado"&&!r.reservaAutomatica&&r.data>=fmtHoje()).sort((a,b)=>a.data>b.data?1:-1);let h2="";if(mkP.length)h2+=`<p style='font-size:12px;font-weight:800;color:#7c3aed;text-transform:uppercase;margin:0 0 10px'>⏳ Aguardando aprovação (${mkP.length})</p>`+mkP.map(r=>`<div style='background:#fff;border:1.5px solid #ddd6fe;border-left:4px solid #7c3aed;border-radius:10px;padding:12px 14px;margin-bottom:8px'><div style='display:flex;gap:10px;align-items:center'><span style='font-family:monospace;font-weight:800;color:#7c3aed'>${r.horario}</span><span style='font-weight:700'>${r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco}</span><span style='font-size:12px;color:#607060'>${r.professor} · ${r.data.split("-").reverse().join("/")}</span></div><div style='display:flex;gap:8px;margin-top:10px'><button onclick='mkAprovar("${r.id}")' style='flex:1;padding:8px;border-radius:8px;border:none;background:#1a6b47;color:#fff;font-weight:700;cursor:pointer'>✅ Aprovar</button><button onclick='mkRecusar("${r.id}")' style='flex:1;padding:8px;border-radius:8px;border:none;background:#dc2626;color:#fff;font-weight:700;cursor:pointer'>❌ Recusar</button></div></div>`).join("");if(mkA.length)h2+=`<p style='font-size:12px;font-weight:800;color:#1a6b47;text-transform:uppercase;margin:14px 0 10px'>✅ Aprovados (${mkA.length})</p>`+mkA.map(r=>`<div style='background:#fff;border:1.5px solid #a7f3d0;border-left:4px solid #1a6b47;border-radius:10px;padding:12px 14px;margin-bottom:8px'><span style='font-family:monospace;font-weight:800;color:#1a6b47'>${r.horario}</span> <span style='font-weight:700'>${r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco}</span> <span style='font-size:12px;color:#607060'>${r.professor} · ${r.data.split("-").reverse().join("/")}</span></div>`).join("");if(!h2)h2=`<div style='text-align:center;padding:40px;color:#607060'><p style='font-size:32px'>📸</p><p>Nenhuma solicitação.</p></div>`;el.innerHTML=h2;}},0);return html+="</div></div></div>";}
+    if(_A.aba==="ti"){html+="<div id='ti-adm-inline'></div>";setTimeout(()=>{const el=document.getElementById("ti-adm-inline");if(el){const tiP=_todas.filter(r=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);return eo?.tipo==="audiovisual"&&r.status==="pendente"&&!r.reservaAutomatica&&r.data>=fmtHoje();}).sort((a,b)=>a.data>b.data?1:-1);const tiC=_todas.filter(r=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);return eo?.tipo==="audiovisual"&&r.status==="confirmado"&&!r.reservaAutomatica&&r.data>=fmtHoje();}).sort((a,b)=>a.data>b.data?1:-1);let h2="";if(tiP.length)h2+=`<p style='font-size:12px;font-weight:800;color:#c2410c;text-transform:uppercase;margin:0 0 10px'>⏳ Aguardando aprovação (${tiP.length})</p>`+tiP.map(r=>`<div style='background:#fff;border:1.5px solid #fed7aa;border-left:4px solid #f97316;border-radius:10px;padding:12px 14px;margin-bottom:8px'><div style='display:flex;gap:10px;align-items:center'><span style='font-family:monospace;font-weight:800;color:#c2410c'>${r.horario}</span><span style='font-weight:700'>${r.espaco}</span><span style='font-size:12px;color:#607060'>${r.professor} · ${r.data.split("-").reverse().join("/")}</span></div><div style='display:flex;gap:8px;margin-top:10px'><button onclick='tiAprovar("${r.id}")' style='flex:1;padding:8px;border-radius:8px;border:none;background:#1a6b47;color:#fff;font-weight:700;cursor:pointer'>✅ Aprovar</button><button onclick='tiRecusar("${r.id}")' style='flex:1;padding:8px;border-radius:8px;border:none;background:#dc2626;color:#fff;font-weight:700;cursor:pointer'>❌ Recusar</button></div></div>`).join("");if(tiC.length)h2+=`<p style='font-size:12px;font-weight:800;color:#1a6b47;text-transform:uppercase;margin:14px 0 10px'>✅ Confirmados (${tiC.length})</p>`+tiC.map(r=>`<div style='background:#fff;border:1.5px solid #a7f3d0;border-left:4px solid #1a6b47;border-radius:10px;padding:12px 14px;margin-bottom:8px'><span style='font-family:monospace;font-weight:800;color:#1a6b47'>${r.horario}</span> <span style='font-weight:700'>${r.espaco}</span> <span style='font-size:12px;color:#607060'>${r.professor} · ${r.data.split("-").reverse().join("/")}</span></div>`).join("");if(!h2)h2=`<div style='text-align:center;padding:40px;color:#607060'><p style='font-size:32px'>🔊</p><p>Nenhum agendamento.</p></div>`;el.innerHTML=h2;}},0);return html+="</div></div></div>";}
+
+    html+=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <button onclick="aNavMes(-1)" style="background:${c.surface};border:1px solid ${c.border};border-radius:8px;width:32px;height:32px;cursor:pointer;color:${c.textMid};font-size:16px">‹</button>
+        <p style="font-size:17px;font-weight:800;color:${c.navy};min-width:120px;text-align:center">${MESES[mes]} ${ano}</p>
+        <button onclick="aNavMes(1)" style="background:${c.surface};border:1px solid ${c.border};border-radius:8px;width:32px;height:32px;cursor:pointer;color:${c.textMid};font-size:16px">›</button>
+      </div>
+      <button onclick="const d=new Date();_A.mesCal={a:d.getFullYear(),m:d.getMonth()};_A.diaSel=null;re()" style="${btn("ghost")};padding:5px 12px;font-size:12px">Hoje</button>
+    </div>
+    <div style="background:${c.surface};border-radius:14px;border:1px solid ${c.border};overflow:hidden;box-shadow:${c.cardShadow}">`;
+    const calMobile=window.innerWidth<768;
+    const calCols=calMobile?"repeat(5,1fr)":"0.6fr repeat(5,1fr) 0.6fr";
+    const calDias=calMobile?["Seg.","Ter.","Qua.","Qui.","Sexta"]:["Dom.","Seg.","Ter.","Qua.","Qui.","Sexta","Sáb."];
+    html+=`<div style="display:grid;grid-template-columns:${calCols};border-bottom:2px solid ${c.border}">
+        ${calDias.map((d,i)=>{const isWk=calMobile?(false):(i===0||i===6);return`<div style="padding:8px 0;text-align:center;font-size:11px;font-weight:700;color:${isWk?"#ef4444":c.textMuted};text-transform:uppercase">${d}</div>`;}).join("")}
+      </div>
+      <div style="display:grid;grid-template-columns:${calCols}">`;
+
+    cells.forEach((d,i)=>{
+      if(!d){
+        // célula vazia do grid — no mobile pular posições de Dom(0) e Sáb(6)
+        // calcular dow da célula vazia: índice i no grid começa em inicioGrid
+        const dowVazia=(i)%7;
+        if(calMobile&&(dowVazia===0||dowVazia===6))return;
+        html+=`<div style="min-height:90px;border-right:1px solid ${c.borderLight};border-bottom:1px solid ${c.borderLight}"></div>`;return;
+      }
+      const ds=`${ano}-${String(mes+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+      const isPast=ds<h,isH=ds===h,isSel=ds===_A.diaSel;
+      const rsdia=porData[ds]||[];
+      const urg=rsdia.filter(r=>isUrgente(r.data,r.horario));
+      const pend=rsdia.filter(r=>r.status==="pendente"&&!isUrgente(r.data,r.horario));
+      const conf=rsdia.filter(r=>r.status==="confirmado");
+      const dow=new Date(Date.UTC(ano,mes,d)).getUTCDay();
+      if(calMobile&&(dow===0||dow===6))return;
+      const naoL=!isDiaLetivo(ds)&&!isPast&&dow!==0&&dow!==6;
+      html+=`<div onclick="_A.diaSel=_A.diaSel==='${ds}'?null:'${ds}';re()" data-ds="${ds}" onmouseenter="admDayHover('${ds}',event)" onmouseleave="admDayLeave()" style="min-height:90px;border-right:1px solid ${c.borderLight};border-bottom:1px solid ${c.borderLight};padding:5px 6px;cursor:pointer;background:${isSel?"rgba(26,107,71,.08)":isH?"rgba(26,107,71,.04)":"transparent"};transition:background .15s">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
+          <span style="font-size:13px;font-weight:${isH?900:500};color:${isSel?"#40b07a":isH?"#40b07a":isPast?c.textMuted:naoL?"#ef4444":dow===0||dow===6?"#ef4444":c.navy};width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:${isH?"rgba(26,107,71,.15)":"transparent"}">${d}</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          ${urg.slice(0,1).map(r=>{const range=r.horarioFim&&r.horarioFim!==r.horario?`→${r.horarioFim}`:"";return`<div style="background:#fff7ed;border:1px solid #f97316;border-radius:4px;padding:2px 4px;font-size:9px;font-weight:700;color:#c2410c;overflow:hidden"><div style="white-space:nowrap;text-overflow:ellipsis;overflow:hidden">⚡${r.horario}${range} ${r.espaco.split(" ")[0]}</div><div style="font-size:8px;color:#9a3412;white-space:nowrap;text-overflow:ellipsis;overflow:hidden">${r.professor?.split(" ")[0]||""}</div></div>`;}).join("")}
+          ${pend.slice(0,1).map(r=>{const range=r.horarioFim&&r.horarioFim!==r.horario?`→${r.horarioFim}`:"";return`<div style="background:${c.amberBg};border:1px solid ${c.amberBorder};border-radius:4px;padding:2px 4px;font-size:9px;font-weight:700;color:${c.amber};overflow:hidden"><div style="white-space:nowrap;text-overflow:ellipsis;overflow:hidden">⏳${r.horario}${range} ${r.espaco.split(" ")[0]}</div><div style="font-size:8px;color:#92400e;white-space:nowrap;text-overflow:ellipsis;overflow:hidden">${r.professor?.split(" ")[0]||""}</div></div>`;}).join("")}
+          ${conf.slice(0,2).map(r=>{const range=r.horarioFim&&r.horarioFim!==r.horario?`→${r.horarioFim}`:"";return`<div style="background:${c.greenBg};border:1px solid ${c.greenBorder};border-radius:4px;padding:2px 4px;font-size:9px;font-weight:600;color:${c.green};overflow:hidden"><div style="white-space:nowrap;text-overflow:ellipsis;overflow:hidden">${r.horario}${range} ${r.espaco.split(" ")[0]}</div><div style="font-size:8px;color:#166534;white-space:nowrap;text-overflow:ellipsis;overflow:hidden">${r.professor?.split(" ")[0]||""}</div></div>`;}).join("")}
+          ${rsdia.length>3?`<div style="font-size:9px;color:${c.blueMid};font-weight:700;padding-left:2px">+${rsdia.length-3} mais</div>`:""}
+        </div>
+      </div>`;
+    });
+
+    html+=`</div></div>
+    <div style="display:flex;gap:14px;margin-top:8px;flex-wrap:wrap;align-items:center">
+      ${[{l:"Urgente",bg:"#fff7ed",b:"#f97316"},{l:"Pendente",bg:c.amberBg,b:c.amberBorder},{l:"Confirmado",bg:c.greenBg,b:c.greenBorder}].map(l=>`<div style="display:flex;align-items:center;gap:5px"><div style="width:12px;height:12px;border-radius:3px;background:${l.bg};border:1.5px solid ${l.b}"></div><span style="font-size:11px;color:${c.textMuted};font-weight:600">${l.l}</span></div>`).join("")}
+      <span style="margin-left:auto;font-size:11px;color:${c.textMuted}">Clique para detalhes</span>
+    </div>`;
+
+    if(_A.diaSel){
+      const[a2,m2,d2]=_A.diaSel.split("-");
+      const rsdia=(porData[_A.diaSel]||[]).sort((a,b)=>a.horario>b.horario?1:-1);
+      html+=`<div class="fade-in" style="margin-top:14px;background:${c.surface};border-radius:14px;border:1px solid ${c.border};overflow:hidden">
+        <div style="background:linear-gradient(135deg,#1a6b47,#0f4c2b);padding:10px 16px;display:flex;align-items:center;justify-content:space-between">
+          <p style="font-size:15px;font-weight:800;color:#fff">📅 ${d2}/${m2}/${a2}</p>
+          <button onclick="_A.diaSel=null;re()" style="background:rgba(255,255,255,.2);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;padding:4px 10px;cursor:pointer">✕</button>
+        </div>
+        <div style="padding:12px 16px">
+          ${!rsdia.length?`<p style="font-size:13px;color:${c.textMuted};text-align:center;padding:14px 0">🎉 Nenhum agendamento.</p>`:rsdia.map(r=>admRow(r)).join("")}
+        </div>
+      </div>`;
+    }
+  }
+
+  // ── AGENDA ──
+  if(_A.modoVisu==="agenda"){
+    const urg=filtradas.filter(r=>r.status==="pendente"&&isUrgente(r.data,r.horario)&&(!_A.fData||r.data===_A.fData));
+    const pend=filtradas.filter(r=>r.status==="pendente"&&!isUrgente(r.data,r.horario)&&(!_A.fData||r.data===_A.fData));
+    const conf=filtradas.filter(r=>r.status!=="pendente"&&(_A.historico||r.data>=h)&&(!_A.fData||r.data===_A.fData)&&(!_A.fDataAte||r.data<=_A.fDataAte));
+
+    html+=`<div style="display:flex;gap:4px;margin-bottom:16px;background:${c.surface};border-radius:10px;padding:4px;border:1px solid ${c.border};width:fit-content;flex-wrap:wrap">
+      ${[{id:"reservas",l:"📋 Reservas"},{id:"espacos",l:"🏛️ Por Espaço"},{id:"marketing",l:"📸 Marketing"},{id:"ti",l:"💻 T.I."}].map(t=>`<button onclick="aSetAba('${t.id}')" style="padding:6px 13px;font-size:12px;white-space:nowrap;border-radius:8px;border:1.5px solid ${_A.aba===t.id?(_dark?'#1a6b47':c.navy):c.border};background:${_A.aba===t.id?(_dark?'#1a6b47':c.navy):'transparent'};color:${_A.aba===t.id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${t.l}</button>`).join("")}
+    </div>`;
+
+    if(_A.aba==="reservas"){
+      if(urg.length){
+        html+=`<div style="margin-bottom:16px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="width:8px;height:8px;border-radius:50%;background:#f97316"></div><p style="font-size:12px;font-weight:800;color:#c2410c;text-transform:uppercase">⚡ Urgentes · ${urg.length}</p><div style="flex:1;height:1px;background:#fed7aa"></div></div>`;
+        urg.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1).forEach(r=>{html+=admRow(r,true);});
+        html+=`</div>`;
+      }
+      if(pend.length){
+        html+=`<div style="margin-bottom:16px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="width:8px;height:8px;border-radius:50%;background:#d97706"></div><p style="font-size:12px;font-weight:800;color:${c.amber};text-transform:uppercase">Pendentes · ${pend.length}</p><div style="flex:1;height:1px;background:${c.amberBorder}"></div></div>`;
+        pend.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1).forEach(r=>{html+=admRow(r,true);});
+        html+=`</div>`;
+      }
+      if(conf.length){
+        html+=`<div style="margin-bottom:16px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="width:8px;height:8px;border-radius:50%;background:#1a6b47"></div><p style="font-size:12px;font-weight:800;color:${c.green};text-transform:uppercase">Confirmados · ${conf.length}</p><div style="flex:1;height:1px;background:${c.greenBorder}"></div></div>`;
+        conf.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1).forEach(r=>{html+=admRow(r,true);});
+        html+=`</div>`;
+      }
+      if(!urg.length&&!pend.length&&!conf.length)html+=`<div style="text-align:center;padding:40px;color:${c.textMuted}"><p style="font-size:32px">🎉</p><p>Nenhum agendamento encontrado.</p></div>`;
+    }
+
+    if(_A.aba==="espacos"){
+      const porEspaco={};
+      filtradas.filter(r=>r.status!=="recusado"&&(_A.historico||r.data>=h)).forEach(r=>{if(!porEspaco[r.espaco])porEspaco[r.espaco]=[];porEspaco[r.espaco].push(r);});
+      Object.entries(porEspaco).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([esp,rs])=>{
+        const eo=ESPACOS.find(e=>e.nome===esp);
+        html+=`<div style="margin-bottom:16px;background:${c.surface};border:1px solid ${c.border};border-radius:12px;overflow:hidden">
+          <div style="background:linear-gradient(135deg,#1a6b47,#0f4c2b);padding:10px 14px;display:flex;align-items:center;gap:10px">
+            <span style="font-size:18px">${eo?.icon||"🏛️"}</span>
+            <p style="font-size:14px;font-weight:800;color:#fff">${esp}</p>
+            <span style="margin-left:auto;background:rgba(255,255,255,.2);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px">${rs.length}</span>
+          </div>
+          <div style="padding:10px 14px">${rs.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1).map(r=>admRow(r,true)).join("")}</div>
+        </div>`;
+      });
+      if(!Object.keys(porEspaco).length)html+=`<div style="text-align:center;padding:40px;color:${c.textMuted}"><p style="font-size:32px">🏛️</p><p>Nenhum agendamento.</p></div>`;
+    }
+
+    if(_A.aba==="marketing"){html+="<div id='mk-adm-inline'></div>";setTimeout(()=>{const el=document.getElementById("mk-adm-inline");if(el){const mkP=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&(r.statusMarketing==="pendente")&&r.status!=="recusado"&&!r.reservaAutomatica&&r.data>=fmtHoje()).sort((a,b)=>a.data>b.data?1:-1);const mkA=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&r.statusMarketing==="aprovado"&&r.status!=="recusado"&&!r.reservaAutomatica&&r.data>=fmtHoje()).sort((a,b)=>a.data>b.data?1:-1);let h2="";if(mkP.length)h2+=`<p style='font-size:12px;font-weight:800;color:#7c3aed;text-transform:uppercase;margin:0 0 10px'>⏳ Aguardando aprovação (${mkP.length})</p>`+mkP.map(r=>`<div style='background:#fff;border:1.5px solid #ddd6fe;border-left:4px solid #7c3aed;border-radius:10px;padding:12px 14px;margin-bottom:8px'><div style='display:flex;gap:10px;align-items:center'><span style='font-family:monospace;font-weight:800;color:#7c3aed'>${r.horario}</span><span style='font-weight:700'>${r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco}</span><span style='font-size:12px;color:#607060'>${r.professor} · ${r.data.split("-").reverse().join("/")}</span></div><div style='display:flex;gap:8px;margin-top:10px'><button onclick='mkAprovar("${r.id}")' style='flex:1;padding:8px;border-radius:8px;border:none;background:#1a6b47;color:#fff;font-weight:700;cursor:pointer'>✅ Aprovar</button><button onclick='mkRecusar("${r.id}")' style='flex:1;padding:8px;border-radius:8px;border:none;background:#dc2626;color:#fff;font-weight:700;cursor:pointer'>❌ Recusar</button></div></div>`).join("");if(mkA.length)h2+=`<p style='font-size:12px;font-weight:800;color:#1a6b47;text-transform:uppercase;margin:14px 0 10px'>✅ Aprovados (${mkA.length})</p>`+mkA.map(r=>`<div style='background:#fff;border:1.5px solid #a7f3d0;border-left:4px solid #1a6b47;border-radius:10px;padding:12px 14px;margin-bottom:8px'><span style='font-family:monospace;font-weight:800;color:#1a6b47'>${r.horario}</span> <span style='font-weight:700'>${r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco}</span> <span style='font-size:12px;color:#607060'>${r.professor} · ${r.data.split("-").reverse().join("/")}</span></div>`).join("");if(!h2)h2=`<div style='text-align:center;padding:40px;color:#607060'><p style='font-size:32px'>📸</p><p>Nenhuma solicitação.</p></div>`;el.innerHTML=h2;}},0);}
+    if(_A.aba==="ti"){html+="<div id='ti-adm-inline'></div>";setTimeout(()=>{const el=document.getElementById("ti-adm-inline");if(el){const tiP=_todas.filter(r=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);return eo?.tipo==="audiovisual"&&r.status==="pendente"&&!r.reservaAutomatica&&r.data>=fmtHoje();}).sort((a,b)=>a.data>b.data?1:-1);const tiC=_todas.filter(r=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);return eo?.tipo==="audiovisual"&&r.status==="confirmado"&&!r.reservaAutomatica&&r.data>=fmtHoje();}).sort((a,b)=>a.data>b.data?1:-1);let h2="";if(tiP.length)h2+=`<p style='font-size:12px;font-weight:800;color:#c2410c;text-transform:uppercase;margin:0 0 10px'>⏳ Aguardando aprovação (${tiP.length})</p>`+tiP.map(r=>`<div style='background:#fff;border:1.5px solid #fed7aa;border-left:4px solid #f97316;border-radius:10px;padding:12px 14px;margin-bottom:8px'><div style='display:flex;gap:10px;align-items:center'><span style='font-family:monospace;font-weight:800;color:#c2410c'>${r.horario}</span><span style='font-weight:700'>${r.espaco}</span><span style='font-size:12px;color:#607060'>${r.professor} · ${r.data.split("-").reverse().join("/")}</span></div><div style='display:flex;gap:8px;margin-top:10px'><button onclick='tiAprovar("${r.id}")' style='flex:1;padding:8px;border-radius:8px;border:none;background:#1a6b47;color:#fff;font-weight:700;cursor:pointer'>✅ Aprovar</button><button onclick='tiRecusar("${r.id}")' style='flex:1;padding:8px;border-radius:8px;border:none;background:#dc2626;color:#fff;font-weight:700;cursor:pointer'>❌ Recusar</button></div></div>`).join("");if(tiC.length)h2+=`<p style='font-size:12px;font-weight:800;color:#1a6b47;text-transform:uppercase;margin:14px 0 10px'>✅ Confirmados (${tiC.length})</p>`+tiC.map(r=>`<div style='background:#fff;border:1.5px solid #a7f3d0;border-left:4px solid #1a6b47;border-radius:10px;padding:12px 14px;margin-bottom:8px'><span style='font-family:monospace;font-weight:800;color:#1a6b47'>${r.horario}</span> <span style='font-weight:700'>${r.espaco}</span> <span style='font-size:12px;color:#607060'>${r.professor} · ${r.data.split("-").reverse().join("/")}</span></div>`).join("");if(!h2)h2=`<div style='text-align:center;padding:40px;color:#607060'><p style='font-size:32px'>🔊</p><p>Nenhum agendamento.</p></div>`;el.innerHTML=h2;}},0);}
+  }
+
+  // ── FECHAR COLUNA PRINCIPAL ──
+  html+=`</div>`;
+
+  // ── COLUNA DIREITA: KPIs + PRÓXIMOS ──
+  const todosFeed=_todas.filter(r=>!r.reservaAutomatica&&r.data>=h&&r.status!=="recusado").sort((a,b)=>{
+    const ka=(a.data||"")+(a.horario||"");
+    const kb=(b.data||"")+(b.horario||"");
+    return ka.localeCompare(kb);
+  });
+  // Próximos 7 dias
+  const d7=new Date();d7.setDate(d7.getDate()+7);
+  const h7=d7.toISOString().slice(0,10);
+  const feedSemana=todosFeed.filter(r=>r.data<=h7);
+  const feedVer=_A.feedExpandido?todosFeed:feedSemana;
+
+  // Esta semana
+  const semana_rs=feedSemana.length;
+
+  html+=`<div style="position:sticky;top:16px">
+    <div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:5px 8px;margin-bottom:4px;display:grid;grid-template-columns:1fr 1fr;gap:4px">
+      <div onclick="aSetModo('agenda');_A.aba='reservas';_A.fStatus='';_A.fData=fmtHoje();_A.historico=true;re()" style="text-align:center;padding:8px;background:${c.bg};border-radius:8px;cursor:pointer" title="Ver agendamentos de hoje">
+        <p style="font-size:20px;font-weight:900;color:#1a6b47">${hoje_rs}</p>
+        <p style="font-size:9px;color:${c.textMuted};font-weight:600">Hoje ↗</p>
+      </div>
+      <div onclick="aSetModo('agenda');_A.aba='reservas';_A.fStatus='pendente';_A.fData='';_A.fDataAte='';re()" style="text-align:center;padding:8px;background:${pend>0?"#fff7ed":c.bg};border-radius:8px;cursor:pointer" title="Ver pendentes">
+        <p style="font-size:20px;font-weight:900;color:${pend>0?"#ea580c":c.textMuted}">${pend}</p>
+        <p style="font-size:9px;color:${c.textMuted};font-weight:600">Pendentes ↗</p>
+      </div>
+      <div onclick="aSetModo('agenda');_A.aba='reservas';_A.fStatus='';_A.fData='';_A.fDataAte=h7;_A.historico=false;re()" style="text-align:center;padding:8px;background:${c.bg};border-radius:8px;cursor:pointer" title="Ver esta semana">
+        <p style="font-size:20px;font-weight:900;color:#7c3aed">${semana_rs}</p>
+        <p style="font-size:9px;color:${c.textMuted};font-weight:600">Esta semana ↗</p>
+      </div>
+      <div style="text-align:center;padding:8px;background:${c.bg};border-radius:8px">
+        <p style="font-size:20px;font-weight:900;color:#0369a1">${todosFeed.length}</p>
+        <p style="font-size:9px;color:${c.textMuted};font-weight:600">Total</p>
+      </div>
+    </div>
+
+    <div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:12px 14px">
+      <p style="font-size:11px;font-weight:800;color:${c.textMuted};text-transform:uppercase;margin-bottom:10px">🏆 Espaços mais reservados — este mês</p>
+      ${(()=>{
+        const contagem={};
+        const agora=new Date();
+        const mesIni=`${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,'0')}-01`;
+        const mesFim=`${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,'0')}-31`;
+        _todas.filter(r=>!r.reservaAutomatica&&r.status!=="recusado"&&r.data>=mesIni&&r.data<=mesFim).forEach(r=>{
+          if(r.espaco)contagem[r.espaco]=(contagem[r.espaco]||0)+1;
+        });
+        const ranking=Object.entries(contagem).sort((a,b)=>b[1]-a[1]).slice(0,5);
+        const max=ranking[0]?.[1]||1;
+        const cores=["#1a6b47","#0369a1","#7c3aed","#ea580c","#d97706"];
+        return ranking.map(([espaco,total],i)=>`
+          <div style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+              <span style="font-size:11px;font-weight:700;color:${c.navy};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70%">${espaco}</span>
+              <span style="font-size:11px;font-weight:800;color:${cores[i]}">${total}</span>
+            </div>
+            <div style="height:5px;background:${c.borderLight};border-radius:99px">
+              <div style="height:5px;background:${cores[i]};border-radius:99px;width:${Math.round(total/max*100)}%"></div>
+            </div>
+          </div>`).join('');
+      })()}
+    </div>
+
+    <div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:12px 14px;margin-top:12px">
+      <p style="font-size:11px;font-weight:800;color:${c.textMuted};text-transform:uppercase;margin-bottom:10px">👨‍🏫 Professores que mais agendam — este mês</p>
+      ${(()=>{
+        const ranking=gerarRankingProfessores(_todas);
+        if(ranking.length===0)return"<p style=\"color:#999;font-size:11px\">Sem dados</p>";
+        const max=ranking[0][1]||1;
+        const cores=["#ec4899","#f59e0b","#06b6d4","#8b5cf6","#14b8a6","#f97316"];
+        return ranking.map(([prof,total],i)=>`<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:11px;font-weight:700;color:${c.navy}">${prof}</span><span style="font-size:11px;font-weight:800;color:${cores[i]}">${total}</span></div><div style="height:5px;background:${c.borderLight};border-radius:99px"><div style="height:5px;background:${cores[i]};border-radius:99px;width:${Math.round(total/max*100)}%"></div></div></div>`).join('');
       })()}
     </div>
   </div>`;
