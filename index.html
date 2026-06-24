@@ -3354,8 +3354,7 @@ let _unsubTodas=null;
 
 function carregarTodas(){
   if(_todasCarregadas||_unsubTodas)return;
-  const hoje=new Date();hoje.setDate(hoje.getDate()-7);
-  const dataCorte=hoje.toISOString().slice(0,10);
+  // Carrega TUDO sem filtro (para histórico completo sob demanda)
   _unsubTodas=onSnapshot(query(collection(db,"reservas"),where("data",">=",dataCorte)),snap=>{
     _todas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario);
     _todasCarregadas=true;re();
