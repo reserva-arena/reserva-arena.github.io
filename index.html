@@ -2870,7 +2870,7 @@ function renderAdminView(){
         <p style="font-size:17px;font-weight:800;color:${c.navy};min-width:120px;text-align:center">${MESES[mes]} ${ano}</p>
         <button onclick="aNavMes(1)" style="background:${c.surface};border:1px solid ${c.border};border-radius:8px;width:32px;height:32px;cursor:pointer;color:${c.textMid};font-size:16px">›</button>
       </div>
-      <button onclick="const d=new Date();_A.mesCal={a:d.getFullYear(),m:d.getMonth()};_A.diaSel=null;re()" style="${btn("ghost")};padding:5px 12px;font-size:12px">Hoje</button><button id="adm-btn-hist" style="padding:6px 10px;background:${_A.historico?c.navy:\"transparent\"};border:1.5px solid ${_A.historico?c.navy:c.border};border-radius:8px;color:${_A.historico?\"#fff\":c.textMuted};cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;margin-left:8px">🕐 ${_A.historico?\"Ocultar\":\"Histórico\"}</button>
+      <button onclick="const d=new Date();_A.mesCal={a:d.getFullYear(),m:d.getMonth()};_A.diaSel=null;re()" style="${btn("ghost")};padding:5px 12px;font-size:12px">Hoje</button>
     </div>
     <div style="background:${c.surface};border-radius:14px;border:1px solid ${c.border};overflow:hidden;box-shadow:${c.cardShadow}">`;
     const calMobile=window.innerWidth<768;
