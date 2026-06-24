@@ -3052,6 +3052,8 @@ function renderAdminView(){
 }
 
 
+function gerarRankingProfessores(todas){const c={};const agora=new Date();const mesIni=`${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,'0')}-01`;const mesFim=`${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,'0')}-31`;todas.filter(r=>!r.reservaAutomatica&&r.status!=="recusado"&&r.data>=mesIni&&r.data<=mesFim).forEach(r=>{if(r.professor)c[r.professor]=(c[r.professor]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,6);}
+
 function admRow(r,showDate=false){
   const c=C(),h=fmtHoje();
   const urg=isUrgente(r.data,r.horario);
