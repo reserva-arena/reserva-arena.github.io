@@ -3354,7 +3354,7 @@ let _unsubTodas=null;
 
 function carregarTodas(){
   if(_todasCarregadas||_unsubTodas)return;
-  const hoje=new Date();hoje.setDate(hoje.getDate()-10);
+  const hoje=new Date();hoje.setDate(hoje.getDate()-7);
   const dataCorte=hoje.toISOString().slice(0,10);
   _unsubTodas=onSnapshot(query(collection(db,"reservas"),where("data",">=",dataCorte)),snap=>{
     _todas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario);
@@ -3365,7 +3365,7 @@ function carregarTodas(){
 function startListeners(uid){
   const perfil=_usuario?.perfil||"professor";
   const isProfOnly=perfil==="professor";
-  const hoje=new Date();hoje.setDate(hoje.getDate()-10);
+  const hoje=new Date();hoje.setDate(hoje.getDate()-7);
   const dataCorte=hoje.toISOString().slice(0,10);
 
   if(isProfOnly){
