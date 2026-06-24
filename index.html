@@ -2821,7 +2821,7 @@ function renderAdminView(showUsers=true){
       <div style="display:flex;background:${c.surface};border-radius:10px;padding:3px;border:1px solid ${c.border};gap:2px">
         ${[{id:"calendario",l:"📅 Calendário"},{id:"agenda",l:"☰ Agenda"}].map(o=>`<button onclick="aSetModo('${o.id}')" style="padding:6px 14px;font-size:13px;border-radius:8px;border:1.5px solid ${_A.modoVisu===o.id?(_dark?'#1a6b47':c.navy):c.border};background:${_A.modoVisu===o.id?(_dark?'#1a6b47':c.navy):'transparent'};color:${_A.modoVisu===o.id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${o.l}</button>`).join("")}
       </div>
-      ${showUsers?`<button onclick="abrirGerenciarUsuarios()" style="${btn("ghost","","sm")}">👤 Usuários</button>`:""}`
+      <button onclick="abrirGerenciarUsuarios()" style="${btn("ghost","","sm")}">👤 Usuários</button>
     </div>
   </div>`;
 
