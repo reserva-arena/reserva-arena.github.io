@@ -2799,7 +2799,7 @@ window.salvarED=async()=>{
 // ════════════════════════════════════════════════════════════════════════════
 let _A={modoVisu:"calendario",aba:"reservas",fEspaco:"",fProf:"",fStatus:"",fTurma:"",mesCal:null,diaSel:null,historico:false,feedExpandido:false};
 
-function renderAdminView(){
+function renderAdminView(showUsers=true){
   const c=C(),h=fmtHoje();
   if(!_A.mesCal){const d=new Date();_A.mesCal={a:d.getFullYear(),m:d.getMonth()};}
   const filtradas=_todas.filter(r=>{
