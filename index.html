@@ -59,7 +59,7 @@ select option{font-family:'DM Sans',system-ui,sans-serif}
 
 <script type="module">
 import{initializeApp,getApps}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,onAuthStateChanged,sendPasswordResetEmail}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,onAuthStateChanged,sendPasswordResetEmail,updatePassword}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import{getFirestore,collection,addDoc,onSnapshot,doc,updateDoc,query,where,orderBy,getDocs,Timestamp,setDoc,getDoc,deleteDoc,writeBatch}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import{getMessaging,getToken,onMessage}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
 
@@ -182,29 +182,54 @@ async function iniciarNotificacoes(userId) {
 
 // ─── CONSTANTES ──────────────────────────────────────────────────────────────
 const ADMIN_EMAIL = "luciano.galdino@colegioarena.com.br";
-const HORARIOS    = ["07:10","08:00","09:10","10:00","11:10","12:00","12:50","13:40","14:30","15:20","16:10","17:00"];
+
+// ── HORÁRIOS COM INTERVALOS MARCADOS ──
+// tipo: "aula" = horário normal (selecionável)
+// tipo: "intervalo" = pausa entre aulas (cinza, não selecionável)
+const HORARIOS_COMPLETO = [
+  {hora:"07:10", tipo:"aula"},
+  {hora:"08:00", tipo:"aula"},
+  {hora:"08:50", tipo:"intervalo"},
+  {hora:"09:10", tipo:"aula"},
+  {hora:"10:00", tipo:"aula"},
+  {hora:"10:50", tipo:"intervalo"},
+  {hora:"11:10", tipo:"aula"},
+  {hora:"12:00", tipo:"aula"},
+  {hora:"12:40", tipo:"aula"},
+  {hora:"12:50", tipo:"intervalo"},
+  {hora:"13:30", tipo:"aula"},
+  {hora:"14:30", tipo:"aula"},
+  {hora:"15:20", tipo:"aula"},
+  {hora:"16:10", tipo:"aula"},
+  {hora:"17:00", tipo:"aula"}
+];
+
+// ── HORÁRIOS (COMPATIBILIDADE) ──
+// Apenas as horas válidas de aula (sem intervalos)
+// Mantém compatibilidade com código que usa indexOf(), etc.
+const HORARIOS = HORARIOS_COMPLETO.filter(h => h.tipo === "aula").map(h => h.hora);
 
 // ── ESPAÇOS ──
 // multiHorario: true  → formulário de range (início→fim) em vez de blocos individuais
 // equipAuto: []       → lista de equipamentos que podem ser reservados automaticamente junto
 const ESPACOS = [
-  {id:1,  nome:"Biblioteca",                     tipo:"espaco",     multiHorario:true,  equipAuto:[]},
+  {id:1,  nome:"Biblioteca",                     tipo:"espaco",     multiHorario:true,  equipAuto:["Tablets (18 disp.)","Computadores (16 disp.)"], temBibAV:true},
   {id:2,  nome:"Maker 1",                        tipo:"espaco",     multiHorario:true,  equipAuto:[],  equipFixo:true},
   {id:3,  nome:"Maker 2",                        tipo:"espaco",     multiHorario:true,  equipAuto:[],  equipFixo:true},
-  {id:15, nome:"Estúdio de Música",                tipo:"espaco",     multiHorario:true,  equipAuto:[]},
-  {id:4,  nome:"Ateliê de Artes",                tipo:"espaco",     multiHorario:true,  equipAuto:[]},
-  {id:5,  nome:"Sala de Dança",                  tipo:"espaco",     multiHorario:true,  equipAuto:[]},
+  {id:15, nome:"Estúdio de Música",              tipo:"espaco",     multiHorario:true,  equipAuto:[]},
+  {id:4,  nome:"Ateliê de Artes",                tipo:"espaco",     multiHorario:true,  equipAuto:["Tablets (18 disp.)","Computadores (16 disp.)"], temBibAV:true},
+  {id:5,  nome:"Sala de Dança",                  tipo:"espaco",     multiHorario:true,  equipAuto:[], temBibAV:true},
   {id:6,  nome:"Sala Multifuncional",            tipo:"espaco",     multiHorario:true,  equipAuto:["Tablets (18 disp.)","Computadores (16 disp.)"]},
-  {id:7,  nome:"Cozinha Experimental",           tipo:"espaco",     multiHorario:true,  equipAuto:[]},
-  {id:8,  nome:"Fazendinha",                     tipo:"espaco",     multiHorario:true,  equipAuto:[]},
-  {id:15, nome:"Pátio do Lago de Pedras",        tipo:"espaco",     multiHorario:true,  equipAuto:[]},
+  {id:7,  nome:"Cozinha Experimental",           tipo:"espaco",     multiHorario:true,  equipAuto:[], temBibAV:true},
+  {id:8,  nome:"Fazendinha",                     tipo:"espaco",     multiHorario:true,  equipAuto:[], temBibAV:true},
+  {id:15, nome:"Pátio do Lago de Pedras",        tipo:"espaco",     multiHorario:true,  equipAuto:[], temBibAV:true},
   {id:9,  nome:"Lab. de Matemática",             tipo:"espaco",     multiHorario:true,  equipAuto:["Tablets (18 disp.)","Computadores (16 disp.)"]},
-  {id:10, nome:"Lab. de Ciências Anos Iniciais", tipo:"laboratorio",multiHorario:true,  equipAuto:[]},
-  {id:11, nome:"Lab. de Ciências Anos Finais",   tipo:"laboratorio",multiHorario:true,  equipAuto:[]},
+  {id:10, nome:"Lab. de Ciências Anos Iniciais", tipo:"laboratorio",multiHorario:true,  equipAuto:["Tablets (18 disp.)","Computadores (16 disp.)"]},
+  {id:11, nome:"Lab. de Ciências Anos Finais",   tipo:"laboratorio",multiHorario:true,  equipAuto:["Tablets (18 disp.)","Computadores (16 disp.)"]},
   {id:12, nome:"Tablets (18 disp.)",             tipo:"equipamento",multiHorario:true,  estoque:18, equipAuto:[], equipAvulso:true},
   {id:13, nome:"Computadores (16 disp.)",        tipo:"equipamento",multiHorario:true,  estoque:16, equipAuto:[], equipAvulso:true},
-  {id:14, nome:"Som, Microfone e Projetor",                   tipo:"audiovisual",multiHorario:true,  equipAuto:[], equipAvulso:true},
-  {id:16, nome:"Equipe de Marketing",             tipo:"marketing",  multiHorario:true,  equipAuto:[]},
+  {id:14, nome:"Som, Microfone e Projetor",      tipo:"audiovisual",multiHorario:true,  equipAuto:[], equipAvulso:true},
+  {id:16, nome:"Equipe de Marketing",            tipo:"marketing",  multiHorario:true,  equipAuto:[]},
 ];
 
 const TURMAS_EDUCACAO_INFANTIL = [
@@ -221,15 +246,16 @@ const TURMAS_FUND1 = (()=>{const t=[];for(let a=1;a<=5;a++)["A","B","C","D","E"]
 const TURMAS_FUND2 = (()=>{const t=[];for(let a=6;a<=9;a++)["A","B","C","D","E","F","G","H"].forEach(l=>t.push(`${a}º${l}`));return t;})();
 const TURMAS_EXTRAS = ["Extra Música"];
 const TURMAS_INTEGRAL = ["Integral 3-4 anos","Integral 5 anos"];
-const TURMAS = [...TURMAS_EDUCACAO_INFANTIL, ...TURMAS_FUND1, ...TURMAS_FUND2, ...TURMAS_EXTRAS, ...TURMAS_INTEGRAL];
+const TURMAS_INTEGRAL_FUND1 = ["1º ano Integral","2º e 3º Integral","4º e 5º Integral"];
+const TURMAS = [...TURMAS_EDUCACAO_INFANTIL, ...TURMAS_FUND1, ...TURMAS_FUND2, ...TURMAS_EXTRAS, ...TURMAS_INTEGRAL, ...TURMAS_INTEGRAL_FUND1];
 const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 
 const NAO_LETIVOS = new Set([
   "2026-01-01","2026-02-16","2026-02-17","2026-02-18",
   "2026-04-02","2026-04-03","2026-04-20","2026-04-21",
-  "2026-05-01","2026-06-04","2026-06-05","2026-06-20","2026-06-30",
+  "2026-05-01","2026-06-04","2026-06-05","2026-06-20",
   ...Array.from({length:31},(_,i)=>`2026-07-${String(i+1).padStart(2,"0")}`),
-  "2026-09-07","2026-10-12","2026-10-13","2026-10-24",
+  "2026-09-07","2026-10-12","2026-10-13",
   "2026-11-02","2026-11-15","2026-11-20","2026-11-27","2026-11-28","2026-12-25"
 ]);
 const NAO_LETIVOS_INICIAIS = new Set(["2026-06-19"]);
@@ -310,7 +336,7 @@ function getSegunda(s){
 function horariosRange(ini,fim){
   const iIni=HORARIOS.indexOf(ini),iFim=HORARIOS.indexOf(fim);
   if(iIni<0||iFim<0||iFim<iIni)return ini?[ini]:[];
-  return HORARIOS.slice(iIni,iFim+1);
+  return HORARIOS.slice(iIni,iFim);
 }
 
 const ESPACO_ICON={
@@ -368,25 +394,30 @@ function alertHTML(type,msg){const c=C();const cfg={error:{bg:c.redBg,b:c.redBor
 // ─── CALENDÁRIO MENSAL ────────────────────────────────────────────────────────
 function calMensalHTML(cid,ano,mes,porData,dataSel){
   const c=C(),h=fmtHoje();
+  const mob=window.innerWidth<768;
   const primeiroDia=new Date(Date.UTC(ano,mes,1));
   const diasNoMes=new Date(Date.UTC(ano,mes+1,0)).getUTCDate();
   const inicioGrid=primeiroDia.getUTCDay();
   const cells=[];for(let i=0;i<inicioGrid;i++)cells.push(null);for(let d=1;d<=diasNoMes;d++)cells.push(d);
   let dias="";
   cells.forEach((d,i)=>{
-    if(!d){dias+=`<div></div>`;return;}
+    const dowVazia=i%7;
+    if(!d){if(mob&&(dowVazia===0||dowVazia===6))return;dias+=`<div></div>`;return;}
     const ds=`${ano}-${String(mes+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
     const isH=ds===h,isPast=ds<h,isSel=ds===dataSel,letivo=isDiaLetivo(ds);
     const dow=new Date(Date.UTC(ano,mes,d)).getUTCDay(),isFim=dow===0||dow===6;
+    if(mob&&(dow===0||dow===6))return;
     const nao=!letivo&&!isPast;
     const bg=isSel?"#40b07a":isH?"rgba(26,107,71,.12)":nao?"rgba(239,68,68,.08)":"transparent";
     const col=isSel?"#fff":isPast?"#cbd5e1":nao?"#fca5a5":isFim?"#ef4444":c.navy;
     const temRes=(porData[ds]||[]).length>0;
-    dias+=`<button onclick="window._calClick('${cid}','${ds}')" ${isPast||!letivo?"disabled":""}
-      style="aspect-ratio:1;border-radius:8px;border:none;cursor:${isPast||!letivo?"not-allowed":"pointer"};background:${bg};color:${col};font-weight:${isH||isSel?800:500};font-size:13.5px;position:relative;opacity:${isPast?.4:1};transition:all .15s;font-family:inherit">
+    dias+=isPast?`<div style="aspect-ratio:1;width:6px;height:6px;border-radius:50%;background:#cbd5e1;opacity:.3;margin:auto"></div>`:`<button onclick="window._calClick('${cid}','${ds}')" ${!letivo?"disabled":""}
+      style="aspect-ratio:1;border-radius:8px;border:none;cursor:${!letivo?"not-allowed":"pointer"};background:${bg};color:${col};font-weight:${isH||isSel?800:500};font-size:13.5px;position:relative;opacity:1;transition:all .15s;font-family:inherit">
       ${d}${temRes&&!isSel?`<div style="position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:#40b07a"></div>`:""}
     </button>`;
   });
+  const cols=mob?"repeat(5,1fr)":"repeat(7,1fr)";
+  const labels=mob?["S","T","Q","Q","S"]:["D","S","T","Q","Q","S","S"];
   return`<div style="background:${c.surface};border-radius:16px;border:1px solid ${c.border};overflow:hidden">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid ${c.border}">
       <button onclick="window._calNav('${cid}',-1)" style="background:none;border:1px solid ${c.border};border-radius:8px;width:34px;height:34px;cursor:pointer;color:${c.textMid};font-size:16px;font-family:inherit">‹</button>
@@ -394,16 +425,16 @@ function calMensalHTML(cid,ano,mes,porData,dataSel){
       <button onclick="window._calNav('${cid}',1)" style="background:none;border:1px solid ${c.border};border-radius:8px;width:34px;height:34px;cursor:pointer;color:${c.textMid};font-size:16px;font-family:inherit">›</button>
     </div>
     <div style="padding:12px 16px 16px">
-      <div style="display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:6px">
-        ${["D","S","T","Q","Q","S","S"].map((n,i)=>`<div style="text-align:center;font-size:10px;font-weight:700;color:${i===0||i===6?"#ef4444":c.textMuted};padding:4px 0">${n}</div>`).join("")}
+      <div style="display:grid;grid-template-columns:${cols};margin-bottom:6px">
+        ${labels.map((n,i)=>`<div style="text-align:center;font-size:10px;font-weight:700;color:${!mob&&(i===0||i===6)?"#ef4444":c.textMuted};padding:4px 0">${n}</div>`).join("")}
       </div>
-      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">${dias}</div>
+      <div style="display:grid;grid-template-columns:${cols};gap:3px">${dias}</div>
     </div>
   </div>`;
 }
 
 // ─── ESTADO GLOBAL ────────────────────────────────────────────────────────────
-let _usuario=null,_todas=[],_minhas=[],_usuarios=[];
+let _usuario=null,_todas=[],_minhas=[],_usuarios=[],_trocandoSenha=false;
 let _unsub1=null,_unsub2=null,_unsub3=null;
 
 function exigePermissao(perfisPermitidos){
@@ -412,14 +443,15 @@ function exigePermissao(perfisPermitidos){
   if(!perfisPermitidos.includes(_usuario.perfil)){console.warn('Acesso negado: perfil sem permissão');return false;}
   return true;
 }
-function re(){
+function re(){if(_trocandoSenha)return;
   const c=C();
   document.body.style.background=c.bg;
   document.body.style.color=c.text;
-  if(!_usuario){renderPublica();return;}
+  if(!_usuario){renderLogin();return;}
   if(_usuario.perfil==="sem_acesso"||_usuario.ativo===false){renderSemAcesso();return;}
   if(_usuario.perfil==="fotografo"||_usuario.perfil==="marketing"){renderMarketing();return;}
-  if(_usuario.perfil==="ti"){renderTI();return;}
+  if(_usuario.perfil==="ti"||_usuario.perfil==="coord_ti"){renderTI();return;}
+  if(_usuario.perfil==="coord_inf"||_usuario.perfil==="coord_fund1"||_usuario.perfil==="coord_fund2"){renderCoord();return;}
   renderApp();
 }
 
@@ -428,6 +460,72 @@ function re(){
 // ════════════════════════════════════════════════════════════════════════════
 let _pubCal={a:new Date().getFullYear(),m:new Date().getMonth()},_pubDiaSel=null;
 
+function renderLogin(){
+  var c=C();
+  var h="<div style='min-height:100vh;background:"+c.bg+";display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px'><div style='width:100%;max-width:400px'>";
+  h+="<div style='text-align:center;margin-bottom:20px'>"+logoHTML(50)+"<h1 style='font-size:18px;font-weight:800;color:"+c.navy+";margin-top:8px'>Reserva Arena</h1><p style='font-size:11px;color:"+c.textMuted+"'>Colégio Arena</p></div>";
+  h+="<div style='background:"+c.surface+";border:1.5px solid "+c.border+";border-radius:14px;padding:20px;margin-bottom:12px'>";
+  h+="<p style='font-size:13px;font-weight:800;color:"+c.navy+";margin-bottom:12px;text-align:center'>🔐 Acesso ao sistema</p>";
+  h+="<input id='lg-e' type='email' placeholder='Seu e-mail' style='width:100%;padding:11px;border-radius:8px;border:1.5px solid "+c.border+";background:"+c.bg+";color:"+c.text+";font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;margin-bottom:8px'>";
+  h+="<input id='lg-s' type='password' placeholder='Senha' style='width:100%;padding:11px;border-radius:8px;border:1.5px solid "+c.border+";background:"+c.bg+";color:"+c.text+";font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;margin-bottom:8px'>";
+  h+="<button onclick='doLogin()' style='width:100%;padding:12px;border-radius:8px;border:none;background:#1a6b47;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit'>Entrar</button>";
+  h+="<div style='text-align:center;margin-top:8px'><button onclick='doEsqueciSenha()' style='background:none;border:none;color:"+c.textMuted+";font-size:11px;cursor:pointer;font-family:inherit'>Esqueci minha senha</button></div>";
+  h+="<div id='lg-err' style='display:none;margin-top:8px;padding:8px;border-radius:8px;background:#fef2f2;color:#dc2626;font-size:11px;text-align:center'></div></div>";
+  h+="<div style='background:"+c.surface+";border:1.5px solid "+c.border+";border-radius:14px;padding:14px'>";
+  h+="<p style='font-size:11px;font-weight:800;color:"+c.navy+";margin-bottom:6px'>📋 Ainda não tem acesso?</p>";
+  h+="<p style='font-size:10px;color:"+c.textMuted+";margin-bottom:10px'>Fale com a equipe de T.E.:</p>";
+  h+="<div style='display:flex;align-items:center;gap:9px;padding:8px;background:"+c.bg+";border-radius:8px;border:1px solid "+c.border+";margin-bottom:6px'>";
+  h+="<div><p style='font-size:11px;font-weight:700;color:"+c.navy+"'>Luciano</p><p style='font-size:10px;color:"+c.textMuted+"'>Disponível para suporte</p><a href='tel:6298497-9797' style='font-size:11px;color:#1a6b47;font-weight:700;text-decoration:none'>(62) 98497-9797</a></div></div>";
+  h+="<div style='display:flex;align-items:center;gap:9px;padding:8px;background:"+c.bg+";border-radius:8px;border:1px solid "+c.border+"'>";
+  h+="<div><p style='font-size:11px;font-weight:700;color:"+c.navy+"'>Maria Angélica</p><p style='font-size:10px;color:"+c.textMuted+"'>Disponível para suporte</p><a href='tel:6298552-0072' style='font-size:11px;color:#1a6b47;font-weight:700;text-decoration:none'>(62) 98552-0072</a></div></div>";
+  h+="</div><p style='text-align:center;font-size:10px;color:"+c.textMuted+";margin-top:10px'>Reserva Arena · Colégio Arena</p></div></div>";
+  $("app").innerHTML=h;
+}
+window.doLogin=async()=>{
+  var e=document.getElementById("lg-e")?.value?.trim();
+  var s=document.getElementById("lg-s")?.value;
+  var err=document.getElementById("lg-err");
+  if(!e||!s){if(err){err.textContent="Preencha e-mail e senha.";err.style.display="block";}return;}
+  try{
+    await signInWithEmailAndPassword(auth,e,s);
+    if(s==="123456"){_trocandoSenha=true;renderTrocarSenha();}
+  }catch(ex){
+    var m=ex.code==="auth/invalid-credential"||ex.code==="auth/wrong-password"||ex.code==="auth/user-not-found"?"E-mail ou senha incorretos.":ex.code==="auth/too-many-requests"?"Muitas tentativas. Aguarde.":"Erro ao entrar.";
+    if(err){err.textContent=m;err.style.display="block";}
+  }
+};
+window.doEsqueciSenha=async()=>{
+  var e=document.getElementById("lg-e")?.value?.trim();
+  var err=document.getElementById("lg-err");
+  if(!e){if(err){err.textContent="Digite seu e-mail acima.";err.style.display="block";}return;}
+  try{
+    await sendPasswordResetEmail(auth,e);
+    if(err){err.textContent="E-mail enviado!";err.style.display="block";err.style.background="#e2f4ea";err.style.color="#1a6b47";}
+  }catch(ex){if(err){err.textContent="Erro ao enviar.";err.style.display="block";}}
+};
+function renderTrocarSenha(){
+  var c=C();
+  var h="<div style='min-height:100vh;background:"+c.bg+";display:flex;align-items:center;justify-content:center;padding:24px'>";
+  h+="<div style='width:100%;max-width:380px;background:"+c.surface+";border:2px solid #f97316;border-radius:14px;padding:22px'>";
+  h+="<div style='text-align:center;margin-bottom:14px'><div style='font-size:30px'>🔑</div>";
+  h+="<h2 style='font-size:14px;font-weight:800;color:"+c.navy+";margin-top:6px'>Defina sua senha pessoal</h2>";
+  h+="<p style='font-size:11px;color:"+c.textMuted+";margin-top:4px'>Mínimo 6 caracteres. Não pode ser 123456.</p></div>";
+  h+="<input id='nv-s' type='password' placeholder='Nova senha' style='width:100%;padding:11px;border-radius:8px;border:1.5px solid "+c.border+";background:"+c.bg+";color:"+c.text+";font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;margin-bottom:8px'>";
+  h+="<input id='cf-s' type='password' placeholder='Confirme a nova senha' style='width:100%;padding:11px;border-radius:8px;border:1.5px solid "+c.border+";background:"+c.bg+";color:"+c.text+";font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;margin-bottom:8px'>";
+  h+="<button onclick='salvarNovaSenha()' style='width:100%;padding:12px;border-radius:8px;border:none;background:#1a6b47;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit'>✓ Salvar e entrar</button>";
+  h+="<div id='tv-err' style='display:none;margin-top:8px;padding:8px;border-radius:8px;background:#fef2f2;color:#dc2626;font-size:11px;text-align:center'></div></div></div>";
+  $("app").innerHTML=h;
+}
+window.salvarNovaSenha=async()=>{
+  var n=document.getElementById("nv-s")?.value;
+  var cf=document.getElementById("cf-s")?.value;
+  var err=document.getElementById("tv-err");
+  if(!n||n.length<6){if(err){err.textContent="Mínimo 6 caracteres.";err.style.display="block";}return;}
+  if(n!==cf){if(err){err.textContent="Senhas não coincidem.";err.style.display="block";}return;}
+  if(n==="123456"){if(err){err.textContent="Escolha uma senha diferente.";err.style.display="block";}return;}
+  try{await updatePassword(auth.currentUser,n);_trocandoSenha=false;re();}
+  catch(ex){if(err){err.textContent="Erro ao salvar.";err.style.display="block";}}
+};
 function renderPublica(){
   const c=C(),h=fmtHoje();
   if(!_pubState)_pubState={modo:"semana",filtroEspaco:"",diaSel:null,mesCal:{a:new Date().getFullYear(),m:new Date().getMonth()}};
@@ -467,9 +565,9 @@ function renderPublica(){
       <div style="text-align:center;margin-bottom:20px">${logoHTML(48)}<h2 style="font-size:19px;font-weight:800;color:${c.navy};margin-top:12px">Entrar no Reserva Arena</h2></div>
       <div id="login-erro"></div>
       <div style="display:grid;gap:12px">
-        <div><label style="font-size:11px;font-weight:700;color:${c.textMuted};text-transform:uppercase">E-mail</label><br><input id="inp-email" type="email" placeholder="prof@colegioarena.com.br" style="${inp()};margin-top:5px"></div>
-        <div><label style="font-size:11px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Senha</label><br><input id="inp-senha" type="password" placeholder="••••••" style="${inp()};margin-top:5px" onkeydown="if(event.key==='Enter')fazerLogin()"></div>
-        <button onclick="fazerLogin()" style="${btn("navy")};width:100%;padding:12px;margin-top:4px">Entrar</button>
+        <div><label style="font-size:11px;font-weight:700;color:${c.textMuted};text-transform:uppercase">E-mail</label><br><input id="inp-email" type="email" inputmode="email" autocomplete="email" placeholder="prof@colegioarena.com.br" style="${inp()};margin-top:5px" onkeydown="if(event.key==='Enter')fazerLogin()"></div>
+        <div><label style="font-size:11px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Senha</label><br><input id="inp-senha" type="password" autocomplete="current-password" placeholder="••••••" style="${inp()};margin-top:5px" onkeydown="if(event.key==='Enter')fazerLogin()"></div>
+        <button type="button" id="btn-entrar" style="${btn("navy")};width:100%;padding:12px;margin-top:4px">Entrar</button>
         <button onclick="recuperarSenha()" style="background:none;border:none;color:${c.blueMid};font-size:12px;cursor:pointer;font-weight:600">Esqueci minha senha</button>
         <button onclick="fecharLogin()" style="${btn("ghost")};width:100%;padding:10px">Cancelar</button>
       </div>
@@ -585,7 +683,14 @@ window.pubSetModo=m=>{_pubState.modo=m;renderPubConteudo();};
 window.pubSetEspaco=v=>{_pubState.filtroEspaco=v;renderPubConteudo();};
 
 
-window.abrirLogin=()=>{const m=$("modal-login");if(m)m.style.display="flex";};
+window.abrirLogin=()=>{
+  const m=$("modal-login");
+  if(m){
+    m.style.display="flex";
+    const btn=document.getElementById("btn-entrar");
+    if(btn){btn.onclick=null;btn.addEventListener("click",fazerLogin);}
+  }
+};
 window.fecharLogin=()=>{const m=$("modal-login");if(m)m.style.display="none";};
 window.fazerLogin=async()=>{
   const email=$("inp-email")?.value?.trim(),senha=$("inp-senha")?.value;
@@ -659,7 +764,7 @@ function renderMarketingInline(){
   return`<div style="padding:4px 0">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
       <div style="display:flex;gap:6px">${btnAba("minhas","📸 Minhas solicitações")}${btnAba("todos","📅 Todos agendamentos")}</div>
-      <button onclick="window._MK.historico=!window._MK.historico;re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_MK.historico?c.navy:'transparent'};color:${_MK.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_MK.historico?"Ocultar hist.":"Ver histórico"}</button>
+      <button onclick="window._MK.historico=!window._MK.historico;if(window._MK.historico)carregarTodas();re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_MK.historico?c.navy:'transparent'};color:${_MK.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_MK.historico?"Ocultar hist.":"Ver histórico"}</button>
     </div>
     ${pendentes.length&&_MK.aba==="todos"?`<div style="background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="mkSetAba('minhas')"><p style="font-size:13px;font-weight:700;color:#7c3aed">⏳ ${pendentes.length} solicitaç${pendentes.length===1?"ão":"ões"} aguardando aprovação — Ver agora →</p></div>`:""}
     ${corpo}
@@ -711,7 +816,7 @@ function renderTIInline(){
   return`<div style="padding:4px 0">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
       <div style="display:flex;gap:6px">${btnAba("minhas","🔊 Minhas solicitações")}${btnAba("todos","📅 Todos agendamentos")}</div>
-      <button onclick="window._TI.historico=!window._TI.historico;re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_TI.historico?c.navy:'transparent'};color:${_TI.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_TI.historico?"Ocultar hist.":"Ver histórico"}</button>
+      <button onclick="window._TI.historico=!window._TI.historico;if(window._TI.historico)carregarTodas();re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_TI.historico?c.navy:'transparent'};color:${_TI.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_TI.historico?"Ocultar hist.":"Ver histórico"}</button>
     </div>
     ${pendentes.length&&_TI.aba==="todos"?`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="tiSetAba('minhas')"><p style="font-size:13px;font-weight:700;color:#c2410c">⏳ ${pendentes.length} agendamento${pendentes.length===1?"":"s"} aguardando aprovação — Ver agora →</p></div>`:""}
     ${corpo}
@@ -783,7 +888,7 @@ function renderMarketing(){
     <div style="max-width:700px;margin:0 auto;padding:16px 14px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
         <div style="display:flex;gap:6px">${btnAba("minhas","📸 Minhas solicitações")}${btnAba("todos","📅 Todos agendamentos")}</div>
-        <button onclick="window._MK.historico=!window._MK.historico;re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_MK.historico?c.navy:'transparent'};color:${_MK.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_MK.historico?"Ocultar hist.":"Ver histórico"}</button>
+        <button onclick="window._MK.historico=!window._MK.historico;if(window._MK.historico)carregarTodas();re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_MK.historico?c.navy:'transparent'};color:${_MK.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_MK.historico?"Ocultar hist.":"Ver histórico"}</button>
       </div>
       ${pendentes.length&&_MK.aba==="todos"?`<div style="background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="mkSetAba('minhas')"><p style="font-size:13px;font-weight:700;color:#7c3aed">⏳ ${pendentes.length} solicitaç${pendentes.length===1?"ão":"ões"} aguardando sua aprovação — Ver agora →</p></div>`:""}
       ${corpo}
@@ -850,7 +955,7 @@ function renderTI(){
     <div style="max-width:700px;margin:0 auto;padding:16px 14px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
         <div style="display:flex;gap:6px">${btnAba("minhas","🔊 Minhas solicitações")}${btnAba("todos","📅 Todos agendamentos")}</div>
-        <button onclick="window._TI.historico=!window._TI.historico;re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_TI.historico?c.navy:'transparent'};color:${_TI.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_TI.historico?"Ocultar hist.":"Ver histórico"}</button>
+        <button onclick="window._TI.historico=!window._TI.historico;if(window._TI.historico)carregarTodas();re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_TI.historico?c.navy:'transparent'};color:${_TI.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_TI.historico?"Ocultar hist.":"Ver histórico"}</button>
       </div>
       ${pendentes.length&&_TI.aba==="todos"?`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="tiSetAba('minhas')"><p style="font-size:13px;font-weight:700;color:#c2410c">⏳ ${pendentes.length} agendamento${pendentes.length===1?"":"s"} aguardando aprovação — Ver agora →</p></div>`:""}
       ${feedTIHtml}
@@ -892,6 +997,22 @@ function tiCard(r,pend){
     </div>`}
   </div>`;
 }
+window.coordTIEditar=async(id)=>{
+  const r=_todas.find(r=>r.id===id);
+  if(!r)return;
+  const novoConteudo=prompt("Editar descrição da aula:",r.conteudo||"");
+  if(novoConteudo===null)return;
+  try{
+    await updateDoc(doc(db,"reservas",id),{
+      conteudo:novoConteudo,
+      editadoPorCoord:true,
+      editadoPorCoordNome:_usuario?.nome||"Coord. T.I.",
+      editadoPorCoordEm:new Date().toISOString()
+    });
+    await gravarNotif(r.professorId,"✏️ Agendamento editado pelo Coord. T.I.",`${r.espaco} — ${r.data.split("-").reverse().join("/")} às ${r.horario}`,"info");
+    re();
+  }catch(e){alert("Erro ao editar: "+e.message);}
+};
 window.tiAprovar=async(id)=>{
   
   const r=_todas.find(r=>r.id===id);
@@ -919,6 +1040,150 @@ window.tiRecusar=async(id)=>{
     );
   }
   re();
+};
+
+// ════════════════════════════════════════════════════════════════════════════
+// COORDENADOR
+// ════════════════════════════════════════════════════════════════════════════
+function segmentoCoord(perfil){
+  if(perfil==="coord_inf")return"inf";
+  if(perfil==="coord_fund1")return"fund1";
+  if(perfil==="coord_fund2")return"fund2";
+  return null;
+}
+function turmasDoSegmento(seg){
+  if(seg==="inf")return[...TURMAS_EDUCACAO_INFANTIL,...TURMAS_INTEGRAL];
+  if(seg==="fund1")return[...TURMAS_FUND1,...TURMAS_INTEGRAL_FUND1];
+  if(seg==="fund2")return TURMAS_FUND2;
+  return[];
+}
+function labelCoord(perfil){
+  if(perfil==="coord_inf")return"👶 Coord. Infantil";
+  if(perfil==="coord_fund1")return"📚 Coord. Fund. 1";
+  if(perfil==="coord_fund2")return"🎓 Coord. Fund. 2";
+  return"Coordenador";
+}
+
+if(!window._CO)window._CO={fProf:"",fTurma:"",fEspaco:"",historico:false};
+
+function renderCoord(){
+  const c=C(),h=fmtHoje();
+  if(!window._CO)window._CO={fProf:"",fTurma:"",fEspaco:"",historico:false};
+  const seg=segmentoCoord(_usuario?.perfil);
+  const turmasSeg=turmasDoSegmento(seg);
+
+  // Filtrar reservas do segmento
+  let fonte=_todas.filter(r=>{
+    if(r.reservaAutomatica)return false;
+    const turma=r.turmaInicio||r.turma||"";
+    const pertence=turmasSeg.some(t=>turma.startsWith(t.split(" ")[0])||turma===t);
+    // Extra Música vai para coord_inf por enquanto (pendente definição)
+    const isExtra=r.turmaInicio==="Extra Música"||r.turma==="Extra Música";
+    return pertence||(isExtra&&seg==="inf");
+  });
+
+  if(!_CO.historico)fonte=fonte.filter(r=>r.data>=h);
+  if(_CO.fProf)fonte=fonte.filter(r=>r.professor===_CO.fProf||r.professorId===_CO.fProf);
+  if(_CO.fTurma)fonte=fonte.filter(r=>(r.turmaInicio||r.turma||"")=== _CO.fTurma);
+  if(_CO.fEspaco)fonte=fonte.filter(r=>r.espaco===_CO.fEspaco);
+  fonte=fonte.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
+
+  // Professores do segmento (para filtro)
+  const profsSet=new Set(_todas.filter(r=>turmasSeg.some(t=>(r.turmaInicio||r.turma||"").includes(t.split(" ")[0]))).map(r=>r.professor).filter(Boolean));
+  const profs=[...profsSet].sort();
+
+  // Montar lista por data
+  const porData={};
+  fonte.forEach(r=>{if(!porData[r.data])porData[r.data]=[];porData[r.data].push(r);});
+
+  let corpo="";
+  if(!fonte.length){
+    corpo=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">📋</p><p style="margin-top:12px;font-size:14px">Nenhum agendamento encontrado.</p></div>`;
+  } else {
+    Object.entries(porData).forEach(([data,rs])=>{
+      const[,m2,d2]=data.split("-");const isH=data===h;
+      corpo+=`<div style="margin-bottom:16px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <span style="font-size:11px;font-weight:700;color:${isH?c.green:c.textMid};background:${isH?c.greenBg:"transparent"};padding:${isH?"2px 8px":"0"};border-radius:${isH?20:0}px">${isH?"📌 Hoje":`${d2}/${m2}`}</span>
+          <div style="flex:1;height:1px;background:${c.borderLight}"></div>
+        </div>`;
+      rs.forEach(r=>{corpo+=coordRow(r);});
+      corpo+=`</div>`;
+    });
+  }
+
+  $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="no">
+    <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#0d2b1a,#1a6b47)"};padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(13,43,26,.25)">
+      <div style="display:flex;align-items:center;gap:8px">${logoHTML(36)}<p style="font-size:13px;font-weight:800;color:#fff">${labelCoord(_usuario?.perfil)}</p></div>
+      <div style="display:flex;align-items:center;gap:6px">
+        ${avatarHTML(_usuario?.nome,28,"green")}
+        <button id="sino-btn" onclick="abrirPainelNotif()" style="display:none;position:relative;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:30px;height:30px;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;font-family:inherit">🔔<span id="sino-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:#dc2626;color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:99px;align-items:center;justify-content:center;padding:0 3px;font-family:inherit"></span></button>
+        <button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button>
+        <button onclick="doSignOut()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">Sair</button>
+      </div>
+    </header>
+    <div style="max-width:800px;margin:0 auto;padding:16px 14px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:14px">
+        <select onchange="window._CO.fProf=this.value;re()" style="padding:8px 10px;border-radius:8px;border:1.5px solid ${c.border};background:${c.surface};color:${c.text};font-size:12px;font-family:inherit;outline:none">
+          <option value="">👤 Todos professores</option>
+          ${profs.map(p=>`<option value="${p}" ${_CO.fProf===p?"selected":""}>${p}</option>`).join("")}
+        </select>
+        <select onchange="window._CO.fTurma=this.value;re()" style="padding:8px 10px;border-radius:8px;border:1.5px solid ${c.border};background:${c.surface};color:${c.text};font-size:12px;font-family:inherit;outline:none">
+          <option value="">🎓 Todas turmas</option>
+          ${turmasSeg.map(t=>`<option value="${t}" ${_CO.fTurma===t?"selected":""}>${t}</option>`).join("")}
+        </select>
+        <select onchange="window._CO.fEspaco=this.value;re()" style="padding:8px 10px;border-radius:8px;border:1.5px solid ${c.border};background:${c.surface};color:${c.text};font-size:12px;font-family:inherit;outline:none">
+          <option value="">🏛️ Todos espaços</option>
+          ${ESPACOS.map(e=>`<option value="${e.nome}" ${_CO.fEspaco===e.nome?"selected":""}>${e.nome}</option>`).join("")}
+        </select>
+        <button onclick="window._CO.historico=!window._CO.historico;re()" style="padding:8px 10px;border-radius:8px;border:1.5px solid ${_CO.historico?c.navy:c.border};background:${_CO.historico?c.navy:"transparent"};color:${_CO.historico?"#fff":c.textMid};font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🕐 ${_CO.historico?"Ocultar hist.":"Histórico"}</button>
+      </div>
+      <p style="font-size:11px;color:${c.textMuted};margin-bottom:12px">${fonte.length} agendamento${fonte.length!==1?"s":""} encontrado${fonte.length!==1?"s":""}</p>
+      ${corpo}
+    </div>
+  </div>`;
+}
+
+function coordRow(r){
+  const c=C(),h=fmtHoje();
+  const[,m2,d2]=r.data.split("-");
+  const isH=r.data===h;
+  const isPend=r.status==="pendente";
+  const isRec=r.status==="recusado";
+  const editadoCoord=r.editadoPorCoord?`<span style="font-size:10px;color:#7c3aed;font-weight:700">✏️ Editado pelo coord.</span>`:"";
+  return`<div style="background:${c.surface};border-radius:10px;border:1.5px solid ${isPend?c.amberBorder:isRec?"#fecaca":c.greenBorder};border-left:4px solid ${isPend?c.amber:isRec?"#dc2626":"#1a6b47"};padding:12px 14px;margin-bottom:8px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px">
+          <span style="font-family:'DM Mono',monospace;font-weight:800;color:${isPend?c.amber:"#1a6b47"};font-size:13px">${r.horario}${r.horarioFim&&r.horarioFim!==r.horario?" → "+r.horarioFim:""}</span>
+          <span style="font-size:13px;font-weight:700;color:${c.navy}">${r.espaco}</span>
+          ${isH?`<span style="background:#1a6b47;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px">Hoje</span>`:""}
+          ${isPend?`<span style="background:${c.amberBg};color:${c.amber};font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;border:1px solid ${c.amberBorder}">⏳ Pendente</span>`:isRec?`<span style="background:#fef2f2;color:#dc2626;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;border:1px solid #fecaca">❌ Recusado</span>`:`<span style="background:${c.greenBg};color:${c.green};font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;border:1px solid ${c.greenBorder}">✅ Confirmado</span>`}
+          ${editadoCoord}
+        </div>
+        <p style="font-size:12px;color:${c.textMid};margin-bottom:2px">👤 ${r.professor} · ${r.turmaInicio||r.turma||"—"}</p>
+        <p style="font-size:12px;color:${c.textMuted}">${r.conteudo||""}</p>
+      </div>
+      ${!isRec?`<button onclick="coordEditar('${r.id}')" style="padding:6px 12px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.textMid};font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit">✏️ Editar</button>`:""}
+    </div>
+  </div>`;
+}
+
+window.coordEditar=async(id)=>{
+  const r=_todas.find(r=>r.id===id);
+  if(!r)return;
+  const novoConteudo=prompt("Editar descrição da aula:",r.conteudo||"");
+  if(novoConteudo===null)return;
+  try{
+    await updateDoc(doc(db,"reservas",id),{
+      conteudo:novoConteudo,
+      editadoPorCoord:true,
+      editadoPorCoordNome:_usuario?.nome||"Coordenador",
+      editadoPorCoordEm:new Date().toISOString()
+    });
+    await gravarNotif(r.professorId,"✏️ Agendamento editado pelo coordenador",`${r.espaco} — ${r.data.split("-").reverse().join("/")} às ${r.horario}`,"info");
+    re();
+  }catch(e){alert("Erro ao editar: "+e.message);}
 };
 
 function renderSemAcesso(){
@@ -966,7 +1231,7 @@ window.doSignOut=()=>signOut(auth);
 window.toggleAdminVisu=()=>{};
 window.setAdminVisu=(v)=>{
   _adminVisu=v;
-  if(v==="professor"){_P.modoProf="ver";_P.modoCard="calendario";_P.modoVisu="semana";_P.semIni=getSegunda(fmtHoje());_P.diaSel=null;_P.filtroGrade="meus";_P.mostrarHistorico=false;_P.filtroPendente=false;}
+  if(v==="professor"){_P.modoProf="ver";_P.modoCard="calendario";_P.modoVisu="mes";_P.semIni=getSegunda(fmtHoje());_P.diaSel=null;_P.filtroGrade="meus";_P.mostrarHistorico=false;_P.filtroPendente=false;}
   if(v==="ti"&&window._TI)_TI.aba="minhas";
   if(v==="marketing"&&window._MK)_MK.aba="minhas";
   re();
@@ -977,7 +1242,7 @@ window.irInicio=()=>{
     _A.diaSel=null;_A.historico=false;
     const d=new Date();_A.mesCal={a:d.getFullYear(),m:d.getMonth()};
   } else {
-    _P.modoProf="ver";_P.modoCard="calendario";_P.modoVisu="semana";
+    _P.modoProf="ver";_P.modoCard="calendario";_P.modoVisu="mes";
     _P.semIni=getSegunda(fmtHoje());_P.diaSel=null;_P.filtroGrade="meus";
     _P.mostrarHistorico=false;_P.filtroPendente=false;
   }
@@ -987,7 +1252,7 @@ window.irInicio=()=>{
 // ════════════════════════════════════════════════════════════════════════════
 // PROFESSOR VIEW
 // ════════════════════════════════════════════════════════════════════════════
-let _P={modoProf:"ver",modoCard:"calendario",modoVisu:"semana",filtroGrade:"meus",filtroEspaco:"",semIni:"",diaSel:null,mesCal:null,mostrarHistorico:false,filtroPendente:false};
+let _P={modoProf:"ver",modoCard:"calendario",modoVisu:"mes",filtroGrade:"meus",filtroEspaco:"",semIni:"",diaSel:null,mesCal:null,mostrarHistorico:false,filtroPendente:false,selecionados:new Set(),modoSelecao:false};
 
 function renderProfessorView(){
   const c=C(),h=fmtHoje();
@@ -996,7 +1261,7 @@ function renderProfessorView(){
   // Para exibição, ignora reservas automáticas de range
   const fonteBase=(_P.filtroGrade==='todos'?_todas:_minhas).filter(r=>!r.reservaAutomatica&&(!_P.filtroEspaco||r.espaco===_P.filtroEspaco));
   const futuras=fonteBase.filter(r=>r.data>=h&&r.status!=="recusado");
-  const passadas=fonteBase.filter(r=>r.data<h&&r.status!=="recusado").reverse();
+  const passadas=fonteBase.filter(r=>r.data<h).reverse();
   const pendentes=_minhas.filter(r=>r.status==="pendente"&&!r.reservaAutomatica&&(!_P.filtroEspaco||r.espaco===_P.filtroEspaco));
 
   let html=`<div>`;
@@ -1062,17 +1327,18 @@ function renderProfessorView(){
       while(diasLetivos.length<5){const dow=new Date(dCursor+"T12:00:00").getDay();if(dow!==0&&dow!==6&&isDiaLetivo(dCursor))diasLetivos.push(dCursor);dCursor=addDias(dCursor,1);if(diasLetivos.length===0&&dCursor>addDias(h,30))break;}
       while(diasLetivos.length<5)diasLetivos.push(addDias(diasLetivos[diasLetivos.length-1],1));
       const nomes=diasLetivos.map(d=>{const dow=new Date(d+"T12:00:00").getDay();return["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"][dow]+"."});
-      html+=`<div style="display:grid;grid-template-columns:repeat(5,minmax(100px,1fr));gap:4px;padding:8px;overflow-x:auto">`;
+      html+=`<div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;padding:8px;overflow-x:auto">`;
       diasLetivos.forEach((d,i)=>{
         const[,,dia]=d.split("-");const isH=d===h;
         const rsD=fonte.filter(r=>r.data===d).sort((a,b)=>a.horario>b.horario?1:-1);
         const naoL=!isDiaLetivo(d)&&d>=h&&new Date(d).getDay()!==0&&new Date(d).getDay()!==6;
-        html+=`<div style="background:${isH?"rgba(26,107,71,.06)":c.bg};border:1px solid ${isH?c.blueMid:c.borderLight};border-radius:10px;padding:10px 8px;min-height:80px;cursor:pointer" onclick="pClicarDia('${d}')">
-          <div style="text-align:center;margin-bottom:6px">
+        const isMob=window.innerWidth<768,temRes=rsD.length>0;
+        html+=`<div style="background:${isH?"rgba(26,107,71,.06)":c.bg};border:1px solid ${isH?c.blueMid:c.borderLight};border-radius:10px;padding:${isMob&&!temRes?"3px 2px":"10px 8px"};min-height:${isMob&&!temRes?"auto":"80px"};cursor:pointer" onclick="pClicarDia('${d}')">
+          <div style="text-align:center;margin-bottom:${isMob&&!temRes?0:6}px">
             <p style="font-size:10px;font-weight:700;color:${naoL?"#ef4444":c.textMid};text-transform:uppercase">${nomes[i]}</p>
-            <p style="font-size:18px;font-weight:900;line-height:1;color:${isH?c.blueMid:c.text}">${dia}</p>
+            <p style="font-size:${isMob&&!temRes?11:18}px;font-weight:900;line-height:1;color:${isH?c.blueMid:c.text}">${dia}</p>
           </div>`;
-        if(!rsD.length)html+=`<p style="font-size:9px;color:${c.textMid};opacity:.6;text-align:center;margin-top:8px">livre</p>`;
+        if(!rsD.length)html+=isMob?"":`<p style="font-size:9px;color:${c.textMid};opacity:.6;text-align:center;margin-top:8px">livre</p>`;
         else rsD.forEach(r=>{
           const isMeu=ehMeu(r),isPend=r.status==="pendente";
           const range=r.horarioFim&&r.horarioFim!==r.horario?`→${r.horarioFim}`:"";
@@ -1091,22 +1357,64 @@ function renderProfessorView(){
     }
 
     if(_P.modoVisu==="mes"){
+      if(!_P.mesCal){const d=new Date();_P.mesCal={a:d.getFullYear(),m:d.getMonth()};}
       const{a,m}=_P.mesCal;
       const porData={};fonte.forEach(r=>{if(!porData[r.data])porData[r.data]=[];porData[r.data].push(r);});
-      html+=`<div style="padding:10px 12px">${calMensalHTML("pmes",a,m,porData,_P.diaSel)}</div>`;
+      const primeiroDia=new Date(Date.UTC(a,m,1));
+      const diasNoMes=new Date(Date.UTC(a,m+1,0)).getUTCDate();
+      const inicioGrid=primeiroDia.getUTCDay();
+      // Calcular offset sem Dom(0) - começa na Segunda(1)
+      const offsetSeg=(inicioGrid===0?6:inicioGrid-1);
+      const cells=[];for(let i=0;i<offsetSeg;i++)cells.push(null);for(let d=1;d<=diasNoMes;d++)cells.push(d);
+      const ehMeu2=r=>r.professorId===_usuario?.uid||r.professor===_usuario?.nome;
+      html+=`<div style="background:${c.surface};border-radius:14px;border:1px solid ${c.border};overflow:hidden;margin:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid ${c.border}">
+          <button onclick="pNavMes(-1)" style="background:none;border:1px solid ${c.border};border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:16px;font-family:inherit;color:${c.textMid}">‹</button>
+          <p style="font-weight:800;font-size:16px;color:${c.navy}">${MESES[m]} ${a}</p>
+          <button onclick="pNavMes(1)" style="background:none;border:1px solid ${c.border};border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:16px;font-family:inherit;color:${c.textMid}">›</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);border-bottom:1px solid ${c.border}">
+          ${["Seg","Ter","Qua","Qui","Sex"].map(d=>`<div style="padding:8px 0;text-align:center;font-size:11px;font-weight:700;color:${c.textMuted};text-transform:uppercase">${d}</div>`).join("")}
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(5,1fr)">
+          ${cells.map(d=>{
+            if(!d)return`<div style="min-height:80px;border-right:1px solid ${c.borderLight};border-bottom:1px solid ${c.borderLight}"></div>`;
+            const ds=`${a}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+            const dow=new Date(Date.UTC(a,m,d)).getUTCDay();
+            if(dow===0||dow===6)return"";
+            const isPast=ds<h,isH=ds===h;
+            const rsdia=(porData[ds]||[]).sort((a,b)=>a.horario>b.horario?1:-1);
+            const naoL=!isDiaLetivo(ds)&&!isPast;
+            return`<div style="min-height:80px;border-right:1px solid ${c.borderLight};border-bottom:1px solid ${c.borderLight};padding:4px;background:${isH?"rgba(26,107,71,.06)":"transparent"};cursor:pointer" onclick="pClicarDia('${ds}')">
+              <p style="font-size:11px;font-weight:800;color:${isH?c.green:naoL?"#ef4444":c.textMid};padding:2px 4px;border-radius:4px;display:inline-block;background:${isH?c.greenBg:"transparent"}">${d}</p>
+              ${rsdia.slice(0,3).map(r=>{const isMeu=ehMeu2(r);return`<div style="background:${isMeu?"#bbebcd":"#e2f0eb"};border-left:2px solid ${isMeu?"#1a6b47":"#94a3b8"};border-radius:3px;padding:2px 4px;margin-top:2px;font-size:9px;overflow:hidden">
+                <p style="font-weight:700;color:${isMeu?"#1a6b47":"#475569"};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.horario} ${r.espaco.split(" ")[0]}</p>
+                <p style="color:#607060;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nomeProf(r.professor)}</p>
+              </div>`;}).join("")}
+              ${rsdia.length>3?`<p style="font-size:9px;color:${c.textMuted};padding:2px 4px">+${rsdia.length-3} mais</p>`:""}
+            </div>`;
+          }).join("")}
+        </div>
+      </div>`;
     }
   }
 
   if(_P.modoCard==="lista"){
     html+=`<div style="padding:14px">`;
     // Filtro de espaço no modo agenda
+    const meusFuturos=futuras.filter(r=>r.professorId===_usuario?.uid&&r.status!=="recusado");
     html+=`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
       <select onchange="pSetEspaco(this.value)" style="padding:7px 12px;border-radius:8px;border:1.5px solid ${c.border};background:${c.surface};color:${c.text};font-size:13px;cursor:pointer;outline:none;font-family:inherit;flex:1;min-width:160px">
         <option value="">🏛️ Todos os espaços</option>
         ${ESPACOS.map(e=>`<option value="${e.nome}" ${_P.filtroEspaco===e.nome?"selected":""}>${tipoIcon(e.tipo,e.nome)} ${e.nome}</option>`).join("")}
       </select>
       ${_P.filtroEspaco?`<button onclick="pSetEspaco('')" style="${btn('ghost')};padding:7px 12px;font-size:12px;white-space:nowrap">✕ Limpar</button>`:""}
-    </div>`;
+      ${meusFuturos.length>1?'<button onclick="_P.modoSelecao=!_P.modoSelecao;_P.selecionados=new Set();re()" style="padding:7px 12px;font-size:12px;white-space:nowrap;border-radius:8px;border:1.5px solid '+(_P.modoSelecao?"#dc2626":c.border)+';background:'+(_P.modoSelecao?"#fef2f2":"transparent")+';color:'+(_P.modoSelecao?"#dc2626":c.textMuted)+';font-weight:700;cursor:pointer;font-family:inherit">'+(_P.modoSelecao?"✕ Cancelar seleção":"☑ Selecionar")+'</button>':''}
+    </div>
+    ${_P.modoSelecao&&_P.selecionados.size>0?`<div style="display:flex;align-items:center;gap:10px;background:#fef2f2;border:1.5px solid #fca5a5;border-radius:10px;padding:10px 14px;margin-bottom:12px">
+      <span style="font-size:13px;font-weight:700;color:#dc2626;flex:1">${_P.selecionados.size} agendamento${_P.selecionados.size>1?'s':''} selecionado${_P.selecionados.size>1?'s':''}</span>
+      <button onclick="cancelarSelecionados()" style="background:#dc2626;border:none;border-radius:8px;color:#fff;font-weight:800;font-size:13px;padding:8px 16px;cursor:pointer">✕ Cancelar todos</button>
+    </div>`:''}`;
     if(pendentes.length){
       html+=`<div data-filtro="pendente" style="margin-bottom:16px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="width:8px;height:8px;border-radius:50%;background:${c.amber}"></div><p style="font-size:12px;font-weight:800;color:${c.amber};text-transform:uppercase">⏳ Pendentes · ${pendentes.length}</p><div style="flex:1;height:1px;background:${c.amberBorder}"></div></div>`;
@@ -1130,7 +1438,7 @@ function renderProfessorView(){
     }
     if(passadas.length){
       html+=`<div style="margin-top:16px;border-top:1px solid ${c.borderLight};padding-top:12px">
-        <button onclick="window._P.mostrarHistorico=!window._P.mostrarHistorico;re()" style="display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;font-family:inherit;width:100%;padding:4px 0">
+        <button type="button" onclick="pToggleHistorico()" style="display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;font-family:inherit;width:100%;padding:4px 0;text-align:left">
           <span style="font-size:11px;font-weight:700;color:${c.textMuted};text-transform:uppercase">🕐 Histórico (${passadas.length})</span>
           <span style="font-size:12px;color:${c.textMuted}">${_P.mostrarHistorico?"▲ fechar":"▼ ver"}</span>
         </button>
@@ -1153,11 +1461,15 @@ function profRRow(r){
   const range=r.horarioFim&&r.horarioFim!==r.horario?` → ${r.horarioFim}`:"";
   const turmaLabel=r.turmaInicio||(r.turma||"");
   const turmaFimLabel=r.turmaFim&&r.turmaFim!==r.turmaInicio?` → ${r.turmaFim}`:"";
-  return`<div class="row-hover" style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;background:${bg};border:1px solid ${c.border};margin-bottom:4px;border-left:4px solid ${bl}">
+  const isSel=_P.selecionados?.has(r.id);
+  const selClick=_P.modoSelecao&&isMeu&&r.data>=h&&r.status!=='recusado';
+  return`<div class="row-hover" ${selClick?`onclick="toggleSelProf('${r.id}')"`:''} style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;background:${_P.modoSelecao&&isSel?'#fef2f2':bg};border:1px solid ${_P.modoSelecao&&isSel?'#fca5a5':c.border};margin-bottom:4px;border-left:4px solid ${_P.modoSelecao&&isSel?'#dc2626':bl};${selClick?'cursor:pointer':''}">
+    ${selClick?`<div style="width:20px;height:20px;border-radius:5px;border:2px solid ${isSel?'#dc2626':c.border};background:${isSel?'#dc2626':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0">${isSel?'<span style="color:#fff;font-size:12px;font-weight:900">✓</span>':''}</div>`:''}
     <span style="font-size:13px;font-family:'DM Mono',monospace;font-weight:800;color:${isMeu?c.green:"#64748b"};min-width:42px;flex-shrink:0">${r.horario}</span>
     <div style="flex:1;min-width:0">
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px">
         <span style="font-weight:700;font-size:13px;color:${c.navy}">${r.espaco}</span>
+        ${r.data&&r.data<fmtHoje()?`<span style="font-size:11px;color:${c.textMuted};font-weight:600">${r.data.split("-").reverse().join("/")}</span>`:""}
         ${range?`<span style="font-size:11px;font-weight:700;color:${c.blueMid};background:${c.greenBg};padding:1px 7px;border-radius:10px">${r.horario}${range}</span>`:""}
         <span style="font-size:11px;color:${c.textMuted}">·</span>
         <span style="font-size:12px;color:${c.textMid}">${turmaLabel}${turmaFimLabel}</span>
@@ -1169,7 +1481,7 @@ function profRRow(r){
       </div>
     </div>
     <div style="display:flex;gap:4px;flex-shrink:0">
-      ${isMeu&&r.data>=h&&r.status!=="recusado"?`<button onclick="abrirEdicao('${r.id}')" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:13px;padding:5px 8px">✏️</button><button onclick="cancelarR('${r.id}')" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:13px;padding:5px 8px">✕</button>`:""}
+      ${!_P.modoSelecao&&isMeu&&r.data>=h&&r.status!=="recusado"?`<button onclick="abrirEdicao('${r.id}')" title="Editar agendamento" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:12px;padding:5px 8px;display:flex;align-items:center;gap:3px;font-family:inherit">✏️ Editar</button><button onclick="cancelarR('${r.id}')" title="Cancelar agendamento" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:12px;padding:5px 8px;display:flex;align-items:center;gap:3px;font-family:inherit">✕ Cancelar</button>`:""}
     </div>
   </div>`;
 }
@@ -1186,12 +1498,27 @@ function bindProf(){
 }
 window.pSetModoProf=v=>{_P.modoProf=v;if(v==='agendar'){_MA={step:1,espaco:"",data:"",blocos:[bVazio()],resumo:false,salvando:false,sucesso:null,erro:"",calA:new Date().getFullYear(),calM:new Date().getMonth(),bibAV:null};}re();};
 window.pSetModo=v=>{_P.modoCard=v;re();};
+window.pToggleHistorico=()=>{_P.mostrarHistorico=!_P.mostrarHistorico;re();};
+window.toggleSelProf=id=>{if(_P.selecionados.has(id))_P.selecionados.delete(id);else _P.selecionados.add(id);re();};
+window.cancelarSelecionados=async()=>{
+  const ids=[..._P.selecionados];
+  if(!ids.length)return;
+  if(!confirm(`Cancelar ${ids.length} agendamento${ids.length>1?'s':''}? Esta ação não pode ser desfeita.`))return;
+  try{
+    const{doc,updateDoc,collection,getDocs,query,where}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
+    await Promise.all(ids.map(id=>updateDoc(doc(db,'reservas',id),{status:'recusado'})));
+    _P.selecionados=new Set();_P.modoSelecao=false;
+    alert(`${ids.length} agendamento${ids.length>1?'s':''} cancelado${ids.length>1?'s':''}!`);
+    re();
+  }catch(e){alert('Erro ao cancelar: '+e.message);}
+};
 window.pFiltroRapido=tipo=>{
   if(tipo==='pendente'){_P.modoProf='ver';_P.modoCard='lista';_P.filtroPendente=true;re();}
   else if(tipo==='proximos'){_P.modoProf='ver';_P.modoCard='lista';re();}
 };
 window.pSetVisu=v=>{_P.modoVisu=v;re();};
-window.pSetGrade=v=>{_P.filtroGrade=v;re();};
+window.pNavMes=dir=>{if(!_P.mesCal){const d=new Date();_P.mesCal={a:d.getFullYear(),m:d.getMonth()};}let nm=_P.mesCal.m+dir,na=_P.mesCal.a;if(nm>11){nm=0;na++;}if(nm<0){nm=11;na--;}_P.mesCal={a:na,m:nm};re();};
+window.pSetGrade=v=>{_P.filtroGrade=v;if(v==="todos")carregarTodas();re();};
 window.pSetEspaco=v=>{_P.filtroEspaco=v;re();};
 window.pClicarDia=data=>{
   if(data>=fmtHoje()&&isDiaLetivo(data)){
@@ -1236,7 +1563,7 @@ function fabHTML(){return'';}
 function modalAgendarHTML(){const c=C();return`<div id="mod-ag" style="display:none;position:fixed;inset:0;z-index:1100;align-items:flex-end;justify-content:center"><div onclick="fecharModalAgendar()" style="position:absolute;inset:0;background:rgba(0,0,0,.5)"></div><div id="mod-ag-inner" style="position:relative;background:${c.surface};border-radius:20px 20px 0 0;width:100%;max-width:600px;max-height:92vh;overflow-y:auto;box-shadow:0 -8px 40px rgba(0,0,0,.25)"><div id="mod-ag-body"></div></div></div>`;}
 
 // ─── ESTADO DO FORMULÁRIO DE AGENDAMENTO ──────────────────────────────────
-let _MA={step:1,espaco:"",data:"",blocos:[],resumo:false,salvando:false,sucesso:null,erro:"",avisoConflito:"",calA:new Date().getFullYear(),calM:new Date().getMonth(),bibAV:null,recorrente:false};
+let _MA={step:1,espaco:"",data:"",blocos:[],resumo:false,salvando:false,sucesso:null,erro:"",avisoConflito:"",calA:new Date().getFullYear(),calM:new Date().getMonth(),bibAV:null,recorrente:false,dispEquip:{tablets:18,notebooks:16}};
 let _adminVisu="admin";
 let _notifNaoLidas=0;
 let _notifListener=null;
@@ -1279,7 +1606,11 @@ window.abrirPainelNotif=async function abrirPainelNotif(){
     alert("Erro ao abrir notificações: "+e.message);
     return;
   }
-  const notifs=snap.docs.map(d=>({id:d.id,...d.data()}));
+  const notifs=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>{
+    const ta=a.criadoEm?.toDate?a.criadoEm.toDate():new Date(0);
+    const tb=b.criadoEm?.toDate?b.criadoEm.toDate():new Date(0);
+    return tb-ta;
+  });
   const c=C();
   const overlay=document.createElement("div");
   overlay.id="notif-overlay";
@@ -1359,12 +1690,29 @@ function renderProfAgendar(){
   let html="";
 
   if(m.sucesso){
+    const b0=m.blocos?.[0];
+    const turmasSucesso=b0?.turmasPorHorario?Object.values(b0.turmasPorHorario).filter(Boolean):[b0?.turma||""].filter(Boolean);
+    const turmaTxt=turmasSucesso.length>1?`${turmasSucesso[0]} → ${turmasSucesso[turmasSucesso.length-1]} (${turmasSucesso.length} turmas)`:turmasSucesso[0]||"";
+    const horTxt=b0?.horario?(b0.horarioFim&&b0.horarioFim!==b0.horario?`${b0.horario} → ${b0.horarioFim}`:b0.horario):"";
     html+=`<div style="padding:20px 14px;text-align:center">
       <div style="width:64px;height:64px;border-radius:50%;background:${m.sucesso==="confirmado"?"#1a6b47":"#fff7ed"};color:${m.sucesso==="confirmado"?"#fff":"#7c2d12"};display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 16px">${m.sucesso==="confirmado"?"✓":"⏳"}</div>
-      <h3 style="font-size:20px;font-weight:800;color:${m.sucesso==="confirmado"?c.green:c.amber};margin-bottom:8px">${m.sucesso==="confirmado"?"Confirmado!":"Pendente — aguardando aprovação"}</h3>
-      ${m.recorrente&&m.serieDataInicio&&m.serieDataFim?`<p style="font-size:13px;font-weight:700;color:#1a6b47;background:#e2f4ea;border-radius:8px;padding:8px 12px;margin-bottom:8px">🔁 Série criada de ${m.serieDataInicio.split("-").reverse().join("/")} até ${m.serieDataFim.split("-").reverse().join("/")}</p>`:""}
-      <p style="font-size:13px;color:${c.textMuted};margin-bottom:${m.sucesso==="pendente"?"8px":"20px"}">${m.espaco} · ${m.data.split("-").reverse().join("/")}</p>
-      ${(m.temMidia||m.tipoEspaco==="marketing")?`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:12px 14px;margin-bottom:20px;text-align:left"><p style="font-size:12px;color:#92400e;font-weight:700;margin-bottom:4px">⏳ O que acontece agora?</p><p style="font-size:12px;color:#92400e;line-height:1.5">A <strong>Equipe de Marketing</strong> vai analisar sua solicitação de foto/vídeo e confirmar ou recusar. Você receberá uma notificação assim que houver uma resposta.</p></div>`:m.sucesso==="pendente"?`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:12px 14px;margin-bottom:20px;text-align:left"><p style="font-size:12px;color:#92400e;font-weight:700;margin-bottom:4px">⏳ O que acontece agora?</p><p style="font-size:12px;color:#92400e;line-height:1.5">Este agendamento precisa de aprovação pois foi feito com menos de 24h de antecedência. Você receberá uma notificação assim que for aprovado.</p></div>`:""}
+      <h3 style="font-size:20px;font-weight:800;color:${m.sucesso==="confirmado"?c.green:c.amber};margin-bottom:12px">${m.sucesso==="confirmado"?"Confirmado!":"Pendente — aguardando aprovação"}</h3>
+      <div style="background:${c.bg};border:1.5px solid ${c.border};border-radius:10px;padding:12px 14px;margin-bottom:12px;text-align:left">
+        <p style="font-size:13px;font-weight:700;color:${c.navy};margin-bottom:6px">${tipoIcon(m.tipoEspaco,m.espaco)} ${m.espaco}</p>
+        <p style="font-size:12px;color:${c.textMid};margin-bottom:3px">📅 ${m.data?.split("-").reverse().join("/")}</p>
+        ${horTxt?`<p style="font-size:12px;color:${c.textMid};margin-bottom:3px">⏰ ${horTxt}</p>`:""}
+        ${turmaTxt?`<p style="font-size:12px;color:${c.textMid};margin-bottom:3px">🎓 ${turmaTxt}</p>`:""}
+        ${b0?.qtdTablets>0?`<p style="font-size:12px;color:#0369a1;margin-bottom:2px">📱 ${b0.qtdTablets} tablet${b0.qtdTablets>1?"s":""}</p>`:""}
+        ${b0?.qtdNotebooks>0?`<p style="font-size:12px;color:#0369a1;margin-bottom:2px">💻 ${b0.qtdNotebooks} computador${b0.qtdNotebooks>1?"es":""}</p>`:""}
+        ${m.bibAV===true&&(m.bibMic>0||m.bibCaixa>0||m.bibProj>0)?`<p style="font-size:12px;color:#0369a1;margin-bottom:2px">🔊 Som/Mic/Projetor solicitado</p>`:""}
+        ${b0?.precisaFoto||b0?.precisaVideo?`<p style="font-size:12px;color:#7c3aed;margin-bottom:2px">📸 Mídia solicitada</p>`:""}
+      </div>
+      ${m.recorrente&&m.serieDataInicio&&m.serieDataFim?`<div style="background:#e0f2fe;border:1.5px solid #bae6fd;border-radius:10px;padding:12px 14px;margin-bottom:12px;text-align:left">
+        <p style="font-size:13px;font-weight:800;color:#0369a1;margin-bottom:6px">🔁 Série semanal criada!</p>
+        <p style="font-size:12px;color:#0369a1;margin-bottom:2px">📅 De ${m.serieDataInicio.split("-").reverse().join("/")} até ${m.serieDataFim.split("-").reverse().join("/")}</p>
+        <p style="font-size:12px;font-weight:700;color:#0369a1">📋 ${m.serieTotal||"20"} agendamentos criados</p>
+      </div>`:""}
+      ${(m.temMidia||m.tipoEspaco==="marketing")?`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:12px 14px;margin-bottom:12px;text-align:left"><p style="font-size:12px;color:#92400e;font-weight:700;margin-bottom:4px">⏳ O que acontece agora?</p><p style="font-size:12px;color:#92400e;line-height:1.5">A <strong>Equipe de Marketing</strong> vai analisar sua solicitação de foto/vídeo e confirmar ou recusar. Você receberá uma notificação assim que houver uma resposta.</p></div>`:m.sucesso==="pendente"?`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:12px 14px;margin-bottom:12px;text-align:left"><p style="font-size:12px;color:#92400e;font-weight:700;margin-bottom:4px">⏳ O que acontece agora?</p><p style="font-size:12px;color:#92400e;line-height:1.5">Este agendamento precisa de aprovação pois foi feito com menos de 24h de antecedência. Você receberá uma notificação assim que for aprovado.</p></div>`:""}
       <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
         <button onclick="pSetModoProf('agendar')" style="${btn("success")};padding:10px 24px">＋ Novo agendamento</button>
         <button onclick="pSetModoProf('ver')" style="${btn("ghost")};padding:10px 24px">Ver agendamentos</button>
@@ -1452,44 +1800,6 @@ function renderProfAgendar(){
 
     if(isDiaUrgente(m.data))html+=alertHTML("warning","⚠️ Menos de 24h de antecedência. Contate o T.E. para garantir disponibilidade.");
 
-    // Bloco A/V automático para salas específicas
-    const _espacosComAV=["Biblioteca","Fazendinha","Pátio do Lago de Pedras"];
-    if(_espacosComAV.includes(m.espaco)){
-      html+=`<div style="background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:10px;padding:12px 14px;margin-bottom:14px">
-        <p style="font-size:13px;font-weight:800;color:#0369a1;margin-bottom:6px">🔊 Precisa de Som, Microfone e Projetor?</p>
-        <div style="display:flex;gap:8px;margin-bottom:${_MA.bibAV===true?'12px':'0'}">
-          <button onclick="setBibAV(true)" style="flex:1;padding:9px;border-radius:8px;border:2px solid ${_MA.bibAV===true?'#0369a1':'#bae6fd'};background:${_MA.bibAV===true?'#e0f2fe':'#fff'};font-weight:700;font-size:13px;cursor:pointer;color:#0369a1">✓ Sim</button>
-          <button onclick="setBibAV(false)" style="flex:1;padding:9px;border-radius:8px;border:2px solid ${_MA.bibAV===false?'#64748b':'#e2e8f0'};background:${_MA.bibAV===false?'#f1f5f9':'#fff'};font-weight:700;font-size:13px;cursor:pointer;color:#64748b">✕ Não</button>
-        </div>
-        ${_MA.bibAV===true?`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:4px">
-          <div style="text-align:center">
-            <p style="font-size:10px;font-weight:700;color:#0369a1;text-transform:uppercase;margin-bottom:6px">🎤 Microfones</p>
-            <div style="display:flex;align-items:center;border:1.5px solid #bae6fd;border-radius:10px;overflow:hidden">
-              <button onclick="bibDec('bibMic')" style="width:36px;height:44px;border:none;background:#e0f2fe;color:#0369a1;font-size:22px;font-weight:700;cursor:pointer">−</button>
-              <span style="flex:1;font-size:18px;font-weight:800;color:#0369a1;text-align:center">${_MA.bibMic||0}</span>
-              <button onclick="bibInc('bibMic')" style="width:36px;height:44px;border:none;background:#e0f2fe;color:#0369a1;font-size:22px;font-weight:700;cursor:pointer">+</button>
-            </div>
-          </div>
-          <div style="text-align:center">
-            <p style="font-size:10px;font-weight:700;color:#0369a1;text-transform:uppercase;margin-bottom:6px">🔊 Caixas</p>
-            <div style="display:flex;align-items:center;border:1.5px solid #bae6fd;border-radius:10px;overflow:hidden">
-              <button onclick="bibDec('bibCaixa')" style="width:36px;height:44px;border:none;background:#e0f2fe;color:#0369a1;font-size:22px;font-weight:700;cursor:pointer">−</button>
-              <span style="flex:1;font-size:18px;font-weight:800;color:#0369a1;text-align:center">${_MA.bibCaixa||0}</span>
-              <button onclick="bibInc('bibCaixa')" style="width:36px;height:44px;border:none;background:#e0f2fe;color:#0369a1;font-size:22px;font-weight:700;cursor:pointer">+</button>
-            </div>
-          </div>
-          <div style="text-align:center">
-            <p style="font-size:10px;font-weight:700;color:#0369a1;text-transform:uppercase;margin-bottom:6px">📽️ Projetores</p>
-            <div style="display:flex;align-items:center;border:1.5px solid #bae6fd;border-radius:10px;overflow:hidden">
-              <button onclick="bibDec('bibProj')" style="width:36px;height:44px;border:none;background:#e0f2fe;color:#0369a1;font-size:22px;font-weight:700;cursor:pointer">−</button>
-              <span style="flex:1;font-size:18px;font-weight:800;color:#0369a1;text-align:center">${_MA.bibProj||0}</span>
-              <button onclick="bibInc('bibProj',5)" style="width:36px;height:44px;border:none;background:#e0f2fe;color:#0369a1;font-size:22px;font-weight:700;cursor:pointer">+</button>
-            </div>
-          </div>
-        </div>`:""}
-      </div>`;
-    }
-
     // Todos os espaços usam formulário multi-horário com rotação de turmas
     html+=maBlocoMultiHTML(m.blocos[0],0,eo);
   }
@@ -1527,14 +1837,16 @@ function maBlocoMultiHTML(b,i,eo){
   };
 
   // Horários disponíveis para fim (a partir do início)
+  // ✅ Mostrar TODOS os horários de aula, pular os intervalos
   let dispFim=[];
   if(b.horario){
     const iIni=HORARIOS.indexOf(b.horario);
-    dispFim=[b.horario];
     for(let idx=iIni+1;idx<HORARIOS.length;idx++){
-      if(ocpFire.includes(HORARIOS[idx])||isBloqueado(HORARIOS[idx]))break;
-      dispFim.push(HORARIOS[idx]);
+      const horAtual=HORARIOS[idx];
+      if(ocpFire.includes(horAtual)||isBloqueado(horAtual))break;
+      dispFim.push(horAtual);
     }
+    if(dispFim.length===0)dispFim=[b.horario]; // fallback
   }
 
   // Range de horários selecionado
@@ -1567,7 +1879,8 @@ function maBlocoMultiHTML(b,i,eo){
   {id:"fund1",l:"Fund. 1",turmas:[{label:"Fund. 1",items:TURMAS_FUND1}]},
   {id:"fund2",l:"Fund. 2",turmas:[{label:"Fund. 2",items:TURMAS_FUND2}]},
   {id:"outros",l:"Integral/Extras",turmas:[
-    {label:"Integral",items:TURMAS_INTEGRAL},
+    {label:"Integral Infantil",items:TURMAS_INTEGRAL},
+    {label:"Integral Fund. 1",items:TURMAS_INTEGRAL_FUND1},
     {label:"Extras",items:TURMAS_EXTRAS}
   ]},
 ];
@@ -1592,6 +1905,7 @@ const selTurma=(horario,val)=>`
     <label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">🕐 Horário de início *</label>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px">
       ${HORARIOS.map(h=>{
+        const isIntervalo=false;
         const ocp=ocpFire.includes(h)&&h!==b.horario;
         const sel2=h===b.horario;
         // Bloquear horários já passados no dia de hoje
@@ -1601,10 +1915,7 @@ const selTurma=(horario,val)=>`
         const passado=_MA.data===hojeStr&&(hh<agoraRef.getHours()||(hh===agoraRef.getHours()&&mm<=agoraRef.getMinutes()));
         const soninho=isBloqueado(h)&&h!==b.horario;
         const bloq=ocp||passado||soninho;
-        return`<button onclick="maSetHorarioMulti(${i},'ini','${h}')" ${bloq?"disabled":""}
-          style="padding:8px 4px;border-radius:8px;border:${sel2?"2px solid "+c.blueMid:bloq?"1.5px solid "+c.redBorder:"1.5px solid "+c.greenBorder};background:${sel2?c.greenBg:bloq?c.redBg:c.surface};color:${sel2?c.blueMid:bloq?c.red:c.green};font-size:11px;font-weight:700;cursor:${bloq?"not-allowed":"pointer"};font-family:'DM Mono',monospace;display:flex;flex-direction:column;align-items:center;gap:2px">
-          ${h}<span style="font-size:8px">${ocp?"● Ocup":passado?"● Pass":soninho?"🌙 Son":sel2?"✓ Ini":"○"}</span>
-        </button>`;
+        return`<button onclick="maSetHorarioMulti(${i},'ini','${h}')" ${bloq?"disabled":""}\n          style="padding:8px 4px;border-radius:8px;border:${sel2?"2px solid "+c.blueMid:bloq?"1.5px solid "+c.redBorder:"1.5px solid "+c.greenBorder};background:${sel2?c.greenBg:bloq?c.redBg:c.surface};color:${sel2?c.blueMid:bloq?c.red:c.green};font-size:11px;font-weight:700;cursor:${bloq?"not-allowed":"pointer"};font-family:'DM Mono',monospace;display:flex;flex-direction:column;align-items:center;gap:2px">\n          ${h}<span style="font-size:8px">${ocp?"● Ocup":passado?"● Pass":soninho?"🌙 Son":isIntervalo?"⏸️ Int":sel2?"✓ Ini":"○"}</span>\n        </button>`;
       }).join("")}
     </div>
   </div>`;
@@ -1626,7 +1937,7 @@ const selTurma=(horario,val)=>`
           const sel2=h===b.horarioFim;
           return`<button onclick="maSetHorarioMulti(${i},'fim','${h}')"
             style="padding:8px 12px;border-radius:8px;border:${sel2?"2px solid #1a6b47":"1.5px solid "+c.border};background:${sel2?"#1a6b47":c.surface};color:${sel2?"#fff":c.navy};font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Mono',monospace">
-            ${h}${h===b.horario?" (só este)":""}
+            ${h}
           </button>`;
         }).join("")}
       </div>
@@ -1640,7 +1951,7 @@ const selTurma=(horario,val)=>`
         <option value="">Selecione a turma...</option>
         <optgroup label="Ed. Infantil">${TURMAS_EDUCACAO_INFANTIL.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup>
         <optgroup label="Fund. 1">${TURMAS_FUND1.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup>
-        <optgroup label="Fund. 2">${TURMAS_FUND2.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup><optgroup label="Aulas Extras">${TURMAS_EXTRAS.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup><optgroup label="Integral">${TURMAS_INTEGRAL.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup>
+        <optgroup label="Fund. 2">${TURMAS_FUND2.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup><optgroup label="Aulas Extras">${TURMAS_EXTRAS.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup><optgroup label="Integral Infantil">${TURMAS_INTEGRAL.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup><optgroup label="Integral Fund. 1">${TURMAS_INTEGRAL_FUND1.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup>
       </select>`;
     const mesmaT=b.horario===b.horarioFim;
     html+=`<div style="background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:10px;padding:14px;display:grid;gap:12px">
@@ -1704,36 +2015,6 @@ const selTurma=(horario,val)=>`
     }
   }
 
-  // ── Equipamentos automáticos (Sala Multifuncional e Lab. Mat.) ──
-  // O local já é a própria sala — professor só informa início/fim (já selecionado) e quantidade
-  if(temEquipAuto&&b.horario&&b.horarioFim){
-    html+=`<div style="background:${c.surface};border-radius:10px;padding:12px;border:1.5px solid #bae6fd">
-      <p style="font-size:13px;font-weight:800;color:#0369a1;margin-bottom:4px">💻 Equipamentos para o período</p>
-      <p style="font-size:11px;color:${c.textMuted};margin-bottom:10px">Serão entregues e recolhidos na própria sala no período ${b.horario} → ${b.horarioFim}.</p>
-      <div style="display:grid;gap:8px">`;
-    if(eo.equipAuto.includes("Tablets (18 disp.)")){
-      html+=`<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:${c.bg};border-radius:8px;border:1.5px solid ${b.qtdTablets>0?c.blueMid:c.border}">
-        <span style="font-size:16px">📱</span><div style="flex:1"><p style="font-size:13px;font-weight:700;color:${c.navy}">Tablets</p><p style="font-size:11px;color:${c.textMuted}">Máx. 18 disponíveis</p></div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <button onclick="maDecEquip(${i},'qtdTablets')" style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${c.surface};cursor:pointer;font-size:16px;font-family:inherit">−</button>
-          <span style="font-size:16px;font-weight:800;color:${c.navy};min-width:24px;text-align:center">${b.qtdTablets||0}</span>
-          <button onclick="maIncEquip(${i},'qtdTablets',18)" style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${c.surface};cursor:pointer;font-size:16px;font-family:inherit">+</button>
-        </div>
-      </div>`;
-    }
-    if(eo.equipAuto.includes("Computadores (16 disp.)")){
-      html+=`<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:${c.bg};border-radius:8px;border:1.5px solid ${b.qtdNotebooks>0?c.blueMid:c.border}">
-        <span style="font-size:16px">💻</span><div style="flex:1"><p style="font-size:13px;font-weight:700;color:${c.navy}">Computadores</p><p style="font-size:11px;color:${c.textMuted}">Máx. 16 disponíveis</p></div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <button onclick="maDecEquip(${i},'qtdNotebooks')" style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${c.surface};cursor:pointer;font-size:16px;font-family:inherit">−</button>
-          <span style="font-size:16px;font-weight:800;color:${c.navy};min-width:24px;text-align:center">${b.qtdNotebooks||0}</span>
-          <button onclick="maIncEquip(${i},'qtdNotebooks',16)" style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${c.surface};cursor:pointer;font-size:16px;font-family:inherit">+</button>
-        </div>
-      </div>`;
-    }
-    html+=`</div></div>`;
-  }
-
   // ── Laboratorista (apenas Labs de Ciências) ──
   if(eo?.tipo==="laboratorio"&&b.horario){
     html+=`<div style="background:${c.bg};border-radius:10px;padding:12px 14px;border:1.5px solid ${b.laboratorista?c.greenBorder:c.border}">
@@ -1751,7 +2032,7 @@ const selTurma=(horario,val)=>`
 
   // ── Conteúdo ──
   html+=`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">📝 Descrição da aula *</label><br>
-    <textarea oninput="maSetConteudo(${i},this.value)" rows="4" placeholder="Descreva a atividade, conteúdo e observações..." style="${inp()};resize:vertical;line-height:1.6;margin-top:5px">${b.conteudo}</textarea>
+    <textarea onchange="maSetConteudo(${i},this.value)" rows="4" placeholder="Descreva a atividade, conteúdo e observações..." style="${inp()};resize:vertical;line-height:1.6;margin-top:5px">${b.conteudo}</textarea>
   </div>`;
 
 
@@ -1763,36 +2044,116 @@ const selTurma=(horario,val)=>`
     </div>`;
   }
 
-  // ── Foto / Vídeo ──
-  html+=`<div style="display:flex;flex-direction:column;gap:8px">
-    <p style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">📸 Registro de mídia</p>
-    <div style="display:flex;gap:10px">
-      <button onclick="maSetBlocoRe(${i},'temMidia',true);maSetBlocoRe(${i},'precisaFoto',false);maSetBlocoRe(${i},'precisaVideo',false)" style="flex:1;padding:10px;border-radius:8px;border:2px solid ${b.temMidia===true?'#1a6b47':c.border};background:${b.temMidia===true?c.greenBg:c.surface};color:${b.temMidia===true?'#1a6b47':c.text};font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">✅ Sim</button>
-      <button onclick="maSetBlocoRe(${i},'temMidia',false);maSetBlocoRe(${i},'precisaFoto',false);maSetBlocoRe(${i},'precisaVideo',false)" style="flex:1;padding:10px;border-radius:8px;border:2px solid ${b.temMidia===false?'#64748b':c.border};background:${b.temMidia===false?'#f1f5f9':c.surface};color:${b.temMidia===false?'#475569':c.text};font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">✕ Não</button>
+  html+=`</div></div>`;
+
+  // ── BLOCOS OPCIONAIS NO FINAL (padrão Não) ──
+
+  // 1. Equipamentos (tablets/computadores) — só para espaços com equipAuto
+  if(temEquipAuto&&b.horario&&b.horarioFim){
+    const usaEquip=b.usaEquip===true;
+    html+=`<div style="background:${c.surface};border-radius:10px;padding:12px;border:1.5px solid #bae6fd">
+      <p style="font-size:13px;font-weight:800;color:#0369a1;margin-bottom:4px">📱💻 Precisa de Tablets ou Computadores?</p>
+      <p style="font-size:11px;color:#607060;margin-bottom:8px">💡 Quantidade disponível no momento do agendamento. Pode variar se houver uso simultâneo em outro espaço.</p>
+      <div style="display:flex;gap:8px;margin-bottom:${usaEquip?'10px':'0'}">
+        <button onclick="maSetBlocoRe(${i},'usaEquip',true);maSetBlocoRe(${i},'qtdTablets',0);maSetBlocoRe(${i},'qtdNotebooks',0);consultaDispEquip();" style="flex:1;padding:9px;border-radius:8px;border:2px solid ${usaEquip?'#0369a1':c.border};background:${usaEquip?'#e0f2fe':c.bg};color:${usaEquip?'#0369a1':c.textMid};font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">✅ Sim</button>
+        <button onclick="maSetBlocoRe(${i},'usaEquip',false);maSetBlocoRe(${i},'qtdTablets',0);maSetBlocoRe(${i},'qtdNotebooks',0);" style="flex:1;padding:9px;border-radius:8px;border:2px solid ${!usaEquip?'#64748b':c.border};background:${!usaEquip?'#f1f5f9':c.bg};color:${!usaEquip?'#475569':c.textMid};font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">✕ Não</button>
+      </div>
+      ${usaEquip?`<p style="font-size:11px;color:${c.textMuted};margin-bottom:10px">Serão entregues e recolhidos na própria sala no período ${b.horario} → ${b.horarioFim}.</p><div style="display:grid;gap:8px">`:''}`;
+    if(usaEquip){
+      if(eo.equipAuto.includes("Tablets (18 disp.)")){
+        const dispT=(_MA.dispEquip?.tablets??18);
+        const esgT=dispT===0;
+        html+=`<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:${c.bg};border-radius:8px;border:1.5px solid ${b.qtdTablets>0?c.blueMid:c.border}">
+          <span style="font-size:16px">📱</span><div style="flex:1"><p style="font-size:13px;font-weight:700;color:${c.navy}">Tablets</p><p style="font-size:11px;color:${esgT?'#dc2626':c.textMuted}">${esgT?'❌ Nenhum disponível neste horário':`${dispT} disponível${dispT!==1?'s':''} de 18`}</p></div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <button onclick="maDecEquip(${i},'qtdTablets')" style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${c.surface};cursor:pointer;font-size:16px;font-family:inherit">−</button>
+            <span style="font-size:16px;font-weight:800;color:${c.navy};min-width:24px;text-align:center">${b.qtdTablets||0}</span>
+            <button onclick="maIncEquip(${i},'qtdTablets',${dispT})" ${esgT?'disabled':''} style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${esgT?'#f1f5f9':c.surface};cursor:${esgT?'not-allowed':'pointer'};font-size:16px;font-family:inherit">+</button>
+          </div>
+        </div>`;
+      }
+      if(eo.equipAuto.includes("Computadores (16 disp.)")){
+        const dispN=(_MA.dispEquip?.notebooks??16);
+        const esgN=dispN===0;
+        html+=`<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:${c.bg};border-radius:8px;border:1.5px solid ${b.qtdNotebooks>0?c.blueMid:c.border}">
+          <span style="font-size:16px">💻</span><div style="flex:1"><p style="font-size:13px;font-weight:700;color:${c.navy}">Computadores</p><p style="font-size:11px;color:${esgN?'#dc2626':c.textMuted}">${esgN?'❌ Nenhum disponível neste horário':`${dispN} disponível${dispN!==1?'s':''} de 16`}</p></div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <button onclick="maDecEquip(${i},'qtdNotebooks')" style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${c.surface};cursor:pointer;font-size:16px;font-family:inherit">−</button>
+            <span style="font-size:16px;font-weight:800;color:${c.navy};min-width:24px;text-align:center">${b.qtdNotebooks||0}</span>
+            <button onclick="maIncEquip(${i},'qtdNotebooks',${dispN})" ${esgN?'disabled':''} style="width:28px;height:28px;border-radius:50%;border:1.5px solid ${c.border};background:${esgN?'#f1f5f9':c.surface};cursor:${esgN?'not-allowed':'pointer'};font-size:16px;font-family:inherit">+</button>
+          </div>
+        </div>`;
+      }
+      html+=`</div>`;
+    }
+    html+=`</div>`;
+  }
+
+  // 2. Som/Microfone/Projetor — só para espaços com temBibAV, após horário selecionado
+  if(eo?.temBibAV&&b.horario&&b.horarioFim){
+    html+=`<div style="background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:10px;padding:12px 14px">
+      <p style="font-size:13px;font-weight:800;color:#0369a1;margin-bottom:4px">🔊 Precisa de Som, Microfone ou Projetor?</p>
+      <p style="font-size:11px;color:#607060;margin-bottom:8px">💡 A equipe de T.I. confirmará a disponibilidade via notificação neste app. O agendamento do espaço não é afetado.</p>
+      <div style="display:flex;gap:8px;margin-bottom:${_MA.bibAV===true?'12px':'0'}">
+        <button onclick="setBibAV(true)" style="flex:1;padding:9px;border-radius:8px;border:2px solid ${_MA.bibAV===true?'#0369a1':c.border};background:${_MA.bibAV===true?'#e0f2fe':c.bg};font-weight:700;font-size:13px;cursor:pointer;color:${_MA.bibAV===true?'#0369a1':c.textMid};font-family:inherit">✅ Sim</button>
+        <button onclick="setBibAV(false)" style="flex:1;padding:9px;border-radius:8px;border:2px solid ${_MA.bibAV!==true?'#64748b':c.border};background:${_MA.bibAV!==true?'#f1f5f9':c.bg};font-weight:700;font-size:13px;cursor:pointer;color:${_MA.bibAV!==true?'#475569':c.textMid};font-family:inherit">✕ Não</button>
+      </div>
+      ${_MA.bibAV===true?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
+        <div style="text-align:center">
+          <p style="font-size:10px;font-weight:700;color:#0369a1;text-transform:uppercase;margin-bottom:6px">🎤 Microfones</p>
+          <div style="display:flex;align-items:center;border:1.5px solid #bae6fd;border-radius:10px;overflow:hidden">
+            <button onclick="bibDec('bibMic')" style="width:36px;height:44px;border:none;background:#e0f2fe;color:#0369a1;font-size:22px;font-weight:700;cursor:pointer">−</button>
+            <span style="flex:1;font-size:18px;font-weight:800;color:#0369a1;text-align:center">${_MA.bibMic||0}</span>
+            <button onclick="bibInc('bibMic')" style="width:36px;height:44px;border:none;background:#e0f2fe;color:#0369a1;font-size:22px;font-weight:700;cursor:pointer">+</button>
+          </div>
+        </div>
+        <div style="text-align:center">
+          <p style="font-size:10px;font-weight:700;color:#0369a1;text-transform:uppercase;margin-bottom:6px">🔊 Caixas</p>
+          <div style="display:flex;align-items:center;border:1.5px solid #bae6fd;border-radius:10px;overflow:hidden">
+            <button onclick="bibDec('bibCaixa')" style="width:36px;height:44px;border:none;background:#e0f2fe;color:#0369a1;font-size:22px;font-weight:700;cursor:pointer">−</button>
+            <span style="flex:1;font-size:18px;font-weight:800;color:#0369a1;text-align:center">${_MA.bibCaixa||0}</span>
+            <button onclick="bibInc('bibCaixa')" style="width:36px;height:44px;border:none;background:#e0f2fe;color:#0369a1;font-size:22px;font-weight:700;cursor:pointer">+</button>
+          </div>
+        </div>
+        <div style="text-align:center">
+          <p style="font-size:10px;font-weight:700;color:#0369a1;text-transform:uppercase;margin-bottom:6px">📽️ Projetores</p>
+          <div style="display:flex;align-items:center;border:1.5px solid #bae6fd;border-radius:10px;overflow:hidden">
+            <button onclick="bibDec('bibProj')" style="width:36px;height:44px;border:none;background:#e0f2fe;color:#0369a1;font-size:22px;font-weight:700;cursor:pointer">−</button>
+            <span style="flex:1;font-size:18px;font-weight:800;color:#0369a1;text-align:center">${_MA.bibProj||0}</span>
+            <button onclick="bibInc('bibProj',5)" style="width:36px;height:44px;border:none;background:#e0f2fe;color:#0369a1;font-size:22px;font-weight:700;cursor:pointer">+</button>
+          </div>
+        </div>
+      </div>`:""}
+    </div>`;
+  }
+
+  // 3. Registro de mídia — só após horário selecionado
+  if(b.horario&&b.horarioFim){
+  html+=`<div style="background:${c.surface};border-radius:10px;padding:12px 14px;border:1.5px solid ${b.temMidia===true?c.greenBorder:c.border}">
+    <p style="font-size:13px;font-weight:800;color:${c.navy};margin-bottom:4px">📸 Precisa de Foto ou Vídeo da aula?</p>
+    <p style="font-size:11px;color:#607060;margin-bottom:8px">💡 A equipe de Marketing confirmará via notificação neste app.</p>
+    <div style="display:flex;gap:8px;margin-bottom:${b.temMidia===true?'10px':'0'}">
+      <button onclick="maSetBlocoRe(${i},'temMidia',true);maSetBlocoRe(${i},'precisaFoto',false);maSetBlocoRe(${i},'precisaVideo',false)" style="flex:1;padding:9px;border-radius:8px;border:2px solid ${b.temMidia===true?'#1a6b47':c.border};background:${b.temMidia===true?c.greenBg:c.bg};color:${b.temMidia===true?'#1a6b47':c.textMid};font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">✅ Sim</button>
+      <button onclick="maSetBlocoRe(${i},'temMidia',false);maSetBlocoRe(${i},'precisaFoto',false);maSetBlocoRe(${i},'precisaVideo',false)" style="flex:1;padding:9px;border-radius:8px;border:2px solid ${b.temMidia!==true?'#64748b':c.border};background:${b.temMidia!==true?'#f1f5f9':c.bg};color:${b.temMidia!==true?'#475569':c.textMid};font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">✕ Não</button>
     </div>
-    ${b.temMidia===true?`<div style="display:flex;gap:10px;margin-top:4px">
+    ${b.temMidia===true?`<div style="display:flex;gap:10px;margin-bottom:8px">
       <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:${b.precisaFoto?c.greenBg:c.surface};border-radius:8px;border:2px solid ${b.precisaFoto?c.greenBorder:'#e2e8f0'};cursor:pointer;flex:1">
-        <input type="checkbox" id="chk-foto-${i}" ${b.precisaFoto?"checked":""} onchange="maSetBlocoRe(${i},'precisaFoto',this.checked)" style="width:18px;height:18px;accent-color:#1a6b47;cursor:pointer;flex-shrink:0">
+        <input type="checkbox" ${b.precisaFoto?"checked":""} onchange="maSetBlocoRe(${i},'precisaFoto',this.checked)" style="width:18px;height:18px;accent-color:#1a6b47;cursor:pointer;flex-shrink:0">
         <span style="font-size:13px;font-weight:700;color:${c.navy}">📸 Foto</span>
       </label>
       <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:${b.precisaVideo?'#eff6ff':c.surface};border-radius:8px;border:2px solid ${b.precisaVideo?'#bfdbfe':'#e2e8f0'};cursor:pointer;flex:1">
-        <input type="checkbox" id="chk-video-${i}" ${b.precisaVideo?"checked":""} onchange="maSetBlocoRe(${i},'precisaVideo',this.checked)" style="width:18px;height:18px;accent-color:#1d4ed8;cursor:pointer;flex-shrink:0">
+        <input type="checkbox" ${b.precisaVideo?"checked":""} onchange="maSetBlocoRe(${i},'precisaVideo',this.checked)" style="width:18px;height:18px;accent-color:#1d4ed8;cursor:pointer;flex-shrink:0">
         <span style="font-size:13px;font-weight:700;color:#1e40af">🎬 Vídeo</span>
       </label>
-    </div>`:``}
-    ${(b.precisaFoto||b.precisaVideo)?`
-    <select onchange="maSetBlocoRe(${i},'objetivoMidia',this.value)" style="${inp()};margin-top:2px">
+    </div>
+    ${(b.precisaFoto||b.precisaVideo)?`<select onchange="maSetBlocoRe(${i},'objetivoMidia',this.value)" style="${inp()};margin-bottom:6px">
       <option value="">🎯 Objetivo do material...</option>
       <option value="social" ${b.objetivoMidia==="social"?"selected":""}>📱 Publicação em Rede Social</option>
       <option value="pedagogico" ${b.objetivoMidia==="pedagogico"?"selected":""}>📚 Projeto Pedagógico</option>
     </select>
-    ${b.objetivoMidia==="social"?`<textarea onchange="maSetBlocoRe(${i},'descritivo',this.value)" rows="3" placeholder="Descreva o contexto para publicação em rede social (atividade, turma, mensagem que deseja transmitir)..." style="${inp()};resize:none;margin-top:2px">${b.descritivo||""}</textarea>`:""}
-    `:""}
+    ${b.objetivoMidia==="social"?`<textarea onchange="maSetBlocoRe(${i},'descritivo',this.value)" rows="3" placeholder="Descreva o contexto para publicação..." style="${inp()};resize:none">${b.descritivo||""}</textarea>`:""}`:""}`:""}
   </div>`;
-
-  html+=`</div></div>`;
-
-  // ── Recorrência (só para espaços simples, não equipamentos) ──
+  } // fim if(b.horario&&b.horarioFim) mídia
   if(!isEquip&&!isAvulso&&eo?.tipo!=="audiovisual"&&eo?.tipo!=="marketing"){
     html+=`<div style="background:${c.surface};border:1.5px solid ${_MA.recorrente?'#1a6b47':c.border};border-radius:10px;padding:12px 14px">
       <div style="display:flex;align-items:center;gap:10px;cursor:pointer" onclick="toggleRecorrente()">
@@ -1932,6 +2293,28 @@ function renderMAResumo(){
   }
 
   if(precisaCiencia)html+=`<label style="display:flex;align-items:flex-start;gap:10px;margin-bottom:18px;cursor:pointer;padding:12px 14px;background:${c.surface};border:1.5px solid ${c.border};border-radius:10px"><input type="checkbox" id="chk-ciente" onchange="cienteChanged(this.checked)" style="width:18px;height:18px;margin-top:1px;accent-color:#1a6b47;flex-shrink:0;cursor:pointer"><span style="font-size:12px;color:${c.navy};line-height:1.5">${fimSem?"Estou ciente: ficará pendente até aprovação.":"Estou ciente do curto prazo. Entrarei em contato com o T.E."}</span></label>`;
+
+  // Preview datas recorrentes
+  if(_MA.recorrente){
+    const datasPreview=[];
+    const fimSem2=new Date(2026,11,19); // fim do semestre
+    let cursor=new Date(m.data+'T12:00:00Z');
+    let count=0;
+    while(cursor<=fimSem2&&count<20){
+      datasPreview.push(cursor.toISOString().slice(0,10));
+      cursor=new Date(cursor);cursor.setUTCDate(cursor.getUTCDate()+7);count++;
+    }
+    const total=datasPreview.length;
+    const exibir=datasPreview.slice(0,4);
+    html+=`<div style="background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:10px;padding:12px 14px;margin-bottom:14px">
+      <p style="font-size:12px;font-weight:800;color:#1d4ed8;margin-bottom:8px">🔁 Agendamento recorrente — ${total} semana${total!==1?'s':''}</p>
+      <div style="display:grid;gap:4px">
+        ${exibir.map(d=>{const[a,me,di]=d.split('-');return`<div style="font-size:12px;color:#1e40af;padding:4px 8px;background:#fff;border-radius:6px;border:1px solid #bfdbfe">📅 ${di}/${me}/${a}</div>`;}).join('')}
+        ${total>4?`<div style="font-size:11px;color:#64748b;padding:4px 8px">... e mais ${total-4} semana${total-4!==1?'s':''} até 19/12/2026</div>`:''}
+      </div>
+    </div>`;
+  }
+
   html+=`<div style="display:flex;gap:10px"><button onclick="maVoltarRevisao()" style="${btn("ghost")};flex:1;padding:11px">✏️ Editar</button><button id="btn-conf" onclick="maSalvar()" style="flex:2;padding:11px;font-size:13.5px;border-radius:8px;border:none;font-weight:700;font-family:inherit;cursor:${precisaCiencia?'not-allowed':'pointer'};background:${precisaCiencia?'#cbd5e1':'#1a6b47'};color:${precisaCiencia?'#94a3b8':'#fff'}" ${precisaCiencia?"disabled":""}>${m.salvando?"⏳ Aguarde...":"✓ Confirmar"}</button></div></div>`;
   return html;
 }
@@ -1947,11 +2330,14 @@ window.maBack=()=>{
   else if(_MA.step===2)_MA.espaco="";
   _MA.step--;re();
 };
-window.maSetHorario=(i,h)=>{_MA.blocos[i].horario=h;re();setTimeout(atualizarBotoesAgendar,50);};
+window.maSetHorario=(i,h)=>{_MA.blocos[i].horario=h;re();setTimeout(atualizarBotoesAgendar,50);consultaDispEquip();};
 window.maSetHorarioMulti=(i,tipo,h)=>{
   if(tipo==="ini"){
     _MA.blocos[i].horario=h;
-    _MA.blocos[i].horarioFim=h;
+    // Setar fim para o próximo horário disponível
+    const HORS=["07:10","08:00","09:10","10:00","11:10","12:00","12:50","13:40","14:30","15:20","16:10","17:00"];
+    const idx=HORS.indexOf(h);
+    _MA.blocos[i].horarioFim=idx>=0&&idx<HORS.length-1?HORS[idx+1]:h;
   } else {
     _MA.blocos[i].horarioFim=h;
   }
@@ -1975,6 +2361,7 @@ window.maSetHorarioMulti=(i,tipo,h)=>{
     }
   }
   re();
+  consultaDispEquip();
 };
 window.maSetBloco=(i,k,v)=>{_MA.blocos[i][k]=v;};
 window.maIncEquip=(i,campo,max)=>{_MA.blocos[i][campo]=Math.min(max,(_MA.blocos[i][campo]||0)+1);re();};
@@ -1991,7 +2378,7 @@ window.maSetTurmaPorHorario=(i,horario,turma)=>{
   const b=_MA.blocos[i];
   const eo=ESPACOS.find(e=>e.nome===_MA.espaco);
   if(b.horario&&b.horarioFim){
-    const range=gerarRange(b.horario,b.horarioFim,eo);
+    const range=horariosRange(b.horario,b.horarioFim||b.horario);
     let propagando=false;
     for(const h of range){
       if(h===horario){propagando=true;continue;}
@@ -2001,11 +2388,43 @@ window.maSetTurmaPorHorario=(i,horario,turma)=>{
   re();
 };
 window.maSetBlocoRe=(i,k,v)=>{_MA.blocos[i][k]=v;re();};
+
+// Consulta disponibilidade real de tablets e computadores no Firestore
+window.consultaDispEquip=async()=>{
+  const b=_MA.blocos[0];
+  const eo=ESPACOS.find(e=>e.nome===_MA.espaco);
+  if(!eo||!eo.equipAuto||eo.equipAuto.length===0)return;
+  if(!_MA.data||!b||!b.horario||!b.horarioFim)return;
+  const range=horariosRange(b.horario,b.horarioFim||b.horario);
+  if(!range||range.length===0)return;
+  // Busca reservas ativas (não recusadas) de tablets e computadores nos horários do range
+  let usadoTablets=0,usadoNotebooks=0;
+  try{
+    const snaps=await Promise.all(range.map(h=>
+      getDocs(query(collection(db,"reservas"),
+        where("data","==",_MA.data),
+        where("horario","==",h),
+        where("status","in",["confirmado","pendente"])
+      ))
+    ));
+    snaps.forEach(snap=>{
+      snap.docs.forEach(d=>{
+        const r=d.data();
+        if(r.espaco&&r.espaco.includes("Tablet"))usadoTablets+=Number(r.quantidade)||Number(r.qtdTablets)||0;
+        if(r.espaco&&r.espaco.includes("Computador"))usadoNotebooks+=Number(r.quantidade)||Number(r.qtdNotebooks)||0;
+        // equipamentos automáticos embutidos na reserva do espaço
+        if(Number(r.qtdTablets)>0)usadoTablets+=Number(r.qtdTablets);
+        if(Number(r.qtdNotebooks)>0)usadoNotebooks+=Number(r.qtdNotebooks);
+      });
+    });
+  }catch(e){return;}
+  _MA.dispEquip={tablets:Math.max(0,18-usadoTablets),notebooks:Math.max(0,16-usadoNotebooks)};
+  re();
+};
 let _reTimer=null;
 window.maSetConteudo=(i,v)=>{
   _MA.blocos[i].conteudo=v;
-  clearTimeout(_reTimer);
-  _reTimer=setTimeout(()=>re(),300);
+  re();
 };
 window.maSetSegmento=(i,seg)=>{
   if(!_MA.blocos[i])return;
@@ -2096,28 +2515,40 @@ window.maSalvar=async()=>{
       }
     }
 
-    // 2. Verificar conflitos de equipamentos automáticos em paralelo
+    // 2. Verificar disponibilidade de equipamentos automáticos por quantidade
     const equipAuto=eo.equipAuto||[];
-    const equipSnaps={};
-    // Só consulta equipamentos se professor selecionou alguma quantidade
     const qtdTablets=Number(blocos[0]?.qtdTablets)||0;
     const qtdNotebooks=Number(blocos[0]?.qtdNotebooks)||0;
     if(equipAuto.length>0&&(qtdTablets>0||qtdNotebooks>0)){
-      const eqPromises=[];
-      for(const nomeEquip of equipAuto){
-        for(const h of rangeHors){
-          eqPromises.push(
-            getDocs(query(collection(db,"reservas"),where("espaco","==",nomeEquip),where("data","==",data),where("horario","==",h)))
-            .then(snap=>({nomeEquip,h,snap}))
-            .catch(()=>({nomeEquip,h,snap:{docs:[]}}))
-          );
-        }
+      let usadoT=0,usadoN=0;
+      try{
+        const snapsEq=await Promise.all(rangeHors.map(h=>
+          getDocs(query(collection(db,"reservas"),
+            where("data","==",data),
+            where("horario","==",h),
+            where("status","in",["confirmado","pendente"])
+          ))
+        ));
+        snapsEq.forEach(snap=>{
+          snap.docs.forEach(d=>{
+            const r=d.data();
+            if(r.espaco&&r.espaco.includes("Tablet"))usadoT+=Number(r.quantidade)||Number(r.qtdTablets)||0;
+            if(r.espaco&&r.espaco.includes("Computador"))usadoN+=Number(r.quantidade)||Number(r.qtdNotebooks)||0;
+            if(Number(r.qtdTablets)>0)usadoT+=Number(r.qtdTablets);
+            if(Number(r.qtdNotebooks)>0)usadoN+=Number(r.qtdNotebooks);
+          });
+        });
+      }catch(e){/* falha silenciosa */}
+      const dispT=Math.max(0,18-usadoT);
+      const dispN=Math.max(0,16-usadoN);
+      if(qtdTablets>dispT){
+        _MA.erro=`Tablets insuficientes. Pedido: ${qtdTablets}, disponível: ${dispT}.`;
+        _MA.salvando=false;_MA.resumo=false;re();return;
       }
-      const eqResults=await Promise.all(eqPromises).catch(()=>[]);
-      eqResults.forEach(({nomeEquip,h,snap})=>{
-        if(!equipSnaps[nomeEquip])equipSnaps[nomeEquip]={};
-        equipSnaps[nomeEquip][h]=!snap.docs.find(d=>d.data()?.status!=="recusado");
-      });
+      if(qtdNotebooks>dispN){
+        _MA.erro=`Computadores insuficientes. Pedido: ${qtdNotebooks}, disponível: ${dispN}.`;
+        _MA.salvando=false;_MA.resumo=false;re();return;
+      }
     }
 
     // 3. Determinar status
@@ -2174,16 +2605,14 @@ window.maSalvar=async()=>{
       const qtd=nomeEquip.includes("Tablet")?Number(b.qtdTablets):Number(b.qtdNotebooks);
       if(!qtd||qtd<=0)continue;
       for(const h of rangeHors){
-        if(equipSnaps[nomeEquip]?.[h]){
-          batch.set(doc(collection(db,"reservas")),{
-            professor:_usuario.nome,professorId:_usuario.uid,professorEmail:_usuario.email,
-            turma:tph[h]||"",espaco:nomeEquip,data,horario:h,horarioFim:h,
-            conteudo:`Vinculado à ${espaco} — ${b.conteudo}`,
-            quantidade:qtd,status:st,criadoEm:ts,
-            precisaFoto:false,observacoes:`Agendado automaticamente via ${espaco}`,
-            localMontagem:espaco,reservaAutomatica:true,paginas:"",laboratorista:"",
-          });
-        }
+        batch.set(doc(collection(db,"reservas")),{
+          professor:_usuario.nome,professorId:_usuario.uid,professorEmail:_usuario.email,
+          turma:tph[h]||"",espaco:nomeEquip,data,horario:h,horarioFim:h,
+          conteudo:`Vinculado à ${espaco} — ${b.conteudo}`,
+          quantidade:qtd,status:st,criadoEm:ts,
+          precisaFoto:false,observacoes:`Agendado automaticamente via ${espaco}`,
+          localMontagem:espaco,reservaAutomatica:true,paginas:"",laboratorista:"",
+        });
       }
     }
 
@@ -2215,6 +2644,8 @@ window.maSalvar=async()=>{
       let cursor=new Date(Date.UTC(anoR,mesR-1,diaR));
       cursor.setUTCDate(cursor.getUTCDate()+7);
       const FIM_SEMESTRE="2026-12-10";
+      let serieUltimaData=data;
+      let serieCount=1;
       while(true){
         const y=cursor.getUTCFullYear(),mo=String(cursor.getUTCMonth()+1).padStart(2,'0'),d2=String(cursor.getUTCDate()).padStart(2,'0');
         const ds=`${y}-${mo}-${d2}`;
@@ -2230,6 +2661,7 @@ window.maSalvar=async()=>{
             turmaFim:Object.values(tphRec)[Object.values(tphRec).length-1]||""
           };
           batch.set(doc(collection(db,"reservas")),dadosRec);
+          serieUltimaData=ds;serieCount++;
           for(let idx2=1;idx2<rangeHors.length;idx2++){
             const hAtu=rangeHors[idx2];
             batch.set(doc(collection(db,"reservas")),{
@@ -2241,6 +2673,9 @@ window.maSalvar=async()=>{
         }
         cursor.setUTCDate(cursor.getUTCDate()+7);
       }
+      _MA.serieDataInicio=data;
+      _MA.serieDataFim=serieUltimaData;
+      _MA.serieTotal=serieCount;
     }
 
     // 5. Commit do batch — uma única operação de rede!
@@ -2250,7 +2685,39 @@ window.maSalvar=async()=>{
     ]);
     _MA.sucesso=st;_MA.temMidia=temMidia||false;_MA.tipoEspaco=eoSalvar?.tipo||"";_MA.salvando=false;re();
 
-    // 6. Notificações push (background) para equipes responsáveis
+    // 6. E-mail de confirmação para o professor (via email_queue → notify.js)
+    try {
+      const dataFmtEmail=data.split("-").reverse().join("/");
+      const horFmtEmail=blocos[0]?.horario||"";
+      const horFimEmail=blocos[0]?.horarioFim||horFmtEmail;
+      const turmaEmail=Object.values(blocos[0]?.turmasPorHorario||{})[0]||"";
+      const statusLabel=st==="confirmado"?"✅ Confirmado":"⏳ Aguardando aprovação";
+      const extras=[];
+      if(Number(blocos[0]?.qtdTablets)>0)extras.push("📱 "+blocos[0].qtdTablets+" tablet(s)");
+      if(Number(blocos[0]?.qtdNotebooks)>0)extras.push("💻 "+blocos[0].qtdNotebooks+" computador(es)");
+      if(_MA.bibAV===true){
+        if(_MA.bibMic>0)extras.push("🎤 "+_MA.bibMic+" microfone(s)");
+        if(_MA.bibCaixa>0)extras.push("🔊 "+_MA.bibCaixa+" caixa(s) de som");
+        if(_MA.bibProj>0)extras.push("📽️ "+_MA.bibProj+" projetor(es)");
+      }
+      if(blocos[0]?.precisaFoto)extras.push("📸 Foto solicitada");
+      if(blocos[0]?.precisaVideo)extras.push("🎬 Vídeo solicitado");
+      const extrasTexto=extras.length>0?("\n\nExtras:\n"+extras.map(e=>"  • "+e).join("\n")):"";
+      const horarioTexto=horFimEmail!==horFmtEmail?horFmtEmail+" → "+horFimEmail:horFmtEmail;
+      const textoEmail="Olá, "+(_usuario?.nome||"Professor")+"!\n\nAgendamento registrado com sucesso.\n\n📍 Espaço: "+espaco+"\n🎓 Turma: "+(turmaEmail||"—")+"\n📅 Data: "+dataFmtEmail+"\n⏰ Horário: "+horarioTexto+"\n📋 Status: "+statusLabel+extrasTexto+"\n\nAcesse o app para ver seus agendamentos.";
+      if(_usuario?.email){
+        await addDoc(collection(db,"email_queue"),{
+          para:_usuario.email,
+          assunto:"📅 "+statusLabel+" — "+espaco+" · "+dataFmtEmail,
+          texto:textoEmail,
+          enviado:false,
+          processando:false,
+          criadoEm:new Date().toISOString()
+        });
+      }
+    } catch(eq){ console.warn("email_queue:",eq); }
+
+    // 7. Notificações push (background) para equipes responsáveis
     try {
       const dataFmt=data.split("-").reverse().join("/");
       const horFmt=blocos[0]?.horario||"";
@@ -2343,16 +2810,14 @@ function renderAdminView(){
     return true;
   });
   const urgentes=_todas.filter(r=>r.status==="pendente"&&!r.reservaAutomatica&&isUrgente(r.data,r.horario));
-  const conf=_todas.filter(r=>r.status==="confirmado"&&!r.reservaAutomatica).length;
   const pend=_todas.filter(r=>r.status==="pendente"&&!r.reservaAutomatica).length;
   const hoje_rs=_todas.filter(r=>r.data===h&&r.status!=="recusado"&&!r.reservaAutomatica).length;
-  const kpis=[{l:"Hoje",v:hoje_rs,bg:"#e2f0eb",col:"#1a6b47"},{l:"Pendentes",v:pend,bg:"#fff7ed",col:"#7c2d12"}];
 
-  let html=`<div>`;
-  html+=`<div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px">
-    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-      <h1 style="font-size:20px;font-weight:800;color:${c.navy}">Painel Administrativo</h1>
-    <div style="display:flex;align-items:center;gap:8px">
+  // ── HEADER ──
+  let html=`<div>
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">
+    <h1 style="font-size:20px;font-weight:800;color:${c.navy}">Painel Administrativo</h1>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <div style="display:flex;background:${c.surface};border-radius:10px;padding:3px;border:1px solid ${c.border};gap:2px">
         ${[{id:"calendario",l:"📅 Calendário"},{id:"agenda",l:"☰ Agenda"}].map(o=>`<button onclick="aSetModo('${o.id}')" style="padding:6px 14px;font-size:13px;border-radius:8px;border:1.5px solid ${_A.modoVisu===o.id?(_dark?'#1a6b47':c.navy):c.border};background:${_A.modoVisu===o.id?(_dark?'#1a6b47':c.navy):'transparent'};color:${_A.modoVisu===o.id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${o.l}</button>`).join("")}
       </div>
@@ -2360,59 +2825,34 @@ function renderAdminView(){
     </div>
   </div>`;
 
-  if(urgentes.length)html+=`<div style="background:linear-gradient(135deg,#f97316,#ea580c);border-radius:14px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;gap:14px;box-shadow:0 4px 16px rgba(249,115,22,.3)">
-    <div style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">⚡</div>
-    <div style="flex:1"><p style="font-size:14px;font-weight:800;color:#fff">${urgentes.length} agendamento${urgentes.length!==1?"s":""} urgente${urgentes.length!==1?"s":""} pendente${urgentes.length!==1?"s":""}</p><p style="font-size:12px;color:rgba(255,255,255,.8);margin-top:3px">Menos de 24h para o horário</p></div>
-    <button onclick="aSetModo('agenda');_A.fStatus='pendente';re()" style="background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.4);border-radius:10px;color:#fff;font-weight:800;font-size:13px;padding:8px 16px;cursor:pointer">Ver urgentes →</button>
+  // ── URGENTES ──
+  if(urgentes.length)html+=`<div style="background:linear-gradient(135deg,#f97316,#ea580c);border-radius:14px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;box-shadow:0 4px 16px rgba(249,115,22,.3)">
+    <div style="width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">⚡</div>
+    <div style="flex:1"><p style="font-size:13px;font-weight:800;color:#fff">${urgentes.length} agendamento${urgentes.length!==1?"s":""} urgente${urgentes.length!==1?"s":""} pendente${urgentes.length!==1?"s":""}</p><p style="font-size:11px;color:rgba(255,255,255,.8);margin-top:2px">Menos de 24h para o horário</p></div>
+    <button onclick="aSetModo('agenda');_A.fStatus='pendente';re()" style="background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.4);border-radius:10px;color:#fff;font-weight:800;font-size:12px;padding:7px 14px;cursor:pointer">Ver →</button>
   </div>`;
 
-  // ── Barra de resumo compacta ──
-  const temUrgente=urgentes.length>0;
-  html+=`<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;background:${c.surface};border:1.5px solid ${temUrgente?'#f97316':c.border};border-radius:12px;padding:10px 16px;margin-bottom:16px">
-    ${kpis.map(k=>`<span style="font-size:13px;font-weight:700;color:${k.col==='#92400e'&&urgentes.length>0?'#ea580c':k.col}">${k.l}: <strong>${k.v}</strong></span>`).join('<span style="color:'+c.border+';font-size:13px"> · </span>')}
-  </div>`;
-
-  // ── Feed: últimos agendamentos ──
-  const todosFeed=filtradas.filter(r=>!r.reservaAutomatica);
-  const limFeed=_A.feedExpandido?todosFeed.length:2;
-  const ultimos=todosFeed.slice(0,limFeed);
-  if(todosFeed.length){
-    html+=`<div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:12px 16px;margin-bottom:16px">
-      <p style="font-size:12px;font-weight:800;color:${c.textMuted};text-transform:uppercase;margin-bottom:10px">🕐 Últimos agendamentos</p>
-      ${ultimos.map(r=>{
-        const dataFmt=r.data?.split('-').reverse().join('/');
-        const isUrg=urgentes.find(u=>u.id===r.id);
-        const bg=isUrg?'#fff7ed':r.status==='pendente'?'#fffbeb':c.bg;
-        const borda=isUrg?'#f97316':r.status==='pendente'?'#fcd34d':c.border;
-        const statusBadge=r.status==='confirmado'?`<span style="background:#e2f4ea;color:#1a6b47;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px">✅</span>`:
-          isUrg?`<span style="background:#fff7ed;color:#ea580c;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px">⚡ Urgente</span>`:
-          `<span style="background:#fffbeb;color:#92400e;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px">⏳</span>`;
-        return`<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:${bg};border:1px solid ${borda};border-radius:8px;margin-bottom:6px">
-          <div style="flex:1;min-width:0">
-            <p style="font-size:12px;font-weight:700;color:${c.navy};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.horario} · ${r.espaco}</p>
-            <p style="font-size:11px;color:${c.textMuted};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.professor} · ${r.turmaInicio||r.turma||'-'} · ${dataFmt}</p>
-          </div>
-          ${statusBadge}
-        </div>`;
-      }).join('')}
-      ${todosFeed.length>2?`<button onclick="toggleFeedAdmin()" style="width:100%;margin-top:6px;padding:8px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.textMuted};font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">${_A.feedExpandido?'▲ Ver menos':'▼ Ver mais ('+todosFeed.length+' no total)'}</button>`:''}
-    </div>`;
-  }
-
-  html+=`<div style="background:${c.surface};border-radius:12px;border:1px solid ${c.border};padding:12px 16px;margin-bottom:20px">
-    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;width:100%">
-      <select id="adm-sel-espaco" style="${sel()};width:auto;font-size:12.5px;padding:6px 10px;flex:1;min-width:100px"><option value="">🏛️ Todos os espaços</option>${ESPACOS.map(e=>`<option value="${e.nome}" ${_A.fEspaco===e.nome?"selected":""}>${e.nome}</option>`).join("")}</select>
-      <select id="adm-sel-prof" style="${sel()};width:auto;font-size:12.5px;padding:6px 10px;flex:1;min-width:100px"><option value="">👤 Todos os professores</option>${_usuarios.map(u=>`<option value="${u.nome}" ${_A.fProf===u.nome?"selected":""}>${u.nome}</option>`).join("")}</select>
-      <select id="adm-sel-turma" style="${sel()};width:auto;font-size:12.5px;padding:6px 10px;flex:1;min-width:100px"><option value="">🎓 Todas as turmas</option>${TURMAS.map(t=>`<option value="${t}" ${_A.fTurma===t?"selected":""}>${t}</option>`).join("")}</select>
-      <select id="adm-sel-status" style="${sel()};width:auto;font-size:12.5px;padding:6px 10px;min-width:100px"><option value="">● Todos status</option><option value="confirmado" ${_A.fStatus==="confirmado"?"selected":""}>✅ Confirmado</option><option value="pendente" ${_A.fStatus==="pendente"?"selected":""}>⏳ Pendente</option><option value="recusado" ${_A.fStatus==="recusado"?"selected":""}>❌ Recusado</option></select>
-      ${_A.fEspaco||_A.fProf||_A.fStatus||_A.fTurma?`<button id="adm-btn-limpar" style="${btn("ghost")};padding:6px 12px;font-size:12px">✕ Limpar</button>`:""}
-      <button id="adm-btn-hist" style="background:${_A.historico?c.navy:"transparent"};border:1.5px solid ${_A.historico?c.navy:c.border};border-radius:8px;color:${_A.historico?"#fff":c.textMuted};font-size:12px;padding:6px 12px;cursor:pointer;font-weight:600;white-space:nowrap;margin-left:auto">🕐 ${_A.historico?"Ocultar hist.":"Ver histórico"}</button>
+  // ── FILTROS ──
+  html+=`<div style="background:${c.surface};border-radius:12px;border:1px solid ${c.border};padding:8px 12px;margin-bottom:16px">
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+      <select id="adm-sel-espaco" style="${sel()};font-size:12px;padding:5px 8px;flex:1;min-width:100px"><option value="">🏛️ Espaço</option>${ESPACOS.map(e=>`<option value="${e.nome}" ${_A.fEspaco===e.nome?"selected":""}>${e.nome}</option>`).join("")}</select>
+      <select id="adm-sel-prof" style="${sel()};font-size:12px;padding:5px 8px;flex:1;min-width:100px"><option value="">👤 Professor</option>${_usuarios.map(u=>`<option value="${u.nome}" ${_A.fProf===u.nome?"selected":""}>${u.nome}</option>`).join("")}</select>
+      <select id="adm-sel-turma" style="${sel()};font-size:12px;padding:5px 8px;flex:1;min-width:90px"><option value="">🎓 Turma</option>${TURMAS.map(t=>`<option value="${t}" ${_A.fTurma===t?"selected":""}>${t}</option>`).join("")}</select>
+      <select id="adm-sel-status" style="${sel()};font-size:12px;padding:5px 8px;min-width:90px"><option value="">● Status</option><option value="confirmado" ${_A.fStatus==="confirmado"?"selected":""}>✅ Confirmado</option><option value="pendente" ${_A.fStatus==="pendente"?"selected":""}>⏳ Pendente</option><option value="recusado" ${_A.fStatus==="recusado"?"selected":""}>❌ Recusado</option></select>
+      ${_A.fEspaco||_A.fProf||_A.fStatus||_A.fTurma?`<button id="adm-btn-limpar" style="${btn("ghost")};padding:5px 10px;font-size:12px">✕</button>`:""}
+      <button id="adm-btn-hist" style="background:${_A.historico?c.navy:"transparent"};border:1.5px solid ${_A.historico?c.navy:c.border};border-radius:8px;color:${_A.historico?"#fff":c.textMuted};font-size:12px;padding:5px 10px;cursor:pointer;font-weight:600;white-space:nowrap;margin-left:auto">🕐 ${_A.historico?"Ocultar":"Histórico"}</button>
     </div>
   </div>`;
 
+  // ── LAYOUT DUAS COLUNAS (desktop) ──
+  const isDesktop=window.innerWidth>=900;
+  html+=`<div style="display:grid;grid-template-columns:${isDesktop?'1fr 300px':'1fr'};gap:16px;align-items:start">
+  <div style="min-width:0">`;  // coluna principal
+
+  // ── CALENDÁRIO ──
   if(_A.modoVisu==="calendario"){
-    const _abasBtns2=[{id:"marketing",l:"📸 Marketing"},{id:"ti",l:"💻 T.I."}].map(t=>`<button onclick="aSetAba('${t.id}');re()" style="padding:7px 15px;font-size:12.5px;white-space:nowrap;border-radius:8px;border:1.5px solid ${_A.aba===t.id?(_dark?'#1a6b47':c.navy):c.border};background:${_A.aba===t.id?(_dark?'#1a6b47':c.navy):'transparent'};color:${_A.aba===t.id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${t.l}</button>`).join("");
-    if(["marketing","ti"].includes(_A.aba)){html+=`<div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap"><button onclick="aSetAba('reservas');re()" style="padding:7px 15px;font-size:12.5px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.text};font-weight:700;cursor:pointer">📋 Reservas</button><button onclick="aSetAba('espacos');re()" style="padding:7px 15px;font-size:12.5px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.text};font-weight:700;cursor:pointer">🏛️ Por Espaço</button>${_abasBtns2}</div>`;}
+    const _abasBtns2=[{id:"marketing",l:"📸 Marketing"},{id:"ti",l:"💻 T.I."}].map(t=>`<button onclick="aSetAba('${t.id}');re()" style="padding:6px 13px;font-size:12px;white-space:nowrap;border-radius:8px;border:1.5px solid ${_A.aba===t.id?(_dark?'#1a6b47':c.navy):c.border};background:${_A.aba===t.id?(_dark?'#1a6b47':c.navy):'transparent'};color:${_A.aba===t.id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${t.l}</button>`).join("");
+    if(["marketing","ti"].includes(_A.aba)){html+=`<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap"><button onclick="aSetAba('reservas');re()" style="padding:6px 13px;font-size:12px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.text};font-weight:700;cursor:pointer">📋 Reservas</button><button onclick="aSetAba('espacos');re()" style="padding:6px 13px;font-size:12px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.text};font-weight:700;cursor:pointer">🏛️ Por Espaço</button>${_abasBtns2}</div>`;}
     const{a:ano,m:mes}=_A.mesCal;
     const porData={};
     filtradas.filter(r=>r.status!=="recusado").forEach(r=>{if(!porData[r.data])porData[r.data]=[];porData[r.data].push(r);});
@@ -2421,24 +2861,34 @@ function renderAdminView(){
     const inicioGrid=primeiroDia.getUTCDay();
     const cells=[];for(let i=0;i<inicioGrid;i++)cells.push(null);for(let d=1;d<=diasNoMes;d++)cells.push(d);
 
-    if(_A.aba==="marketing"){html+="<div id='mk-adm-inline'></div>";setTimeout(()=>{const el=document.getElementById("mk-adm-inline");if(el){const mkP=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&(r.statusMarketing==="pendente")&&r.status!=="recusado"&&!r.reservaAutomatica&&r.data>=fmtHoje()).sort((a,b)=>a.data>b.data?1:-1);const mkA=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&r.statusMarketing==="aprovado"&&r.status!=="recusado"&&!r.reservaAutomatica&&r.data>=fmtHoje()).sort((a,b)=>a.data>b.data?1:-1);let h2="";if(mkP.length)h2+=`<p style='font-size:12px;font-weight:800;color:#7c3aed;text-transform:uppercase;margin:0 0 10px'>⏳ Aguardando aprovação (${mkP.length})</p>`+mkP.map(r=>`<div style='background:#fff;border:1.5px solid #ddd6fe;border-left:4px solid #7c3aed;border-radius:10px;padding:12px 14px;margin-bottom:8px'><div style='display:flex;gap:10px;align-items:center'><span style='font-family:monospace;font-weight:800;color:#7c3aed'>${r.horario}</span><span style='font-weight:700'>${r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco}</span><span style='font-size:12px;color:#607060'>${r.professor} · ${r.data.split("-").reverse().join("/")}</span></div><div style='display:flex;gap:8px;margin-top:10px'><button onclick='mkAprovar("${r.id}")' style='flex:1;padding:8px;border-radius:8px;border:none;background:#1a6b47;color:#fff;font-weight:700;cursor:pointer'>✅ Aprovar</button><button onclick='mkRecusar("${r.id}")' style='flex:1;padding:8px;border-radius:8px;border:none;background:#dc2626;color:#fff;font-weight:700;cursor:pointer'>❌ Recusar</button></div></div>`).join("");if(mkA.length)h2+=`<p style='font-size:12px;font-weight:800;color:#1a6b47;text-transform:uppercase;margin:14px 0 10px'>✅ Aprovados (${mkA.length})</p>`+mkA.map(r=>`<div style='background:#fff;border:1.5px solid #a7f3d0;border-left:4px solid #1a6b47;border-radius:10px;padding:12px 14px;margin-bottom:8px'><span style='font-family:monospace;font-weight:800;color:#1a6b47'>${r.horario}</span> <span style='font-weight:700'>${r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco}</span> <span style='font-size:12px;color:#607060'>${r.professor} · ${r.data.split("-").reverse().join("/")}</span></div>`).join("");if(!h2)h2=`<div style='text-align:center;padding:40px;color:#607060'><p style='font-size:32px'>📸</p><p>Nenhuma solicitação.</p></div>`;el.innerHTML=h2;}},0);return html+="</div>";}
-    if(_A.aba==="ti"){html+="<div id='ti-adm-inline'></div>";setTimeout(()=>{const el=document.getElementById("ti-adm-inline");if(el){const tiP=_todas.filter(r=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);return eo?.tipo==="audiovisual"&&r.status==="pendente"&&!r.reservaAutomatica&&r.data>=fmtHoje();}).sort((a,b)=>a.data>b.data?1:-1);const tiC=_todas.filter(r=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);return eo?.tipo==="audiovisual"&&r.status==="confirmado"&&!r.reservaAutomatica&&r.data>=fmtHoje();}).sort((a,b)=>a.data>b.data?1:-1);let h2="";if(tiP.length)h2+=`<p style='font-size:12px;font-weight:800;color:#c2410c;text-transform:uppercase;margin:0 0 10px'>⏳ Aguardando aprovação (${tiP.length})</p>`+tiP.map(r=>`<div style='background:#fff;border:1.5px solid #fed7aa;border-left:4px solid #f97316;border-radius:10px;padding:12px 14px;margin-bottom:8px'><div style='display:flex;gap:10px;align-items:center'><span style='font-family:monospace;font-weight:800;color:#c2410c'>${r.horario}</span><span style='font-weight:700'>${r.espaco}</span><span style='font-size:12px;color:#607060'>${r.professor} · ${r.data.split("-").reverse().join("/")}</span></div><div style='display:flex;gap:8px;margin-top:10px'><button onclick='tiAprovar("${r.id}")' style='flex:1;padding:8px;border-radius:8px;border:none;background:#1a6b47;color:#fff;font-weight:700;cursor:pointer'>✅ Aprovar</button><button onclick='tiRecusar("${r.id}")' style='flex:1;padding:8px;border-radius:8px;border:none;background:#dc2626;color:#fff;font-weight:700;cursor:pointer'>❌ Recusar</button></div></div>`).join("");if(tiC.length)h2+=`<p style='font-size:12px;font-weight:800;color:#1a6b47;text-transform:uppercase;margin:14px 0 10px'>✅ Confirmados (${tiC.length})</p>`+tiC.map(r=>`<div style='background:#fff;border:1.5px solid #a7f3d0;border-left:4px solid #1a6b47;border-radius:10px;padding:12px 14px;margin-bottom:8px'><span style='font-family:monospace;font-weight:800;color:#1a6b47'>${r.horario}</span> <span style='font-weight:700'>${r.espaco}</span> <span style='font-size:12px;color:#607060'>${r.professor} · ${r.data.split("-").reverse().join("/")}</span></div>`).join("");if(!h2)h2=`<div style='text-align:center;padding:40px;color:#607060'><p style='font-size:32px'>🔊</p><p>Nenhum agendamento.</p></div>`;el.innerHTML=h2;}},0);return html+="</div>";}
-    html+=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
-      <div style="display:flex;align-items:center;gap:10px">
-        <button onclick="aNavMes(-1)" style="background:${c.surface};border:1px solid ${c.border};border-radius:8px;width:34px;height:34px;cursor:pointer;color:${c.textMid};font-size:16px">‹</button>
-        <div style="text-align:center;min-width:130px"><p style="font-size:18px;font-weight:800;color:${c.navy}">${MESES[mes]} ${ano}</p></div>
-        <button onclick="aNavMes(1)" style="background:${c.surface};border:1px solid ${c.border};border-radius:8px;width:34px;height:34px;cursor:pointer;color:${c.textMid};font-size:16px">›</button>
+    if(_A.aba==="marketing"){html+="<div id='mk-adm-inline'></div>";setTimeout(()=>{const el=document.getElementById("mk-adm-inline");if(el){const mkP=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&(r.statusMarketing==="pendente")&&r.status!=="recusado"&&!r.reservaAutomatica&&r.data>=fmtHoje()).sort((a,b)=>a.data>b.data?1:-1);const mkA=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&r.statusMarketing==="aprovado"&&r.status!=="recusado"&&!r.reservaAutomatica&&r.data>=fmtHoje()).sort((a,b)=>a.data>b.data?1:-1);let h2="";if(mkP.length)h2+=`<p style='font-size:12px;font-weight:800;color:#7c3aed;text-transform:uppercase;margin:0 0 10px'>⏳ Aguardando aprovação (${mkP.length})</p>`+mkP.map(r=>`<div style='background:#fff;border:1.5px solid #ddd6fe;border-left:4px solid #7c3aed;border-radius:10px;padding:12px 14px;margin-bottom:8px'><div style='display:flex;gap:10px;align-items:center'><span style='font-family:monospace;font-weight:800;color:#7c3aed'>${r.horario}</span><span style='font-weight:700'>${r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco}</span><span style='font-size:12px;color:#607060'>${r.professor} · ${r.data.split("-").reverse().join("/")}</span></div><div style='display:flex;gap:8px;margin-top:10px'><button onclick='mkAprovar("${r.id}")' style='flex:1;padding:8px;border-radius:8px;border:none;background:#1a6b47;color:#fff;font-weight:700;cursor:pointer'>✅ Aprovar</button><button onclick='mkRecusar("${r.id}")' style='flex:1;padding:8px;border-radius:8px;border:none;background:#dc2626;color:#fff;font-weight:700;cursor:pointer'>❌ Recusar</button></div></div>`).join("");if(mkA.length)h2+=`<p style='font-size:12px;font-weight:800;color:#1a6b47;text-transform:uppercase;margin:14px 0 10px'>✅ Aprovados (${mkA.length})</p>`+mkA.map(r=>`<div style='background:#fff;border:1.5px solid #a7f3d0;border-left:4px solid #1a6b47;border-radius:10px;padding:12px 14px;margin-bottom:8px'><span style='font-family:monospace;font-weight:800;color:#1a6b47'>${r.horario}</span> <span style='font-weight:700'>${r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco}</span> <span style='font-size:12px;color:#607060'>${r.professor} · ${r.data.split("-").reverse().join("/")}</span></div>`).join("");if(!h2)h2=`<div style='text-align:center;padding:40px;color:#607060'><p style='font-size:32px'>📸</p><p>Nenhuma solicitação.</p></div>`;el.innerHTML=h2;}},0);return html+="</div></div></div>";}
+    if(_A.aba==="ti"){html+="<div id='ti-adm-inline'></div>";setTimeout(()=>{const el=document.getElementById("ti-adm-inline");if(el){const tiP=_todas.filter(r=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);return eo?.tipo==="audiovisual"&&r.status==="pendente"&&!r.reservaAutomatica&&r.data>=fmtHoje();}).sort((a,b)=>a.data>b.data?1:-1);const tiC=_todas.filter(r=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);return eo?.tipo==="audiovisual"&&r.status==="confirmado"&&!r.reservaAutomatica&&r.data>=fmtHoje();}).sort((a,b)=>a.data>b.data?1:-1);let h2="";if(tiP.length)h2+=`<p style='font-size:12px;font-weight:800;color:#c2410c;text-transform:uppercase;margin:0 0 10px'>⏳ Aguardando aprovação (${tiP.length})</p>`+tiP.map(r=>`<div style='background:#fff;border:1.5px solid #fed7aa;border-left:4px solid #f97316;border-radius:10px;padding:12px 14px;margin-bottom:8px'><div style='display:flex;gap:10px;align-items:center'><span style='font-family:monospace;font-weight:800;color:#c2410c'>${r.horario}</span><span style='font-weight:700'>${r.espaco}</span><span style='font-size:12px;color:#607060'>${r.professor} · ${r.data.split("-").reverse().join("/")}</span></div><div style='display:flex;gap:8px;margin-top:10px'><button onclick='tiAprovar("${r.id}")' style='flex:1;padding:8px;border-radius:8px;border:none;background:#1a6b47;color:#fff;font-weight:700;cursor:pointer'>✅ Aprovar</button><button onclick='tiRecusar("${r.id}")' style='flex:1;padding:8px;border-radius:8px;border:none;background:#dc2626;color:#fff;font-weight:700;cursor:pointer'>❌ Recusar</button></div></div>`).join("");if(tiC.length)h2+=`<p style='font-size:12px;font-weight:800;color:#1a6b47;text-transform:uppercase;margin:14px 0 10px'>✅ Confirmados (${tiC.length})</p>`+tiC.map(r=>`<div style='background:#fff;border:1.5px solid #a7f3d0;border-left:4px solid #1a6b47;border-radius:10px;padding:12px 14px;margin-bottom:8px'><span style='font-family:monospace;font-weight:800;color:#1a6b47'>${r.horario}</span> <span style='font-weight:700'>${r.espaco}</span> <span style='font-size:12px;color:#607060'>${r.professor} · ${r.data.split("-").reverse().join("/")}</span></div>`).join("");if(!h2)h2=`<div style='text-align:center;padding:40px;color:#607060'><p style='font-size:32px'>🔊</p><p>Nenhum agendamento.</p></div>`;el.innerHTML=h2;}},0);return html+="</div></div></div>";}
+
+    html+=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <button onclick="aNavMes(-1)" style="background:${c.surface};border:1px solid ${c.border};border-radius:8px;width:32px;height:32px;cursor:pointer;color:${c.textMid};font-size:16px">‹</button>
+        <p style="font-size:17px;font-weight:800;color:${c.navy};min-width:120px;text-align:center">${MESES[mes]} ${ano}</p>
+        <button onclick="aNavMes(1)" style="background:${c.surface};border:1px solid ${c.border};border-radius:8px;width:32px;height:32px;cursor:pointer;color:${c.textMid};font-size:16px">›</button>
       </div>
-      <button onclick="const d=new Date();_A.mesCal={a:d.getFullYear(),m:d.getMonth()};_A.diaSel=null;re()" style="${btn("ghost")};padding:6px 14px;font-size:12px">Hoje</button>
+      <button onclick="const d=new Date();_A.mesCal={a:d.getFullYear(),m:d.getMonth()};_A.diaSel=null;re()" style="${btn("ghost")};padding:5px 12px;font-size:12px">Hoje</button>
     </div>
-    <div style="background:${c.surface};border-radius:16px;border:1px solid ${c.border};overflow:auto;box-shadow:${c.cardShadow}">
-      <div style="display:grid;grid-template-columns:repeat(7,1fr);border-bottom:2px solid ${c.border}">
-        ${["Dom.","Seg.","Ter.","Qua.","Qui.","Sexta","Sáb."].map((d,i)=>`<div style="padding:10px 0;text-align:center;font-size:11px;font-weight:700;color:${i===0||i===6?"#ef4444":c.textMuted};text-transform:uppercase">${d}</div>`).join("")}
+    <div style="background:${c.surface};border-radius:14px;border:1px solid ${c.border};overflow:hidden;box-shadow:${c.cardShadow}">`;
+    const calMobile=window.innerWidth<768;
+    const calCols=calMobile?"repeat(5,1fr)":"0.6fr repeat(5,1fr) 0.6fr";
+    const calDias=calMobile?["Seg.","Ter.","Qua.","Qui.","Sexta"]:["Dom.","Seg.","Ter.","Qua.","Qui.","Sexta","Sáb."];
+    html+=`<div style="display:grid;grid-template-columns:${calCols};border-bottom:2px solid ${c.border}">
+        ${calDias.map((d,i)=>{const isWk=calMobile?(false):(i===0||i===6);return`<div style="padding:8px 0;text-align:center;font-size:11px;font-weight:700;color:${isWk?"#ef4444":c.textMuted};text-transform:uppercase">${d}</div>`;}).join("")}
       </div>
-      <div style="display:grid;grid-template-columns:repeat(7,1fr)">`;
+      <div style="display:grid;grid-template-columns:${calCols}">`;
 
     cells.forEach((d,i)=>{
-      if(!d){html+=`<div style="min-height:90px;border-right:1px solid ${c.borderLight};border-bottom:1px solid ${c.borderLight}"></div>`;return;}
+      if(!d){
+        // célula vazia do grid — no mobile pular posições de Dom(0) e Sáb(6)
+        // calcular dow da célula vazia: índice i no grid começa em inicioGrid
+        const dowVazia=(i)%7;
+        if(calMobile&&(dowVazia===0||dowVazia===6))return;
+        html+=`<div style="min-height:90px;border-right:1px solid ${c.borderLight};border-bottom:1px solid ${c.borderLight}"></div>`;return;
+      }
       const ds=`${ano}-${String(mes+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
       const isPast=ds<h,isH=ds===h,isSel=ds===_A.diaSel;
       const rsdia=porData[ds]||[];
@@ -2446,160 +2896,174 @@ function renderAdminView(){
       const pend=rsdia.filter(r=>r.status==="pendente"&&!isUrgente(r.data,r.horario));
       const conf=rsdia.filter(r=>r.status==="confirmado");
       const dow=new Date(Date.UTC(ano,mes,d)).getUTCDay();
+      if(calMobile&&(dow===0||dow===6))return;
       const naoL=!isDiaLetivo(ds)&&!isPast&&dow!==0&&dow!==6;
-      html+=`<div onclick="_A.diaSel=_A.diaSel==='${ds}'?null:'${ds}';re()"
-        data-ds="${ds}"
-        onmouseenter="admDayHover('${ds}',event)"
-        onmouseleave="admDayLeave()"
-        style="min-height:90px;border-right:1px solid ${c.borderLight};border-bottom:1px solid ${c.borderLight};padding:6px 8px;cursor:pointer;background:${isSel?"rgba(26,107,71,.08)":isH?"rgba(26,107,71,.04)":"transparent"};transition:background .15s">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-          <span style="font-size:13.5px;font-weight:${isH?900:500};color:${isSel?"#40b07a":isH?"#40b07a":isPast?c.textMuted:naoL?"#ef4444":dow===0||dow===6?"#ef4444":c.navy};width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:${isH?"rgba(26,107,71,.15)":"transparent"}">${d}</span>
+      html+=`<div onclick="_A.diaSel=_A.diaSel==='${ds}'?null:'${ds}';re()" data-ds="${ds}" onmouseenter="admDayHover('${ds}',event)" onmouseleave="admDayLeave()" style="min-height:90px;border-right:1px solid ${c.borderLight};border-bottom:1px solid ${c.borderLight};padding:5px 6px;cursor:pointer;background:${isSel?"rgba(26,107,71,.08)":isH?"rgba(26,107,71,.04)":"transparent"};transition:background .15s">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
+          <span style="font-size:13px;font-weight:${isH?900:500};color:${isSel?"#40b07a":isH?"#40b07a":isPast?c.textMuted:naoL?"#ef4444":dow===0||dow===6?"#ef4444":c.navy};width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:${isH?"rgba(26,107,71,.15)":"transparent"}">${d}</span>
         </div>
         <div style="display:flex;flex-direction:column;gap:2px">
-          ${urg.slice(0,1).map(r=>{const range=r.horarioFim&&r.horarioFim!==r.horario?`→${r.horarioFim}`:"";return`<div style="background:#fff7ed;border:1px solid #f97316;border-radius:4px;padding:2px 4px;font-size:9px;font-weight:700;color:#c2410c;overflow:hidden"><div style="white-space:nowrap;text-overflow:ellipsis;overflow:hidden">⚡${r.horario}${range} ${r.espaco.split(" ")[0]}</div><div style="font-size:8px;font-weight:500;color:#9a3412;white-space:nowrap;text-overflow:ellipsis;overflow:hidden">${r.professor?.split(" ")[0]||""}</div></div>`;}).join("")}
-          ${pend.slice(0,1).map(r=>{const range=r.horarioFim&&r.horarioFim!==r.horario?`→${r.horarioFim}`:"";return`<div style="background:${c.amberBg};border:1px solid ${c.amberBorder};border-radius:4px;padding:2px 4px;font-size:9px;font-weight:700;color:${c.amber};overflow:hidden"><div style="white-space:nowrap;text-overflow:ellipsis;overflow:hidden">⏳${r.horario}${range} ${r.espaco.split(" ")[0]}</div><div style="font-size:8px;font-weight:500;color:#92400e;white-space:nowrap;text-overflow:ellipsis;overflow:hidden">${r.professor?.split(" ")[0]||""}</div></div>`;}).join("")}
-          ${conf.slice(0,2).map(r=>{const range=r.horarioFim&&r.horarioFim!==r.horario?`→${r.horarioFim}`:"";return`<div style="background:${c.greenBg};border:1px solid ${c.greenBorder};border-radius:4px;padding:2px 4px;font-size:9px;font-weight:600;color:${c.green};overflow:hidden"><div style="white-space:nowrap;text-overflow:ellipsis;overflow:hidden">${r.horario}${range} ${r.espaco.split(" ")[0]}</div><div style="font-size:8px;font-weight:500;color:#166534;white-space:nowrap;text-overflow:ellipsis;overflow:hidden">${r.professor?.split(" ")[0]||""}</div></div>`;}).join("")}
+          ${urg.slice(0,1).map(r=>{const range=r.horarioFim&&r.horarioFim!==r.horario?`→${r.horarioFim}`:"";return`<div style="background:#fff7ed;border:1px solid #f97316;border-radius:4px;padding:2px 4px;font-size:9px;font-weight:700;color:#c2410c;overflow:hidden"><div style="white-space:nowrap;text-overflow:ellipsis;overflow:hidden">⚡${r.horario}${range} ${r.espaco.split(" ")[0]}</div><div style="font-size:8px;color:#9a3412;white-space:nowrap;text-overflow:ellipsis;overflow:hidden">${r.professor?.split(" ")[0]||""}</div></div>`;}).join("")}
+          ${pend.slice(0,1).map(r=>{const range=r.horarioFim&&r.horarioFim!==r.horario?`→${r.horarioFim}`:"";return`<div style="background:${c.amberBg};border:1px solid ${c.amberBorder};border-radius:4px;padding:2px 4px;font-size:9px;font-weight:700;color:${c.amber};overflow:hidden"><div style="white-space:nowrap;text-overflow:ellipsis;overflow:hidden">⏳${r.horario}${range} ${r.espaco.split(" ")[0]}</div><div style="font-size:8px;color:#92400e;white-space:nowrap;text-overflow:ellipsis;overflow:hidden">${r.professor?.split(" ")[0]||""}</div></div>`;}).join("")}
+          ${conf.slice(0,2).map(r=>{const range=r.horarioFim&&r.horarioFim!==r.horario?`→${r.horarioFim}`:"";return`<div style="background:${c.greenBg};border:1px solid ${c.greenBorder};border-radius:4px;padding:2px 4px;font-size:9px;font-weight:600;color:${c.green};overflow:hidden"><div style="white-space:nowrap;text-overflow:ellipsis;overflow:hidden">${r.horario}${range} ${r.espaco.split(" ")[0]}</div><div style="font-size:8px;color:#166534;white-space:nowrap;text-overflow:ellipsis;overflow:hidden">${r.professor?.split(" ")[0]||""}</div></div>`;}).join("")}
           ${rsdia.length>3?`<div style="font-size:9px;color:${c.blueMid};font-weight:700;padding-left:2px">+${rsdia.length-3} mais</div>`:""}
         </div>
       </div>`;
     });
-    html+=`</div></div>`;
-    html+=`<div style="display:flex;gap:16px;margin-top:10px;flex-wrap:wrap;align-items:center">${[{l:"Urgente",bg:"#fff7ed",b:"#f97316"},{l:"Pendente",bg:c.amberBg,b:c.amberBorder},{l:"Confirmado",bg:c.greenBg,b:c.greenBorder}].map(l=>`<div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:${l.bg};border:1.5px solid ${l.b}"></div><span style="font-size:11.5px;color:${c.textMuted};font-weight:600">${l.l}</span></div>`).join("")}<span style="margin-left:auto;font-size:11px;color:${c.textMuted}">Clique para detalhes</span></div>`;
+
+    html+=`</div></div>
+    <div style="display:flex;gap:14px;margin-top:8px;flex-wrap:wrap;align-items:center">
+      ${[{l:"Urgente",bg:"#fff7ed",b:"#f97316"},{l:"Pendente",bg:c.amberBg,b:c.amberBorder},{l:"Confirmado",bg:c.greenBg,b:c.greenBorder}].map(l=>`<div style="display:flex;align-items:center;gap:5px"><div style="width:12px;height:12px;border-radius:3px;background:${l.bg};border:1.5px solid ${l.b}"></div><span style="font-size:11px;color:${c.textMuted};font-weight:600">${l.l}</span></div>`).join("")}
+      <span style="margin-left:auto;font-size:11px;color:${c.textMuted}">Clique para detalhes</span>
+    </div>`;
 
     if(_A.diaSel){
       const[a2,m2,d2]=_A.diaSel.split("-");
       const rsdia=(porData[_A.diaSel]||[]).sort((a,b)=>a.horario>b.horario?1:-1);
-      html+=`<div class="fade-in" style="margin-top:16px;background:${c.surface};border-radius:14px;border:1px solid ${c.border};overflow:hidden">
-        <div style="background:linear-gradient(135deg,#1a6b47,#0f4c2b);padding:12px 18px;display:flex;align-items:center;justify-content:space-between">
-          <p style="font-size:16px;font-weight:800;color:#fff">📅 ${d2}/${m2}/${a2}</p>
-          <button onclick="_A.diaSel=null;re()" style="background:rgba(255,255,255,.2);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;padding:5px 12px;cursor:pointer">✕</button>
+      html+=`<div class="fade-in" style="margin-top:14px;background:${c.surface};border-radius:14px;border:1px solid ${c.border};overflow:hidden">
+        <div style="background:linear-gradient(135deg,#1a6b47,#0f4c2b);padding:10px 16px;display:flex;align-items:center;justify-content:space-between">
+          <p style="font-size:15px;font-weight:800;color:#fff">📅 ${d2}/${m2}/${a2}</p>
+          <button onclick="_A.diaSel=null;re()" style="background:rgba(255,255,255,.2);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;padding:4px 10px;cursor:pointer">✕</button>
         </div>
-        <div style="padding:14px 18px">
-          ${!rsdia.length?`<p style="font-size:13px;color:${c.textMuted};text-align:center;padding:16px 0">🎉 Nenhum agendamento.</p>`:rsdia.map(r=>admRow(r)).join("")}
+        <div style="padding:12px 16px">
+          ${!rsdia.length?`<p style="font-size:13px;color:${c.textMuted};text-align:center;padding:14px 0">🎉 Nenhum agendamento.</p>`:rsdia.map(r=>admRow(r)).join("")}
         </div>
       </div>`;
     }
   }
 
+  // ── AGENDA ──
   if(_A.modoVisu==="agenda"){
-    const urg=filtradas.filter(r=>r.status==="pendente"&&isUrgente(r.data,r.horario));
-    const pend=filtradas.filter(r=>r.status==="pendente"&&!isUrgente(r.data,r.horario));
-    const conf=filtradas.filter(r=>r.status!=="pendente"&&(_A.historico||r.data>=h));
+    const urg=filtradas.filter(r=>r.status==="pendente"&&isUrgente(r.data,r.horario)&&(!_A.fData||r.data===_A.fData));
+    const pend=filtradas.filter(r=>r.status==="pendente"&&!isUrgente(r.data,r.horario)&&(!_A.fData||r.data===_A.fData));
+    const conf=filtradas.filter(r=>r.status!=="pendente"&&(_A.historico||r.data>=h)&&(!_A.fData||r.data===_A.fData)&&(!_A.fDataAte||r.data<=_A.fDataAte));
 
-    html+=`<div style="display:flex;gap:2px;margin-bottom:18px;background:${c.surface};border-radius:10px;padding:4px;border:1px solid ${c.border};width:fit-content">
-      ${[{id:"reservas",l:"📋 Reservas"},{id:"espacos",l:"🏛️ Por Espaço"},{id:"marketing",l:"📸 Marketing"},{id:"ti",l:"💻 T.I."}].map(t=>`<button onclick="aSetAba('${t.id}')" style="padding:7px 15px;font-size:12.5px;white-space:nowrap;border-radius:8px;border:1.5px solid ${_A.aba===t.id?(_dark?'#1a6b47':c.navy):c.border};background:${_A.aba===t.id?(_dark?'#1a6b47':c.navy):'transparent'};color:${_A.aba===t.id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${t.l}</button>`).join("")}
+    html+=`<div style="display:flex;gap:4px;margin-bottom:16px;background:${c.surface};border-radius:10px;padding:4px;border:1px solid ${c.border};width:fit-content;flex-wrap:wrap">
+      ${[{id:"reservas",l:"📋 Reservas"},{id:"espacos",l:"🏛️ Por Espaço"},{id:"marketing",l:"📸 Marketing"},{id:"ti",l:"💻 T.I."}].map(t=>`<button onclick="aSetAba('${t.id}')" style="padding:6px 13px;font-size:12px;white-space:nowrap;border-radius:8px;border:1.5px solid ${_A.aba===t.id?(_dark?'#1a6b47':c.navy):c.border};background:${_A.aba===t.id?(_dark?'#1a6b47':c.navy):'transparent'};color:${_A.aba===t.id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${t.l}</button>`).join("")}
     </div>`;
 
     if(_A.aba==="reservas"){
       if(urg.length){
-        html+=`<div style="margin-bottom:18px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><div style="width:8px;height:8px;border-radius:50%;background:#f97316"></div><p style="font-size:12px;font-weight:800;color:#c2410c;text-transform:uppercase">⚡ Urgentes · ${urg.length}</p><div style="flex:1;height:1px;background:#fed7aa"></div></div>`;
+        html+=`<div style="margin-bottom:16px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="width:8px;height:8px;border-radius:50%;background:#f97316"></div><p style="font-size:12px;font-weight:800;color:#c2410c;text-transform:uppercase">⚡ Urgentes · ${urg.length}</p><div style="flex:1;height:1px;background:#fed7aa"></div></div>`;
         urg.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1).forEach(r=>{html+=admRow(r,true);});
         html+=`</div>`;
       }
       if(pend.length){
-        html+=`<div style="margin-bottom:18px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><div style="width:8px;height:8px;border-radius:50%;background:#d97706"></div><p style="font-size:12px;font-weight:800;color:${c.amber};text-transform:uppercase">Pendentes · ${pend.length}</p><div style="flex:1;height:1px;background:${c.amberBorder}"></div></div>`;
+        html+=`<div style="margin-bottom:16px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="width:8px;height:8px;border-radius:50%;background:#d97706"></div><p style="font-size:12px;font-weight:800;color:${c.amber};text-transform:uppercase">Pendentes · ${pend.length}</p><div style="flex:1;height:1px;background:${c.amberBorder}"></div></div>`;
         pend.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1).forEach(r=>{html+=admRow(r,true);});
         html+=`</div>`;
       }
       if(conf.length){
-        const pd={};conf.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1).forEach(r=>{if(!pd[r.data])pd[r.data]=[];pd[r.data].push(r);});
-        html+=`<div>`;
-        Object.entries(pd).forEach(([data,rs])=>{
-          const[a2,m2,d2]=data.split("-");const isH=data===h;
-          html+=`<div style="margin-bottom:14px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><div style="background:${isH?"#40b07a":c.navy};color:#fff;border-radius:7px;padding:3px 12px;font-size:11.5px;font-weight:700">${isH?"📌 Hoje":`${d2}/${m2}/${a2}`}</div><div style="flex:1;height:1px;background:${c.borderLight}"></div></div>`;
-          rs.forEach(r=>{html+=admRow(r);});
-          html+=`</div>`;
-        });
+        html+=`<div style="margin-bottom:16px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="width:8px;height:8px;border-radius:50%;background:#1a6b47"></div><p style="font-size:12px;font-weight:800;color:${c.green};text-transform:uppercase">Confirmados · ${conf.length}</p><div style="flex:1;height:1px;background:${c.greenBorder}"></div></div>`;
+        conf.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1).forEach(r=>{html+=admRow(r,true);});
         html+=`</div>`;
       }
-      if(!urg.length&&!pend.length&&!conf.length)html+=`<p style="text-align:center;padding:32px;color:${c.textMuted};font-size:13px">Nenhuma reserva encontrada.</p>`;
+      if(!urg.length&&!pend.length&&!conf.length)html+=`<div style="text-align:center;padding:40px;color:${c.textMuted}"><p style="font-size:32px">🎉</p><p>Nenhum agendamento encontrado.</p></div>`;
     }
 
     if(_A.aba==="espacos"){
-      ESPACOS.filter(e=>!_A.fEspaco||e.nome===_A.fEspaco).forEach(esp=>{
-        const rs=filtradas.filter(r=>r.espaco===esp.nome&&r.status!=="recusado").sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
-        if(!rs.length)return;
-        const pd={};rs.forEach(r=>{if(!pd[r.data])pd[r.data]=[];pd[r.data].push(r);});
-        const livresHj=HORARIOS.length-rs.filter(r=>r.data===h).length;
-        html+=`<div style="margin-bottom:16px;border-radius:12px;border:1px solid ${c.border};overflow:hidden">
-          <div style="background:linear-gradient(135deg,${c.navy},${c.navyMid});padding:12px 18px;display:flex;align-items:center;justify-content:space-between">
-            <div style="display:flex;align-items:center;gap:10px"><span style="font-size:18px">${tipoIcon(esp.tipo,esp.nome)}</span><div><p style="font-size:14px;font-weight:800;color:#fff">${esp.nome}</p><p style="font-size:11px;color:rgba(255,255,255,.65)">${rs.length} reserva${rs.length!==1?"s":""}</p></div></div>
-            <div style="text-align:right"><p style="font-size:20px;font-weight:900;color:#fff;line-height:1">${livresHj}</p><p style="font-size:10px;color:rgba(255,255,255,.7);font-weight:700">livres hoje</p></div>
+      const porEspaco={};
+      filtradas.filter(r=>r.status!=="recusado"&&(_A.historico||r.data>=h)).forEach(r=>{if(!porEspaco[r.espaco])porEspaco[r.espaco]=[];porEspaco[r.espaco].push(r);});
+      Object.entries(porEspaco).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([esp,rs])=>{
+        const eo=ESPACOS.find(e=>e.nome===esp);
+        html+=`<div style="margin-bottom:16px;background:${c.surface};border:1px solid ${c.border};border-radius:12px;overflow:hidden">
+          <div style="background:linear-gradient(135deg,#1a6b47,#0f4c2b);padding:10px 14px;display:flex;align-items:center;gap:10px">
+            <span style="font-size:18px">${eo?.icon||"🏛️"}</span>
+            <p style="font-size:14px;font-weight:800;color:#fff">${esp}</p>
+            <span style="margin-left:auto;background:rgba(255,255,255,.2);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px">${rs.length}</span>
           </div>
-          <div style="background:${c.surface};padding:10px 16px">`;
-        Object.entries(pd).forEach(([data,drs])=>{
-          const[a2,m2,d2]=data.split("-");const isH=data===h;
-          html+=`<p style="font-size:11px;font-weight:700;color:${isH?"#40b07a":c.textMuted};font-family:'DM Mono',monospace;margin-bottom:6px">${isH?"📌 Hoje":`${d2}/${m2}/${a2}`}</p><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">`;
-          drs.forEach(r=>{
-            const range=r.horarioFim&&r.horarioFim!==r.horario?` → ${r.horarioFim}`:"";
-            html+=`<div style="background:${c.bg};border:1px solid ${c.border};border-radius:8px;padding:6px 12px;font-size:12px;display:flex;align-items:center;gap:8px"><span style="font-weight:800;color:${c.blueMid};font-family:'DM Mono',monospace">${r.horario}${range}</span><span style="color:${c.textMid};font-weight:600">${r.professor.split(" ")[0]}</span><span style="color:${c.textMuted}">${r.turmaInicio||r.turma}</span>${badge(r.status)}</div>`;
-          });
-          html+=`</div>`;
-        });
-        html+=`</div></div>`;
+          <div style="padding:10px 14px">${rs.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1).map(r=>admRow(r,true)).join("")}</div>
+        </div>`;
       });
+      if(!Object.keys(porEspaco).length)html+=`<div style="text-align:center;padding:40px;color:${c.textMuted}"><p style="font-size:32px">🏛️</p><p>Nenhum agendamento.</p></div>`;
     }
 
-    if(_A.aba==="marketing"){
-      const mkPend=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&(r.statusMarketing==="pendente")&&r.status!=="recusado"&&!r.reservaAutomatica&&(_A.historico||r.data>=h)).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
-      const mkAprov=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&r.statusMarketing==="aprovado"&&r.status!=="recusado"&&!r.reservaAutomatica&&(_A.historico||r.data>=h)).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
-      function mkAdmRow(r){
-        const[a2,m2,d2]=r.data.split("-");const isH=r.data===h;
-        const range=r.horarioFim&&r.horarioFim!==r.horario?` → ${r.horarioFim}`:"";
-        const pend=r.statusMarketing!=="aprovado";
-        const midiaTags=(r.precisaFoto?`<span style="background:#f5f3ff;color:#7c3aed;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;border:1px solid #ddd6fe">📸 Foto</span>`:"")+(r.precisaVideo?`<span style="background:#eff6ff;color:#1d4ed8;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;border:1px solid #bfdbfe">🎬 Vídeo</span>`:"");
-        const objTag=r.objetivoMidia?`<span style="background:#fef9c3;color:#854d0e;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;border:1px solid #fde68a">${r.objetivoMidia==="social"?"📱 Rede Social":"📚 Pedagógico"}</span>`:"";
-        return`<div style="display:flex;gap:10px;padding:12px 14px;border-radius:10px;margin-bottom:8px;background:${c.surface};border:1.5px solid ${pend?"#ddd6fe":"#a7f3d0"};border-left:4px solid ${pend?"#7c3aed":"#1a6b47"}">
-          <div style="min-width:80px"><p style="font-size:13px;font-family:'DM Mono',monospace;font-weight:800;color:${pend?"#7c3aed":"#1a6b47"}">${r.horario}${range}</p><p style="font-size:10px;color:${c.textMuted};margin-top:2px">${d2}/${m2}</p></div>
-          <div style="flex:1">
-            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px">
-              <span style="font-weight:700;font-size:13px;color:${c.navy}">${r.espaco==="Equipe de Marketing"?(r.salaAtividade||"Sala não informada"):r.espaco}</span>
-              <span style="font-size:12px;color:${c.textMid}">${r.professor}</span>
-              <span style="font-size:12px;color:${c.textMuted}">${r.turmaInicio||r.turma||"—"}</span>
-            </div>
-            <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:4px">${midiaTags}${objTag}</div>
-            <p style="font-size:12px;color:${c.textMuted}">${r.conteudo}</p>
-            ${r.descritivo?`<p style="font-size:11px;color:#854d0e;margin-top:4px;background:#fef9c3;padding:4px 8px;border-radius:5px">📝 ${r.descritivo}</p>`:""}
-          </div>
-        </div>`;
-      }
-      if(!mkPend.length&&!mkAprov.length){html+=`<div style="text-align:center;padding:32px;color:${c.textMuted}"><p style="font-size:28px">📸</p><p style="margin-top:8px">Nenhuma solicitação de marketing.</p></div>`;}
-      else{
-        if(mkPend.length){html+=`<p style="font-size:12px;font-weight:800;color:#7c3aed;text-transform:uppercase;margin-bottom:10px">⏳ Aguardando aprovação (${mkPend.length})</p>`;mkPend.forEach(r=>{html+=mkAdmRow(r);});}
-        if(mkAprov.length){html+=`<p style="font-size:12px;font-weight:800;color:${c.green};text-transform:uppercase;margin:14px 0 10px">✅ Aprovados (${mkAprov.length})</p>`;mkAprov.forEach(r=>{html+=mkAdmRow(r);});}
-      }
-    }
-
-    if(_A.aba==="ti"){
-      const avItems=_todas.filter(r=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);return(eo?.tipo==="audiovisual")&&r.status!=="recusado"&&!r.reservaAutomatica&&(_A.historico||r.data>=h);}).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
-      const avPend=avItems.filter(r=>r.status==="pendente");
-      const avConf=avItems.filter(r=>r.status==="confirmado");
-      function tiAdmRow(r){
-        const[a2,m2,d2]=r.data.split("-");const pend=r.status==="pendente";
-        const range=r.horarioFim&&r.horarioFim!==r.horario?` → ${r.horarioFim}`:"";
-        return`<div style="display:flex;gap:10px;padding:12px 14px;border-radius:10px;margin-bottom:8px;background:${c.surface};border:1.5px solid ${pend?"#fed7aa":"#a7f3d0"};border-left:4px solid ${pend?"#f97316":"#1a6b47"}">
-          <div style="min-width:80px"><p style="font-size:13px;font-family:'DM Mono',monospace;font-weight:800;color:${pend?"#c2410c":"#1a6b47"}">${r.horario}${range}</p><p style="font-size:10px;color:${c.textMuted};margin-top:2px">${d2}/${m2}</p></div>
-          <div style="flex:1">
-            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:3px">
-              <span style="font-weight:700;font-size:13px;color:${c.navy}">${r.espaco}</span>
-              <span style="font-size:12px;color:${c.textMid}">${r.professor}</span>
-              <span style="font-size:12px;color:${c.textMuted}">${r.turmaInicio||r.turma||"—"}</span>
-              ${badge(r.status)}
-            </div>
-            <p style="font-size:12px;color:${c.textMuted}">${r.conteudo}</p>
-          </div>
-        </div>`;
-      }
-      if(!avItems.length){html+=`<div style="text-align:center;padding:32px;color:${c.textMuted}"><p style="font-size:28px">🔊</p><p style="margin-top:8px">Nenhum agendamento de Som, Microfone e Projetor.</p></div>`;}
-      else{
-        if(avPend.length){html+=`<p style="font-size:12px;font-weight:800;color:#c2410c;text-transform:uppercase;margin-bottom:10px">⏳ Pendentes T.I. (${avPend.length})</p>`;avPend.forEach(r=>{html+=tiAdmRow(r);});}
-        if(avConf.length){html+=`<p style="font-size:12px;font-weight:800;color:${c.green};text-transform:uppercase;margin:14px 0 10px">✅ Confirmados (${avConf.length})</p>`;avConf.forEach(r=>{html+=tiAdmRow(r);});}
-      }
-    }
+    if(_A.aba==="marketing"){html+="<div id='mk-adm-inline'></div>";setTimeout(()=>{const el=document.getElementById("mk-adm-inline");if(el){const mkP=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&(r.statusMarketing==="pendente")&&r.status!=="recusado"&&!r.reservaAutomatica&&r.data>=fmtHoje()).sort((a,b)=>a.data>b.data?1:-1);const mkA=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&r.statusMarketing==="aprovado"&&r.status!=="recusado"&&!r.reservaAutomatica&&r.data>=fmtHoje()).sort((a,b)=>a.data>b.data?1:-1);let h2="";if(mkP.length)h2+=`<p style='font-size:12px;font-weight:800;color:#7c3aed;text-transform:uppercase;margin:0 0 10px'>⏳ Aguardando aprovação (${mkP.length})</p>`+mkP.map(r=>`<div style='background:#fff;border:1.5px solid #ddd6fe;border-left:4px solid #7c3aed;border-radius:10px;padding:12px 14px;margin-bottom:8px'><div style='display:flex;gap:10px;align-items:center'><span style='font-family:monospace;font-weight:800;color:#7c3aed'>${r.horario}</span><span style='font-weight:700'>${r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco}</span><span style='font-size:12px;color:#607060'>${r.professor} · ${r.data.split("-").reverse().join("/")}</span></div><div style='display:flex;gap:8px;margin-top:10px'><button onclick='mkAprovar("${r.id}")' style='flex:1;padding:8px;border-radius:8px;border:none;background:#1a6b47;color:#fff;font-weight:700;cursor:pointer'>✅ Aprovar</button><button onclick='mkRecusar("${r.id}")' style='flex:1;padding:8px;border-radius:8px;border:none;background:#dc2626;color:#fff;font-weight:700;cursor:pointer'>❌ Recusar</button></div></div>`).join("");if(mkA.length)h2+=`<p style='font-size:12px;font-weight:800;color:#1a6b47;text-transform:uppercase;margin:14px 0 10px'>✅ Aprovados (${mkA.length})</p>`+mkA.map(r=>`<div style='background:#fff;border:1.5px solid #a7f3d0;border-left:4px solid #1a6b47;border-radius:10px;padding:12px 14px;margin-bottom:8px'><span style='font-family:monospace;font-weight:800;color:#1a6b47'>${r.horario}</span> <span style='font-weight:700'>${r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco}</span> <span style='font-size:12px;color:#607060'>${r.professor} · ${r.data.split("-").reverse().join("/")}</span></div>`).join("");if(!h2)h2=`<div style='text-align:center;padding:40px;color:#607060'><p style='font-size:32px'>📸</p><p>Nenhuma solicitação.</p></div>`;el.innerHTML=h2;}},0);}
+    if(_A.aba==="ti"){html+="<div id='ti-adm-inline'></div>";setTimeout(()=>{const el=document.getElementById("ti-adm-inline");if(el){const tiP=_todas.filter(r=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);return eo?.tipo==="audiovisual"&&r.status==="pendente"&&!r.reservaAutomatica&&r.data>=fmtHoje();}).sort((a,b)=>a.data>b.data?1:-1);const tiC=_todas.filter(r=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);return eo?.tipo==="audiovisual"&&r.status==="confirmado"&&!r.reservaAutomatica&&r.data>=fmtHoje();}).sort((a,b)=>a.data>b.data?1:-1);let h2="";if(tiP.length)h2+=`<p style='font-size:12px;font-weight:800;color:#c2410c;text-transform:uppercase;margin:0 0 10px'>⏳ Aguardando aprovação (${tiP.length})</p>`+tiP.map(r=>`<div style='background:#fff;border:1.5px solid #fed7aa;border-left:4px solid #f97316;border-radius:10px;padding:12px 14px;margin-bottom:8px'><div style='display:flex;gap:10px;align-items:center'><span style='font-family:monospace;font-weight:800;color:#c2410c'>${r.horario}</span><span style='font-weight:700'>${r.espaco}</span><span style='font-size:12px;color:#607060'>${r.professor} · ${r.data.split("-").reverse().join("/")}</span></div><div style='display:flex;gap:8px;margin-top:10px'><button onclick='tiAprovar("${r.id}")' style='flex:1;padding:8px;border-radius:8px;border:none;background:#1a6b47;color:#fff;font-weight:700;cursor:pointer'>✅ Aprovar</button><button onclick='tiRecusar("${r.id}")' style='flex:1;padding:8px;border-radius:8px;border:none;background:#dc2626;color:#fff;font-weight:700;cursor:pointer'>❌ Recusar</button></div></div>`).join("");if(tiC.length)h2+=`<p style='font-size:12px;font-weight:800;color:#1a6b47;text-transform:uppercase;margin:14px 0 10px'>✅ Confirmados (${tiC.length})</p>`+tiC.map(r=>`<div style='background:#fff;border:1.5px solid #a7f3d0;border-left:4px solid #1a6b47;border-radius:10px;padding:12px 14px;margin-bottom:8px'><span style='font-family:monospace;font-weight:800;color:#1a6b47'>${r.horario}</span> <span style='font-weight:700'>${r.espaco}</span> <span style='font-size:12px;color:#607060'>${r.professor} · ${r.data.split("-").reverse().join("/")}</span></div>`).join("");if(!h2)h2=`<div style='text-align:center;padding:40px;color:#607060'><p style='font-size:32px'>🔊</p><p>Nenhum agendamento.</p></div>`;el.innerHTML=h2;}},0);}
   }
+
+  // ── FECHAR COLUNA PRINCIPAL ──
   html+=`</div>`;
+
+  // ── COLUNA DIREITA: KPIs + PRÓXIMOS ──
+  const todosFeed=_todas.filter(r=>!r.reservaAutomatica&&r.data>=h&&r.status!=="recusado").sort((a,b)=>{
+    const ka=(a.data||"")+(a.horario||"");
+    const kb=(b.data||"")+(b.horario||"");
+    return ka.localeCompare(kb);
+  });
+  // Próximos 7 dias
+  const d7=new Date();d7.setDate(d7.getDate()+7);
+  const h7=d7.toISOString().slice(0,10);
+  const feedSemana=todosFeed.filter(r=>r.data<=h7);
+  const feedVer=_A.feedExpandido?todosFeed:feedSemana;
+
+  // Esta semana
+  const semana_rs=feedSemana.length;
+
+  html+=`<div style="position:sticky;top:16px">
+    <div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:5px 8px;margin-bottom:4px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px">
+      <div onclick="aSetModo('agenda');_A.aba='reservas';_A.fStatus='';_A.fData=fmtHoje();_A.historico=true;re()" style="text-align:center;padding:8px;background:${c.bg};border-radius:8px;cursor:pointer" title="Ver agendamentos de hoje">
+        <p style="font-size:20px;font-weight:900;color:#1a6b47">${hoje_rs}</p>
+        <p style="font-size:9px;color:${c.textMuted};font-weight:600">Hoje ↗</p>
+      </div>
+      <div onclick="aSetModo('agenda');_A.aba='reservas';_A.fStatus='pendente';_A.fData='';_A.fDataAte='';re()" style="text-align:center;padding:8px;background:${pend>0?"#fff7ed":c.bg};border-radius:8px;cursor:pointer" title="Ver pendentes">
+        <p style="font-size:20px;font-weight:900;color:${pend>0?"#ea580c":c.textMuted}">${pend}</p>
+        <p style="font-size:9px;color:${c.textMuted};font-weight:600">Pendentes ↗</p>
+      </div>
+      <div onclick="aSetModo('agenda');_A.aba='reservas';_A.fStatus='';_A.fData='';_A.fDataAte=h7;_A.historico=false;re()" style="text-align:center;padding:8px;background:${c.bg};border-radius:8px;cursor:pointer" title="Ver esta semana">
+        <p style="font-size:20px;font-weight:900;color:#7c3aed">${semana_rs}</p>
+        <p style="font-size:9px;color:${c.textMuted};font-weight:600">Esta semana ↗</p>
+      </div>
+      <div style="text-align:center;padding:8px;background:${c.bg};border-radius:8px">
+        <p style="font-size:20px;font-weight:900;color:#0369a1">${todosFeed.length}</p>
+        <p style="font-size:9px;color:${c.textMuted};font-weight:600">Total</p>
+      </div>
+    </div>
+
+    <div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:12px 14px">
+      <p style="font-size:11px;font-weight:800;color:${c.textMuted};text-transform:uppercase;margin-bottom:10px">🏆 Espaços mais reservados — este mês</p>
+      ${(()=>{
+        const contagem={};
+        const agora=new Date();
+        const mesIni=`${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,'0')}-01`;
+        const mesFim=`${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,'0')}-31`;
+        _todas.filter(r=>!r.reservaAutomatica&&r.status!=="recusado"&&r.data>=mesIni&&r.data<=mesFim).forEach(r=>{
+          if(r.espaco)contagem[r.espaco]=(contagem[r.espaco]||0)+1;
+        });
+        const ranking=Object.entries(contagem).sort((a,b)=>b[1]-a[1]).slice(0,5);
+        const max=ranking[0]?.[1]||1;
+        const cores=["#1a6b47","#0369a1","#7c3aed","#ea580c","#d97706"];
+        return ranking.map(([espaco,total],i)=>`
+          <div style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+              <span style="font-size:11px;font-weight:700;color:${c.navy};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70%">${espaco}</span>
+              <span style="font-size:11px;font-weight:800;color:${cores[i]}">${total}</span>
+            </div>
+            <div style="height:5px;background:${c.borderLight};border-radius:99px">
+              <div style="height:5px;background:${cores[i]};border-radius:99px;width:${Math.round(total/max*100)}%"></div>
+            </div>
+          </div>`).join('');
+      })()}
+    </div>
+
+    <div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:12px 14px;margin-top:12px">
+      <p style="font-size:11px;font-weight:800;color:${c.textMuted};text-transform:uppercase;margin-bottom:10px">👨‍🏫 Professores que mais agendam — este mês</p>
+      ${(()=>{
+        const ranking=gerarRankingProfessores(_todas);
+        if(ranking.length===0)return"<p style=\"color:#999;font-size:11px\">Sem dados</p>";
+        const max=ranking[0][1]||1;
+        const cores=["#ec4899","#f59e0b","#06b6d4","#8b5cf6","#14b8a6","#f97316"];
+        return ranking.map(([prof,total],i)=>`<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:11px;font-weight:700;color:${c.navy}">${prof}</span><span style="font-size:11px;font-weight:800;color:${cores[i]}">${total}</span></div><div style="height:5px;background:${c.borderLight};border-radius:99px"><div style="height:5px;background:${cores[i]};border-radius:99px;width:${Math.round(total/max*100)}%"></div></div></div>`).join('');
+      })()}
+    </div>
+  </div>`;
+
+  html+=`</div></div>`;
   return html;
 }
+
+
+function gerarRankingProfessores(todas){const c={};const agora=new Date();const mesIni=`${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,'0')}-01`;const mesFim=`${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,'0')}-31`;todas.filter(r=>!r.reservaAutomatica&&r.status!=="recusado"&&r.data>=mesIni&&r.data<=mesFim).forEach(r=>{if(r.professor)c[r.professor]=(c[r.professor]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,6);}
 
 function admRow(r,showDate=false){
   const c=C(),h=fmtHoje();
@@ -2630,7 +3094,7 @@ function admRow(r,showDate=false){
       </div>
     </div>
     <div style="display:flex;gap:5px;flex-shrink:0;align-items:center">
-      <button onclick="abrirEdicao('${r.id}')" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:13px;padding:5px 8px">✏️</button>
+      <button onclick="abrirEdicao('${r.id}')" title="Editar agendamento" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:12px;padding:5px 8px;display:flex;align-items:center;gap:3px;font-family:inherit">✏️ Editar</button>
       ${r.status==="pendente"?`<button onclick="aModerar('${r.id}','confirmado')" style="${btn("success","","sm")}">✓</button><button onclick="aModerar('${r.id}','recusado')" style="${btn("danger","","sm")}">✗</button>`:""}
       ${r.status==="confirmado"?`<button onclick="aModerar('${r.id}','recusado')" style="${btn("danger","","sm")}">✕</button>`:""}
       <button onclick="aExcluir('${r.id}')" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:13px;padding:4px">🗑</button>
@@ -2720,13 +3184,17 @@ function modalGerenciarHTML(){
             <div><label style="font-size:11px;font-weight:700;color:#607060;text-transform:uppercase">Nome *</label><br><input id="gu-nome" placeholder="Ex: Maria Silva" style="width:100%;padding:10px 12px;border-radius:8px;font-size:13.5px;border:1.5px solid #c7dfd4;background:#fff;outline:none;box-sizing:border-box;margin-top:5px"></div>
             <div><label style="font-size:11px;font-weight:700;color:#607060;text-transform:uppercase">E-mail *</label><br><input id="gu-email" type="email" placeholder="prof@escola.edu.br" style="width:100%;padding:10px 12px;border-radius:8px;font-size:13.5px;border:1.5px solid #c7dfd4;background:#fff;outline:none;box-sizing:border-box;margin-top:5px"></div>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;align-items:end">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end">
             <div><label style="font-size:11px;font-weight:700;color:#607060;text-transform:uppercase">Senha *</label><br><input id="gu-senha" type="password" placeholder="Mín. 6 caracteres" style="width:100%;padding:10px 12px;border-radius:8px;font-size:13.5px;border:1.5px solid #c7dfd4;background:#fff;outline:none;box-sizing:border-box;margin-top:5px"></div>
             <div><label style="font-size:11px;font-weight:700;color:#607060;text-transform:uppercase">Perfil</label><br>
               <select id="gu-perfil" style="width:100%;padding:10px 12px;border-radius:8px;font-size:13.5px;border:1.5px solid #c7dfd4;background:#fff;outline:none;box-sizing:border-box;cursor:pointer;margin-top:5px">
                 <option value="professor">👨‍🏫 Professor</option>
+                <option value="coord_inf">👶 Coord. Infantil</option>
+                <option value="coord_fund1">📚 Coord. Fund. 1</option>
+                <option value="coord_fund2">🎓 Coord. Fund. 2</option>
                 <option value="marketing">📸 Equipe de Marketing</option>
                 <option value="ti">💻 T.I.</option>
+                <option value="coord_ti">🖥️ Coord. T.I.</option>
               </select></div>
             <button onclick="guCriarDireto()" style="background:#1a6b47;color:#fff;border:none;border-radius:8px;font-weight:700;padding:10px 18px;font-size:13.5px;cursor:pointer;height:42px;width:100%">+ Cadastrar</button>
           </div>
@@ -2789,12 +3257,12 @@ function renderGuLista(){
       h+='<tr style="background:'+(i%2===0?'#fff':'#f8faf8')+'">';
       h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb;color:#132318;font-weight:600">'+u.nome+'</td>';
       h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb;color:#607060;font-size:12px">'+u.email+'</td>';
-      h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:#e0e7ff;color:#3730a3">'+(u.perfil==="fotografo"||u.perfil==="marketing"?"📸 Equipe de Marketing":u.perfil==="ti"?"💻 T.I.":"👨‍🏫 Professor")+'</span></td>';
+      h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:#e0e7ff;color:#3730a3">'+(u.perfil==="fotografo"||u.perfil==="marketing"?"📸 Marketing":u.perfil==="ti"?"💻 T.I.":u.perfil==="coord_inf"?"👶 Coord. Inf.":u.perfil==="coord_fund1"?"📚 Coord. Fund.1":u.perfil==="coord_fund2"?"🎓 Coord. Fund.2":u.perfil==="coord_ti"?"🖥️ Coord. T.I.":"👨‍🏫 Professor")+'</span></td>';
       h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:'+(u.ativo!==false?'#e2f4ea':'#fef2f2')+';color:'+(u.ativo!==false?'#0f4c2b':'#7f1d1d')+'">'+(u.ativo!==false?'● Ativo':'○ Inativo')+'</span></td>';
       h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><div style="display:flex;gap:5px">';
       h+='<button data-uid="'+u.id+'" data-ativo="'+(u.ativo!==false?'1':'0')+'" data-nome="'+u.nome+'" class="gu-toggle-btn" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid '+(u.ativo!==false?'#fed7aa':'#6ee7a0')+';background:'+(u.ativo!==false?'#fff7ed':'#e2f4ea')+';color:'+(u.ativo!==false?'#7c2d12':'#0f4c2b')+';cursor:pointer;font-weight:700">'+(u.ativo!==false?'🔒 Desativar':'🔓 Ativar')+'</button>';
       h+='<button data-email="'+u.email+'" class="gu-senha-btn" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid #c7dfd4;background:#fff;color:#607060;cursor:pointer;font-weight:700">🔑 Senha</button>';
-      h+='<button data-uid="'+u.id+'" data-nome="'+u.nome.replace(/"/g,'&quot;')+'" data-email="'+u.email.replace(/"/g,'&quot;')+'" class="gu-editar-btn" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid #bfdbfe;background:#eff6ff;color:#1e40af;cursor:pointer;font-weight:700">✏️ Editar</button>';
+      h+='<button data-uid="'+u.id+'" data-nome="'+u.nome.replace(/"/g,'&quot;')+'" data-email="'+u.email.replace(/"/g,'&quot;')+'" data-perfil="'+u.perfil+'" class="gu-editar-btn" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid #bfdbfe;background:#eff6ff;color:#1e40af;cursor:pointer;font-weight:700">✏️ Editar</button>';
       h+='</div></td></tr>';
     });
     h+='</tbody></table></div>';
@@ -2813,6 +3281,17 @@ function renderGuLista(){
   h+='<label style="font-size:11px;font-weight:700;color:#607060;text-transform:uppercase">E-mail</label>';
   h+='<input id="gu-edit-email" type="email" style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid #c7dfd4;font-size:13.5px;outline:none;box-sizing:border-box;margin:5px 0 6px">';
   h+='<p id="gu-edit-aviso" style="font-size:11px;color:#92400e;background:#fffbeb;border-radius:6px;padding:6px 10px;margin-bottom:14px">⚠️ Alterar o e-mail não muda o login do Firebase. O usuário continuará entrando com o e-mail antigo até fazer novo cadastro.</p>';
+  h+='<label style="font-size:11px;font-weight:700;color:#607060;text-transform:uppercase">Perfil</label>';
+  h+='<select id="gu-edit-perfil" style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid #c7dfd4;font-size:13.5px;outline:none;box-sizing:border-box;margin:5px 0 14px;cursor:pointer">';
+  h+='<option value="professor">👨‍🏫 Professor</option>';
+  h+='<option value="coord_inf">👶 Coord. Infantil</option>';
+  h+='<option value="coord_fund1">📚 Coord. Fund. 1</option>';
+  h+='<option value="coord_fund2">🎓 Coord. Fund. 2</option>';
+  h+='<option value="marketing">📸 Equipe de Marketing</option>';
+  h+='<option value="ti">💻 T.I.</option>';
+  h+='<option value="coord_ti">🖥️ Coord. T.I.</option>';
+  h+='<option value="sem_acesso">🔒 Sem acesso</option>';
+  h+='</select>';
   h+='<div id="gu-edit-flash" style="margin-bottom:10px"></div>';
   h+='<div style="display:flex;gap:10px;justify-content:flex-end">';
   h+='<button id="gu-edit-cancelar" style="padding:8px 18px;border-radius:8px;border:1.5px solid #c7dfd4;background:#fff;color:#607060;cursor:pointer;font-weight:700;font-size:13px">Cancelar</button>';
@@ -2837,6 +3316,7 @@ function renderGuLista(){
       _editUID=b.getAttribute('data-uid');
       document.getElementById('gu-edit-nome').value=b.getAttribute('data-nome');
       document.getElementById('gu-edit-email').value=b.getAttribute('data-email');
+      document.getElementById('gu-edit-perfil').value=b.getAttribute('data-perfil')||'professor';
       document.getElementById('gu-edit-flash').innerHTML='';
       document.getElementById('mod-gu-edit').style.display='flex';
     });
@@ -2847,12 +3327,13 @@ function renderGuLista(){
   document.getElementById('gu-edit-salvar').addEventListener('click',()=>{
     const nome=document.getElementById('gu-edit-nome').value.trim();
     const email=document.getElementById('gu-edit-email').value.trim();
+    const perfil=document.getElementById('gu-edit-perfil').value;
     const flash=document.getElementById('gu-edit-flash');
     if(!nome||!email){flash.innerHTML='<p style="color:#7f1d1d;font-size:12px">Preencha todos os campos.</p>';return;}
     if(!_editUID){return;}
     const btn=document.getElementById('gu-edit-salvar');
     btn.disabled=true;btn.textContent='Salvando...';
-    updateDoc(doc(db,'usuarios',_editUID),{nome,email})
+    updateDoc(doc(db,'usuarios',_editUID),{nome,email,perfil})
       .then(()=>{
         flash.innerHTML='<p style="color:#0f4c2b;font-size:12px">✅ Salvo com sucesso!</p>';
         btn.disabled=false;btn.textContent='💾 Salvar';
@@ -2868,10 +3349,36 @@ function renderGuLista(){
 // ════════════════════════════════════════════════════════════════════════════
 // FIREBASE LISTENERS
 // ════════════════════════════════════════════════════════════════════════════
-function startListeners(uid){
-  _unsub1=onSnapshot(collection(db,"reservas"),snap=>{
-    _todas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario);re();
+let _todasCarregadas=false;
+let _unsubTodas=null;
+
+function carregarTodas(){
+  if(_todasCarregadas||_unsubTodas)return;
+  const hoje=new Date();hoje.setDate(hoje.getDate()-10);
+  const dataCorte=hoje.toISOString().slice(0,10);
+  _unsubTodas=onSnapshot(query(collection(db,"reservas"),where("data",">=",dataCorte)),snap=>{
+    _todas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario);
+    _todasCarregadas=true;re();
   });
+}
+
+function startListeners(uid){
+  const perfil=_usuario?.perfil||"professor";
+  const isProfOnly=perfil==="professor";
+  const hoje=new Date();hoje.setDate(hoje.getDate()-10);
+  const dataCorte=hoje.toISOString().slice(0,10);
+
+  if(isProfOnly){
+    // Professor: por padrão só carrega _minhas
+    // _todas é carregado sob demanda (botão Todos ou ao agendar)
+    _todas=[];_todasCarregadas=false;
+  } else {
+    // Admin, TI, Marketing, Coord: carrega _todas filtrada por data
+    _unsub1=onSnapshot(query(collection(db,"reservas"),where("data",">=",dataCorte)),snap=>{
+      _todas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario);
+      _todasCarregadas=true;re();
+    });
+  }
   _unsub2=onSnapshot(query(collection(db,"reservas"),where("professorId","==",uid)),snap=>{
     _minhas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>!r.reservaAutomatica).sort((a,b)=>a.data>b.data?1:-1);re();
   });
@@ -2880,7 +3387,7 @@ function startListeners(uid){
     if(document.getElementById("mod-gu-lista"))renderGuLista();
   });
 }
-function stopListeners(){[_unsub1,_unsub2,_unsub3].forEach(u=>{try{u&&u();}catch{}});_unsub1=_unsub2=_unsub3=null;}
+function stopListeners(){[_unsub1,_unsub2,_unsub3,_unsubTodas].forEach(u=>{try{u&&u();}catch{}});_unsub1=_unsub2=_unsub3=_unsubTodas=null;_todasCarregadas=false;}
 
 // ════════════════════════════════════════════════════════════════════════════
 // AUTH
@@ -2896,9 +3403,8 @@ onAuthStateChanged(auth,async user=>{
     else re();
   }else{
     _usuario=null;
-    _unsub1=onSnapshot(collection(db,"reservas"),snap=>{
-      _todas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario);re();
-    });
+    if(_unsub1){_unsub1();_unsub1=null;}
+    _todas=[];
     re();
   }
 });
@@ -2938,3 +3444,4 @@ window.instalarPWA=async()=>{
 </script>
 </body>
 </html>
+
