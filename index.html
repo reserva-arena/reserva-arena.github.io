@@ -3388,6 +3388,7 @@ function startListeners(uid){
   });
 }
 function stopListeners(){[_unsub1,_unsub2,_unsub3,_unsubTodas].forEach(u=>{try{u&&u();}catch{}});_unsub1=_unsub2=_unsub3=_unsubTodas=null;_todasCarregadas=false;}
+function unloadHistorico(){if(_unsubTodas){_unsubTodas();_unsubTodas=null;}_todasCarregadas=false;}
 
 // ════════════════════════════════════════════════════════════════════════════
 // AUTH
