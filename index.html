@@ -2098,7 +2098,7 @@ const selTurma=(horario,val)=>`
         <button onclick="setBibAV(true)" style="flex:1;padding:9px;border-radius:8px;border:2px solid ${_MA.bibAV===true?'#0369a1':c.border};background:${_MA.bibAV===true?'#e0f2fe':c.bg};font-weight:700;font-size:13px;cursor:pointer;color:${_MA.bibAV===true?'#0369a1':c.textMid};font-family:inherit">✅ Sim</button>
         <button onclick="setBibAV(false)" style="flex:1;padding:9px;border-radius:8px;border:2px solid ${_MA.bibAV!==true?'#64748b':c.border};background:${_MA.bibAV!==true?'#f1f5f9':c.bg};font-weight:700;font-size:13px;cursor:pointer;color:${_MA.bibAV!==true?'#475569':c.textMid};font-family:inherit">✕ Não</button>
       </div>
-      ${_MA.bibAV===true?`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:4px">
+      ${_MA.bibAV===true?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
         <div style="text-align:center">
           <p style="font-size:10px;font-weight:700;color:#0369a1;text-transform:uppercase;margin-bottom:6px">🎤 Microfones</p>
           <div style="display:flex;align-items:center;border:1.5px solid #bae6fd;border-radius:10px;overflow:hidden">
@@ -3001,7 +3001,7 @@ function renderAdminView(){
   const semana_rs=feedSemana.length;
 
   html+=`<div style="position:sticky;top:16px">
-    <div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:5px 8px;margin-bottom:4px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px">
+    <div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:5px 8px;margin-bottom:4px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px">
       <div onclick="aSetModo('agenda');_A.aba='reservas';_A.fStatus='';_A.fData=fmtHoje();_A.historico=true;re()" style="text-align:center;padding:8px;background:${c.bg};border-radius:8px;cursor:pointer" title="Ver agendamentos de hoje">
         <p style="font-size:20px;font-weight:900;color:#1a6b47">${hoje_rs}</p>
         <p style="font-size:9px;color:${c.textMuted};font-weight:600">Hoje ↗</p>
@@ -3184,7 +3184,7 @@ function modalGerenciarHTML(){
             <div><label style="font-size:11px;font-weight:700;color:#607060;text-transform:uppercase">Nome *</label><br><input id="gu-nome" placeholder="Ex: Maria Silva" style="width:100%;padding:10px 12px;border-radius:8px;font-size:13.5px;border:1.5px solid #c7dfd4;background:#fff;outline:none;box-sizing:border-box;margin-top:5px"></div>
             <div><label style="font-size:11px;font-weight:700;color:#607060;text-transform:uppercase">E-mail *</label><br><input id="gu-email" type="email" placeholder="prof@escola.edu.br" style="width:100%;padding:10px 12px;border-radius:8px;font-size:13.5px;border:1.5px solid #c7dfd4;background:#fff;outline:none;box-sizing:border-box;margin-top:5px"></div>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;align-items:end">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end">
             <div><label style="font-size:11px;font-weight:700;color:#607060;text-transform:uppercase">Senha *</label><br><input id="gu-senha" type="password" placeholder="Mín. 6 caracteres" style="width:100%;padding:10px 12px;border-radius:8px;font-size:13.5px;border:1.5px solid #c7dfd4;background:#fff;outline:none;box-sizing:border-box;margin-top:5px"></div>
             <div><label style="font-size:11px;font-weight:700;color:#607060;text-transform:uppercase">Perfil</label><br>
               <select id="gu-perfil" style="width:100%;padding:10px 12px;border-radius:8px;font-size:13.5px;border:1.5px solid #c7dfd4;background:#fff;outline:none;box-sizing:border-box;cursor:pointer;margin-top:5px">
