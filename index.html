@@ -3001,22 +3001,22 @@ function renderAdminView(){
   const semana_rs=feedSemana.length;
 
   html+=`<div style="position:sticky;top:16px">
-    <div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:8px 10px;margin-bottom:8px;display:grid;grid-template-columns:1fr 1fr;gap:6px">
+    <div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:5px 8px;margin-bottom:4px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px">
       <div onclick="aSetModo('agenda');_A.aba='reservas';_A.fStatus='';_A.fData=fmtHoje();_A.historico=true;re()" style="text-align:center;padding:8px;background:${c.bg};border-radius:8px;cursor:pointer" title="Ver agendamentos de hoje">
         <p style="font-size:20px;font-weight:900;color:#1a6b47">${hoje_rs}</p>
-        <p style="font-size:10px;color:${c.textMuted};font-weight:600">Hoje ↗</p>
+        <p style="font-size:9px;color:${c.textMuted};font-weight:600">Hoje ↗</p>
       </div>
       <div onclick="aSetModo('agenda');_A.aba='reservas';_A.fStatus='pendente';_A.fData='';_A.fDataAte='';re()" style="text-align:center;padding:8px;background:${pend>0?"#fff7ed":c.bg};border-radius:8px;cursor:pointer" title="Ver pendentes">
         <p style="font-size:20px;font-weight:900;color:${pend>0?"#ea580c":c.textMuted}">${pend}</p>
-        <p style="font-size:10px;color:${c.textMuted};font-weight:600">Pendentes ↗</p>
+        <p style="font-size:9px;color:${c.textMuted};font-weight:600">Pendentes ↗</p>
       </div>
       <div onclick="aSetModo('agenda');_A.aba='reservas';_A.fStatus='';_A.fData='';_A.fDataAte=h7;_A.historico=false;re()" style="text-align:center;padding:8px;background:${c.bg};border-radius:8px;cursor:pointer" title="Ver esta semana">
         <p style="font-size:20px;font-weight:900;color:#7c3aed">${semana_rs}</p>
-        <p style="font-size:10px;color:${c.textMuted};font-weight:600">Esta semana ↗</p>
+        <p style="font-size:9px;color:${c.textMuted};font-weight:600">Esta semana ↗</p>
       </div>
       <div style="text-align:center;padding:8px;background:${c.bg};border-radius:8px">
         <p style="font-size:20px;font-weight:900;color:#0369a1">${todosFeed.length}</p>
-        <p style="font-size:10px;color:${c.textMuted};font-weight:600">Total</p>
+        <p style="font-size:9px;color:${c.textMuted};font-weight:600">Total</p>
       </div>
     </div>
 
