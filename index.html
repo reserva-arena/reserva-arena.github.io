@@ -3386,12 +3386,12 @@ function startListeners(uid){
   _unsub2=onSnapshot(query(collection(db,"reservas"),where("professorId","==",uid)),snap=>{
     _minhas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>!r.reservaAutomatica).sort((a,b)=>a.data>b.data?1:-1);re();
   });
-  _unsub3=onSnapshot(collection(db,"usuarios"),snap=>{
-    _usuarios=snap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>u.ativo!==false);re();
-    if(document.getElementById("mod-gu-lista"))renderGuLista();
+  // _usuarios carregado one-time ao login, não em listener contínuo (otimização)
+  getDocs(collection(db,"usuarios")).then(snap=>{
+    _usuarios=snap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>u.ativo!==false);
   });
 }
-function stopListeners(){[_unsub1,_unsub2,_unsub3,_unsubTodas].forEach(u=>{try{u&&u();}catch{}});_unsub1=_unsub2=_unsub3=_unsubTodas=null;_todasCarregadas=false;}
+function stopListeners(){[_unsub2,_unsubTodas].forEach(u=>{try{u&&u();}catch{}});_unsub1=_unsub2=_unsub3=_unsubTodas=null;_todasCarregadas=false;}
 function unloadHistorico(){if(_unsubTodas){_unsubTodas();_unsubTodas=null;}_todasCarregadas=false;}
 
 // ════════════════════════════════════════════════════════════════════════════
