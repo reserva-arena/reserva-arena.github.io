@@ -443,7 +443,7 @@ function exigePermissao(perfisPermitidos){
   if(!perfisPermitidos.includes(_usuario.perfil)){console.warn('Acesso negado: perfil sem permissão');return false;}
   return true;
 }
-function re(){if(_trocandoSenha)return;
+window.re=function re(){if(_trocandoSenha)return;
   const c=C();
   document.body.style.background=c.bg;
   document.body.style.color=c.text;
@@ -3360,7 +3360,7 @@ let _todasCarregadas=false;
 let _unsubTodas=null;
 let _paginaAtual=0,_carregadosAté=30;
 
-function carregarTodas(){
+window.carregarTodas=function carregarTodas(){
   if(_todasCarregadas||_unsubTodas)return;
   // Carrega TUDO sem filtro (para histórico completo sob demanda)
   _unsubTodas=onSnapshot(query(collection(db,"reservas"),where("data",">=",dataCorte)),snap=>{
