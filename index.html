@@ -443,7 +443,7 @@ function exigePermissao(perfisPermitidos){
   if(!perfisPermitidos.includes(_usuario.perfil)){console.warn('Acesso negado: perfil sem permissão');return false;}
   return true;
 }
-window.re=function re(){if(_trocandoSenha)return;
+function re(){if(_trocandoSenha)return;
   const c=C();
   document.body.style.background=c.bg;
   document.body.style.color=c.text;
@@ -774,7 +774,7 @@ function renderMarketingInline(){
 function renderTIInline(){
   const c=C(),h=fmtHoje();
   if(!window._TI)window._TI={aba:"minhas",historico:false,feedExp:false};
-  const btnAba=(id,l)=>`<button data-action="set-aba" data-aba='${id}')" style="padding:7px 16px;font-size:12.5px;border-radius:8px;border:1.5px solid ${_TI.aba===id?'#0369a1':c.border};background:${_TI.aba===id?'#0369a1':'transparent'};color:${_TI.aba===id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${l}</button>`;
+  const btnAba=(id,l)=>`<button onclick="tiSetAba('${id}')" style="padding:7px 16px;font-size:12.5px;border-radius:8px;border:1.5px solid ${_TI.aba===id?'#0369a1':c.border};background:${_TI.aba===id?'#0369a1':'transparent'};color:${_TI.aba===id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${l}</button>`;
   window.tiSetAba=(v)=>{_TI.aba=v;re();};
   const minhas=_todas.filter(r=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);const temBibAV=(Number(r.bibMic)>0||Number(r.bibCaixa)>0||Number(r.bibProj)>0);const temMic=(Number(r.microfones)>0||Number(r.caixasom)>0||Number(r.projetor)>0);const isAV=eo?.tipo==="audiovisual"||temBibAV||temMic;if(!isAV)return false;if(r.reservaAutomatica)return false;if(!_TI.historico&&r.data<h)return false;return true;}).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
   const pendentes=minhas.filter(r=>r.statusEquip==="pendente"||(!r.statusEquip&&(r.status==="pendente")));
@@ -816,9 +816,9 @@ function renderTIInline(){
   return`<div style="padding:4px 0">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
       <div style="display:flex;gap:6px">${btnAba("minhas","🔊 Minhas solicitações")}${btnAba("todos","📅 Todos agendamentos")}</div>
-      <button data-action="toggle-historico" data-target="ti" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_TI.historico?c.navy:'transparent'};color:${_TI.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_TI.historico?"Ocultar hist.":"Ver histórico"}</button>
+      <button onclick="window._TI.historico=!window._TI.historico;if(window._TI.historico)carregarTodas();re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_TI.historico?c.navy:'transparent'};color:${_TI.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_TI.historico?"Ocultar hist.":"Ver histórico"}</button>
     </div>
-    ${pendentes.length&&_TI.aba==="todos"?`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" data-action="set-aba" data-aba='minhas')"><p style="font-size:13px;font-weight:700;color:#c2410c">⏳ ${pendentes.length} agendamento${pendentes.length===1?"":"s"} aguardando aprovação — Ver agora →</p></div>`:""}
+    ${pendentes.length&&_TI.aba==="todos"?`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="tiSetAba('minhas')"><p style="font-size:13px;font-weight:700;color:#c2410c">⏳ ${pendentes.length} agendamento${pendentes.length===1?"":"s"} aguardando aprovação — Ver agora →</p></div>`:""}
     ${corpo}
   </div>`;
 }
@@ -929,8 +929,8 @@ function renderTI(){
   if(!window._TI)window._TI={aba:"minhas",historico:false};
   const btnAba=(id,l)=>`<button onclick="window._TI.aba='${id}';re()" style="padding:7px 16px;font-size:12.5px;border-radius:8px;border:1.5px solid ${_TI.aba===id?'#0369a1':c.border};background:${_TI.aba===id?'#0369a1':'transparent'};color:${_TI.aba===id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${l}</button>`;
   const minhas=_todas.filter(r=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);const temBibAV=(r.bibMic>0||r.bibCaixa>0||r.bibProj>0);return (eo?.tipo==="audiovisual"||temBibAV)&&(_TI.historico||r.data>=h)&&!r.reservaAutomatica;}).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
-  const pendentes=minhas.filter(r=>!r.statusEquip||r.statusEquip==="pendente");
-  const confirmados=minhas.filter(r=>r.statusEquip==="aprovado");
+  const pendentes=minhas.filter(r=>r.status==="pendente");
+  const confirmados=minhas.filter(r=>r.status==="confirmado");
   const todos=_todas.filter(r=>(_TI.historico||r.data>=h)&&r.status!=="recusado"&&!r.reservaAutomatica).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
   let corpo="";
   if(_TI.aba==="minhas"){
@@ -949,15 +949,16 @@ function renderTI(){
   }
   $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="no">
     <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#0d2b1a,#1a6b47)"};padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100">
-      <div style="display:flex;align-items:center;gap:8px"><button data-action="home" title="Voltar ao início" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:36px;height:36px;cursor:pointer;font-size:18px;font-family:inherit;display:flex;align-items:center;justify-content:center">🏠</button>${logoHTML(36)}<p style="font-size:13px;font-weight:800;color:#fff">💻 T.I.</p></div>
+      <div style="display:flex;align-items:center;gap:8px">${logoHTML(36)}<p style="font-size:13px;font-weight:800;color:#fff">💻 T.I.</p></div>
       <div style="display:flex;align-items:center;gap:6px">${avatarHTML(_usuario?.nome,28,"blue")}<button id="sino-btn" onclick="abrirPainelNotif()" title="Notificações" style="display:none;position:relative;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:30px;height:30px;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;font-family:inherit">🔔<span id="sino-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:#dc2626;color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:99px;align-items:center;justify-content:center;padding:0 3px;font-family:inherit"></span></button><button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button><button onclick="doSignOut()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">Sair</button></div>
     </header>
     <div style="max-width:700px;margin:0 auto;padding:16px 14px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
         <div style="display:flex;gap:6px">${btnAba("minhas","🔊 Minhas solicitações")}${btnAba("todos","📅 Todos agendamentos")}</div>
-        <button data-action="toggle-historico" data-target="ti" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_TI.historico?c.navy:'transparent'};color:${_TI.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_TI.historico?"Ocultar hist.":"Ver histórico"}</button>
+        <button onclick="window._TI.historico=!window._TI.historico;if(window._TI.historico)carregarTodas();re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_TI.historico?c.navy:'transparent'};color:${_TI.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_TI.historico?"Ocultar hist.":"Ver histórico"}</button>
       </div>
-      ${pendentes.length&&_TI.aba==="todos"?`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" data-action="set-aba" data-aba='minhas')"><p style="font-size:13px;font-weight:700;color:#c2410c">⏳ ${pendentes.length} agendamento${pendentes.length===1?"":"s"} aguardando aprovação — Ver agora →</p></div>`:""}
+      ${pendentes.length&&_TI.aba==="todos"?`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="tiSetAba('minhas')"><p style="font-size:13px;font-weight:700;color:#c2410c">⏳ ${pendentes.length} agendamento${pendentes.length===1?"":"s"} aguardando aprovação — Ver agora →</p></div>`:""}
+      ${feedTIHtml}
       ${corpo}
     </div>
   </div>`;
@@ -1013,38 +1014,30 @@ window.coordTIEditar=async(id)=>{
   }catch(e){alert("Erro ao editar: "+e.message);}
 };
 window.tiAprovar=async(id)=>{
+  
   const r=_todas.find(r=>r.id===id);
-  try{await updateDoc(doc(db,"reservas",id),{statusEquip:"aprovado"});}catch(e){alert("Erro ao aprovar: "+e.message);return;}
-  if(r && r.professorId){
+  // Marca equipamento como aprovado E confirma a reserva (status="confirmado")
+  try{await updateDoc(doc(db,"reservas",id),{statusEquip:"aprovado",status:"confirmado"});}catch(e){alert("Erro ao aprovar: "+e.message);return;}
+  if(r){
     const dataFmt=r.data.split("-").reverse().join("/");
     await gravarNotif(r.professorId,"✅ Equipamento confirmado pelo T.I.",`${r.espaco} — ${dataFmt} às ${r.horario}`,"aprovacao");
-    const admins=_usuarios.filter(u=>u.perfil==="admin"&&u.uid);
-    for(const u of admins) await gravarNotif(u.uid,"✅ T.I. confirmou equipamento",`${r.professor} — ${r.espaco} ${dataFmt} às ${r.horario}`,"info");
-  }
-  await new Promise(resolve=>setTimeout(resolve,600));
-  const doc_ref=doc(db,"reservas",id);
-  const docSnap=await getDoc(doc_ref);
-  if(docSnap.exists()){
-    const idx=_todas.findIndex(x=>x.id===id);
-    if(idx>=0) _todas[idx]={id,...docSnap.data()};
+    _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
+      gravarNotif(u.uid,"✅ T.I. confirmou equipamento",`${r.professor} — ${r.espaco} ${dataFmt} às ${r.horario}`,"info")
+    );
   }
   re();
 };
 window.tiRecusar=async(id)=>{
+  
   const r=_todas.find(r=>r.id===id);
+  // Apenas marca equipamento como recusado — NÃO altera status da reserva de espaço
   try{await updateDoc(doc(db,"reservas",id),{statusEquip:"recusado"});}catch(e){alert("Erro ao recusar: "+e.message);return;}
-  if(r && r.professorId){
+  if(r){
     const dataFmt=r.data.split("-").reverse().join("/");
     await gravarNotif(r.professorId,"❌ Equipamento indisponível",`T.I. informou que não haverá equipamento disponível para ${r.espaco} — ${dataFmt} às ${r.horario}. Sua reserva do espaço continua confirmada.`,"recusa");
-    const admins=_usuarios.filter(u=>u.perfil==="admin"&&u.uid);
-    for(const u of admins) await gravarNotif(u.uid,"❌ T.I. recusou equipamento",`${r.professor} — ${r.espaco} ${dataFmt} às ${r.horario}`,"info");
-  }
-  await new Promise(resolve=>setTimeout(resolve,600));
-  const doc_ref=doc(db,"reservas",id);
-  const docSnap=await getDoc(doc_ref);
-  if(docSnap.exists()){
-    const idx=_todas.findIndex(x=>x.id===id);
-    if(idx>=0) _todas[idx]={id,...docSnap.data()};
+    _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
+      gravarNotif(u.uid,"❌ T.I. recusou equipamento",`${r.professor} — ${r.espaco} ${dataFmt} às ${r.horario}`,"info")
+    );
   }
   re();
 };
@@ -3360,7 +3353,7 @@ let _todasCarregadas=false;
 let _unsubTodas=null;
 let _paginaAtual=0,_carregadosAté=30;
 
-window.carregarTodas=function carregarTodas(){
+function carregarTodas(){
   if(_todasCarregadas||_unsubTodas)return;
   // Carrega TUDO sem filtro (para histórico completo sob demanda)
   _unsubTodas=onSnapshot(query(collection(db,"reservas"),where("data",">=",dataCorte)),snap=>{
@@ -3416,26 +3409,6 @@ onAuthStateChanged(auth,async user=>{
     re();
   }
 });
-
-
-// Event listeners para botões que não conseguem chamar funções direto
-document.addEventListener('click', (e) => {
-  const action = e.target.closest('[data-action]')?.getAttribute('data-action');
-  const target = e.target.closest('[data-target]')?.getAttribute('data-target');
-  const aba = e.target.closest('[data-aba]')?.getAttribute('data-aba');
-  
-  if(action === 'home') {
-    window.location.reload();
-  } else if(action === 'toggle-historico' && target === 'ti') {
-    window._TI.historico = !window._TI.historico;
-    if(window._TI.historico) carregarTodas();
-    re();
-  } else if(action === 'set-aba' && aba) {
-    window._TI.aba = aba;
-    re();
-  }
-});
-
 </script>
 <script>
 // Registrar Service Worker
@@ -3472,4 +3445,5 @@ window.instalarPWA=async()=>{
 </script>
 </body>
 </html>
+
 
