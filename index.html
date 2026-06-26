@@ -537,7 +537,7 @@ function renderPublica(){
     <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#0d2b1a,#1a6b47)"};border-bottom:1px solid ${_dark?c.border:"transparent"};padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(13,43,26,.25)">
       <div style="display:flex;align-items:center;gap:10px">${logoHTML(36)}<div style="min-width:0"><p style="font-size:12px;font-weight:800;color:#ffffff;white-space:nowrap">Reserva de Espaços</p><p style="font-size:10px;color:rgba(255,255,255,.75);white-space:nowrap">Colégio Arena</p></div></div>
       <div style="display:flex;gap:8px;align-items:center">
-        <button data-action="refresh" title="Atualizar" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:34px;height:34px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center">🔄</button>
+        <button onclick="location.reload()" title="Atualizar" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:34px;height:34px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center">🔄</button>
         <button onclick="toggleDark()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:34px;height:34px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center">${_dark?"☀️":"🌙"}</button>
         <button onclick="abrirLogin()" style="background:rgba(255,255,255,.15);color:#fff;border:1.5px solid rgba(255,255,255,.35);border-radius:8px;font-weight:700;cursor:pointer;padding:7px 14px;font-size:13px;font-family:inherit">Entrar</button>
       </div>
@@ -1216,7 +1216,7 @@ function renderApp(){
         ${avatarHTML(_usuario?.nome,28,isAdmin?"purple":"navy")}
         <div class="header-nome" style="line-height:1.2;display:none" id="header-nome-block"><p style="font-size:12px;font-weight:700;color:${_dark?c.navy:'#ffffff'}">${_usuario?.nome||""}</p><p style="font-size:10px;color:${_dark?(isAdmin?"#6d28d9":c.blueMid):'rgba(255,255,255,.8)'};font-weight:700;text-transform:uppercase">${_usuario?.perfil||""}</p></div>
         <button id="sino-btn" onclick="abrirPainelNotif()" title="Notificações" style="display:none;position:relative;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:30px;height:30px;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;font-family:inherit">🔔<span id="sino-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:#dc2626;color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:99px;align-items:center;justify-content:center;padding:0 3px;font-family:inherit"></span></button>
-        <button data-action="refresh" title="Atualizar" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0">🔄</button>
+        <button onclick="location.reload()" title="Atualizar" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0">🔄</button>
         <button onclick="toggleDark()" title="${_dark?'Modo claro':'Modo escuro'}" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0">${_dark?"☀️":"🌙"}</button>
         <button onclick="doSignOut()" style="background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.3);border-radius:20px;color:rgba(255,255,255,.9);font-size:12px;font-weight:700;padding:5px 10px;cursor:pointer;font-family:inherit;flex-shrink:0">Sair</button>
       </div>
@@ -3381,17 +3381,20 @@ function startListeners(uid){
     _todas=[];_todasCarregadas=false;
   } else {
     // Admin, TI, Marketing, Coord: carrega _todas filtrada por data
-    // _unsub1 removido - duplicata de _unsubTodas
+    _unsub1=onSnapshot(query(collection(db,"reservas"),where("data",">=",dataCorte)),snap=>{
+      _todas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario);
+      _todasCarregadas=true;re();
+    });
   }
   _unsub2=onSnapshot(query(collection(db,"reservas"),where("professorId","==",uid)),snap=>{
     _minhas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>!r.reservaAutomatica).sort((a,b)=>a.data>b.data?1:-1);re();
   });
-  // _usuarios carregado one-time ao login, não em listener contínuo (otimização)
-  getDocs(collection(db,"usuarios")).then(snap=>{
-    _usuarios=snap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>u.ativo!==false);
+  _unsub3=onSnapshot(collection(db,"usuarios"),snap=>{
+    _usuarios=snap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>u.ativo!==false);re();
+    if(document.getElementById("mod-gu-lista"))renderGuLista();
   });
 }
-function stopListeners(){[_unsub2,_unsubTodas].forEach(u=>{try{u&&u();}catch{}});_unsub1=_unsub2=_unsub3=_unsubTodas=null;_todasCarregadas=false;}
+function stopListeners(){[_unsub1,_unsub2,_unsub3,_unsubTodas].forEach(u=>{try{u&&u();}catch{}});_unsub1=_unsub2=_unsub3=_unsubTodas=null;_todasCarregadas=false;}
 function unloadHistorico(){if(_unsubTodas){_unsubTodas();_unsubTodas=null;}_todasCarregadas=false;}
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -3423,8 +3426,6 @@ document.addEventListener('click', (e) => {
   
   if(action === 'home') {
     window.location.reload();
-  } else if(action === 'refresh') {
-    re();
   } else if(action === 'toggle-historico' && target === 'ti') {
     window._TI.historico = !window._TI.historico;
     if(window._TI.historico) carregarTodas();
