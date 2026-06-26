@@ -1013,30 +1013,24 @@ window.coordTIEditar=async(id)=>{
   }catch(e){alert("Erro ao editar: "+e.message);}
 };
 window.tiAprovar=async(id)=>{
-  
   const r=_todas.find(r=>r.id===id);
-  // Marca apenas equipamento como aprovado — NÃO altera status da reserva
   try{await updateDoc(doc(db,"reservas",id),{statusEquip:"aprovado"});}catch(e){alert("Erro ao aprovar: "+e.message);return;}
-  if(r){
+  if(r && r.professorId){
     const dataFmt=r.data.split("-").reverse().join("/");
     await gravarNotif(r.professorId,"✅ Equipamento confirmado pelo T.I.",`${r.espaco} — ${dataFmt} às ${r.horario}`,"aprovacao");
-    _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
-      gravarNotif(u.uid,"✅ T.I. confirmou equipamento",`${r.professor} — ${r.espaco} ${dataFmt} às ${r.horario}`,"info")
-    );
+    const admins=_usuarios.filter(u=>u.perfil==="admin"&&u.uid);
+    for(const u of admins) await gravarNotif(u.uid,"✅ T.I. confirmou equipamento",`${r.professor} — ${r.espaco} ${dataFmt} às ${r.horario}`,"info");
   }
   re();
 };
 window.tiRecusar=async(id)=>{
-  
   const r=_todas.find(r=>r.id===id);
-  // Apenas marca equipamento como recusado — NÃO altera status da reserva de espaço
   try{await updateDoc(doc(db,"reservas",id),{statusEquip:"recusado"});}catch(e){alert("Erro ao recusar: "+e.message);return;}
-  if(r){
+  if(r && r.professorId){
     const dataFmt=r.data.split("-").reverse().join("/");
     await gravarNotif(r.professorId,"❌ Equipamento indisponível",`T.I. informou que não haverá equipamento disponível para ${r.espaco} — ${dataFmt} às ${r.horario}. Sua reserva do espaço continua confirmada.`,"recusa");
-    _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
-      gravarNotif(u.uid,"❌ T.I. recusou equipamento",`${r.professor} — ${r.espaco} ${dataFmt} às ${r.horario}`,"info")
-    );
+    const admins=_usuarios.filter(u=>u.perfil==="admin"&&u.uid);
+    for(const u of admins) await gravarNotif(u.uid,"❌ T.I. recusou equipamento",`${r.professor} — ${r.espaco} ${dataFmt} às ${r.horario}`,"info");
   }
   re();
 };
