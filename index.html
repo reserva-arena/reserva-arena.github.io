@@ -929,8 +929,8 @@ function renderTI(){
   if(!window._TI)window._TI={aba:"minhas",historico:false};
   const btnAba=(id,l)=>`<button onclick="window._TI.aba='${id}';re()" style="padding:7px 16px;font-size:12.5px;border-radius:8px;border:1.5px solid ${_TI.aba===id?'#0369a1':c.border};background:${_TI.aba===id?'#0369a1':'transparent'};color:${_TI.aba===id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${l}</button>`;
   const minhas=_todas.filter(r=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);const temBibAV=(r.bibMic>0||r.bibCaixa>0||r.bibProj>0);return (eo?.tipo==="audiovisual"||temBibAV)&&(_TI.historico||r.data>=h)&&!r.reservaAutomatica;}).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
-  const pendentes=minhas.filter(r=>r.status==="pendente");
-  const confirmados=minhas.filter(r=>r.status==="confirmado");
+  const pendentes=minhas.filter(r=>!r.statusEquip||r.statusEquip==="pendente");
+  const confirmados=minhas.filter(r=>r.statusEquip==="aprovado");
   const todos=_todas.filter(r=>(_TI.historico||r.data>=h)&&r.status!=="recusado"&&!r.reservaAutomatica).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
   let corpo="";
   if(_TI.aba==="minhas"){
