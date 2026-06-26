@@ -3381,10 +3381,7 @@ function startListeners(uid){
     _todas=[];_todasCarregadas=false;
   } else {
     // Admin, TI, Marketing, Coord: carrega _todas filtrada por data
-    _unsub1=onSnapshot(query(collection(db,"reservas"),where("data",">=",dataCorte)),snap=>{
-      _todas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario);
-      _todasCarregadas=true;re();
-    });
+    // _unsub1 removido - duplicata de _unsubTodas
   }
   _unsub2=onSnapshot(query(collection(db,"reservas"),where("professorId","==",uid)),snap=>{
     _minhas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>!r.reservaAutomatica).sort((a,b)=>a.data>b.data?1:-1);re();
