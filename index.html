@@ -1021,6 +1021,7 @@ window.tiAprovar=async(id)=>{
     const admins=_usuarios.filter(u=>u.perfil==="admin"&&u.uid);
     for(const u of admins) await gravarNotif(u.uid,"✅ T.I. confirmou equipamento",`${r.professor} — ${r.espaco} ${dataFmt} às ${r.horario}`,"info");
   }
+  await new Promise(resolve=>setTimeout(resolve,300));
   re();
 };
 window.tiRecusar=async(id)=>{
@@ -1032,6 +1033,7 @@ window.tiRecusar=async(id)=>{
     const admins=_usuarios.filter(u=>u.perfil==="admin"&&u.uid);
     for(const u of admins) await gravarNotif(u.uid,"❌ T.I. recusou equipamento",`${r.professor} — ${r.espaco} ${dataFmt} às ${r.horario}`,"info");
   }
+  await new Promise(resolve=>setTimeout(resolve,300));
   re();
 };
 
