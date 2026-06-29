@@ -3259,7 +3259,7 @@ function renderGuLista(){
   if(!profs.length)h+='<p style="font-size:13px;color:#607060;text-align:center;padding:20px">Nenhum professor cadastrado.</p>';
   else{
     h+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:#f8faf8">';
-    ['Nome','E-mail','Perfil','Status','Ações'].forEach(t=>{h+='<th style="padding:8px 12px;text-align:left;color:#607060;font-weight:700;border-bottom:2px solid #c7dfd4;font-size:11px;text-transform:uppercase">'+t+'</th>';});
+    ['Nome','E-mail','Perfil','Status','Último acesso','Ações'].forEach(t=>{h+='<th style="padding:8px 12px;text-align:left;color:#607060;font-weight:700;border-bottom:2px solid #c7dfd4;font-size:11px;text-transform:uppercase">'+t+'</th>';});
     h+='</tr></thead><tbody>';
     profs.forEach((u,i)=>{
       h+='<tr style="background:'+(i%2===0?'#fff':'#f8faf8')+'">';
@@ -3267,6 +3267,16 @@ function renderGuLista(){
       h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb;color:#607060;font-size:12px">'+u.email+'</td>';
       h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:#e0e7ff;color:#3730a3">'+(u.perfil==="fotografo"||u.perfil==="marketing"?"📸 Marketing":u.perfil==="ti"?"💻 T.I.":u.perfil==="coord_inf"?"👶 Coord. Inf.":u.perfil==="coord_fund1"?"📚 Coord. Fund.1":u.perfil==="coord_fund2"?"🎓 Coord. Fund.2":u.perfil==="coord_ti"?"🖥️ Coord. T.I.":"👨‍🏫 Professor")+'</span></td>';
       h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:'+(u.ativo!==false?'#e2f4ea':'#fef2f2')+';color:'+(u.ativo!==false?'#0f4c2b':'#7f1d1d')+'">'+(u.ativo!==false?'● Ativo':'○ Inativo')+'</span></td>';
+      h+=(()=>{
+        if(!u.ultimoAcesso)return'<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb;color:#94a3b8;font-size:12px">—</td>';
+        const ts=u.ultimoAcesso?.toDate?u.ultimoAcesso.toDate():new Date(u.ultimoAcesso);
+        const diffMin=Math.floor((new Date()-ts)/60000);
+        const diffH=Math.floor(diffMin/60);
+        const diffD=Math.floor(diffH/24);
+        let label=diffMin<2?'🟢 Agora':diffMin<60?`🟢 ${diffMin}min atrás`:diffH<24?`🟡 ${diffH}h atrás`:diffD===1?'🟠 Ontem':diffD<7?`🟠 ${diffD}d atrás`:`⚪ ${ts.toLocaleDateString('pt-BR')}`;
+        const hora=ts.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+        return`<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><span style="font-size:12px;font-weight:600;color:#374151">${label}</span><br><span style="font-size:10px;color:#9ca3af">${ts.toLocaleDateString('pt-BR')} ${hora}</span></td>`;
+      })();
       h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><div style="display:flex;gap:5px">';
       h+='<button data-uid="'+u.id+'" data-ativo="'+(u.ativo!==false?'1':'0')+'" data-nome="'+u.nome+'" class="gu-toggle-btn" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid '+(u.ativo!==false?'#fed7aa':'#6ee7a0')+';background:'+(u.ativo!==false?'#fff7ed':'#e2f4ea')+';color:'+(u.ativo!==false?'#7c2d12':'#0f4c2b')+';cursor:pointer;font-weight:700">'+(u.ativo!==false?'🔒 Desativar':'🔓 Ativar')+'</button>';
       h+='<button data-email="'+u.email+'" class="gu-senha-btn" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid #c7dfd4;background:#fff;color:#607060;cursor:pointer;font-weight:700">🔑 Senha</button>';
@@ -3408,7 +3418,10 @@ onAuthStateChanged(auth,async user=>{
       const snap=await getDoc(doc(db,"usuarios",user.uid));
       _usuario=snap.exists()?{uid:user.uid,...snap.data()}:{uid:user.uid,email:user.email,perfil:"sem_acesso",ativo:false};
     }catch{_usuario={uid:user.uid,email:user.email,perfil:"sem_acesso",ativo:false};}
-    if(_usuario.perfil!=="sem_acesso"&&_usuario.ativo!==false){startListeners(user.uid);iniciarNotificacoes(user.uid);iniciarSinoListener(user.uid);}
+    if(_usuario.perfil!=="sem_acesso"&&_usuario.ativo!==false){
+      try{ await updateDoc(doc(db,"usuarios",user.uid),{ultimoAcesso:Timestamp.now()}); }catch{}
+      startListeners(user.uid);iniciarNotificacoes(user.uid);iniciarSinoListener(user.uid);
+    }
     else re();
   }else{
     _usuario=null;
