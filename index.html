@@ -3253,7 +3253,11 @@ window.guCriarDireto=async()=>{
 
 function renderGuLista(){
   const lista=document.getElementById("mod-gu-lista");if(!lista)return;
-  const profs=_usuarios.filter(u=>u.perfil!=="admin");
+  const profs=_usuarios.filter(u=>u.perfil!=="admin").sort((a,b)=>{
+    const ta=a.ultimoAcesso?.toDate?a.ultimoAcesso.toDate().getTime():(a.ultimoAcesso?new Date(a.ultimoAcesso).getTime():0);
+    const tb=b.ultimoAcesso?.toDate?b.ultimoAcesso.toDate().getTime():(b.ultimoAcesso?new Date(b.ultimoAcesso).getTime():0);
+    return tb-ta;
+  });
   const admins=_usuarios.filter(u=>u.perfil==="admin");
   let h='<p style="font-size:12px;font-weight:800;color:#132318;text-transform:uppercase;margin-bottom:12px">Professores ('+profs.length+')</p>';
   if(!profs.length)h+='<p style="font-size:13px;color:#607060;text-align:center;padding:20px">Nenhum professor cadastrado.</p>';
