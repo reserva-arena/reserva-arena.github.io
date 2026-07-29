@@ -1239,7 +1239,7 @@ window.doSignOut=()=>signOut(auth);
 window.toggleAdminVisu=()=>{};
 window.setAdminVisu=(v)=>{
 _adminVisu=v;
-if(v==="professor"){_P.modoProf="ver";_P.modoCard="calendario";_P.modoVisu="semana";_P.semIni=getSegunda(fmtHoje());_P.diaSel=null;_P.filtroGrade="todos";_P.mostrarHistorico=false;_P.filtroPendente=false;carregarTodas();}
+if(v==="professor"){_P.modoProf="ver";_P.modoCard="calendario";_P.modoVisu="semana";_P.semIni=getSegunda(fmtHoje());_P.diaSel=null;_P.filtroGrade="todos";_P.mostrarHistorico=false;_P.filtroPendente=false;}
 if(v==="ti"&&window._TI)_TI.aba="minhas";
 if(v==="marketing"&&window._MK)_MK.aba="minhas";
 re();
@@ -1260,7 +1260,7 @@ window.scrollTo({top:0,behavior:"smooth"});re();
 // ════════════════════════════════════════════════════════════════════════════
 // PROFESSOR VIEW
 // ════════════════════════════════════════════════════════════════════════════
-let _P={modoProf:"ver",modoCard:"calendario",modoVisu:"semana",filtroGrade:"todos",filtroEspaco:"",semIni:"",diaSel:null,mesCal:null,mostrarHistorico:false,filtroPendente:false,selecionados:new Set(),modoSelecao:false};
+let _P={modoProf:"ver",modoCard:"calendario",modoVisu:"semana",filtroGrade:"todos",filtroEspaco:"",semIni:"",diaSel:null,mesCal:null,mostrarHistorico:false,filtroPendente:false,selecionados:new Set(),modoSelecao:false,espaçoAgendamento:null};
 
 function renderProfessorView(){
 const c=C(),h=fmtHoje();
@@ -3373,12 +3373,11 @@ let _unsubTodas=null;
 let _paginaAtual=0,_carregadosAté=30;
 
 function carregarTodas(){
-const hoje=new Date();hoje.setDate(hoje.getDate()-7);const dataCorte=hoje.toISOString().slice(0,10);
 if(_todasCarregadas||_unsubTodas)return;
 // Carrega TUDO sem filtro (para histórico completo sob demanda)
 _unsubTodas=onSnapshot(query(collection(db,"reservas"),where("data",">=",dataCorte)),snap=>{
-_todas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.data&&r.horario);
-_todasCarregadas=true;carregarTodas();re();
+_todas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario);
+_todasCarregadas=true;re();
 });
 }
 
