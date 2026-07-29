@@ -3378,7 +3378,7 @@ if(_todasCarregadas||_unsubTodas)return;
 // Carrega TUDO sem filtro (para histórico completo sob demanda)
 _unsubTodas=onSnapshot(query(collection(db,"reservas"),where("data",">=",dataCorte)),snap=>{
 _todas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.data&&r.horario);
-_todasCarregadas=true;re();
+_todasCarregadas=true;carregarTodas();re();
 });
 }
 
