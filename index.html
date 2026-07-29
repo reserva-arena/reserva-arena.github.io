@@ -1499,7 +1499,7 @@ window._calNav=(cid,dir)=>{
 if(cid==="pmes"||cid==="pagin"||cid==="ma"){
 let nm=(cid==="pmes"?_P.mesCal.m:_MA.calM)+dir,na=(cid==="pmes"?_P.mesCal.a:_MA.calA);
 if(nm>11){nm=0;na++;}if(nm<0){nm=11;na--;}
-if(cid==="pmes")_P.mesCal={a:na,m:nm};else{_MA.calM=nm;_MA.calA=na;}
+if(cid==="pmes")_P.mesCal={a:na,m:nm};else if(cid==="ma"){_MA.calM=nm;_MA.calA=na;}
 re();
 }
 };
