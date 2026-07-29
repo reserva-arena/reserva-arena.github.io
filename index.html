@@ -1263,6 +1263,10 @@ window.scrollTo({top:0,behavior:"smooth"});re();
 let _P={modoProf:"ver",modoCard:"calendario",modoVisu:"semana",filtroGrade:"todos",filtroEspaco:"",semIni:"",diaSel:null,mesCal:null,mostrarHistorico:false,filtroPendente:false,selecionados:new Set(),modoSelecao:false};
 
 function renderProfessorView(){
+// FASE 1: Tela inicial
+if(!_P.espaçoAgendamento_selecionado){
+return `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:40px"><div style="text-align:center"><p style="font-size:18px;font-weight:700;margin-bottom:30px">Como você deseja começar?</p><div style="display:flex;gap:20px;flex-wrap:wrap;justify-content:center"><button onclick="alert('Botão 1 clicado')" style="background:#1a6b47;color:#fff;border:none;border-radius:12px;padding:20px 40px;font-size:16px;font-weight:700;cursor:pointer;min-width:200px">📅 Agendar um espaço</button><button onclick="alert('Botão 2 clicado')" style="background:#0d5a3d;color:#fff;border:none;border-radius:12px;padding:20px 40px;font-size:16px;font-weight:700;cursor:pointer;min-width:200px">👀 Ver agendamentos</button></div></div></div>`;
+}
 const c=C(),h=fmtHoje();
 if(!_P.semIni)_P.semIni=getSegunda(h);
 if(!_P.mesCal){const d=new Date();_P.mesCal={a:d.getFullYear(),m:d.getMonth()};}
