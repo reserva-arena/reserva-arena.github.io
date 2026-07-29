@@ -252,7 +252,7 @@ const TURMAS_INFANTIL_MAT = TURMAS_EDUCACAO_INFANTIL.filter(t=>t.includes("Mat")
 const TURMAS_INFANTIL_VESP = TURMAS_EDUCACAO_INFANTIL.filter(t=>t.includes("Vesp"));
 const TURMAS_FUND1 = (()=>{const t=[];for(let a=1;a<=5;a++)["A","B","C","D","E"].forEach(l=>t.push(`${a}º${l}`));return t;})();
 const TURMAS_FUND2 = (()=>{const t=[];for(let a=6;a<=9;a++)["A","B","C","D","E","F","G","H"].forEach(l=>t.push(`${a}º${l}`));return t;})();
-const TURMAS_EXTRAS = ["Extra Música"];
+const TURMAS_EXTRAS = ["Extra Música","Olimpíadas Fund 1","Olimpíadas Fund 2","Olimpíadas de Ciência","Olimpíadas de Matemática"];
 const TURMAS_INTEGRAL = ["Integral 3-4 anos","Integral 5 anos"];
 const TURMAS_INTEGRAL_FUND1 = ["1º ano Integral","2º e 3º Integral","4º e 5º Integral"];
 const TURMAS = [...TURMAS_EDUCACAO_INFANTIL, ...TURMAS_FUND1, ...TURMAS_FUND2, ...TURMAS_EXTRAS, ...TURMAS_INTEGRAL, ...TURMAS_INTEGRAL_FUND1];
@@ -3387,7 +3387,11 @@ const isProfOnly=perfil==="professor";
 const hoje=new Date();hoje.setDate(hoje.getDate()-7);
 const dataCorte=hoje.toISOString().slice(0,10);
 
-{
+if(isProfOnly){
+// Professor: por padrão só carrega _minhas
+// _todas é carregado sob demanda (botão Todos ou ao agendar)
+_todas=[];_todasCarregadas=false;
+} else {
 // Admin, TI, Marketing, Coord: carrega _todas filtrada por data
 _unsub1=onSnapshot(query(collection(db,"reservas"),where("data",">=",dataCorte)),snap=>{
 _todas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario);
