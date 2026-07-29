@@ -1335,7 +1335,7 @@ const diasLetivos=[];let dCursor=h;
 while(diasLetivos.length<5){const dow=new Date(dCursor+"T12:00:00").getDay();if(dow!==0&&dow!==6&&isDiaLetivo(dCursor))diasLetivos.push(dCursor);dCursor=addDias(dCursor,1);if(diasLetivos.length===0&&dCursor>addDias(h,30))break;}
 while(diasLetivos.length<5)diasLetivos.push(addDias(diasLetivos[diasLetivos.length-1],1));
 const nomes=diasLetivos.map(d=>{const dow=new Date(d+"T12:00:00").getDay();return["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"][dow]+"."});
-html+=`<div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;padding:8px;overflow-x:auto">`;
+const isMobPortrait=window.innerWidth<768&&window.innerHeight>window.innerWidth;const gridCols=isMobPortrait?'repeat(1,1fr)':'repeat(5,minmax(0,1fr))';html+=`<div style="display:grid;grid-template-columns:${gridCols};gap:4px;padding:8px;overflow-x:auto">`;
 diasLetivos.forEach((d,i)=>{
 const[,,dia]=d.split("-");const isH=d===h;
 const rsD=fonte.filter(r=>r.data===d).sort((a,b)=>a.horario>b.horario?1:-1);
@@ -3376,7 +3376,7 @@ function carregarTodas(){
 if(_todasCarregadas||_unsubTodas)return;
 // Carrega TUDO sem filtro (para histórico completo sob demanda)
 _unsubTodas=onSnapshot(query(collection(db,"reservas"),where("data",">=",dataCorte)),snap=>{
-_todas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.data&&r.horario);
+_todas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario);
 _todasCarregadas=true;re();
 });
 }
@@ -3387,11 +3387,14 @@ const isProfOnly=perfil==="professor";
 const hoje=new Date();hoje.setDate(hoje.getDate()-7);
 const dataCorte=hoje.toISOString().slice(0,10);
 
-// Removido: professor agora carrega _todas igual admin
-{
+if(isProfOnly){
+// Professor: por padrão só carrega _minhas
+// _todas é carregado sob demanda (botão Todos ou ao agendar)
+_todas=[];_todasCarregadas=false;
+} else {
 // Admin, TI, Marketing, Coord: carrega _todas filtrada por data
 _unsub1=onSnapshot(query(collection(db,"reservas"),where("data",">=",dataCorte)),snap=>{
-_todas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.data&&r.horario);
+_todas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario);
 _todasCarregadas=true;re();
 });
 }
