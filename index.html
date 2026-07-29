@@ -3387,11 +3387,7 @@ const isProfOnly=perfil==="professor";
 const hoje=new Date();hoje.setDate(hoje.getDate()-7);
 const dataCorte=hoje.toISOString().slice(0,10);
 
-if(isProfOnly){
-// Professor: por padrão só carrega _minhas
-// _todas é carregado sob demanda (botão Todos ou ao agendar)
-_todas=[];_todasCarregadas=false;
-} else {
+{
 // Admin, TI, Marketing, Coord: carrega _todas filtrada por data
 _unsub1=onSnapshot(query(collection(db,"reservas"),where("data",">=",dataCorte)),snap=>{
 _todas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario);
