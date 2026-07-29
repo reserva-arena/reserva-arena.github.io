@@ -1263,6 +1263,7 @@ window.scrollTo({top:0,behavior:"smooth"});re();
 let _P={modoProf:"ver",modoCard:"calendario",modoVisu:"semana",filtroGrade:"todos",filtroEspaco:"",semIni:"",diaSel:null,mesCal:null,mostrarHistorico:false,filtroPendente:false,selecionados:new Set(),modoSelecao:false};
 
 function renderProfessorView(){
+console.log("🔍 DEBUG renderProfessorView - _P.modoProf =", _P.modoProf);
 // TELA INICIAL: professor escolhe entre Agendar ou Ver agendamentos
 if(_P.modoProf==="escolha_inicial"){
 const c=C();
