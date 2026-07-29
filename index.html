@@ -1239,7 +1239,7 @@ window.doSignOut=()=>signOut(auth);
 window.toggleAdminVisu=()=>{};
 window.setAdminVisu=(v)=>{
 _adminVisu=v;
-if(v==="professor"){_P.modoProf="ver";_P.modoCard="calendario";_P.modoVisu="mes";_P.semIni=getSegunda(fmtHoje());_P.diaSel=null;_P.filtroGrade="meus";_P.mostrarHistorico=false;_P.filtroPendente=false;}
+if(v==="professor"){_P.modoProf="ver";_P.modoCard="calendario";_P.modoVisu="mes";_P.semIni=getSegunda(fmtHoje());_P.diaSel=null;_P.filtroGrade="todos";_P.mostrarHistorico=false;_P.filtroPendente=false;}
 if(v==="ti"&&window._TI)_TI.aba="minhas";
 if(v==="marketing"&&window._MK)_MK.aba="minhas";
 re();
@@ -1251,7 +1251,7 @@ _A.diaSel=null;_A.historico=false;
 const d=new Date();_A.mesCal={a:d.getFullYear(),m:d.getMonth()};
 } else {
 _P.modoProf="ver";_P.modoCard="calendario";_P.modoVisu="mes";
-_P.semIni=getSegunda(fmtHoje());_P.diaSel=null;_P.filtroGrade="meus";
+_P.semIni=getSegunda(fmtHoje());_P.diaSel=null;_P.filtroGrade="todos";
 _P.mostrarHistorico=false;_P.filtroPendente=false;
 }
 window.scrollTo({top:0,behavior:"smooth"});re();
@@ -1260,7 +1260,7 @@ window.scrollTo({top:0,behavior:"smooth"});re();
 // ════════════════════════════════════════════════════════════════════════════
 // PROFESSOR VIEW
 // ════════════════════════════════════════════════════════════════════════════
-let _P={modoProf:"ver",modoCard:"calendario",modoVisu:"mes",filtroGrade:"meus",filtroEspaco:"",semIni:"",diaSel:null,mesCal:null,mostrarHistorico:false,filtroPendente:false,selecionados:new Set(),modoSelecao:false};
+let _P={modoProf:"ver",modoCard:"calendario",modoVisu:"mes",filtroGrade:"todos",filtroEspaco:"",semIni:"",diaSel:null,mesCal:null,mostrarHistorico:false,filtroPendente:false,selecionados:new Set(),modoSelecao:false};
 
 function renderProfessorView(){
 const c=C(),h=fmtHoje();
@@ -1495,6 +1495,15 @@ return`<div class="row-hover" ${selClick?`onclick="toggleSelProf('${r.id}')"`:''
 }
 
 function bindProf(){
+window._calNav=(cid,dir)=>{
+if(cid==="pmes"||cid==="pagin"||cid==="ma"){
+let nm=(cid==="pmes"?_P.mesCal.m:_MA.calM)+dir,na=(cid==="pmes"?_P.mesCal.a:_MA.calA);
+if(nm>11){nm=0;na++;}if(nm<0){nm=11;na--;}
+if(cid==="pmes")_P.mesCal={a:na,m:nm};else{_MA.calM=nm;_MA.calA=na;}
+re();
+}
+};
+}
 window.pSetModoProf=v=>{_P.modoProf=v;if(v==='agendar'){_MA={step:1,espaco:"",data:"",blocos:[bVazio()],resumo:false,salvando:false,sucesso:null,erro:"",calA:new Date().getFullYear(),calM:new Date().getMonth(),bibAV:null};}re();};
 window.pSetModo=v=>{_P.modoCard=v;re();};
 window.pToggleHistorico=()=>{_P.mostrarHistorico=!_P.mostrarHistorico;re();};
