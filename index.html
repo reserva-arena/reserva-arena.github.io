@@ -683,13 +683,7 @@ if(cid==="pub"){_pubState.diaSel=_pubState.diaSel===data?null:data;renderPubCont
 };
 window._calNav=(cid,dir)=>{
 if(cid==="pub"){let nm=_pubState.mesCal.m+dir,na=_pubState.mesCal.a;if(nm>11){nm=0;na++;}if(nm<0){nm=11;na--;}_pubState.mesCal={a:na,m:nm};renderPubConteudo();}
-else if(cid==="pmes"||cid==="pagin"||cid==="ma"){
-let nm=(cid==="pmes"?_P.mesCal.m:_MA.calM)+dir,na=(cid==="pmes"?_P.mesCal.a:_MA.calA);
-if(nm>11){nm=0;na++;}if(nm<0){nm=11;na--;}
-if(cid==="pmes")_P.mesCal={a:na,m:nm};else{_MA.calM=nm;_MA.calA=na;}
-re();
-}
-};;
+};
 }
 
 let _pubState=null;
@@ -1501,7 +1495,14 @@ return`<div class="row-hover" ${selClick?`onclick="toggleSelProf('${r.id}')"`:''
 }
 
 function bindProf(){
+window._calNav=(cid,dir)=>{
+if(cid==="pmes"||cid==="pagin"||cid==="ma"){
+let nm=(cid==="pmes"?_P.mesCal.m:_MA.calM)+dir,na=(cid==="pmes"?_P.mesCal.a:_MA.calA);
+if(nm>11){nm=0;na++;}if(nm<0){nm=11;na--;}
+if(cid==="pmes")_P.mesCal={a:na,m:nm};else{_MA.calM=nm;_MA.calA=na;}
+re();
 }
+};
 window.pSetModoProf=v=>{_P.modoProf=v;if(v==='agendar'){_MA={step:1,espaco:"",data:"",blocos:[bVazio()],resumo:false,salvando:false,sucesso:null,erro:"",calA:new Date().getFullYear(),calM:new Date().getMonth(),bibAV:null};}re();};
 window.pSetModo=v=>{_P.modoCard=v;re();};
 window.pToggleHistorico=()=>{_P.mostrarHistorico=!_P.mostrarHistorico;re();};
