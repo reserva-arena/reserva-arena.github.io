@@ -252,7 +252,7 @@ const TURMAS_INFANTIL_MAT = TURMAS_EDUCACAO_INFANTIL.filter(t=>t.includes("Mat")
 const TURMAS_INFANTIL_VESP = TURMAS_EDUCACAO_INFANTIL.filter(t=>t.includes("Vesp"));
 const TURMAS_FUND1 = (()=>{const t=[];for(let a=1;a<=5;a++)["A","B","C","D","E"].forEach(l=>t.push(`${a}º${l}`));return t;})();
 const TURMAS_FUND2 = (()=>{const t=[];for(let a=6;a<=9;a++)["A","B","C","D","E","F","G","H"].forEach(l=>t.push(`${a}º${l}`));return t;})();
-const TURMAS_EXTRAS = ["Extra Música"];
+const TURMAS_EXTRAS = ["Extra Música","Olimpíadas Fund 1","Olimpíadas Fund 2","Olimpíadas de Ciência","Olimpíadas de Matemática"];
 const TURMAS_INTEGRAL = ["Integral 3-4 anos","Integral 5 anos"];
 const TURMAS_INTEGRAL_FUND1 = ["1º ano Integral","2º e 3º Integral","4º e 5º Integral"];
 const TURMAS = [...TURMAS_EDUCACAO_INFANTIL, ...TURMAS_FUND1, ...TURMAS_FUND2, ...TURMAS_EXTRAS, ...TURMAS_INTEGRAL, ...TURMAS_INTEGRAL_FUND1];
@@ -1335,7 +1335,7 @@ const diasLetivos=[];let dCursor=h;
 while(diasLetivos.length<5){const dow=new Date(dCursor+"T12:00:00").getDay();if(dow!==0&&dow!==6&&isDiaLetivo(dCursor))diasLetivos.push(dCursor);dCursor=addDias(dCursor,1);if(diasLetivos.length===0&&dCursor>addDias(h,30))break;}
 while(diasLetivos.length<5)diasLetivos.push(addDias(diasLetivos[diasLetivos.length-1],1));
 const nomes=diasLetivos.map(d=>{const dow=new Date(d+"T12:00:00").getDay();return["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"][dow]+"."});
-const isMobPortrait=window.innerWidth<768&&window.innerHeight>window.innerWidth;const gridCols=isMobPortrait?'repeat(1,1fr)':'repeat(5,minmax(0,1fr))';html+=`<div style="display:grid;grid-template-columns:${gridCols};gap:4px;padding:8px;overflow-x:auto">`;
+html+=`<div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;padding:8px;overflow-x:auto">`;
 diasLetivos.forEach((d,i)=>{
 const[,,dia]=d.split("-");const isH=d===h;
 const rsD=fonte.filter(r=>r.data===d).sort((a,b)=>a.horario>b.horario?1:-1);
