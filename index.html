@@ -1237,14 +1237,14 @@ isAdmin?bindAdmin():bindProf();
 }
 window.doSignOut=()=>signOut(auth);
 window.toggleAdminVisu=()=>{};
-window.setAdminVisu=(v)=>{
+window.setAdminVisu=(v)=>{console.log("📍 setAdminVisu chamado com:", v, "-> modoProf será:", v==="professor"?"escolha_inicial":"?");
 _adminVisu=v;
 if(v==="professor"){_P.modoProf="escolha_inicial";_P.modoCard="calendario";_P.modoVisu="semana";_P.semIni=getSegunda(fmtHoje());_P.diaSel=null;_P.filtroGrade="todos";_P.mostrarHistorico=false;_P.filtroPendente=false;}
 if(v==="ti"&&window._TI)_TI.aba="minhas";
 if(v==="marketing"&&window._MK)_MK.aba="minhas";
 re();
 };
-window.irInicio=()=>{
+window.irInicio=()=>{console.log("📍 irInicio chamado");
 if(_usuario?.perfil==="admin"){
 _A.modoVisu="calendario";_A.fEspaco="";_A.fProf="";_A.fStatus="";_A.fTurma="";
 _A.diaSel=null;_A.historico=false;
