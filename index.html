@@ -3390,7 +3390,7 @@ const dataCorte=hoje.toISOString().slice(0,10);
 if(isProfOnly){
 // Professor: por padrão só carrega _minhas
 // _todas é carregado sob demanda (botão Todos ou ao agendar)
-_todas=[];_todasCarregadas=false;
+// Removido: professor agora também carrega _todas
 } else {
 // Admin, TI, Marketing, Coord: carrega _todas filtrada por data
 _unsub1=onSnapshot(query(collection(db,"reservas"),where("data",">=",dataCorte)),snap=>{
