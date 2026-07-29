@@ -1239,7 +1239,7 @@ window.doSignOut=()=>signOut(auth);
 window.toggleAdminVisu=()=>{};
 window.setAdminVisu=(v)=>{
 _adminVisu=v;
-if(v==="professor"){_P.modoProf="ver";_P.modoCard="calendario";_P.modoVisu="semana";_P.semIni=getSegunda(fmtHoje());_P.diaSel=null;_P.filtroGrade="todos";_P.mostrarHistorico=false;_P.filtroPendente=false;}
+if(v==="professor"){_P.modoProf="ver";_P.modoCard="calendario";_P.modoVisu="semana";_P.semIni=getSegunda(fmtHoje());_P.diaSel=null;_P.filtroGrade="todos";_P.mostrarHistorico=false;_P.filtroPendente=false;carregarTodas();}
 if(v==="ti"&&window._TI)_TI.aba="minhas";
 if(v==="marketing"&&window._MK)_MK.aba="minhas";
 re();
@@ -1526,7 +1526,7 @@ else if(tipo==='proximos'){_P.modoProf='ver';_P.modoCard='lista';re();}
 };
 window.pSetVisu=v=>{_P.modoVisu=v;re();};
 window.pNavMes=dir=>{if(!_P.mesCal){const d=new Date();_P.mesCal={a:d.getFullYear(),m:d.getMonth()};}let nm=_P.mesCal.m+dir,na=_P.mesCal.a;if(nm>11){nm=0;na++;}if(nm<0){nm=11;na--;}_P.mesCal={a:na,m:nm};re();};
-window.pSetGrade=v=>{_P.filtroGrade=v;if(v==="todos"){_todasCarregadas=false;_unsubTodas=null;carregarTodas();}re();};
+window.pSetGrade=v=>{_P.filtroGrade=v;if(v==="todos")carregarTodas();re();};
 window.pSetEspaco=v=>{_P.filtroEspaco=v;re();};
 window.pClicarDia=data=>{
 if(data>=fmtHoje()&&isDiaLetivo(data)){
