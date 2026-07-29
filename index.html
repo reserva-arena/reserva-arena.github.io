@@ -1239,7 +1239,7 @@ window.doSignOut=()=>signOut(auth);
 window.toggleAdminVisu=()=>{};
 window.setAdminVisu=(v)=>{
 _adminVisu=v;
-if(v==="professor"){_P.modoProf="escolha_inicial";_P.modoCard="calendario";_P.modoVisu="semana";_P.semIni=getSegunda(fmtHoje());_P.diaSel=null;_P.filtroGrade="todos";_P.mostrarHistorico=false;_P.filtroPendente=false;}
+if(v==="professor"){_P.modoProf="ver";_P.modoCard="calendario";_P.modoVisu="semana";_P.semIni=getSegunda(fmtHoje());_P.diaSel=null;_P.filtroGrade="todos";_P.mostrarHistorico=false;_P.filtroPendente=false;}
 if(v==="ti"&&window._TI)_TI.aba="minhas";
 if(v==="marketing"&&window._MK)_MK.aba="minhas";
 re();
@@ -1263,6 +1263,11 @@ window.scrollTo({top:0,behavior:"smooth"});re();
 let _P={modoProf:"ver",modoCard:"calendario",modoVisu:"semana",filtroGrade:"todos",filtroEspaco:"",semIni:"",diaSel:null,mesCal:null,mostrarHistorico:false,filtroPendente:false,selecionados:new Set(),modoSelecao:false};
 
 function renderProfessorView(){
+// TELA INICIAL: professor escolhe entre Agendar ou Ver agendamentos
+if(_P.modoProf==="escolha_inicial"){
+const c=C();
+return `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:40px;padding:20px"><div style="text-align:center"><p style="font-size:20px;font-weight:700;margin-bottom:40px;color:${c.text}">Como você deseja começar?</p><div style="display:flex;gap:20px;flex-wrap:wrap;justify-content:center"><button onclick="pSetModoProf('agendar')" style="background:#1a6b47;color:#fff;border:none;border-radius:12px;padding:24px 48px;font-size:16px;font-weight:700;cursor:pointer;min-width:220px;transition:all .2s;box-shadow:0 2px 8px rgba(26,107,71,.2)">📅 Agendar um espaço</button><button onclick="pSetModoProf('ver')" style="background:#0d5a3d;color:#fff;border:none;border-radius:12px;padding:24px 48px;font-size:16px;font-weight:700;cursor:pointer;min-width:220px;transition:all .2s;box-shadow:0 2px 8px rgba(13,90,61,.2)">👀 Ver agendamentos</button></div></div></div>`;
+}
 const c=C(),h=fmtHoje();
 if(!_P.semIni)_P.semIni=getSegunda(h);
 if(!_P.mesCal){const d=new Date();_P.mesCal={a:d.getFullYear(),m:d.getMonth()};}
