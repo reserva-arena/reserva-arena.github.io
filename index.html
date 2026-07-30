@@ -20,6 +20,7 @@ input,select,textarea,button{font-family:inherit}
 img{max-width:100%;height:auto}
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-thumb{background:#c7dfd4;border-radius:3px}
+.header-icons-scroll::-webkit-scrollbar{display:none}
 .fade-in{animation:fadeIn .3s ease forwards}
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
@@ -1212,7 +1213,7 @@ $("app").innerHTML=`
        ${logoHTML(36)}
        <div style="min-width:0"><p style="font-size:12px;font-weight:800;color:${_dark?c.navy:'#ffffff'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Reserva de Espaços</p><p style="font-size:10px;color:${_dark?c.textMuted:'rgba(255,255,255,.75)'};white-space:nowrap">Colégio Arena</p></div>
      </div>
-     <div style="display:flex;align-items:center;gap:8px">
+     <div style="display:flex;align-items:center;gap:8px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-ms-overflow-style:none;max-width:100%;flex-shrink:1" class="header-icons-scroll">
        <button onclick="irInicio()" title="Início" style="background:${_dark?c.surface:'rgba(255,255,255,.15)'};border:1.5px solid ${_dark?c.border:'rgba(255,255,255,.3)'};border-radius:20px;padding:4px 10px;height:34px;cursor:pointer;display:flex;align-items:center;gap:5px;font-size:15px;flex-shrink:0;font-family:inherit">🏠</button>
        ${isAdmin?`<select onchange="setAdminVisu(this.value)" class="admin-visu-select" style="background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.4);border-radius:20px;padding:3px 8px;height:30px;cursor:pointer;font-size:11px;font-family:inherit;font-weight:700;color:#fff;outline:none"><option value="admin" ${_adminVisu==="admin"?"selected":""} style="color:#132318;background:#fff">🔧 Adm</option><option value="professor" ${_adminVisu==="professor"?"selected":""} style="color:#132318;background:#fff">👨‍🏫 Prof</option><option value="ti" ${_adminVisu==="ti"?"selected":""} style="color:#132318;background:#fff">💻 TI</option><option value="marketing" ${_adminVisu==="marketing"?"selected":""} style="color:#132318;background:#fff">📸 Mkt</option></select>`:""}
        ${avatarHTML(_usuario?.nome,28,isAdmin?"purple":"navy")}
