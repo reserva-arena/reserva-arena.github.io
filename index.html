@@ -3428,7 +3428,6 @@ try{
 const snap=await getDoc(doc(db,"usuarios",user.uid));
 _usuario=snap.exists()?{uid:user.uid,...snap.data()}:{uid:user.uid,email:user.email,perfil:"sem_acesso",ativo:false};
 }catch{_usuario={uid:user.uid,email:user.email,perfil:"sem_acesso",ativo:false};}
-    if(_usuario.perfil!=="sem_acesso"&&_usuario.ativo!==false){startListeners(user.uid);iniciarNotificacoes(user.uid);iniciarSinoListener(user.uid);}
     if(_usuario.perfil!=="sem_acesso"&&_usuario.ativo!==false){
       try{ await updateDoc(doc(db,"usuarios",user.uid),{ultimoAcesso:Timestamp.now()}); }catch{}
       startListeners(user.uid);iniciarNotificacoes(user.uid);iniciarSinoListener(user.uid);
