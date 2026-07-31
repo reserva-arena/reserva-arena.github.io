@@ -1499,6 +1499,8 @@ return`<div class="row-hover" ${selClick?`onclick="toggleSelProf('${r.id}')"`:''
        ${ex?`<span style="font-size:11px;background:#e2f4ea;color:#0f4c2b;border:1px solid #86efac;border-radius:6px;padding:1px 6px;font-weight:700">${ex}</span>`:""}
        <span style="font-size:11px;color:${isMeu?c.green:c.textMuted};background:${c.bg};padding:1px 8px;border-radius:10px;border:1px solid ${c.borderLight};font-weight:${isMeu?700:400}">${isMeu?"👤 eu":r.professor?.split(" ")[0]||""}</span>
      </div>
+     ${r.conteudo?`<p style="font-size:11.5px;color:${c.textMuted};margin:2px 0 0;line-height:1.4">📝 ${r.conteudo}</p>`:""}
+     ${r.paginas?`<p style="font-size:11px;color:${c.textMuted};margin:2px 0 0">📖 Págs.: ${r.paginas}</p>`:""}
      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
        ${isPend?`<span style="font-size:11.5px;font-weight:800;background:${c.amberBg};color:${c.amber};border:1.5px solid ${c.amberBorder};border-radius:20px;padding:2px 10px">⏳ Pendente</span>`:badge(r.status)}
      </div>
@@ -2628,7 +2630,7 @@ local:b.local||"",localMontagem:b.local||"",localDevolucao:b.localDevolucao||"",
 quantidade:eo?.tipo==="equipamento"?Number(b.quantidade):null,
 microfones:Number(b.microfones)||0,caixasom:Number(b.caixasom)||0,projetor:Number(b.projetor)||0,
 status:st,criadoEm:ts,precisaFoto:b.precisaFoto||false,precisaVideo:b.precisaVideo||false,objetivoMidia:b.objetivoMidia||"",descritivo:b.descritivo||"",salaAtividade:b.salaAtividade||"",...(statusMarketing?{statusMarketing}:{}),...(temAV?{statusEquip:"pendente"}:{}),...(_MA.bibAV===true?{bibMic:_MA.bibMic||0,bibCaixa:_MA.bibCaixa||0,bibProj:_MA.bibProj||0}:{}),
-paginas:"",laboratorista:b.laboratorista||"",reservaAutomatica:false,
+paginas:b.paginas||"",laboratorista:b.laboratorista||"",reservaAutomatica:false,
 qtdTablets:Number(b.qtdTablets)||0,qtdNotebooks:Number(b.qtdNotebooks)||0,
 };
 batch.set(doc(collection(db,"reservas")),dadosPrincipal);
@@ -3137,8 +3139,9 @@ return`<div class="row-hover" style="display:flex;align-items:center;gap:10px;pa
        ${badge(r.status)}
        ${urg&&r.status==="pendente"?`<span style="font-size:10.5px;font-weight:800;background:#fff7ed;color:#c2410c;border:1.5px solid #f97316;padding:1px 8px;border-radius:10px">⚡ URGENTE</span>`:""}
        ${r.precisaFoto?`<span style="font-size:10.5px;font-weight:800;background:#f5f3ff;color:#7c3aed;border:1.5px solid #ddd6fe;padding:1px 8px;border-radius:10px">📸 Foto</span>`:""}${r.precisaVideo?`<span style="font-size:10.5px;font-weight:800;background:#eff6ff;color:#1d4ed8;border:1.5px solid #bfdbfe;padding:1px 8px;border-radius:10px">🎬 Vídeo</span>`:""}
-       ${r.conteudo?`<span style="font-size:11.5px;color:${c.textMuted};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px">${r.conteudo}</span>`:""}
      </div>
+     ${r.conteudo?`<p style="font-size:11.5px;color:${c.textMuted};margin:3px 0 0;line-height:1.4">📝 ${r.conteudo}</p>`:""}
+     ${r.paginas?`<p style="font-size:11px;color:${c.textMuted};margin:2px 0 0">📖 Págs.: ${r.paginas}</p>`:""}
    </div>
    <div style="display:flex;gap:5px;flex-shrink:0;align-items:center">
      <button onclick="abrirEdicao('${r.id}')" title="Editar agendamento" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:12px;padding:5px 8px;display:flex;align-items:center;gap:3px;font-family:inherit">✏️ Editar</button>
