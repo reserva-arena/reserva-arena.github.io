@@ -1522,7 +1522,7 @@ re();
 }
 };
 }
-window.pSetModoProf=v=>{_P.modoProf=v;if(v==='agendar'){_MA={step:1,espaco:"",data:"",blocos:[bVazio()],resumo:false,salvando:false,sucesso:null,erro:"",calA:new Date().getFullYear(),calM:new Date().getMonth(),bibAV:null};}re();};
+window.pSetModoProf=v=>{_P.modoProf=v;if(v==='agendar'){_MA={step:1,espaco:"",data:"",blocos:[bVazio()],resumo:false,salvando:false,sucesso:null,erro:"",calA:new Date().getFullYear(),calM:new Date().getMonth(),bibAV:null,recorrente:false,recorrenciaTipo:"semanal"};}re();};
 window.pSetModo=v=>{_P.modoCard=v;re();};
 window.pToggleHistorico=()=>{_P.mostrarHistorico=!_P.mostrarHistorico;re();};
 window.toggleSelProf=id=>{if(_P.selecionados.has(id))_P.selecionados.delete(id);else _P.selecionados.add(id);re();};
@@ -1549,7 +1549,7 @@ window.pSetEspaco=v=>{_P.filtroEspaco=v;re();};
 window.pClicarDia=data=>{
 if(data>=fmtHoje()&&isDiaLetivo(data)){
 _P.modoProf="agendar";
-_MA={step:1,espaco:"",data:data,blocos:[bVazio()],resumo:false,salvando:false,sucesso:null,erro:"",calA:new Date().getFullYear(),calM:new Date().getMonth()};
+_MA={step:1,espaco:"",data:data,blocos:[bVazio()],resumo:false,salvando:false,sucesso:null,erro:"",calA:new Date().getFullYear(),calM:new Date().getMonth(),recorrente:false,recorrenciaTipo:"semanal"};
 re();
 } else {
 _P.diaSel=_P.diaSel===data?null:data;re();
@@ -1589,7 +1589,7 @@ function fabHTML(){return'';}
 function modalAgendarHTML(){const c=C();return`<div id="mod-ag" style="display:none;position:fixed;inset:0;z-index:1100;align-items:flex-end;justify-content:center"><div onclick="fecharModalAgendar()" style="position:absolute;inset:0;background:rgba(0,0,0,.5)"></div><div id="mod-ag-inner" style="position:relative;background:${c.surface};border-radius:20px 20px 0 0;width:100%;max-width:600px;max-height:92vh;overflow-y:auto;box-shadow:0 -8px 40px rgba(0,0,0,.25)"><div id="mod-ag-body"></div></div></div>`;}
 
 // ─── ESTADO DO FORMULÁRIO DE AGENDAMENTO ──────────────────────────────────
-let _MA={step:1,espaco:"",data:"",blocos:[],resumo:false,salvando:false,sucesso:null,erro:"",avisoConflito:"",calA:new Date().getFullYear(),calM:new Date().getMonth(),bibAV:null,recorrente:false,dispEquip:{tablets:18,notebooks:16}};
+let _MA={step:1,espaco:"",data:"",blocos:[],resumo:false,salvando:false,sucesso:null,erro:"",avisoConflito:"",calA:new Date().getFullYear(),calM:new Date().getMonth(),bibAV:null,recorrente:false,recorrenciaTipo:"semanal",dispEquip:{tablets:18,notebooks:16}};
 let _adminVisu="admin";
 let _notifNaoLidas=0;
 let _notifListener=null;
@@ -1734,7 +1734,7 @@ html+=`<div style="padding:20px 14px;text-align:center">
        ${b0?.precisaFoto||b0?.precisaVideo?`<p style="font-size:12px;color:#7c3aed;margin-bottom:2px">📸 Mídia solicitada</p>`:""}
      </div>
      ${m.recorrente&&m.serieDataInicio&&m.serieDataFim?`<div style="background:#e0f2fe;border:1.5px solid #bae6fd;border-radius:10px;padding:12px 14px;margin-bottom:12px;text-align:left">
-       <p style="font-size:13px;font-weight:800;color:#0369a1;margin-bottom:6px">🔁 Série semanal criada!</p>
+       <p style="font-size:13px;font-weight:800;color:#0369a1;margin-bottom:6px">🔁 Série ${m.recorrenciaTipo==="quinzenal"?"quinzenal":"semanal"} criada!</p>
        <p style="font-size:12px;color:#0369a1;margin-bottom:2px">📅 De ${m.serieDataInicio.split("-").reverse().join("/")} até ${m.serieDataFim.split("-").reverse().join("/")}</p>
        <p style="font-size:12px;font-weight:700;color:#0369a1">📋 ${m.serieTotal||"20"} agendamentos criados</p>
      </div>`:""}
@@ -1807,7 +1807,7 @@ _MA.data=data;_MA.step=3;_MA.blocos=[bVazio()];re();
 } else {
 if(data>=fmtHoje()&&isDiaLetivo(data)&&_P.modoProf==="ver"){
 _P.modoProf="agendar";
-_MA={step:1,espaco:"",data:data,blocos:[bVazio()],resumo:false,salvando:false,sucesso:null,erro:"",calA:new Date().getFullYear(),calM:new Date().getMonth()};
+_MA={step:1,espaco:"",data:data,blocos:[bVazio()],resumo:false,salvando:false,sucesso:null,erro:"",calA:new Date().getFullYear(),calM:new Date().getMonth(),recorrente:false,recorrenciaTipo:"semanal"};
 re();
 } else {_P.diaSel=_P.diaSel===data?null:data;re();}
 }
@@ -2181,14 +2181,27 @@ html+=`<div style="background:${c.surface};border-radius:10px;padding:12px 14px;
  </div>`;
 } // fim if(b.horario&&b.horarioFim) mídia
 if(!isEquip&&!isAvulso&&eo?.tipo!=="audiovisual"&&eo?.tipo!=="marketing"){
-html+=`<div style="background:${c.surface};border:1.5px solid ${_MA.recorrente?'#1a6b47':c.border};border-radius:10px;padding:12px 14px">
-     <div style="display:flex;align-items:center;gap:10px;cursor:pointer" onclick="toggleRecorrente()">
-       <div style="width:20px;height:20px;border-radius:6px;border:2px solid ${_MA.recorrente?'#1a6b47':c.border};background:${_MA.recorrente?'#1a6b47':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0">
-         ${_MA.recorrente?'<span style="color:#fff;font-size:13px;font-weight:800">✓</span>':''}
+const recSemanal=_MA.recorrente&&_MA.recorrenciaTipo==="semanal";
+const recQuinzenal=_MA.recorrente&&_MA.recorrenciaTipo==="quinzenal";
+html+=`<div style="background:${c.surface};border:1.5px solid ${recSemanal?'#1a6b47':c.border};border-radius:10px;padding:12px 14px;margin-bottom:8px">
+     <div style="display:flex;align-items:center;gap:10px;cursor:pointer" onclick="toggleRecorrente('semanal')">
+       <div style="width:20px;height:20px;border-radius:6px;border:2px solid ${recSemanal?'#1a6b47':c.border};background:${recSemanal?'#1a6b47':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+         ${recSemanal?'<span style="color:#fff;font-size:13px;font-weight:800">✓</span>':''}
        </div>
        <div>
-         <p style="font-size:13px;font-weight:700;color:${_MA.recorrente?'#1a6b47':c.navy}">🔁 Repetir semanalmente</p>
+         <p style="font-size:13px;font-weight:700;color:${recSemanal?'#1a6b47':c.navy}">🔁 Repetir semanalmente</p>
          <p style="font-size:11px;color:${c.textMuted}">Cria o agendamento toda semana no mesmo dia e horário até o fim do semestre</p>
+       </div>
+     </div>
+   </div>
+   <div style="background:${c.surface};border:1.5px solid ${recQuinzenal?'#1a6b47':c.border};border-radius:10px;padding:12px 14px">
+     <div style="display:flex;align-items:center;gap:10px;cursor:pointer" onclick="toggleRecorrente('quinzenal')">
+       <div style="width:20px;height:20px;border-radius:6px;border:2px solid ${recQuinzenal?'#1a6b47':c.border};background:${recQuinzenal?'#1a6b47':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+         ${recQuinzenal?'<span style="color:#fff;font-size:13px;font-weight:800">✓</span>':''}
+       </div>
+       <div>
+         <p style="font-size:13px;font-weight:700;color:${recQuinzenal?'#1a6b47':c.navy}">🔁 Repetir quinzenalmente</p>
+         <p style="font-size:11px;color:${c.textMuted}">Cria o agendamento a cada 2 semanas no mesmo dia e horário até o fim do semestre</p>
        </div>
      </div>
    </div>`;
@@ -2322,21 +2335,22 @@ if(precisaCiencia)html+=`<label style="display:flex;align-items:flex-start;gap:1
 
 // Preview datas recorrentes
 if(_MA.recorrente){
+const intervaloDias=_MA.recorrenciaTipo==="quinzenal"?14:7;
 const datasPreview=[];
 const fimSem2=new Date(2026,11,19); // fim do semestre
 let cursor=new Date(m.data+'T12:00:00Z');
 let count=0;
 while(cursor<=fimSem2&&count<20){
 datasPreview.push(cursor.toISOString().slice(0,10));
-cursor=new Date(cursor);cursor.setUTCDate(cursor.getUTCDate()+7);count++;
+cursor=new Date(cursor);cursor.setUTCDate(cursor.getUTCDate()+intervaloDias);count++;
 }
 const total=datasPreview.length;
 const exibir=datasPreview.slice(0,4);
 html+=`<div style="background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:10px;padding:12px 14px;margin-bottom:14px">
-     <p style="font-size:12px;font-weight:800;color:#1d4ed8;margin-bottom:8px">🔁 Agendamento recorrente — ${total} semana${total!==1?'s':''}</p>
+     <p style="font-size:12px;font-weight:800;color:#1d4ed8;margin-bottom:8px">🔁 Agendamento recorrente (${_MA.recorrenciaTipo==="quinzenal"?"quinzenal":"semanal"}) — ${total} ocorrência${total!==1?'s':''}</p>
      <div style="display:grid;gap:4px">
        ${exibir.map(d=>{const[a,me,di]=d.split('-');return`<div style="font-size:12px;color:#1e40af;padding:4px 8px;background:#fff;border-radius:6px;border:1px solid #bfdbfe">📅 ${di}/${me}/${a}</div>`;}).join('')}
-       ${total>4?`<div style="font-size:11px;color:#64748b;padding:4px 8px">... e mais ${total-4} semana${total-4!==1?'s':''} até 19/12/2026</div>`:''}
+       ${total>4?`<div style="font-size:11px;color:#64748b;padding:4px 8px">... e mais ${total-4} ocorrência${total-4!==1?'s':''} até 19/12/2026</div>`:''}
      </div>
    </div>`;
 }
@@ -2459,7 +2473,12 @@ _MA.blocos[i].turma="";
 _MA.blocos[i].turmaInicio="";
 re();
 };
-window.toggleRecorrente=()=>{_MA.recorrente=!_MA.recorrente;re();};
+window.toggleRecorrente=(tipo)=>{
+tipo=tipo||"semanal";
+if(_MA.recorrente&&_MA.recorrenciaTipo===tipo){_MA.recorrente=false;}
+else{_MA.recorrente=true;_MA.recorrenciaTipo=tipo;}
+re();
+};
 window.toggleFeedAdmin=()=>{_A.feedExpandido=!_A.feedExpandido;re();};
 window.maAddBloco=()=>{_MA.blocos.push(bVazio());re();};
 window.maRemBloco=i=>{_MA.blocos.splice(i,1);re();};
@@ -2661,14 +2680,16 @@ microfones:0,caixasom:0,projetor:0,observacoes:"Auto via "+espaco,
 });
 }
 
-// ── Recorrência semanal ──
+// ── Recorrência semanal/quinzenal ──
 if(_MA.recorrente&&!isEquipSalvar){
 const serieId=Math.random().toString(36).slice(2,10);
+const intervaloDias=_MA.recorrenciaTipo==="quinzenal"?14:7;
 dadosPrincipal.serieId=serieId;
 dadosPrincipal.recorrente=true;
+dadosPrincipal.recorrenciaTipo=_MA.recorrenciaTipo||"semanal";
 const[anoR,mesR,diaR]=data.split("-").map(Number);
 let cursor=new Date(Date.UTC(anoR,mesR-1,diaR));
-cursor.setUTCDate(cursor.getUTCDate()+7);
+cursor.setUTCDate(cursor.getUTCDate()+intervaloDias);
 const FIM_SEMESTRE="2026-12-10";
 let serieUltimaData=data;
 let serieCount=1;
@@ -2697,7 +2718,7 @@ reservaAutomatica:true,conteudo:"[Auto] "+b.conteudo
 });
 }
 }
-cursor.setUTCDate(cursor.getUTCDate()+7);
+cursor.setUTCDate(cursor.getUTCDate()+intervaloDias);
 }
 _MA.serieDataInicio=data;
 _MA.serieDataFim=serieUltimaData;
