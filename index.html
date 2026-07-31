@@ -358,6 +358,12 @@ const ESPACO_ICON={
 "Tablets (18 disp.)":"📱","Computadores (16 disp.)":"💻","Som, Microfone e Projetor":"🔊",
 };
 const tipoIcon=(t,nome)=>ESPACO_ICON[nome]||({espaco:"🏛️",laboratorio:"🔬",equipamento:"💻",audiovisual:"🎙️",marketing:"📸"}[t]||"📍");
+const NOME_CURTO={
+"Lab. de Matemática":"Lab.Mat.",
+"Lab. de Ciências Anos Iniciais":"Lab.Ci.Inic.",
+"Lab. de Ciências Anos Finais":"Lab.Ci.Final",
+};
+const espacoCurto=nome=>NOME_CURTO[nome]||(nome?nome.split(" ")[0]:"");
 function nomeProf(n){if(!n)return"";const p=n.trim().split(" ").filter(Boolean);return p.length===1?p[0]:p[0]+" "+p[p.length-1][0].toUpperCase()+".";}
 function extraInfo(r){
 if(!r)return"";
@@ -1366,7 +1372,7 @@ html+=`<div style="background:${isMeu?"rgba(187,235,210,.65)":c.surface};border-
              <p style="font-size:10px;font-weight:800;font-family:'DM Mono',monospace;color:${isMeu?c.green:"#64748b"}">${r.horario}${range}</p>
              ${isMeu&&isPend?`<span style="font-size:9px;color:${c.amber}">⏳</span>`:""}
            </div>
-           <p style="font-size:9px;color:${c.navy};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700">${r.espaco.split(" ")[0]}</p>
+           <p style="font-size:9px;color:${c.navy};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700">${espacoCurto(r.espaco)}</p>
            <p style="font-size:9px;color:${c.textMuted}">${(r.turmaInicio||r.turma)}·${nomeProf(r.professor)}</p>
            ${r.laboratorista?`<p style="font-size:9px;font-weight:700;color:#0f4c2b">🔬 ${r.laboratorista==="Sim"?"c/ lab.":"s/ lab."}</p>`:""}
          </div>`;
@@ -2603,7 +2609,7 @@ local:b.local||"",localMontagem:b.local||"",localDevolucao:b.localDevolucao||"",
 quantidade:eo?.tipo==="equipamento"?Number(b.quantidade):null,
 microfones:Number(b.microfones)||0,caixasom:Number(b.caixasom)||0,projetor:Number(b.projetor)||0,
 status:st,criadoEm:ts,precisaFoto:b.precisaFoto||false,precisaVideo:b.precisaVideo||false,objetivoMidia:b.objetivoMidia||"",descritivo:b.descritivo||"",salaAtividade:b.salaAtividade||"",...(statusMarketing?{statusMarketing}:{}),...(temAV?{statusEquip:"pendente"}:{}),...(_MA.bibAV===true?{bibMic:_MA.bibMic||0,bibCaixa:_MA.bibCaixa||0,bibProj:_MA.bibProj||0}:{}),
-paginas:"",laboratorista:"",reservaAutomatica:false,
+paginas:"",laboratorista:b.laboratorista||"",reservaAutomatica:false,
 qtdTablets:Number(b.qtdTablets)||0,qtdNotebooks:Number(b.qtdNotebooks)||0,
 };
 batch.set(doc(collection(db,"reservas")),dadosPrincipal);
