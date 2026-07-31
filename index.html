@@ -294,6 +294,7 @@ const[a,m,d]=dataStr.split("-").map(Number);
 const alvo=new Date(a,m-1,d,7,10,0);
 let count=0;
 const cur=new Date(agora);cur.setHours(0,0,0,0);
+cur.setDate(cur.getDate()+1); // conta a partir de AMANHÃ — hoje não conta como dia de antecedência
 const fim=new Date(alvo);fim.setHours(0,0,0,0);
 while(cur<fim){
 const ds=`${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,"0")}-${String(cur.getDate()).padStart(2,"0")}`;
@@ -311,9 +312,7 @@ const ev=new Date(a,m-1,d,h,mn);
 const diff=(ev-agora)/3600000;
 if(diff<=0)return false;
 if(diff<24)return true;
-const dow=agora.getDay(),hora=agora.getHours()+agora.getMinutes()/60;
-if((dow===5&&hora>=17||dow===6||dow===0&&hora<7)&&diasLetivosAte(data)<1)return true;
-if(isDiaLetivo(data)&&diasLetivosAte(data)<1)return true;
+if(diasLetivosAte(data)<1)return true;
 return false;
 }catch{return false;}
 }
@@ -325,9 +324,7 @@ const ev=new Date(a,m-1,d,7,10,0);
 const diff=(ev-agora)/3600000;
 if(diff<=0)return false;
 if(diff<24)return true;
-const dow=agora.getDay(),hora=agora.getHours()+agora.getMinutes()/60;
-if((dow===5&&hora>=17||dow===6||dow===0&&hora<7)&&diasLetivosAte(data)<1)return true;
-if(isDiaLetivo(data)&&diasLetivosAte(data)<1)return true;
+if(diasLetivosAte(data)<1)return true;
 return false;
 }catch{return false;}
 }
