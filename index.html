@@ -1368,6 +1368,7 @@ html+=`<div style="background:${isMeu?"rgba(187,235,210,.65)":c.surface};border-
            </div>
            <p style="font-size:9px;color:${c.navy};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700">${r.espaco.split(" ")[0]}</p>
            <p style="font-size:9px;color:${c.textMuted}">${(r.turmaInicio||r.turma)}·${nomeProf(r.professor)}</p>
+           ${r.laboratorista?`<p style="font-size:9px;font-weight:700;color:#0f4c2b">🔬 ${r.laboratorista==="Sim"?"c/ lab.":"s/ lab."}</p>`:""}
          </div>`;
 });
 html+=`</div>`;
