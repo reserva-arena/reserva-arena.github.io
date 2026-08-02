@@ -1549,7 +1549,7 @@ re();
 };
 window.pFiltroRapido=tipo=>{
 if(tipo==='pendente'){_P.modoProf='ver';_P.modoCard='lista';_P.filtroPendente=true;re();}
-else if(tipo==='proximos'){_P.modoProf='ver';_P.modoCard='lista';re();}
+else if(tipo==='proximos'){_P.modoProf='ver';_P.modoCard='lista';_P.filtroGrade='meus';_P.agendaDiasVisiveis=5;re();}
 };
 window.pSetVisu=v=>{_P.modoVisu=v;re();};
 window.pNavMes=dir=>{if(!_P.mesCal){const d=new Date();_P.mesCal={a:d.getFullYear(),m:d.getMonth()};}let nm=_P.mesCal.m+dir,na=_P.mesCal.a;if(nm>11){nm=0;na++;}if(nm<0){nm=11;na--;}_P.mesCal={a:na,m:nm};re();};
