@@ -1751,6 +1751,22 @@ a.href=url;a.download=`reserva-arena-${m.data}.ics`;
 document.body.appendChild(a);a.click();document.body.removeChild(a);
 setTimeout(()=>URL.revokeObjectURL(url),1500);
 };
+// Alternativa via link (funciona em qualquer navegador, inclusive Chrome no iPhone,
+// onde o download do .ics não abre o app Calendário automaticamente)
+window.gerarGoogleCalLink=function(){
+const m=_MA;
+const b0=m.blocos?.[0];
+if(!m.data||!b0)return"";
+const horaIni=b0.horario||"07:10";
+const horaFimSel=b0.horarioFim&&b0.horarioFim!==horaIni?b0.horarioFim:null;
+const dtStart=icsDataHora(m.data,horaIni,0);
+const dtEnd=horaFimSel?icsDataHora(m.data,horaFimSel,50):icsDataHora(m.data,horaIni,50);
+const turmasSucesso=b0.turmasPorHorario?Object.values(b0.turmasPorHorario).filter(Boolean):[b0.turma||""].filter(Boolean);
+const turmaTxt=turmasSucesso.filter(Boolean).join(", ");
+const titulo=`Reserva Arena: ${m.espaco}${turmaTxt?" · "+turmaTxt:""}`;
+const params=new URLSearchParams({action:"TEMPLATE",text:titulo,dates:`${dtStart}/${dtEnd}`,details:b0.conteudo||"",location:m.espaco||""});
+return `https://calendar.google.com/calendar/render?${params.toString()}`;
+};
 
 // ─── RENDERIZAÇÃO DO PASSO 1 (escolha de espaço) ─────────────────────────
 function renderProfAgendar(){
@@ -1786,8 +1802,9 @@ html+=`<div style="padding:20px 14px;text-align:center">
        <button onclick="pSetModoProf('agendar')" style="${btn("success")};padding:10px 24px">＋ Novo agendamento</button>
        <button onclick="pSetModoProf('ver')" style="${btn("ghost")};padding:10px 24px">Ver agendamentos</button>
        <button onclick="gerarICS()" style="${btn("ghost")};padding:10px 24px">📅 Adicionar ao Calendário</button>
+       <button onclick="window.open(gerarGoogleCalLink(),'_blank')" style="${btn("ghost")};padding:10px 24px">🗓️ Google Agenda</button>
      </div>
-     ${window.innerWidth>820?`<p style="font-size:11.5px;color:${c.textMuted};margin-top:10px;line-height:1.5">💡 Esse passo extra só é necessário no computador: se pedir para escolher um app, use o Outlook (se tiver) ou, para importar no Google Agenda, acesse calendar.google.com → Configurações → Importar e exportar. No celular, o evento é adicionado direto ao calendário.</p>`:""}
+     ${window.innerWidth>820?`<p style="font-size:11.5px;color:${c.textMuted};margin-top:10px;line-height:1.5">💡 Esse passo extra só é necessário no computador: se pedir para escolher um app, use o Outlook (se tiver) ou clique em "Google Agenda" para importar direto. No celular, o evento é adicionado direto ao calendário.</p>`:`<p style="font-size:11.5px;color:${c.textMuted};margin-top:10px;line-height:1.5">💡 No Chrome do iPhone, use o botão <strong>Google Agenda</strong> — o "Adicionar ao Calendário" ali só baixa o arquivo em vez de abrir direto.</p>`}
    </div>`;
 return html;
 }
