@@ -1787,6 +1787,7 @@ html+=`<div style="padding:20px 14px;text-align:center">
        <button onclick="pSetModoProf('ver')" style="${btn("ghost")};padding:10px 24px">Ver agendamentos</button>
        <button onclick="gerarICS()" style="${btn("ghost")};padding:10px 24px">📅 Adicionar ao Calendário</button>
      </div>
+     ${window.innerWidth>820?`<p style="font-size:11.5px;color:${c.textMuted};margin-top:10px;line-height:1.5">💡 Esse passo extra só é necessário no computador: se pedir para escolher um app, use o Outlook (se tiver) ou, para importar no Google Agenda, acesse calendar.google.com → Configurações → Importar e exportar. No celular, o evento é adicionado direto ao calendário.</p>`:""}
    </div>`;
 return html;
 }
