@@ -1343,8 +1343,9 @@ html+=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;paddin
        ${ESPACOS.map(e=>`<option value="${e.nome}" ${_P.filtroEspaco===e.nome?"selected":""} style="background:#1a6b47">${e.nome}</option>`).join("")}
      </select>
    </div>
-   <div style="background:${c.surface};border-bottom:1px solid ${c.border};padding:8px 14px;font-size:11.5px;color:${c.blueMid};display:flex;align-items:center;gap:6px">
-     💡 Descrição da aula, páginas do livro e outros detalhes só aparecem no modo <strong style="cursor:pointer;text-decoration:underline" onclick="pSetModo('lista')">☰ Agenda</strong>
+   <div style="background:${c.surface};border-bottom:1px solid ${c.border};padding:8px 14px;font-size:11.5px;color:${c.blueMid}">
+     <p style="display:flex;align-items:center;gap:6px;margin-bottom:4px">💡 Descrição da aula, páginas do livro e outros detalhes só aparecem no modo <strong style="cursor:pointer;text-decoration:underline" onclick="pSetModo('lista')">☰ Agenda</strong></p>
+     <p style="display:flex;align-items:center;gap:6px">🏛️ Selecione um espaço no filtro acima para ver só ele, ou mantenha em "Todos os espaços"</p>
    </div>`;
 
 if(_P.modoVisu==="semana"){
