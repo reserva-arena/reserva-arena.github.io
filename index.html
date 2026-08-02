@@ -1718,6 +1718,40 @@ window.fecharModalAgendar=()=>{$("mod-ag").style.display="none";};
 window.maVoltarRevisao=()=>{_MA.resumo=false;re();};
 window.setBibAV=v=>{_MA.bibAV=v;re();};
 
+// ─── EXPORTAR AGENDAMENTO PARA .ICS (Adicionar ao Calendário) ─────────────
+// Função isolada: só lê dados já existentes de _MA, não escreve nada no Firestore.
+function escapeICS(str){
+return (str||"").toString().replace(/\\/g,"\\\\").replace(/;/g,"\\;").replace(/,/g,"\\,").replace(/\n/g,"\\n");
+}
+function icsDataHora(dataStr,horaStr,addMin){
+// Goiânia/Brasília não tem horário de verão desde 2019, offset fixo -03:00
+const dt=new Date(`${dataStr}T${horaStr}:00-03:00`);
+if(addMin)dt.setMinutes(dt.getMinutes()+addMin);
+return dt.toISOString().replace(/[-:]/g,"").split(".")[0]+"Z";
+}
+window.gerarICS=function(){
+const m=_MA;
+const b0=m.blocos?.[0];
+if(!m.data||!b0)return;
+const horaIni=b0.horario||"07:10";
+const horaFimSel=b0.horarioFim&&b0.horarioFim!==horaIni?b0.horarioFim:null;
+const dtStart=icsDataHora(m.data,horaIni,0);
+// Duração aproximada de 50min por período (aula padrão) — apenas para lembrete, não bloqueia a agenda de outros
+const dtEnd=horaFimSel?icsDataHora(m.data,horaFimSel,50):icsDataHora(m.data,horaIni,50);
+const turmasSucesso=b0.turmasPorHorario?Object.values(b0.turmasPorHorario).filter(Boolean):[b0.turma||""].filter(Boolean);
+const turmaTxt=turmasSucesso.filter(Boolean).join(", ");
+const titulo=`Reserva Arena: ${m.espaco}${turmaTxt?" · "+turmaTxt:""}`;
+const uid=`reserva-${Date.now()}@reserva-arena.github.io`;
+const nowStamp=icsDataHora(new Date().toISOString().slice(0,10),new Date().toTimeString().slice(0,5),0);
+const linhas=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Reserva Arena//PT-BR","CALSCALE:GREGORIAN","BEGIN:VEVENT",`UID:${uid}`,`DTSTAMP:${nowStamp}`,`DTSTART:${dtStart}`,`DTEND:${dtEnd}`,`SUMMARY:${escapeICS(titulo)}`,`DESCRIPTION:${escapeICS(b0.conteudo||"")}`,`LOCATION:${escapeICS(m.espaco||"")}`,"END:VEVENT","END:VCALENDAR"];
+const blob=new Blob([linhas.join("\r\n")],{type:"text/calendar;charset=utf-8"});
+const url=URL.createObjectURL(blob);
+const a=document.createElement("a");
+a.href=url;a.download=`reserva-arena-${m.data}.ics`;
+document.body.appendChild(a);a.click();document.body.removeChild(a);
+setTimeout(()=>URL.revokeObjectURL(url),1500);
+};
+
 // ─── RENDERIZAÇÃO DO PASSO 1 (escolha de espaço) ─────────────────────────
 function renderProfAgendar(){
 const c=C(),m=_MA;
@@ -1751,6 +1785,7 @@ html+=`<div style="padding:20px 14px;text-align:center">
      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
        <button onclick="pSetModoProf('agendar')" style="${btn("success")};padding:10px 24px">＋ Novo agendamento</button>
        <button onclick="pSetModoProf('ver')" style="${btn("ghost")};padding:10px 24px">Ver agendamentos</button>
+       <button onclick="gerarICS()" style="${btn("ghost")};padding:10px 24px">📅 Adicionar ao Calendário</button>
      </div>
    </div>`;
 return html;
