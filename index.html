@@ -1267,7 +1267,7 @@ window.scrollTo({top:0,behavior:"smooth"});re();
 // ════════════════════════════════════════════════════════════════════════════
 // PROFESSOR VIEW
 // ════════════════════════════════════════════════════════════════════════════
-let _P={modoProf:"escolha_inicial",modoCard:"calendario",modoVisu:"semana",filtroGrade:"todos",filtroEspaco:"",semIni:"",diaSel:null,mesCal:null,mostrarHistorico:false,filtroPendente:false,selecionados:new Set(),modoSelecao:false,espacoEscolhido:null};
+let _P={modoProf:"escolha_inicial",modoCard:"calendario",modoVisu:"semana",filtroGrade:"todos",filtroEspaco:"",semIni:"",diaSel:null,mesCal:null,mostrarHistorico:false,filtroPendente:false,selecionados:new Set(),modoSelecao:false,espacoEscolhido:null,agendaDiasVisiveis:5};
 
 function renderProfessorView(){
 
@@ -1453,12 +1453,17 @@ const futurasSemPend=futuras.filter(r=>r.status!=="pendente");
 if(!futurasSemPend.length&&!pendentes.length)html+=`<p style="text-align:center;color:${c.textMuted};padding:32px 0;font-size:13px">Nenhum agendamento futuro.</p>`;
 if(futurasSemPend.length){
 const porData={};futurasSemPend.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1).forEach(r=>{if(!porData[r.data])porData[r.data]=[];porData[r.data].push(r);});
-Object.entries(porData).forEach(([data,rs])=>{
+const diasTotais=Object.entries(porData);
+const diasVisiveis=diasTotais.slice(0,_P.agendaDiasVisiveis);
+diasVisiveis.forEach(([data,rs])=>{
 const[,mes,dia]=data.split("-");const isH=data===h;
 html+=`<div style="margin-bottom:14px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-size:11px;font-weight:700;color:${isH?c.green:c.textMid};background:${isH?c.greenBg:"transparent"};padding:${isH?"2px 8px":"0"};border-radius:${isH?20:0}px">${isH?"📌 Hoje":`${dia}/${mes}`}</span><div style="flex:1;height:1px;background:${c.borderLight}"></div></div>`;
 rs.forEach(r=>{html+=profRRow(r);});
 html+=`</div>`;
 });
+if(diasTotais.length>_P.agendaDiasVisiveis){
+html+=`<button onclick="_P.agendaDiasVisiveis+=5;re()" style="width:100%;padding:12px;border-radius:10px;border:1.5px dashed ${c.border};background:transparent;color:${c.textMuted};font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;margin-bottom:14px">▼ Ver mais 5 dias (${diasTotais.length-_P.agendaDiasVisiveis} restantes)</button>`;
+}
 }
 if(passadas.length){
 html+=`<div style="margin-top:16px;border-top:1px solid ${c.borderLight};padding-top:12px">
@@ -1544,8 +1549,8 @@ else if(tipo==='proximos'){_P.modoProf='ver';_P.modoCard='lista';re();}
 };
 window.pSetVisu=v=>{_P.modoVisu=v;re();};
 window.pNavMes=dir=>{if(!_P.mesCal){const d=new Date();_P.mesCal={a:d.getFullYear(),m:d.getMonth()};}let nm=_P.mesCal.m+dir,na=_P.mesCal.a;if(nm>11){nm=0;na++;}if(nm<0){nm=11;na--;}_P.mesCal={a:na,m:nm};re();};
-window.pSetGrade=v=>{_P.filtroGrade=v;if(v==="todos")carregarTodas();re();};
-window.pSetEspaco=v=>{_P.filtroEspaco=v;re();};
+window.pSetGrade=v=>{_P.filtroGrade=v;_P.agendaDiasVisiveis=5;if(v==="todos")carregarTodas();re();};
+window.pSetEspaco=v=>{_P.filtroEspaco=v;_P.agendaDiasVisiveis=5;re();};
 window.pClicarDia=data=>{
 if(data>=fmtHoje()&&isDiaLetivo(data)){
 _P.modoProf="agendar";
