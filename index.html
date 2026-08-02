@@ -2601,6 +2601,15 @@ const existe=snapConflitos[i].docs.map(d=>d.data()).find(r=>r?.status!=="recusad
 if(existe){_MA.erro=`Horário ${rangeHors[i]} já reservado por ${existe.professor}.`;_MA.salvando=false;_MA.resumo=false;re();return;}
 }
 
+// 1b. Verificar se o próprio professor já tem algo marcado nesse horário, em outro espaço
+const snapConflitosProf=await Promise.all(rangeHors.map(h=>
+getDocs(query(collection(db,"reservas"),where("professorId","==",_usuario.uid),where("data","==",data),where("horario","==",h)))
+));
+for(let i=0;i<rangeHors.length;i++){
+const existeProf=snapConflitosProf[i].docs.map(d=>d.data()).find(r=>r?.status!=="recusado"&&r.espaco!==espaco);
+if(existeProf){_MA.erro=`Você já tem "${existeProf.espaco}" agendado às ${rangeHors[i]} nesse mesmo dia.`;_MA.salvando=false;_MA.resumo=false;re();return;}
+}
+
 // 1b. Verificar se o professor já tem outro ESPAÇO reservado nos mesmos horários
 // (equipamentos avulsos não bloqueiam — professor pode ter sala + tablets no mesmo horário)
 const isEquipAvulsoSalvar=eo?.equipAvulso;
