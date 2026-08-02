@@ -1342,6 +1342,9 @@ html+=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;paddin
        <option value="" style="background:#1a6b47">Todos os espaços</option>
        ${ESPACOS.map(e=>`<option value="${e.nome}" ${_P.filtroEspaco===e.nome?"selected":""} style="background:#1a6b47">${e.nome}</option>`).join("")}
      </select>
+   </div>
+   <div style="background:${c.surface};border-bottom:1px solid ${c.border};padding:8px 14px;font-size:11.5px;color:${c.blueMid};display:flex;align-items:center;gap:6px">
+     💡 Descrição da aula, páginas do livro e outros detalhes só aparecem no modo <strong style="cursor:pointer;text-decoration:underline" onclick="pSetModo('lista')">☰ Agenda</strong>
    </div>`;
 
 if(_P.modoVisu==="semana"){
@@ -1527,7 +1530,7 @@ re();
 }
 };
 }
-window.pSetModoProf=v=>{_P.modoProf=v;if(v==='agendar'){_MA={step:1,espaco:"",data:"",blocos:[bVazio()],resumo:false,salvando:false,sucesso:null,erro:"",calA:new Date().getFullYear(),calM:new Date().getMonth(),bibAV:null,recorrente:false,recorrenciaTipo:"semanal"};}re();};
+window.pSetModoProf=v=>{_P.modoProf=v;if(v==='agendar'){_MA={step:1,espaco:"",data:"",blocos:[bVazio()],resumo:false,salvando:false,sucesso:null,erro:"",calA:new Date().getFullYear(),calM:new Date().getMonth(),bibAV:null,recorrente:false,recorrenciaTipo:"semanal"};}else if(v==='ver'){_P.modoCard="calendario";}re();};
 window.pSetModo=v=>{_P.modoCard=v;re();};
 window.pToggleHistorico=()=>{_P.mostrarHistorico=!_P.mostrarHistorico;re();};
 window.toggleSelProf=id=>{if(_P.selecionados.has(id))_P.selecionados.delete(id);else _P.selecionados.add(id);re();};
