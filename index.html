@@ -1292,6 +1292,7 @@ if(!_usuario?.fcmToken){
 html+=`<button id="btn-ativar-notif" onclick="ativarNotificacoes()" style="width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid #fde68a;background:#fffbeb;color:#92400e;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px;font-family:inherit">🔔 Toque aqui para ativar as notificações do app</button>`;
 }
 
+const futurasMinhas=_minhas.filter(r=>r.data>=h&&r.status!=="recusado");
 html+=`<div class="kpi-3col" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:12px 12px 0;background:${c.surface};border-radius:14px;border:1px solid ${c.border};margin-bottom:20px">
    <button onclick="pSetModoProf('agendar')"
      style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:12px 8px;border-radius:12px;border:2px solid ${_P.modoProf==='agendar'?'#1a6b47':c.border};background:${_P.modoProf==='agendar'?'#1a6b47':c.surface};cursor:pointer;font-family:inherit;transition:all .15s">
@@ -1305,8 +1306,8 @@ html+=`<div class="kpi-3col" style="display:grid;grid-template-columns:repeat(3,
    </button>
    <button onclick="pFiltroRapido('proximos')"
      style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:12px 8px;border-radius:12px;border:2px solid ${c.border};background:${c.surface};cursor:pointer;font-family:inherit">
-     <span style="font-size:20px;font-weight:800;color:${c.blueMid}">${futuras.length}</span>
-     <span style="font-size:11px;font-weight:800;color:${c.blueMid}">📅 Próximos</span>
+     <span style="font-size:20px;font-weight:800;color:${c.blueMid}">${futurasMinhas.length}</span>
+     <span style="font-size:11px;font-weight:800;color:${c.blueMid}">📅 Meus próximos</span>
    </button>
  </div>`;
 
