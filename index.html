@@ -2800,6 +2800,21 @@ _MA.serieDataFim=serieUltimaData;
 _MA.serieTotal=serieCount;
 }
 
+// 4b. Notificar admins no sino (persistente, além do toast em tempo real)
+try{
+const dataFmtNotif=data.split("-").reverse().join("/");
+const horFmtNotif=blocos[0]?.horario||"";
+_usuarios.filter(u=>u.perfil==="admin"&&u.id!==_usuario.uid).forEach(adm=>{
+batch.set(doc(collection(db,"notificacoes")),{
+userId:adm.id,
+titulo:"📅 Novo agendamento",
+corpo:`${_usuario.nome} agendou ${espaco} para ${dataFmtNotif} às ${horFmtNotif}`,
+lida:false,
+criadoEm:ts
+});
+});
+}catch{}
+
 // 5. Commit do batch — uma única operação de rede!
 await Promise.race([
 batch.commit(),
