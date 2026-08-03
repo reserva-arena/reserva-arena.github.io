@@ -2919,7 +2919,8 @@ fecharEdicao();
 // ════════════════════════════════════════════════════════════════════════════
 // ADMIN VIEW
 // ════════════════════════════════════════════════════════════════════════════
-let _A={fSegmento:"",modoVisu:"calendario",aba:"reservas",fEspaco:"",fProf:"",fStatus:"",fTurma:"",mesCal:null,diaSel:null,historico:false,feedExpandido:false};
+let _A={fSegmento:"",modoVisu:"calendario",aba:"reservas",fEspaco:"",fProf:"",fStatus:"",fTurma:"",mesCal:null,diaSel:null,historico:false,feedExpandido:false,rankModo:"realizado"};
+window.setRankModo=v=>{_A.rankModo=v;re();};
 
 function renderAdminView(){
 const c=C(),h=fmtHoje();
@@ -3142,17 +3143,25 @@ html+=`<div style="position:sticky;top:16px">
      </div>
    </div>
 
+   <div style="display:flex;gap:6px;margin-bottom:4px">
+     <button onclick="setRankModo('realizado')" style="flex:1;padding:7px;border-radius:8px;border:1px solid ${_A.rankModo!=="total"?"#1a6b47":c.border};background:${_A.rankModo!=="total"?"#1a6b47":c.surface};color:${_A.rankModo!=="total"?"#fff":c.textMuted};font-size:10.5px;font-weight:700;cursor:pointer">✅ Já realizado</button>
+     <button onclick="setRankModo('total')" style="flex:1;padding:7px;border-radius:8px;border:1px solid ${_A.rankModo==="total"?"#1a6b47":c.border};background:${_A.rankModo==="total"?"#1a6b47":c.surface};color:${_A.rankModo==="total"?"#fff":c.textMuted};font-size:10.5px;font-weight:700;cursor:pointer">📅 Agendado (mês todo)</button>
+   </div>
+   <p style="font-size:10px;color:${c.textMuted};margin:0 0 12px;line-height:1.4">${_A.rankModo==="total"?"Inclui agendamentos futuros já confirmados para este mês.":"Somente o que já aconteceu até hoje."}</p>
+
    <div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:12px 14px">
-     <p style="font-size:11px;font-weight:800;color:${c.textMuted};text-transform:uppercase;margin-bottom:10px">🏆 Espaços mais reservados — este mês</p>
+     <p style="font-size:11px;font-weight:800;color:${c.textMuted};text-transform:uppercase;margin-bottom:10px">🏆 Espaços mais ${_A.rankModo==="total"?"agendados":"usados"} — este mês</p>
      ${(()=>{
        const contagem={};
        const agora=new Date();
+       const hoje=fmtHoje();
        const mesIni=`${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,'0')}-01`;
        const mesFim=`${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,'0')}-31`;
-       _todas.filter(r=>!r.reservaAutomatica&&r.status!=="recusado"&&r.data>=mesIni&&r.data<=mesFim).forEach(r=>{
+       _todas.filter(r=>!r.reservaAutomatica&&r.status!=="recusado"&&r.data>=mesIni&&r.data<=mesFim&&(_A.rankModo==="total"||r.data<=hoje)).forEach(r=>{
          if(r.espaco)contagem[r.espaco]=(contagem[r.espaco]||0)+1;
        });
        const ranking=Object.entries(contagem).sort((a,b)=>b[1]-a[1]).slice(0,5);
+       if(ranking.length===0)return`<p style="color:${c.textMuted};font-size:11px">Sem dados ainda.</p>`;
        const max=ranking[0]?.[1]||1;
        const cores=["#1a6b47","#0369a1","#7c3aed","#ea580c","#d97706"];
        return ranking.map(([espaco,total],i)=>`
@@ -3169,9 +3178,9 @@ html+=`<div style="position:sticky;top:16px">
    </div>
 
    <div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:12px 14px;margin-top:12px">
-     <p style="font-size:11px;font-weight:800;color:${c.textMuted};text-transform:uppercase;margin-bottom:10px">👨‍🏫 Professores que mais agendam — este mês</p>
+     <p style="font-size:11px;font-weight:800;color:${c.textMuted};text-transform:uppercase;margin-bottom:10px">👨‍🏫 Professores que mais ${_A.rankModo==="total"?"agendam":"usaram"} — este mês</p>
      ${(()=>{
-       const ranking=gerarRankingProfessores(_todas);
+       const ranking=gerarRankingProfessores(_todas,_A.rankModo);
        if(ranking.length===0)return"<p style=\"color:#999;font-size:11px\">Sem dados</p>";
        const max=ranking[0][1]||1;
        const cores=["#ec4899","#f59e0b","#06b6d4","#8b5cf6","#14b8a6","#f97316"];
@@ -3185,7 +3194,7 @@ return html;
 }
 
 
-function gerarRankingProfessores(todas){const c={};const agora=new Date();const mesIni=`${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,'0')}-01`;const mesFim=`${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,'0')}-31`;todas.filter(r=>!r.reservaAutomatica&&r.status!=="recusado"&&r.data>=mesIni&&r.data<=mesFim).forEach(r=>{if(r.professor)c[r.professor]=(c[r.professor]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,6);}
+function gerarRankingProfessores(todas,modo){const c={};const agora=new Date();const hoje=fmtHoje();const mesIni=`${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,'0')}-01`;const mesFim=`${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,'0')}-31`;todas.filter(r=>!r.reservaAutomatica&&r.status!=="recusado"&&r.data>=mesIni&&r.data<=mesFim&&(modo==="total"||r.data<=hoje)).forEach(r=>{if(r.professor)c[r.professor]=(c[r.professor]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,6);}
 
 function admRow(r,showDate=false){
 const c=C(),h=fmtHoje();
