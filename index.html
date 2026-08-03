@@ -3507,6 +3507,22 @@ _todasCarregadas=true;re();
 });
 }
 
+// Toast de notificação em tempo real (sem gerar leitura extra — reaproveita o listener já ativo)
+function mostrarToastNovoAgendamento(msg){
+const existentes=document.querySelectorAll('.toast-novo-agendamento').length;
+const div=document.createElement("div");
+div.className='toast-novo-agendamento';
+div.innerHTML=`🔔 ${msg}`;
+div.style.cssText=`position:fixed;top:${70+existentes*54}px;right:16px;z-index:9999;background:#1a6b47;color:#fff;padding:12px 18px;border-radius:10px;font-family:inherit;font-size:13.5px;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.25);max-width:320px;opacity:0;transform:translateY(-10px);transition:all .3s;cursor:pointer`;
+div.onclick=()=>{div.style.opacity="0";div.style.transform="translateY(-10px)";setTimeout(()=>div.remove(),300);};
+document.body.appendChild(div);
+requestAnimationFrame(()=>{div.style.opacity="1";div.style.transform="translateY(0)";});
+setTimeout(()=>{
+if(!div.isConnected)return;
+div.style.opacity="0";div.style.transform="translateY(-10px)";
+setTimeout(()=>div.remove(),300);
+},6000);
+}
 function startListeners(uid){
 const perfil=_usuario?.perfil||"professor";
 const isProfOnly=perfil==="professor";
@@ -3520,7 +3536,16 @@ _todas=[];_todasCarregadas=false;
 } else {
 // Admin, TI, Marketing, Coord: carrega _todas filtrada por data
 _unsub1=onSnapshot(query(collection(db,"reservas"),where("data",">=",dataCorte)),snap=>{
+const jaCarregado=_todasCarregadas;
 _todas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario);
+if(jaCarregado){
+const novos=snap.docChanges().filter(ch=>ch.type==="added").map(ch=>({id:ch.doc.id,...ch.doc.data()})).filter(r=>r&&r.professor&&!r.reservaAutomatica&&r.professorId!==_usuario?.uid);
+if(novos.length===1){
+mostrarToastNovoAgendamento(`${novos[0].professor} agendou ${novos[0].espaco} — ${novos[0].data.split("-").reverse().join("/")}`);
+}else if(novos.length>1){
+mostrarToastNovoAgendamento(`${novos.length} novos agendamentos criados`);
+}
+}
 _todasCarregadas=true;re();
 });
 }
