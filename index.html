@@ -87,7 +87,7 @@ const db      = getFirestore(app);
 window.__db__ = db; // exposto para scripts de migração
 // URL de retorno do e-mail de redefinição de senha — aponta pro próprio app
 // (GitHub Pages) em vez do domínio padrão do Firebase, que está vazio.
-const RESET_ACTION_SETTINGS = { url: "https://reserva-arena.github.io/", handleCodeInApp: true };
+const RESET_ACTION_SETTINGS = { url: "https://reserva-arena.github.io/" };
 
 // ── Redefinição de senha via link de e-mail (isolado do fluxo normal do app) ──
 const _urlParams = new URLSearchParams(window.location.search);
