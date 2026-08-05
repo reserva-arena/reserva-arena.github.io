@@ -1221,12 +1221,9 @@ $("app").innerHTML=`
      <div style="display:flex;align-items:center;gap:8px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-ms-overflow-style:none;max-width:100%;flex-shrink:1;box-shadow:${isMobHeader?"inset -16px 0 10px -10px rgba(0,0,0,.35)":"none"}" class="header-icons-scroll">
        <button onclick="irInicio()" title="Início" style="background:${_dark?c.surface:'rgba(255,255,255,.15)'};border:1.5px solid ${_dark?c.border:'rgba(255,255,255,.3)'};border-radius:20px;padding:4px 10px;height:34px;cursor:pointer;display:flex;align-items:center;gap:5px;font-size:15px;flex-shrink:0;font-family:inherit">🏠</button>
        ${isAdmin?`<select onchange="setAdminVisu(this.value)" class="admin-visu-select" style="background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.4);border-radius:20px;padding:3px 8px;height:30px;cursor:pointer;font-size:11px;font-family:inherit;font-weight:700;color:#fff;outline:none"><option value="admin" ${_adminVisu==="admin"?"selected":""} style="color:#132318;background:#fff">🔧 Adm</option><option value="professor" ${_adminVisu==="professor"?"selected":""} style="color:#132318;background:#fff">👨‍🏫 Prof</option><option value="ti" ${_adminVisu==="ti"?"selected":""} style="color:#132318;background:#fff">💻 TI</option><option value="marketing" ${_adminVisu==="marketing"?"selected":""} style="color:#132318;background:#fff">📸 Mkt</option></select>`:""}
-       ${avatarHTML(_usuario?.nome,28,isAdmin?"purple":"navy")}
-       <div class="header-nome" style="line-height:1.2;display:none" id="header-nome-block"><p style="font-size:12px;font-weight:700;color:${_dark?c.navy:'#ffffff'}">${_usuario?.nome||""}</p><p style="font-size:10px;color:${_dark?(isAdmin?"#6d28d9":c.blueMid):'rgba(255,255,255,.8)'};font-weight:700;text-transform:uppercase">${_usuario?.perfil||""}</p></div>
+       <button id="profile-menu-btn" onclick="toggleProfileMenu()" style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);border-radius:20px;padding:3px 10px 3px 3px;cursor:pointer;font-family:inherit;flex-shrink:0">${avatarHTML(_usuario?.nome,26,isAdmin?"purple":"navy")}<span class="header-nome" id="header-nome-block" style="font-size:11px;font-weight:700;color:${_dark?c.navy:'#fff'}">${(_usuario?.nome||"").split(" ")[0]}</span><span style="font-size:9px;color:${_dark?c.navy:'#fff'}">▾</span></button>
        <button id="sino-btn" onclick="abrirPainelNotif()" title="Notificações" style="display:flex;position:relative;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:30px;height:30px;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;font-family:inherit">🔔<span id="sino-badge" style="display:${_notifNaoLidas>0?"flex":"none"};position:absolute;top:-4px;right:-4px;background:#dc2626;color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:99px;align-items:center;justify-content:center;padding:0 3px;font-family:inherit">${_notifNaoLidas>9?"9+":_notifNaoLidas}</span></button>
-       <button onclick="location.reload()" title="Atualizar" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0">🔄</button>
        <button onclick="toggleDark()" title="${_dark?'Modo claro':'Modo escuro'}" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0">${_dark?"☀️":"🌙"}</button>
-       <button onclick="doSignOut()" style="background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.3);border-radius:20px;color:rgba(255,255,255,.9);font-size:12px;font-weight:700;padding:5px 10px;cursor:pointer;font-family:inherit;flex-shrink:0">Sair</button>
      </div>
    </header>
    <div id="main-content" style="max-width:100%;width:100%;margin:0 auto;padding:20px 20px;overflow-x:hidden;box-sizing:border-box">
@@ -1622,6 +1619,30 @@ _notifNaoLidas=snap.size;
 re();
 });
 }
+
+window.toggleProfileMenu=function(){
+const existente=document.getElementById("profile-menu-overlay");
+if(existente){existente.remove();return;}
+const c=C();
+const btn=document.getElementById("profile-menu-btn");
+if(!btn)return;
+const rect=btn.getBoundingClientRect();
+const overlay=document.createElement("div");
+overlay.id="profile-menu-overlay";
+overlay.style.cssText="position:fixed;inset:0;z-index:9998;background:transparent";
+overlay.onclick=()=>overlay.remove();
+const menu=document.createElement("div");
+menu.style.cssText=`position:fixed;top:${rect.bottom+8}px;right:${Math.max(8,window.innerWidth-rect.right)}px;background:${c.surface};border:1.5px solid ${c.border};border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.22);min-width:190px;z-index:9999;overflow:hidden;font-family:inherit`;
+menu.innerHTML=`
+  <div style="padding:12px 16px;border-bottom:1px solid ${c.border}">
+    <p style="font-weight:800;font-size:13px;color:${c.navy}">${_usuario?.nome||""}</p>
+    <p style="font-size:10px;color:${c.textMuted};font-weight:700;text-transform:uppercase;margin-top:2px">${_usuario?.perfil||""}</p>
+  </div>
+  <button onclick="doSignOut()" style="width:100%;text-align:left;padding:12px 16px;background:none;border:none;cursor:pointer;font-size:13px;font-weight:700;color:#dc2626;font-family:inherit">🚪 Sair</button>
+`;
+overlay.appendChild(menu);
+document.body.appendChild(overlay);
+};
 
 window.abrirPainelNotif=async function abrirPainelNotif(){
 const userId=_usuario?.uid;
