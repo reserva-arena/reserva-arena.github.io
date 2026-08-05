@@ -361,6 +361,38 @@ const NOME_CURTO={
 "Lab. de Ciências Anos Finais":"Lab.Ci.Final",
 };
 const espacoCurto=nome=>NOME_CURTO[nome]||(nome?nome.split(" ")[0]:"");
+
+// Badges de equipamento solicitado (tablets, computadores, microfone, caixa, projetor)
+function equipBadgesHTML(r){
+const itens=[];
+if((r.qtdTablets||0)>0)itens.push(`<span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #bae6fd">📱 ${r.qtdTablets} tablet(s)</span>`);
+if((r.qtdNotebooks||0)>0)itens.push(`<span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #bae6fd">💻 ${r.qtdNotebooks} computador(es)</span>`);
+if(((r.microfones||0)+(r.bibMic||0))>0)itens.push(`<span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #bae6fd">🎤 ${(r.microfones||0)+(r.bibMic||0)} microfone(s)</span>`);
+if(((r.caixasom||0)+(r.bibCaixa||0))>0)itens.push(`<span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #bae6fd">🔊 ${(r.caixasom||0)+(r.bibCaixa||0)} caixa(s)</span>`);
+if(((r.projetor||0)+(r.bibProj||0))>0)itens.push(`<span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #bae6fd">📽️ ${(r.projetor||0)+(r.bibProj||0)} projetor(es)</span>`);
+if(itens.length===0)return"";
+return `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px">${itens.join("")}</div>`;
+}
+// Versão compacta (só ícone+número), pra caber nos cards pequenos da grade Semana
+function equipBadgesCompacto(r){
+const p=[];
+if((r.qtdTablets||0)>0)p.push(`📱${r.qtdTablets}`);
+if((r.qtdNotebooks||0)>0)p.push(`💻${r.qtdNotebooks}`);
+if(((r.microfones||0)+(r.bibMic||0))>0)p.push(`🎤${(r.microfones||0)+(r.bibMic||0)}`);
+if(((r.caixasom||0)+(r.bibCaixa||0))>0)p.push(`🔊${(r.caixasom||0)+(r.bibCaixa||0)}`);
+if(((r.projetor||0)+(r.bibProj||0))>0)p.push(`📽️${(r.projetor||0)+(r.bibProj||0)}`);
+return p.join(" ");
+}
+// Resumo curto pra texto de notificação
+function equipResumoTexto(r){
+const p=[];
+if((r.qtdTablets||0)>0)p.push(`${r.qtdTablets} tablet(s)`);
+if((r.qtdNotebooks||0)>0)p.push(`${r.qtdNotebooks} computador(es)`);
+if(((r.microfones||0)+(r.bibMic||0))>0)p.push(`${(r.microfones||0)+(r.bibMic||0)} microfone(s)`);
+if(((r.caixasom||0)+(r.bibCaixa||0))>0)p.push(`${(r.caixasom||0)+(r.bibCaixa||0)} caixa(s)`);
+if(((r.projetor||0)+(r.bibProj||0))>0)p.push(`${(r.projetor||0)+(r.bibProj||0)} projetor(es)`);
+return p.length?" · "+p.join(", "):"";
+}
 function nomeProf(n){if(!n)return"";const p=n.trim().split(" ").filter(Boolean);return p.length===1?p[0]:p[0]+" "+p[p.length-1][0].toUpperCase()+".";}
 function extraInfo(r){
 if(!r)return"";
@@ -1375,6 +1407,7 @@ html+=`<div style="background:${isMeu?"rgba(187,235,210,.65)":c.surface};border-
            <p style="font-size:9px;color:${c.navy};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700">${espacoCurto(r.espaco)}</p>
            <p style="font-size:9px;color:${c.textMuted}">${(r.turmaInicio||r.turma)}·${nomeProf(r.professor)}</p>
            ${r.laboratorista?`<p style="font-size:9px;font-weight:700;color:#0f4c2b">🔬 ${r.laboratorista==="Sim"?"c/ lab.":"s/ lab."}</p>`:""}
+           ${equipBadgesCompacto(r)?`<p style="font-size:9px;font-weight:700;color:#0369a1">${equipBadgesCompacto(r)}</p>`:""}
          </div>`;
 });
 html+=`</div>`;
@@ -1510,6 +1543,7 @@ return`<div class="row-hover" ${selClick?`onclick="toggleSelProf('${r.id}')"`:''
      </div>
      ${r.conteudo?`<p style="font-size:11.5px;color:${c.textMuted};margin:2px 0 0;line-height:1.4">📝 ${r.conteudo}</p>`:""}
      ${r.paginas?`<p style="font-size:11px;color:${c.textMuted};margin:2px 0 0">📖 Págs.: ${r.paginas}</p>`:""}
+     ${equipBadgesHTML(r)}
      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
        ${isPend?`<span style="font-size:11.5px;font-weight:800;background:${c.amberBg};color:${c.amber};border:1.5px solid ${c.amberBorder};border-radius:20px;padding:2px 10px">⏳ Pendente</span>`:badge(r.status)}
      </div>
@@ -2821,11 +2855,12 @@ _MA.serieTotal=serieCount;
 try{
 const dataFmtNotif=data.split("-").reverse().join("/");
 const horFmtNotif=blocos[0]?.horario||"";
+const equipTxtNotif=equipResumoTexto(dadosPrincipal);
 _usuarios.filter(u=>u.perfil==="admin"&&u.id!==_usuario.uid).forEach(adm=>{
 batch.set(doc(collection(db,"notificacoes")),{
 userId:adm.id,
 titulo:"📅 Novo agendamento",
-corpo:`${_usuario.nome} agendou ${espaco} para ${dataFmtNotif} às ${horFmtNotif}`,
+corpo:`${_usuario.nome} agendou ${espaco} para ${dataFmtNotif} às ${horFmtNotif}${equipTxtNotif}`,
 lida:false,
 criadoEm:ts
 });
@@ -3256,6 +3291,7 @@ return`<div class="row-hover" style="display:flex;align-items:center;gap:10px;pa
      </div>
      ${r.conteudo?`<p style="font-size:11.5px;color:${c.textMuted};margin:3px 0 0;line-height:1.4">📝 ${r.conteudo}</p>`:""}
      ${r.paginas?`<p style="font-size:11px;color:${c.textMuted};margin:2px 0 0">📖 Págs.: ${r.paginas}</p>`:""}
+     ${equipBadgesHTML(r)}
    </div>
    <div style="display:flex;gap:5px;flex-shrink:0;align-items:center">
      <button onclick="abrirEdicao('${r.id}')" title="Editar agendamento" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:12px;padding:5px 8px;display:flex;align-items:center;gap:3px;font-family:inherit">✏️ Editar</button>
@@ -3577,7 +3613,7 @@ _todas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.dat
 if(jaCarregado){
 const novos=snap.docChanges().filter(ch=>ch.type==="added").map(ch=>({id:ch.doc.id,...ch.doc.data()})).filter(r=>r&&r.professor&&!r.reservaAutomatica&&r.professorId!==_usuario?.uid);
 if(novos.length===1){
-mostrarToastNovoAgendamento(`${novos[0].professor} agendou ${novos[0].espaco} — ${novos[0].data.split("-").reverse().join("/")}`);
+mostrarToastNovoAgendamento(`${novos[0].professor} agendou ${novos[0].espaco} — ${novos[0].data.split("-").reverse().join("/")}${equipResumoTexto(novos[0])}`);
 }else if(novos.length>1){
 mostrarToastNovoAgendamento(`${novos.length} novos agendamentos criados`);
 }
