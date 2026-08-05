@@ -68,7 +68,7 @@ gtag('config', 'G-80RD7HXHBT');
 
 <script type="module">
 import{initializeApp,getApps}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,onAuthStateChanged,sendPasswordResetEmail,updatePassword}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,onAuthStateChanged,sendPasswordResetEmail,updatePassword,confirmPasswordReset,verifyPasswordResetCode}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import{getFirestore,collection,addDoc,onSnapshot,doc,updateDoc,query,where,orderBy,getDocs,Timestamp,setDoc,getDoc,deleteDoc,writeBatch}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import{getMessaging,getToken,onMessage}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
 
@@ -85,6 +85,63 @@ const app     = initializeApp(firebaseConfig);
 const auth    = getAuth(app);
 const db      = getFirestore(app);
 window.__db__ = db; // exposto para scripts de migração
+// URL de retorno do e-mail de redefinição de senha — aponta pro próprio app
+// (GitHub Pages) em vez do domínio padrão do Firebase, que está vazio.
+const RESET_ACTION_SETTINGS = { url: "https://reserva-arena.github.io/", handleCodeInApp: true };
+
+// ── Redefinição de senha via link de e-mail (isolado do fluxo normal do app) ──
+const _urlParams = new URLSearchParams(window.location.search);
+const _resetOobCode = _urlParams.get('mode')==='resetPassword' ? _urlParams.get('oobCode') : null;
+if(_resetOobCode){ window.__RESET_MODE__ = true; }
+
+function renderResetSenhaScreen(oobCode){
+const appEl=document.getElementById("app");
+appEl.innerHTML=`<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:#eef6f1;font-family:'DM Sans',system-ui,sans-serif">
+  <div style="background:#fff;border-radius:16px;padding:32px;max-width:380px;width:100%;box-shadow:0 8px 30px rgba(0,0,0,.1)">
+    <div id="reset-content"><p style="text-align:center;font-size:14px;color:#607060">Verificando link...</p></div>
+  </div>
+</div>`;
+verifyPasswordResetCode(auth,oobCode).then(email=>{
+document.getElementById("reset-content").innerHTML=`
+  <h2 style="font-size:18px;font-weight:800;color:#132318;margin-bottom:6px;text-align:center">🔒 Nova senha</h2>
+  <p style="font-size:12.5px;color:#607060;text-align:center;margin-bottom:20px">Para a conta: <strong>${email}</strong></p>
+  <input id="reset-senha1" type="password" placeholder="Nova senha (mín. 6 caracteres)" style="width:100%;padding:12px;border-radius:10px;border:1.5px solid #d1e5d9;margin-bottom:10px;font-size:14px;font-family:inherit;box-sizing:border-box">
+  <input id="reset-senha2" type="password" placeholder="Confirme a nova senha" style="width:100%;padding:12px;border-radius:10px;border:1.5px solid #d1e5d9;margin-bottom:14px;font-size:14px;font-family:inherit;box-sizing:border-box">
+  <p id="reset-erro" style="display:none;color:#dc2626;font-size:12.5px;margin-bottom:10px;text-align:center"></p>
+  <button id="reset-btn" style="width:100%;padding:12px;border-radius:10px;border:none;background:#1a6b47;color:#fff;font-weight:700;font-size:14px;cursor:pointer">Salvar nova senha</button>`;
+document.getElementById("reset-btn").onclick=async()=>{
+const s1=document.getElementById("reset-senha1").value;
+const s2=document.getElementById("reset-senha2").value;
+const errEl=document.getElementById("reset-erro");
+errEl.style.display="none";
+if(!s1||s1.length<6){errEl.textContent="A senha precisa ter pelo menos 6 caracteres.";errEl.style.display="block";return;}
+if(s1!==s2){errEl.textContent="As senhas não coincidem.";errEl.style.display="block";return;}
+const btn=document.getElementById("reset-btn");
+btn.disabled=true;btn.textContent="Salvando...";
+try{
+await confirmPasswordReset(auth,oobCode,s1);
+document.getElementById("reset-content").innerHTML=`<div style="text-align:center">
+    <div style="font-size:40px;margin-bottom:10px">✅</div>
+    <h2 style="font-size:17px;font-weight:800;color:#1a6b47;margin-bottom:8px">Senha alterada!</h2>
+    <p style="font-size:13px;color:#607060;margin-bottom:20px">Agora você já pode entrar com a nova senha.</p>
+    <button onclick="location.href='https://reserva-arena.github.io/'" style="width:100%;padding:12px;border-radius:10px;border:none;background:#1a6b47;color:#fff;font-weight:700;font-size:14px;cursor:pointer">Ir para o login</button>
+  </div>`;
+}catch(e){
+errEl.textContent="Não foi possível salvar. O link pode ter expirado — solicite um novo.";
+errEl.style.display="block";
+btn.disabled=false;btn.textContent="Salvar nova senha";
+}
+};
+}).catch(()=>{
+document.getElementById("reset-content").innerHTML=`<div style="text-align:center">
+    <div style="font-size:40px;margin-bottom:10px">⚠️</div>
+    <h2 style="font-size:16px;font-weight:800;color:#dc2626;margin-bottom:8px">Link inválido ou expirado</h2>
+    <p style="font-size:13px;color:#607060;margin-bottom:20px">Solicite um novo link de redefinição de senha.</p>
+    <button onclick="location.href='https://reserva-arena.github.io/'" style="width:100%;padding:12px;border-radius:10px;border:none;background:#1a6b47;color:#fff;font-weight:700;font-size:14px;cursor:pointer">Voltar ao login</button>
+  </div>`;
+});
+}
+if(_resetOobCode){ renderResetSenhaScreen(_resetOobCode); }
 const secApp  = getApps().find(a=>a.name==="secondary")||initializeApp(firebaseConfig,"secondary");
 const secAuth = getAuth(secApp);
 
@@ -545,7 +602,7 @@ var e=document.getElementById("lg-e")?.value?.trim();
 var err=document.getElementById("lg-err");
 if(!e){if(err){err.textContent="Digite seu e-mail acima.";err.style.display="block";}return;}
 try{
-await sendPasswordResetEmail(auth,e);
+await sendPasswordResetEmail(auth,e,RESET_ACTION_SETTINGS);
 if(err){err.textContent="E-mail enviado!";err.style.display="block";err.style.background="#e2f4ea";err.style.color="#1a6b47";}
 }catch(ex){if(err){err.textContent="Erro ao enviar.";err.style.display="block";}}
 };
@@ -747,7 +804,7 @@ catch{render("login-erro",alertHTML("error","E-mail ou senha inválidos."));}
 window.recuperarSenha=async()=>{
 const email=$("inp-email")?.value?.trim();
 if(!email){render("login-erro",alertHTML("warning","Digite seu e-mail acima."));return;}
-try{await sendPasswordResetEmail(auth,email);render("login-erro",alertHTML("success",`Link enviado para ${email}`));}
+try{await sendPasswordResetEmail(auth,email,RESET_ACTION_SETTINGS);render("login-erro",alertHTML("success",`Link enviado para ${email}`));}
 catch{render("login-erro",alertHTML("error","Erro ao enviar. Verifique o e-mail."));}
 };
 
@@ -3519,7 +3576,7 @@ if(confirm((ativo?'Desativar':'Ativar')+' '+nome+'?'))updateDoc(doc(db,'usuarios
 lista.querySelectorAll('.gu-senha-btn').forEach(b=>{
 b.addEventListener('click',()=>{
 const email=b.getAttribute('data-email');
-if(confirm('Enviar redefinição de senha para '+email+'?'))sendPasswordResetEmail(auth,email).then(()=>alert('Link enviado!')).catch(()=>alert('Erro ao enviar.'));
+if(confirm('Enviar redefinição de senha para '+email+'?'))sendPasswordResetEmail(auth,email,RESET_ACTION_SETTINGS).then(()=>alert('Link enviado!')).catch(()=>alert('Erro ao enviar.'));
 });
 });
 let _editUID=null;
@@ -3651,6 +3708,7 @@ function unloadHistorico(){if(_unsubTodas){_unsubTodas();_unsubTodas=null;}_toda
 // AUTH
 // ════════════════════════════════════════════════════════════════════════════
 onAuthStateChanged(auth,async user=>{
+if(window.__RESET_MODE__)return;
 stopListeners();_todas=[];_minhas=[];_usuarios=[];
 if(user){
 try{
