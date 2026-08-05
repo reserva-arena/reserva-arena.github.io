@@ -3329,7 +3329,7 @@ if(!rs.length)html+=`<p style="font-size:12px;color:#607060">🎉 Dia livre</p>`
 else rs.slice(0,6).forEach(r=>{
 const urg=isUrgente(r.data,r.horario);
 const range=r.horarioFim&&r.horarioFim!==r.horario?` → ${r.horarioFim}`:"";
-html+=`<div style="display:flex;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid #e2f0eb"><span style="font-size:11px;font-family:'DM Mono',monospace;font-weight:800;color:${urg?"#c2410c":"#40b07a"};min-width:80px">${r.horario}${range}</span><div><p style="font-size:12px;font-weight:700;color:#132318">${r.espaco}</p><p style="font-size:11px;color:#607060">${r.professor?.split(" ")[0]||""} · ${r.turmaInicio||r.turma}</p></div></div>`;
+html+=`<div style="display:flex;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid #e2f0eb"><span style="font-size:11px;font-family:'DM Mono',monospace;font-weight:800;color:${urg?"#c2410c":"#40b07a"};min-width:80px">${r.horario}${range}</span><div><p style="font-size:12px;font-weight:700;color:#132318">${r.espaco}</p><p style="font-size:11px;color:#607060">${r.professor?.split(" ")[0]||""} · ${r.turmaInicio||r.turma}</p>${equipBadgesCompacto(r)?`<p style="font-size:10px;color:#0369a1;font-weight:700">${equipBadgesCompacto(r)}</p>`:""}</div></div>`;
 });
 if(rs.length>6)html+=`<p style="font-size:10px;color:#607060;margin-top:6px">+${rs.length-6} mais</p>`;
 tip.innerHTML=html;
