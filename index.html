@@ -3371,6 +3371,7 @@ return`<div id="mod-gu" style="display:none;position:fixed;inset:0;background:rg
 window.abrirGerenciarUsuarios=()=>{
 if(!exigePermissao(['admin'])){alert('Acesso negado.');return;}
 $("mod-gu").style.display="flex";
+iniciarUsuariosLive();
 setTimeout(()=>{
 const n=document.getElementById("gu-nome");const e=document.getElementById("gu-email");const s=document.getElementById("gu-senha");
 if(n)n.value="";if(e)e.value="";if(s)s.value="";
@@ -3378,7 +3379,7 @@ const f=document.getElementById("mod-gu-flash");if(f)f.innerHTML="";
 renderGuLista();
 },50);
 };
-window.fecharGerenciarUsuarios=()=>{$("mod-gu").style.display="none";};
+window.fecharGerenciarUsuarios=()=>{$("mod-gu").style.display="none";pararUsuariosLive();};
 
 window.guCriarDireto=async()=>{
 if(!exigePermissao(['admin'])){alert('Acesso negado.');return;}
@@ -3582,10 +3583,25 @@ _todasCarregadas=true;re();
 _unsub2=onSnapshot(query(collection(db,"reservas"),where("professorId","==",uid)),snap=>{
 _minhas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>!r.reservaAutomatica).sort((a,b)=>a.data>b.data?1:-1);re();
 });
+// Usuários: carrega UMA VEZ (não fica em tempo real) — evita que qualquer escrita
+// nessa coleção (ex: ultimoAcesso a cada login) gere 1 leitura pra CADA sessão
+// conectada. Tempo real só liga especificamente enquanto a tela "Gerenciar
+// Usuários" está aberta — ver iniciarUsuariosLive()/pararUsuariosLive().
+getDocs(collection(db,"usuarios")).then(snap=>{
+_usuarios=snap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>u.ativo!==false);
+re();
+}).catch(e=>console.error("Erro ao carregar usuarios:",e));
+}
+function iniciarUsuariosLive(){
+if(_unsub3)return;
 _unsub3=onSnapshot(collection(db,"usuarios"),snap=>{
-_usuarios=snap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>u.ativo!==false);re();
+_usuarios=snap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>u.ativo!==false);
 if(document.getElementById("mod-gu-lista"))renderGuLista();
+re();
 });
+}
+function pararUsuariosLive(){
+if(_unsub3){_unsub3();_unsub3=null;}
 }
 function stopListeners(){[_unsub1,_unsub2,_unsub3,_unsubTodas].forEach(u=>{try{u&&u();}catch{}});_unsub1=_unsub2=_unsub3=_unsubTodas=null;_todasCarregadas=false;}
 function unloadHistorico(){if(_unsubTodas){_unsubTodas();_unsubTodas=null;}_todasCarregadas=false;}
