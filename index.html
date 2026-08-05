@@ -1339,6 +1339,7 @@ html+=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;paddin
        <option value="" style="background:#1a6b47">Todos os espaços</option>
        ${ESPACOS.map(e=>`<option value="${e.nome}" ${_P.filtroEspaco===e.nome?"selected":""} style="background:#1a6b47">${e.nome}</option>`).join("")}
      </select>
+     <button onclick="_todasCarregadas=false;carregarTodas();" title="Atualizar agendamentos" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:7px;color:#fff;font-weight:600;font-size:11.5px;cursor:pointer;padding:5px 10px;display:flex;align-items:center;gap:4px;font-family:inherit">🔄 Atualizar</button>
    </div>
    <div style="background:${c.surface};border-bottom:1px solid ${c.border};padding:8px 14px;font-size:11.5px;color:${c.blueMid}">
      <p style="display:flex;align-items:center;gap:6px;margin-bottom:4px">💡 Descrição da aula, páginas do livro e outros detalhes só aparecem no modo <strong style="cursor:pointer;text-decoration:underline" onclick="pSetModo('lista')">☰ Agenda</strong></p>
@@ -1434,6 +1435,7 @@ html+=`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin
        ${ESPACOS.map(e=>`<option value="${e.nome}" ${_P.filtroEspaco===e.nome?"selected":""}>${tipoIcon(e.tipo,e.nome)} ${e.nome}</option>`).join("")}
      </select>
      ${_P.filtroEspaco?`<button onclick="pSetEspaco('')" style="${btn('ghost')};padding:7px 12px;font-size:12px;white-space:nowrap">✕ Limpar</button>`:""}
+     <button onclick="_todasCarregadas=false;carregarTodas();" title="Atualizar agendamentos" style="${btn('ghost')};padding:7px 12px;font-size:12px;white-space:nowrap">🔄 Atualizar</button>
      ${meusFuturos.length>1?'<button onclick="_P.modoSelecao=!_P.modoSelecao;_P.selecionados=new Set();re()" style="padding:7px 12px;font-size:12px;white-space:nowrap;border-radius:8px;border:1.5px solid '+(_P.modoSelecao?"#dc2626":c.border)+';background:'+(_P.modoSelecao?"#fef2f2":"transparent")+';color:'+(_P.modoSelecao?"#dc2626":c.textMuted)+';font-weight:700;cursor:pointer;font-family:inherit">'+(_P.modoSelecao?"✕ Cancelar seleção":"☑ Selecionar")+'</button>':''}
    </div>
    ${_P.modoSelecao&&_P.selecionados.size>0?`<div style="display:flex;align-items:center;gap:10px;background:#fef2f2;border:1.5px solid #fca5a5;border-radius:10px;padding:10px 14px;margin-bottom:12px">
@@ -3528,14 +3530,17 @@ let _unsubTodas=null;
 let _paginaAtual=0,_carregadosAté=30;
 
 window.carregarTodas=function carregarTodas(){
-if(_todasCarregadas||_unsubTodas)return;
-// Carrega TUDO sem filtro (para histórico completo sob demanda)
+if(_todasCarregadas)return;
+// Carrega uma vez (não fica em tempo real) — evita que muitas sessões de
+// professores fiquem escutando a coleção inteira pra sempre. O painel do
+// admin (_unsub1, mais acima) continua em tempo real normalmente, pois
+// são poucas sessões e é de lá que vem o toast de "novo agendamento".
 const hoje=new Date();hoje.setDate(hoje.getDate()-7);
 const dataCorte=hoje.toISOString().slice(0,10);
-_unsubTodas=onSnapshot(query(collection(db,"reservas"),where("data",">=",dataCorte)),snap=>{
+getDocs(query(collection(db,"reservas"),where("data",">=",dataCorte))).then(snap=>{
 _todas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario);
 _todasCarregadas=true;re();
-});
+}).catch(e=>{console.error("Erro ao carregar reservas:",e);});
 }
 
 // Toast de notificação em tempo real (sem gerar leitura extra — reaproveita o listener já ativo)
