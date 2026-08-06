@@ -2229,11 +2229,17 @@ html+=`<div style="background:${c.bg};border-radius:10px;padding:12px 14px;borde
    </div>`;
 }
 
+// ── Tipo de Atividade (Maker 1/2) ──
+html+=`${(m.espaco==="Maker 1"||m.espaco==="Maker 2")?`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Tipo de Atividade *</label><br><select onchange="maSetBloco(${i},'tipoAtividade',this.value)" style="${inp()};margin-top:5px"><option value="">Selecione...</option><option value="Nave a Vela" ${b.tipoAtividade==="Nave a Vela"?"selected":""}>🚀 Nave a Vela</option><option value="Outros" ${b.tipoAtividade==="Outros"?"selected":""}>📋 Outros</option></select></div>`:""}`;
+
 // ── Conteúdo ──
 html+=`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">📝 Descrição da aula *</label><br>
    <textarea id="ta-conteudo-${i}" onchange="maSetConteudo(${i},this.value)" oninput="document.getElementById('cnt-conteudo-${i}').textContent=this.value.length+'/500'" maxlength="500" rows="4" placeholder="Descreva a atividade, conteúdo e observações..." style="${inp()};resize:vertical;line-height:1.6;margin-top:5px">${b.conteudo}</textarea>
    <p id="cnt-conteudo-${i}" style="font-size:11px;color:${c.textMuted};text-align:right;margin-top:3px">${(b.conteudo||"").length}/500</p>
  </div>`;
+
+// ── Páginas do Livro ──
+html+=`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Páginas do Livro</label><br><input value="${b.paginas||""}" onchange="maSetBloco(${i},'paginas',this.value)" placeholder="Ex: pp. 45-62" style="${inp()};margin-top:5px"></div>`;
 
 
 
