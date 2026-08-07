@@ -2246,8 +2246,8 @@ html+=`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};te
    <p id="cnt-conteudo-${i}" style="font-size:11px;color:${c.textMuted};text-align:right;margin-top:3px">${(b.conteudo||"").length}/500</p>
  </div>`;
 
-// ── Páginas do Livro ──
-html+=`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Páginas do Livro</label><br><input value="${b.paginas||""}" onchange="maSetBloco(${i},'paginas',this.value)" placeholder="Ex: pp. 45-62" style="${inp()};margin-top:5px"></div>`;
+// ── Páginas do Livro (apenas Maker 1/2) ──
+html+=`${(m.espaco==="Maker 1"||m.espaco==="Maker 2")?`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Páginas do Livro</label><br><input value="${b.paginas||""}" onchange="maSetBloco(${i},'paginas',this.value)" placeholder="Ex: pp. 45-62" autocomplete="off" name="paginas-livro-${i}" style="${inp()};margin-top:5px"></div>`:""}`;
 
 
 
@@ -2427,7 +2427,7 @@ return`<div style="background:${c.bg};border:1.5px solid ${b.horario?c.blueMid+"
      <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Turma *</label><br><select onchange="maSetBlocoRe(${i},'turma',this.value)" style="${sel()};margin-top:5px"><option value="">Selecione...</option><optgroup label="Ed. Infantil">${TURMAS_EDUCACAO_INFANTIL.map(t=>`<option ${b.turma===t?"selected":""}>${t}</option>`).join("")}</optgroup><optgroup label="Fund. 1">${TURMAS_FUND1.map(t=>`<option ${b.turma===t?"selected":""}>${t}</option>`).join("")}</optgroup><optgroup label="Fund. 2">${TURMAS_FUND2.map(t=>`<option ${b.turma===t?"selected":""}>${t}</option>`).join("")}</optgroup></select></div>
      ${(m.espaco==="Maker 1"||m.espaco==="Maker 2")?`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Tipo de Atividade *</label><br><select onchange="maSetBlocoRe(${i},'tipoAtividade',this.value)" style="${inp()};margin-top:5px"><option value="">Selecione...</option><option value="Nave a Vela" ${b.tipoAtividade==="Nave a Vela"?"selected":""}>🚀 Nave a Vela</option><option value="Outros" ${b.tipoAtividade==="Outros"?"selected":""}>📋 Outros</option></select></div>`:""}
      <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Conteúdo da Aula *</label><br><textarea id="ta-conteudo2-${i}" onchange="maSetBlocoRe(${i},'conteudo',this.value)" oninput="document.getElementById('cnt-conteudo2-${i}').textContent=this.value.length+'/500'" maxlength="500" rows="2" placeholder="Descreva o conteúdo..." style="${inp()};resize:vertical;line-height:1.6;margin-top:5px">${b.conteudo}</textarea><p id="cnt-conteudo2-${i}" style="font-size:11px;color:${c.textMuted};text-align:right;margin-top:3px">${(b.conteudo||"").length}/500</p></div>
-     <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Páginas do Livro</label><br><input value="${b.paginas}" onchange="maSetBlocoRe(${i},'paginas',this.value)" placeholder="Ex: pp. 45-62" style="${inp()};margin-top:5px"></div>
+     ${(m.espaco==="Maker 1"||m.espaco==="Maker 2")?`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Páginas do Livro</label><br><input value="${b.paginas}" onchange="maSetBlocoRe(${i},'paginas',this.value)" placeholder="Ex: pp. 45-62" autocomplete="off" name="paginas-livro-${i}" style="${inp()};margin-top:5px"></div>`:""}
      ${m.espaco==="Sala Multifuncional"?`<div style="background:${c.bg};border-radius:10px;padding:12px;border:1px solid ${c.border};display:grid;gap:10px">
        <p style="font-size:12px;font-weight:700;color:${c.navy}">💻 Equipamentos para a aula</p>
        <div style="display:grid;gap:8px">
