@@ -3149,12 +3149,13 @@ html+=`<div style="display:flex;align-items:center;justify-content:space-between
    </div>
    <div style="background:${c.surface};border-radius:14px;border:1px solid ${c.border};overflow:hidden;box-shadow:${c.cardShadow}">`;
 const calMobile=window.innerWidth<768;
-const calCols=calMobile?"repeat(5,1fr)":"0.6fr repeat(5,1fr) 0.6fr";
+const calCols=calMobile?"repeat(5,110px)":"0.6fr repeat(5,1fr) 0.6fr";
 const calDias=calMobile?["Seg.","Ter.","Qua.","Qui.","Sexta"]:["Dom.","Seg.","Ter.","Qua.","Qui.","Sexta","Sáb."];
-html+=`<div style="display:grid;grid-template-columns:${calCols};border-bottom:2px solid ${c.border}">
+html+=`<div style="overflow-x:${calMobile?"auto":"visible"}">
+     <div style="display:grid;grid-template-columns:${calCols};border-bottom:2px solid ${c.border};min-width:${calMobile?"550px":"auto"}">
        ${calDias.map((d,i)=>{const isWk=calMobile?(false):(i===0||i===6);return`<div style="padding:8px 0;text-align:center;font-size:11px;font-weight:700;color:${isWk?"#ef4444":c.textMuted};text-transform:uppercase">${d}</div>`;}).join("")}
      </div>
-     <div style="display:grid;grid-template-columns:${calCols}">`;
+     <div style="display:grid;grid-template-columns:${calCols};min-width:${calMobile?"550px":"auto"}">`;
 
 cells.forEach((d,i)=>{
 if(!d){
@@ -3186,7 +3187,7 @@ html+=`<div onclick="_A.diaSel=_A.diaSel==='${ds}'?null:'${ds}';re()" data-ds="$
      </div>`;
 });
 
-html+=`</div></div>
+html+=`</div></div></div>
    <div style="display:flex;gap:14px;margin-top:8px;flex-wrap:wrap;align-items:center">
      ${[{l:"Urgente",bg:"#fff7ed",b:"#f97316"},{l:"Pendente",bg:c.amberBg,b:c.amberBorder},{l:"Confirmado",bg:c.greenBg,b:c.greenBorder}].map(l=>`<div style="display:flex;align-items:center;gap:5px"><div style="width:12px;height:12px;border-radius:3px;background:${l.bg};border:1.5px solid ${l.b}"></div><span style="font-size:11px;color:${c.textMuted};font-weight:600">${l.l}</span></div>`).join("")}
      <span style="margin-left:auto;font-size:11px;color:${c.textMuted}">Clique para detalhes</span>
