@@ -3496,11 +3496,120 @@ return`<div id="mod-gu" style="display:none;position:fixed;inset:0;background:rg
            <div id="gu-verificar-resultado" style="margin-top:14px"></div>
          </div>
        </div>
+       <div style="border-top:1px solid #e2f0eb;margin-top:4px;padding-top:16px;margin-bottom:20px">
+         <button onclick="toggleCadastroLote()" style="background:none;border:1.5px solid #c7dfd4;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:700;color:#132318;cursor:pointer;font-family:inherit">📥 Cadastrar em lote</button>
+         <div id="gu-lote-box" style="display:none;margin-top:12px">
+           <label style="font-size:11px;font-weight:700;color:#607060;text-transform:uppercase">Uma pessoa por linha — formato: Nome | e-mail</label><br>
+           <textarea id="gu-lote-input" rows="10" style="width:100%;padding:10px 12px;border-radius:8px;font-size:12px;border:1.5px solid #c7dfd4;margin-top:5px;box-sizing:border-box;font-family:'DM Mono',monospace">Alexandre (Química) | alexandrequimica1@gmail.com
+Alexandre Lolem | alexandrelolem@gmail.com
+Bruno Silvestre | brunosilvestre.prof@gmail.com
+Cecília Andrade | ceciliaandrade11@hotmail.com
+Claudinha | claudinhainter33@gmail.com
+Clessia Poliana | clessiapoliana02@gmail.com
+Daianys Macelai | daianysmacelai@yahoo.com.br
+Danielle Couto | profa.daniellecouto@gmail.com
+Diogo | diogoprofessor@gmail.com
+Elaine Lot | elainelot@hotmail.com
+Elbio Quinta | elbio.quinta@colegioarena.com.br
+Emilly Amorim | emilly_amorim@hotmail.com
+Fernanda Dumont | fernandadumont@hotmail.com
+G.F. Schmaltz | gfschmaltz@gmail.com
+Gabriel Gonzaga Luz Silva | gabrielgonzagaluzsilva@gmail.com
+Gunther Zafred | guntherzafred@yahoo.com
+Gustavo (Química) | gustavo_quimica83@hotmail.com
+Gustavo Coutinho | gustavocoutinhor1983@gmail.com
+H. Neres | hneres@gmail.com
+J.P. (História) | jphistoria5@hotmail.com
+Jade Mustafe | profejademustafe@gmail.com
+Júnior (Ed. Física) | junior.educafisica@gmail.com
+Kairo (Matemática) | kairomatematica@gmail.com
+Karlla Farinelli | karllafarinelli@hotmail.com
+Leandro B. Guimarães | leandro.bguimaraes@hotmail.com
+Letícia Guelfi | leticiaguelfi@gmail.com
+Lorena | lorena.ensino@gmail.com
+Luana Costa | profluanacosta@gmail.com
+Maj Miranda | majmiranda@hotmail.com
+Marco Túlio | marco.tulio@colegioarena.com.br
+Marlon Cristhian | profmarloncristhian@gmail.com
+Pauliany Martins | martinspauliany@gmail.com
+Pedro Tartuci | pedrotartuci@gmail.com
+Raul Victor Carneiro | prof.raulvictor.carneiro@gmail.com
+Renato S. Neto | renatosneto@hotmail.com
+Rosa (Arte) | arte.rosa@gmail.com
+S. (Linguagem) | s.linguagem@gmail.com
+Thalita Lombardi | thalita.lombardi_arena1@hotmail.com
+Tomás Hamu | tomashamu@hotmail.com
+Wilker (L.V.) | wilkerlv03@gmail.com
+Wilker Gomes | wilkergomesdc@gmail.com</textarea>
+           <div style="display:flex;gap:10px;align-items:center;margin-top:8px;flex-wrap:wrap">
+             <label style="font-size:11px;color:#607060">Senha inicial:</label>
+             <input id="gu-lote-senha" value="123456" style="padding:6px 10px;border-radius:6px;border:1.5px solid #c7dfd4;font-size:12.5px;width:120px">
+             <label style="font-size:11px;color:#607060">Perfil:</label>
+             <select id="gu-lote-perfil" style="padding:6px 10px;border-radius:6px;border:1.5px solid #c7dfd4;font-size:12.5px">
+               <option value="professor" selected>👨‍🏫 Professor</option>
+               <option value="coord_inf">👶 Coord. Infantil</option>
+               <option value="coord_fund1">📚 Coord. Fund. 1</option>
+               <option value="coord_fund2">🎓 Coord. Fund. 2</option>
+               <option value="marketing">📸 Marketing</option>
+               <option value="ti">💻 T.I.</option>
+             </select>
+           </div>
+           <p style="font-size:10.5px;color:#607060;margin-top:6px">⚠️ Alguns nomes marcados com iniciais (ex: "G.F. Schmaltz") são incertos — pode renomear depois pela lista abaixo (✏️ Editar).</p>
+           <button onclick="guCadastroLote()" id="gu-lote-btn" style="margin-top:10px;background:#1a6b47;color:#fff;border:none;border-radius:8px;font-weight:700;padding:9px 16px;font-size:13px;cursor:pointer;font-family:inherit">Cadastrar todos</button>
+           <div id="gu-lote-resultado" style="margin-top:14px;max-height:300px;overflow-y:auto"></div>
+         </div>
+       </div>
        <div id="mod-gu-lista"></div>
      </div>
    </div>
  </div>`;
 }
+
+window.toggleCadastroLote=()=>{
+const box=document.getElementById("gu-lote-box");
+if(box)box.style.display=box.style.display==="none"?"block":"none";
+};
+
+window.guCadastroLote=async()=>{
+if(!exigePermissao(['admin'])){alert('Acesso negado.');return;}
+const raw=document.getElementById("gu-lote-input")?.value||"";
+const senhaBase=document.getElementById("gu-lote-senha")?.value||"123456";
+const perfil=document.getElementById("gu-lote-perfil")?.value||"professor";
+const linhas=raw.split(/\n+/).map(l=>l.trim()).filter(Boolean);
+const pessoas=linhas.map(l=>{
+const partes=l.split("|").map(p=>p.trim());
+return{nome:partes[0]||"",email:(partes[1]||"").toLowerCase()};
+}).filter(p=>p.nome&&p.email);
+const resEl=document.getElementById("gu-lote-resultado");
+if(!pessoas.length){if(resEl)resEl.innerHTML=`<p style="font-size:12px;color:#dc2626">Nenhuma linha válida. Use o formato: Nome | email</p>`;return;}
+if(senhaBase.length<6){if(resEl)resEl.innerHTML=`<p style="font-size:12px;color:#dc2626">Senha precisa ter pelo menos 6 caracteres.</p>`;return;}
+if(!confirm(`Confirma o cadastro de ${pessoas.length} pessoa(s) com senha inicial "${senhaBase}"?`))return;
+const btn=document.getElementById("gu-lote-btn");
+if(btn){btn.disabled=true;btn.textContent="Cadastrando...";}
+let sucesso=0,jaExistia=0,erro=0;
+let log=[];
+for(const p of pessoas){
+try{
+const cred=await createUserWithEmailAndPassword(secAuth,p.email,senhaBase);
+await secAuth.signOut();
+await setDoc(doc(db,"usuarios",cred.user.uid),{nome:p.nome,email:p.email,perfil,ativo:true,criadoEm:Timestamp.now()});
+sucesso++;
+log.push(`<div style="font-size:12px;color:#0a3d22;background:#e2f4ea;border:1px solid #86efac;border-radius:6px;padding:4px 10px;margin-bottom:3px">✅ ${p.nome} — ${p.email}</div>`);
+}catch(e){
+if(e.code==="auth/email-already-in-use"){
+jaExistia++;
+log.push(`<div style="font-size:12px;color:#7c2d12;background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;padding:4px 10px;margin-bottom:3px">⏭️ ${p.nome} — já existia (pulado)</div>`);
+}else{
+erro++;
+log.push(`<div style="font-size:12px;color:#7f1d1d;background:#fef2f2;border:1px solid #fca5a5;border-radius:6px;padding:4px 10px;margin-bottom:3px">❌ ${p.nome} — erro: ${e.message}</div>`);
+}
+}
+if(resEl)resEl.innerHTML=`<p style="font-size:12px;font-weight:800;margin-bottom:8px">Processando... ${sucesso+jaExistia+erro}/${pessoas.length}</p>`+log.join("");
+}
+if(resEl)resEl.innerHTML=`<p style="font-size:13px;font-weight:800;color:#132318;margin-bottom:8px">✅ ${sucesso} cadastrados · ⏭️ ${jaExistia} já existiam · ❌ ${erro} erros</p>`+log.join("");
+if(btn){btn.disabled=false;btn.textContent="Cadastrar todos";}
+renderGuLista();
+};
 
 window.toggleVerificarEmails=()=>{
 const box=document.getElementById("gu-verificar-box");
