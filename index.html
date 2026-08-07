@@ -3487,11 +3487,48 @@ return`<div id="mod-gu" style="display:none;position:fixed;inset:0;background:rg
          </div>
        </div>
        <p style="font-size:11px;color:#607060;margin-bottom:20px">💡 Informe a senha ao usuário. Ele pode alterá-la via "Esqueci minha senha".</p>
+       <div style="border-top:1px solid #e2f0eb;margin-top:4px;padding-top:16px;margin-bottom:20px">
+         <button onclick="toggleVerificarEmails()" style="background:none;border:1.5px solid #c7dfd4;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:700;color:#132318;cursor:pointer;font-family:inherit">🔍 Verificar lista de e-mails</button>
+         <div id="gu-verificar-box" style="display:none;margin-top:12px">
+           <label style="font-size:11px;font-weight:700;color:#607060;text-transform:uppercase">Cole a lista de e-mails (separados por vírgula ou uma por linha)</label><br>
+           <textarea id="gu-verificar-input" rows="5" placeholder="fulano@gmail.com, ciclano@gmail.com..." style="width:100%;padding:10px 12px;border-radius:8px;font-size:13px;border:1.5px solid #c7dfd4;margin-top:5px;box-sizing:border-box;font-family:inherit"></textarea>
+           <button onclick="guVerificarEmails()" style="margin-top:8px;background:#1a6b47;color:#fff;border:none;border-radius:8px;font-weight:700;padding:9px 16px;font-size:13px;cursor:pointer;font-family:inherit">Verificar</button>
+           <div id="gu-verificar-resultado" style="margin-top:14px"></div>
+         </div>
+       </div>
        <div id="mod-gu-lista"></div>
      </div>
    </div>
  </div>`;
 }
+
+window.toggleVerificarEmails=()=>{
+const box=document.getElementById("gu-verificar-box");
+if(box)box.style.display=box.style.display==="none"?"block":"none";
+};
+
+window.guVerificarEmails=()=>{
+const raw=document.getElementById("gu-verificar-input")?.value||"";
+const emails=[...new Set(raw.split(/[\n,;]+/).map(e=>e.trim()).filter(Boolean))];
+const resEl=document.getElementById("gu-verificar-resultado");
+if(!emails.length){if(resEl)resEl.innerHTML=`<p style="font-size:12px;color:#dc2626">Cole pelo menos 1 e-mail.</p>`;return;}
+const cadastradosMap={};
+_usuarios.forEach(u=>{if(u.email)cadastradosMap[u.email.toLowerCase()]=u.nome||u.email;});
+const jaCadastrados=[];
+const faltam=[];
+emails.forEach(e=>{
+const key=e.toLowerCase();
+if(cadastradosMap[key])jaCadastrados.push({email:e,nome:cadastradosMap[key]});
+else faltam.push(e);
+});
+jaCadastrados.sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+faltam.sort((a,b)=>a.localeCompare(b,'pt-BR'));
+let html=`<p style="font-size:12px;font-weight:800;color:#132318;margin-bottom:6px">✅ Já cadastrados (${jaCadastrados.length})</p>`;
+html+=jaCadastrados.length?`<div style="display:grid;gap:4px;margin-bottom:14px">${jaCadastrados.map(j=>`<div style="font-size:12.5px;color:#0a3d22;background:#e2f4ea;border:1px solid #86efac;border-radius:6px;padding:5px 10px">${j.nome} — ${j.email}</div>`).join("")}</div>`:`<p style="font-size:12px;color:#607060;margin-bottom:14px">Nenhum.</p>`;
+html+=`<p style="font-size:12px;font-weight:800;color:#132318;margin-bottom:6px">📋 Faltam cadastrar (${faltam.length})</p>`;
+html+=faltam.length?`<div style="display:grid;gap:4px">${faltam.map(f=>`<div style="font-size:12.5px;color:#7c2d12;background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;padding:5px 10px">${f}</div>`).join("")}</div>`:`<p style="font-size:12px;color:#607060">Nenhum — todos já cadastrados! 🎉</p>`;
+if(resEl)resEl.innerHTML=html;
+};
 
 window.abrirGerenciarUsuarios=()=>{
 if(!exigePermissao(['admin'])){alert('Acesso negado.');return;}
