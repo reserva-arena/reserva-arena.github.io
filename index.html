@@ -2727,6 +2727,20 @@ const existeProf=snapConflitosProf[i].docs.map(d=>d.data()).find(r=>r?.status!==
 if(existeProf){_MA.erro=`Você já tem "${existeProf.espaco}" agendado às ${rangeHors[i]} nesse mesmo dia.`;_MA.salvando=false;_MA.resumo=false;re();return;}
 }
 
+// 1b2. Laboratorista é compartilhado entre os dois labs de ciências — não pode
+// estar escalado nos dois ao mesmo tempo
+if(eo?.tipo==="laboratorio"&&b.laboratorista==="Sim"){
+const LABS_CIENCIAS=["Lab. de Ciências Anos Iniciais","Lab. de Ciências Anos Finais"];
+const outroLab=LABS_CIENCIAS.find(nome=>nome!==espaco);
+const snapLab=await Promise.all(rangeHors.map(h=>
+getDocs(query(collection(db,"reservas"),where("espaco","==",outroLab),where("data","==",data),where("horario","==",h)))
+));
+for(let i=0;i<rangeHors.length;i++){
+const conflitoLab=snapLab[i].docs.map(d=>d.data()).find(r=>r?.status!=="recusado"&&r.laboratorista==="Sim");
+if(conflitoLab){_MA.erro=`O laboratorista já está escalado às ${rangeHors[i]} no ${outroLab} (${conflitoLab.professor}). Só é possível agendar o espaço sem o laboratorista nesse horário.`;_MA.salvando=false;_MA.resumo=false;re();return;}
+}
+}
+
 // 1b. Verificar se o professor já tem outro ESPAÇO reservado nos mesmos horários
 // (equipamentos avulsos não bloqueiam — professor pode ter sala + tablets no mesmo horário)
 const isEquipAvulsoSalvar=eo?.equipAvulso;
