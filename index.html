@@ -3372,7 +3372,7 @@ return`<div class="row-hover" style="display:flex;align-items:center;gap:10px;pa
      <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
        ${badge(r.status)}
        ${urg&&r.status==="pendente"?`<span style="font-size:10.5px;font-weight:800;background:#fff7ed;color:#c2410c;border:1.5px solid #f97316;padding:1px 8px;border-radius:10px">⚡ URGENTE</span>`:""}
-       ${extraInfo(r)?`<span style="font-size:10.5px;font-weight:800;background:#e2f4ea;color:#0f4c2b;border:1.5px solid #86efac;padding:1px 8px;border-radius:10px">🔬 ${extraInfo(r)}</span>`:""}
+       ${r.laboratorista?`<span style="font-size:10.5px;font-weight:800;background:#e2f4ea;color:#0f4c2b;border:1.5px solid #86efac;padding:1px 8px;border-radius:10px">🔬 ${r.laboratorista==="Sim"?"c/ lab.":"s/ lab."}</span>`:""}
        ${r.precisaFoto?`<span style="font-size:10.5px;font-weight:800;background:#f5f3ff;color:#7c3aed;border:1.5px solid #ddd6fe;padding:1px 8px;border-radius:10px">📸 Foto</span>`:""}${r.precisaVideo?`<span style="font-size:10.5px;font-weight:800;background:#eff6ff;color:#1d4ed8;border:1.5px solid #bfdbfe;padding:1px 8px;border-radius:10px">🎬 Vídeo</span>`:""}
      </div>
      ${r.conteudo?`<p style="font-size:11.5px;color:${c.textMuted};margin:3px 0 0;line-height:1.4">📝 ${r.conteudo}</p>`:""}
@@ -3416,7 +3416,7 @@ if(!rs.length)html+=`<p style="font-size:12px;color:#607060">🎉 Dia livre</p>`
 else rs.slice(0,6).forEach(r=>{
 const urg=isUrgente(r.data,r.horario);
 const range=r.horarioFim&&r.horarioFim!==r.horario?` → ${r.horarioFim}`:"";
-html+=`<div style="display:flex;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid #e2f0eb"><span style="font-size:11px;font-family:'DM Mono',monospace;font-weight:800;color:${urg?"#c2410c":"#40b07a"};min-width:80px">${r.horario}${range}</span><div><p style="font-size:12px;font-weight:700;color:#132318">${r.espaco}</p><p style="font-size:11px;color:#607060">${r.professor?.split(" ")[0]||""} · ${r.turmaInicio||r.turma}</p>${extraInfo(r)?`<p style="font-size:10px;color:#0f4c2b;font-weight:700">🔬 ${extraInfo(r)}</p>`:""}${equipBadgesCompacto(r)?`<p style="font-size:10px;color:#0369a1;font-weight:700">${equipBadgesCompacto(r)}</p>`:""}</div></div>`;
+html+=`<div style="display:flex;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid #e2f0eb"><span style="font-size:11px;font-family:'DM Mono',monospace;font-weight:800;color:${urg?"#c2410c":"#40b07a"};min-width:80px">${r.horario}${range}</span><div><p style="font-size:12px;font-weight:700;color:#132318">${r.espaco}</p><p style="font-size:11px;color:#607060">${r.professor?.split(" ")[0]||""} · ${r.turmaInicio||r.turma}</p>${r.laboratorista?`<p style="font-size:10px;color:#0f4c2b;font-weight:700">🔬 ${r.laboratorista==="Sim"?"c/ lab.":"s/ lab."}</p>`:""}${equipBadgesCompacto(r)?`<p style="font-size:10px;color:#0369a1;font-weight:700">${equipBadgesCompacto(r)}</p>`:""}</div></div>`;
 });
 if(rs.length>6)html+=`<p style="font-size:10px;color:#607060;margin-top:6px">+${rs.length-6} mais</p>`;
 tip.innerHTML=html;
