@@ -422,11 +422,11 @@ const espacoCurto=nome=>NOME_CURTO[nome]||(nome?nome.split(" ")[0]:"");
 // Badges de equipamento solicitado (tablets, computadores, microfone, caixa, projetor)
 function equipBadgesHTML(r){
 const itens=[];
-if((r.qtdTablets||0)>0)itens.push(`<span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #bae6fd">📱 ${r.qtdTablets} tablet(s)</span>`);
-if((r.qtdNotebooks||0)>0)itens.push(`<span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #bae6fd">💻 ${r.qtdNotebooks} computador(es)</span>`);
-if(((r.microfones||0)+(r.bibMic||0))>0)itens.push(`<span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #bae6fd">🎤 ${(r.microfones||0)+(r.bibMic||0)} microfone(s)</span>`);
-if(((r.caixasom||0)+(r.bibCaixa||0))>0)itens.push(`<span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #bae6fd">🔊 ${(r.caixasom||0)+(r.bibCaixa||0)} caixa(s)</span>`);
-if(((r.projetor||0)+(r.bibProj||0))>0)itens.push(`<span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #bae6fd">📽️ ${(r.projetor||0)+(r.bibProj||0)} projetor(es)</span>`);
+if((r.qtdTablets||0)>0)itens.push(`<span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #bae6fd;white-space:nowrap">📱 ${r.qtdTablets} tablet(s)</span>`);
+if((r.qtdNotebooks||0)>0)itens.push(`<span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #bae6fd;white-space:nowrap">💻 ${r.qtdNotebooks} computador(es)</span>`);
+if(((r.microfones||0)+(r.bibMic||0))>0)itens.push(`<span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #bae6fd;white-space:nowrap">🎤 ${(r.microfones||0)+(r.bibMic||0)} microfone(s)</span>`);
+if(((r.caixasom||0)+(r.bibCaixa||0))>0)itens.push(`<span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #bae6fd;white-space:nowrap">🔊 ${(r.caixasom||0)+(r.bibCaixa||0)} caixa(s)</span>`);
+if(((r.projetor||0)+(r.bibProj||0))>0)itens.push(`<span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #bae6fd;white-space:nowrap">📽️ ${(r.projetor||0)+(r.bibProj||0)} projetor(es)</span>`);
 if(itens.length===0)return"";
 return `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px">${itens.join("")}</div>`;
 }
@@ -1590,13 +1590,13 @@ return`<div class="row-hover" ${selClick?`onclick="toggleSelProf('${r.id}')"`:''
    <span style="font-size:13px;font-family:'DM Mono',monospace;font-weight:800;color:${isMeu?c.green:"#64748b"};min-width:42px;flex-shrink:0">${r.horario}</span>
    <div style="flex:1;min-width:0">
      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px">
-       <span style="font-weight:700;font-size:13px;color:${c.navy}">${r.espaco}</span>
-       ${r.data&&r.data<fmtHoje()?`<span style="font-size:11px;color:${c.textMuted};font-weight:600">${r.data.split("-").reverse().join("/")}</span>`:""}
-       ${range?`<span style="font-size:11px;font-weight:700;color:${c.blueMid};background:${c.greenBg};padding:1px 7px;border-radius:10px">${r.horario}${range}</span>`:""}
+       <span style="font-weight:700;font-size:13px;color:${c.navy};white-space:nowrap">${r.espaco}</span>
+       ${r.data&&r.data<fmtHoje()?`<span style="font-size:11px;color:${c.textMuted};font-weight:600;white-space:nowrap">${r.data.split("-").reverse().join("/")}</span>`:""}
+       ${range?`<span style="font-size:11px;font-weight:700;color:${c.blueMid};background:${c.greenBg};padding:1px 7px;border-radius:10px;white-space:nowrap">${r.horario}${range}</span>`:""}
        <span style="font-size:11px;color:${c.textMuted}">·</span>
-       <span style="font-size:12px;color:${c.textMid}">${turmaLabel}${turmaFimLabel}</span>
-       ${ex?`<span style="font-size:11px;background:#e2f4ea;color:#0f4c2b;border:1px solid #86efac;border-radius:6px;padding:1px 6px;font-weight:700">${ex}</span>`:""}
-       <span style="font-size:11px;color:${isMeu?c.green:c.textMuted};background:${c.bg};padding:1px 8px;border-radius:10px;border:1px solid ${c.borderLight};font-weight:${isMeu?700:400}">${isMeu?"👤 eu":r.professor?.split(" ")[0]||""}</span>
+       <span style="font-size:12px;color:${c.textMid};white-space:nowrap">${turmaLabel}${turmaFimLabel}</span>
+       ${ex?`<span style="font-size:11px;background:#e2f4ea;color:#0f4c2b;border:1px solid #86efac;border-radius:6px;padding:1px 6px;font-weight:700;white-space:nowrap">${ex}</span>`:""}
+       <span style="font-size:11px;color:${isMeu?c.green:c.textMuted};background:${c.bg};padding:1px 8px;border-radius:10px;border:1px solid ${c.borderLight};font-weight:${isMeu?700:400};white-space:nowrap">${isMeu?"👤 eu":r.professor?.split(" ")[0]||""}</span>
      </div>
      ${r.conteudo?`<p style="font-size:11.5px;color:${c.textMuted};margin:2px 0 0;line-height:1.4">📝 ${r.conteudo}</p>`:""}
      ${r.paginas?`<p style="font-size:11px;color:${c.textMuted};margin:2px 0 0">📖 Págs.: ${r.paginas}</p>`:""}
@@ -3360,17 +3360,17 @@ return`<div class="row-hover" style="display:flex;align-items:center;gap:8px;pad
    <span style="font-size:13px;font-family:'DM Mono',monospace;font-weight:800;color:${urg&&r.status==="pendente"?"#c2410c":c.blueMid};flex-shrink:0">${r.horario}${range}${showDate?` <span style="font-size:11px;color:${c.textMuted};font-weight:600">· ${d2}/${m2}</span>`:""}</span>
    <div style="flex:1;min-width:0">
      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px">
-       <span style="font-weight:700;font-size:13px;color:${c.navy}">${r.espaco}</span>
+       <span style="font-weight:700;font-size:13px;color:${c.navy};white-space:nowrap">${r.espaco}</span>
        <span style="font-size:11px;color:${c.textMuted}">·</span>
-       <span style="font-size:12.5px;color:${c.textMid};font-weight:600">${r.professor}</span>
+       <span style="font-size:12.5px;color:${c.textMid};font-weight:600;white-space:nowrap">${r.professor}</span>
        <span style="font-size:11px;color:${c.textMuted}">·</span>
-       <span style="font-size:12px;color:${c.textMuted}">${turmaLabel}</span>
+       <span style="font-size:12px;color:${c.textMuted};white-space:nowrap">${turmaLabel}</span>
      </div>
      <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
        ${badge(r.status)}
-       ${urg&&r.status==="pendente"?`<span style="font-size:10.5px;font-weight:800;background:#fff7ed;color:#c2410c;border:1.5px solid #f97316;padding:1px 8px;border-radius:10px">⚡ URGENTE</span>`:""}
-       ${r.laboratorista?`<span style="font-size:10.5px;font-weight:800;background:#e2f4ea;color:#0f4c2b;border:1.5px solid #86efac;padding:1px 8px;border-radius:10px">🔬 ${r.laboratorista==="Sim"?"c/ lab.":"s/ lab."}</span>`:""}
-       ${r.precisaFoto?`<span style="font-size:10.5px;font-weight:800;background:#f5f3ff;color:#7c3aed;border:1.5px solid #ddd6fe;padding:1px 8px;border-radius:10px">📸 Foto</span>`:""}${r.precisaVideo?`<span style="font-size:10.5px;font-weight:800;background:#eff6ff;color:#1d4ed8;border:1.5px solid #bfdbfe;padding:1px 8px;border-radius:10px">🎬 Vídeo</span>`:""}
+       ${urg&&r.status==="pendente"?`<span style="font-size:10.5px;font-weight:800;background:#fff7ed;color:#c2410c;border:1.5px solid #f97316;padding:1px 8px;border-radius:10px;white-space:nowrap">⚡ URGENTE</span>`:""}
+       ${r.laboratorista?`<span style="font-size:10.5px;font-weight:800;background:#e2f4ea;color:#0f4c2b;border:1.5px solid #86efac;padding:1px 8px;border-radius:10px;white-space:nowrap">🔬 ${r.laboratorista==="Sim"?"c/ lab.":"s/ lab."}</span>`:""}
+       ${r.precisaFoto?`<span style="font-size:10.5px;font-weight:800;background:#f5f3ff;color:#7c3aed;border:1.5px solid #ddd6fe;padding:1px 8px;border-radius:10px;white-space:nowrap">📸 Foto</span>`:""}${r.precisaVideo?`<span style="font-size:10.5px;font-weight:800;background:#eff6ff;color:#1d4ed8;border:1.5px solid #bfdbfe;padding:1px 8px;border-radius:10px;white-space:nowrap">🎬 Vídeo</span>`:""}
      </div>
      ${r.conteudo?`<p style="font-size:11.5px;color:${c.textMuted};margin:3px 0 0;line-height:1.4">📝 ${r.conteudo}</p>`:""}
      ${r.paginas?`<p style="font-size:11px;color:${c.textMuted};margin:2px 0 0">📖 Págs.: ${r.paginas}</p>`:""}
