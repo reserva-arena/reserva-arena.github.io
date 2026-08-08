@@ -3356,12 +3356,8 @@ const bc=r.status==="confirmado"?"#1a6b47":r.status==="pendente"?"#d97706":"#dc2
 const[a2,m2,d2]=r.data.split("-");
 const range=r.horarioFim&&r.horarioFim!==r.horario?` → ${r.horarioFim}`:"";
 const turmaLabel=(r.turmaInicio||r.turma||"")+(r.turmaFim&&r.turmaFim!==(r.turmaInicio||r.turma)?` → ${r.turmaFim}`:"");
-return`<div class="row-hover" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;margin-bottom:6px;background:${urg&&r.status==="pendente"?"#fff7ed":r.data===h?"rgba(26,107,71,.05)":c.surface};border:1px solid ${urg&&r.status==="pendente"?"#f97316":c.border};border-left:4px solid ${urg&&r.status==="pendente"?"#f97316":bc}">
-   <div style="min-width:72px;flex-shrink:0;text-align:center">
-     <p style="font-size:12px;font-family:'DM Mono',monospace;font-weight:800;color:${urg&&r.status==="pendente"?"#c2410c":c.blueMid}">${r.horario}${range}</p>
-     ${showDate?`<p style="font-size:10px;color:${c.textMuted};margin-top:1px">${d2}/${m2}</p>`:""}
-   </div>
-   <div style="width:1px;height:38px;background:${c.borderLight};flex-shrink:0"></div>
+return`<div class="row-hover" style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;margin-bottom:6px;flex-wrap:wrap;background:${urg&&r.status==="pendente"?"#fff7ed":r.data===h?"rgba(26,107,71,.05)":c.surface};border:1px solid ${urg&&r.status==="pendente"?"#f97316":c.border};border-left:4px solid ${urg&&r.status==="pendente"?"#f97316":bc}">
+   <span style="font-size:13px;font-family:'DM Mono',monospace;font-weight:800;color:${urg&&r.status==="pendente"?"#c2410c":c.blueMid};flex-shrink:0">${r.horario}${range}${showDate?` <span style="font-size:11px;color:${c.textMuted};font-weight:600">· ${d2}/${m2}</span>`:""}</span>
    <div style="flex:1;min-width:0">
      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px">
        <span style="font-weight:700;font-size:13px;color:${c.navy}">${r.espaco}</span>
@@ -3381,11 +3377,11 @@ return`<div class="row-hover" style="display:flex;align-items:center;gap:10px;pa
      ${r.tipoAtividade?`<p style="font-size:11px;color:${c.textMuted};margin:2px 0 0">${r.tipoAtividade==="Nave a Vela"?"🚀":"📋"} ${r.tipoAtividade}</p>`:""}
      ${equipBadgesHTML(r)}
    </div>
-   <div style="display:flex;gap:5px;flex-shrink:0;align-items:center">
-     <button onclick="abrirEdicao('${r.id}')" title="Editar agendamento" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:12px;padding:5px 8px;display:flex;align-items:center;gap:3px;font-family:inherit">✏️ Editar</button>
+   <div style="display:flex;gap:5px;flex-shrink:0;align-items:center;margin-left:auto">
+     <button onclick="abrirEdicao('${r.id}')" title="Editar agendamento" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:14px;padding:5px 6px;display:flex;align-items:center;font-family:inherit">✏️</button>
      ${r.status==="pendente"?`<button onclick="aModerar('${r.id}','confirmado')" style="${btn("success","","sm")}">✓</button><button onclick="aModerar('${r.id}','recusado')" style="${btn("danger","","sm")}">✗</button>`:""}
      ${r.status==="confirmado"?`<button onclick="aModerar('${r.id}','recusado')" style="${btn("danger","","sm")}">✕</button>`:""}
-     <button onclick="aExcluir('${r.id}')" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:13px;padding:4px">🗑</button>
+     <button onclick="aExcluir('${r.id}')" title="Excluir agendamento" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:13px;padding:4px">🗑</button>
    </div>
  </div>`;
 }
