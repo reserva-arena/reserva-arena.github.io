@@ -1685,7 +1685,7 @@ _MA={step:1,espaco:"",data:"",blocos:[bVazio()],resumo:false,salvando:false,suce
 const rascunho=lerRascunhoLocal();
 if(rascunho){
 const idadeMs=Date.now()-(rascunho.salvoEm||0);
-if(idadeMs>1000*60*60*48){
+if(idadeMs>1000*60*60*24*8){
 limparRascunhoLocal();
 }else if(confirm("Encontramos um agendamento que não foi enviado por causa de uma instabilidade no sistema. Deseja recuperar os dados preenchidos e tentar enviar de novo?")){
 _MA.espaco=rascunho.espaco||"";_MA.data=rascunho.data||"";_MA.blocos=rascunho.blocos||[bVazio()];
