@@ -405,6 +405,24 @@ return statusFinal==="confirmado"
 ?"A reserva do espaço está confirmada e disponível normalmente."
 :"A reserva do espaço ainda depende da aprovação do Admin (agendamento com menos de 24h ou em fim de semana).";
 }
+// ── Blindagem contra picos de uso (cota do Firestore, instabilidade momentânea) ──
+// Detecta erros transitórios (cota do dia estourada, indisponibilidade, timeout) que valem retry automático,
+// diferente de erros de programação/permissão que não adianta tentar de novo.
+function isErroTransitorio(e){
+const code=e?.code||"";
+const msg=(e?.message||"").toLowerCase();
+return code==="resource-exhausted"||code==="unavailable"||code==="deadline-exceeded"||code==="aborted"||msg.includes("timeout")||msg.includes("quota");
+}
+const RASCUNHO_KEY="reservaArena_rascunhoPendente";
+function salvarRascunhoLocal(dados){
+try{localStorage.setItem(RASCUNHO_KEY,JSON.stringify({...dados,salvoEm:Date.now()}));}catch(e){console.warn("Não foi possível salvar rascunho local:",e);}
+}
+function lerRascunhoLocal(){
+try{const raw=localStorage.getItem(RASCUNHO_KEY);return raw?JSON.parse(raw):null;}catch{return null;}
+}
+function limparRascunhoLocal(){
+try{localStorage.removeItem(RASCUNHO_KEY);}catch{}
+}
 function isDiaUrgente(data){
 try{
 const agora=new Date();
@@ -1662,7 +1680,24 @@ re();
 }
 };
 }
-window.pSetModoProf=v=>{_P.modoProf=v;if(v==='agendar'){_MA={step:1,espaco:"",data:"",blocos:[bVazio()],resumo:false,salvando:false,sucesso:null,erro:"",calA:new Date().getFullYear(),calM:new Date().getMonth(),bibAV:null,recorrente:false,recorrenciaTipo:"semanal"};carregarTodas();}else if(v==='ver'){_P.modoCard="calendario";}re();};
+window.pSetModoProf=v=>{_P.modoProf=v;if(v==='agendar'){
+_MA={step:1,espaco:"",data:"",blocos:[bVazio()],resumo:false,salvando:false,sucesso:null,erro:"",calA:new Date().getFullYear(),calM:new Date().getMonth(),bibAV:null,recorrente:false,recorrenciaTipo:"semanal"};
+const rascunho=lerRascunhoLocal();
+if(rascunho){
+const idadeMs=Date.now()-(rascunho.salvoEm||0);
+if(idadeMs>1000*60*60*48){
+limparRascunhoLocal();
+}else if(confirm("Encontramos um agendamento que não foi enviado por causa de uma instabilidade no sistema. Deseja recuperar os dados preenchidos e tentar enviar de novo?")){
+_MA.espaco=rascunho.espaco||"";_MA.data=rascunho.data||"";_MA.blocos=rascunho.blocos||[bVazio()];
+_MA.bibAV=rascunho.bibAV??null;_MA.bibMic=rascunho.bibMic||0;_MA.bibCaixa=rascunho.bibCaixa||0;_MA.bibProj=rascunho.bibProj||0;
+_MA.recorrente=rascunho.recorrente||false;_MA.recorrenciaTipo=rascunho.recorrenciaTipo||"semanal";_MA.salaAtividade=rascunho.salaAtividade||"";
+if(_MA.espaco&&_MA.data&&_MA.blocos?.length)_MA.resumo=true;
+}else{
+limparRascunhoLocal();
+}
+}
+carregarTodas();
+}else if(v==='ver'){_P.modoCard="calendario";}re();};
 window.pSetModo=v=>{_P.modoCard=v;re();};
 window.pToggleHistorico=()=>{_P.mostrarHistorico=!_P.mostrarHistorico;re();};
 window.toggleSelProf=id=>{if(_P.selecionados.has(id))_P.selecionados.delete(id);else _P.selecionados.add(id);re();};
@@ -2739,13 +2774,14 @@ btnConf.style.cursor=todosVal?"pointer":"not-allowed";
 }
 
 // ─── SALVAR AGENDAMENTO ───────────────────────────────────────────────────
-window.maSalvar=async()=>{
+window.maSalvar=async(isRetry=false)=>{
 // Bloquear se precisaCiencia e checkbox não marcado
 const chkCiente=document.getElementById('chk-ciente');
 if(chkCiente&&!chkCiente.checked){
 alert('Marque a caixa de ciência antes de confirmar.');
 return;
 }
+if(!isRetry){_MA._tentativas=0;_MA._escritaIniciada=false;}
 _MA.salvando=true;_MA.erro="";re();
 const{espaco,data,blocos}=_MA;
 const eo=ESPACOS.find(e=>e.nome===espaco);
@@ -2993,11 +3029,13 @@ criadoEm:ts
 }catch{}
 
 // 5. Commit do batch — uma única operação de rede!
+_MA._escritaIniciada=true;
 await Promise.race([
 batch.commit(),
 new Promise((_,rej)=>setTimeout(()=>rej(new Error("Timeout ao salvar")),15000))
 ]);
-_MA.sucesso=st;_MA.temMidia=temMidia||false;_MA.tipoEspaco=eoSalvar?.tipo||"";_MA.salvando=false;re();
+_MA._escritaIniciada=false;
+_MA.sucesso=st;_MA.temMidia=temMidia||false;_MA.tipoEspaco=eoSalvar?.tipo||"";_MA.salvando=false;limparRascunhoLocal();re();
 
 // 6. E-mail de confirmação para o professor (via email_queue → notify.js)
 try {
@@ -3063,7 +3101,24 @@ fetch("https://fcm.googleapis.com/fcm/send",{method:"POST",headers:{"Content-Typ
 
 }catch(e){
 console.error(e);
-_MA.erro="Erro ao salvar. Tente novamente.";_MA.salvando=false;_MA.resumo=false;re();
+const podeAutoRetry=isErroTransitorio(e)&&!_MA._escritaIniciada;
+if(podeAutoRetry&&(_MA._tentativas||0)<2){
+_MA._tentativas=(_MA._tentativas||0)+1;
+const esperaMs=1500*_MA._tentativas;
+_MA.erro=`Sistema ocupado no momento — tentando novamente em ${Math.round(esperaMs/1000)}s (tentativa ${_MA._tentativas}/2)...`;re();
+setTimeout(()=>window.maSalvar(true),esperaMs);
+return;
+}
+if(isErroTransitorio(e)){
+salvarRascunhoLocal({espaco,data,blocos:_MA.blocos,bibAV:_MA.bibAV,bibMic:_MA.bibMic,bibCaixa:_MA.bibCaixa,bibProj:_MA.bibProj,recorrente:_MA.recorrente,recorrenciaTipo:_MA.recorrenciaTipo,salaAtividade:_MA.salaAtividade});
+_MA.erro=_MA._escritaIniciada
+?"⚠️ O sistema está sobrecarregado e não deu pra confirmar se o agendamento foi salvo. Antes de tentar de novo, confira em 'Ver agendamentos' se ele já aparece lá (pra não duplicar). Seus dados também ficaram salvos aqui neste aparelho, caso precise reenviar. Se o problema persistir, o limite volta ao normal por volta das 4h da manhã."
+:"⚠️ O sistema está sobrecarregado agora (muitos agendamentos ao mesmo tempo). Não se preocupe — seus dados ficaram salvos aqui neste aparelho. Toque em 'Confirmar agendamento' novamente daqui a alguns minutos. Se ainda não funcionar, o limite volta ao normal por volta das 4h da manhã.";
+}else{
+_MA.erro="Erro ao salvar. Tente novamente.";
+}
+_MA._escritaIniciada=false;
+_MA.salvando=false;_MA.resumo=false;re();
 }
 };
 
