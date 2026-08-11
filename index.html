@@ -373,6 +373,38 @@ if(diasLetivosAte(data)<1)return true;
 return false;
 }catch{return false;}
 }
+// ── Fim de semana / decisão se a pendência precisa de ação do Admin ──
+function isFds(data){
+try{const[a,m,d]=data.split("-").map(Number);const dow=new Date(a,m-1,d).getDay();return dow===0||dow===6;}catch{return false;}
+}
+function precisaAdmin(r){
+return isUrgente(r.data,r.horario)||isFds(r.data);
+}
+// Após T.I. ou Marketing aprovar/recusar sua parte, verifica se a reserva do espaço
+// pode ser confirmada automaticamente (quando o Admin não precisa agir: não é urgente nem fim de semana,
+// e todas as aprovações necessárias — equipamento/mídia — já foram resolvidas).
+// Retorna o status final do ESPAÇO ("confirmado" ou "pendente") para uso nas mensagens.
+async function tentarConfirmarAuto(rAtual){
+try{
+if(!rAtual)return"pendente";
+if(rAtual.status!=="pendente")return rAtual.status;
+if(precisaAdmin(rAtual))return"pendente";
+const equipOk=rAtual.statusEquip===undefined||rAtual.statusEquip==null||rAtual.statusEquip!=="pendente";
+const midiaOk=rAtual.statusMarketing===undefined||rAtual.statusMarketing==null||rAtual.statusMarketing!=="pendente";
+if(equipOk&&midiaOk){
+await updateDoc(doc(db,"reservas",rAtual.id),{status:"confirmado"});
+return"confirmado";
+}
+return"pendente";
+}catch(e){console.error("tentarConfirmarAuto:",e);return rAtual?.status||"pendente";}
+}
+// Frase clara sobre a situação do ESPAÇO, independente do que houve com equipamento/mídia —
+// usada nas notificações pro professor e pro admin.
+function fraseSituacaoEspaco(statusFinal){
+return statusFinal==="confirmado"
+?"A reserva do espaço está confirmada e disponível normalmente."
+:"A reserva do espaço ainda depende da aprovação do Admin (agendamento com menos de 24h ou em fim de semana).";
+}
 function isDiaUrgente(data){
 try{
 const agora=new Date();
@@ -1005,9 +1037,11 @@ await updateDoc(doc(db,"reservas",id),{statusMarketing:"aprovado"});
 if(r){
 const local=r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco;
 const dataFmt=r.data.split("-").reverse().join("/");
-await gravarNotif(r.professorId,"📸 Solicitação de foto/vídeo aprovada!",`${local} — ${dataFmt} às ${r.horario}`,"aprovacao");
+const statusFinal=await tentarConfirmarAuto({...r,statusMarketing:"aprovado"});
+const extra=r.espaco==="Equipe de Marketing"?"":` ${fraseSituacaoEspaco(statusFinal)}`;
+await gravarNotif(r.professorId,"📸 Solicitação de foto/vídeo aprovada!",`${local} — ${dataFmt} às ${r.horario}.${extra}`,"aprovacao");
 _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
-gravarNotif(u.uid,"📸 Marketing aprovou solicitação",`${r.professor} — ${local} ${dataFmt} às ${r.horario}`,"info")
+gravarNotif(u.uid,"📸 Marketing aprovou solicitação",`${r.professor} — ${local} ${dataFmt} às ${r.horario}.${extra}`,"info")
 );
 }
 re();
@@ -1019,9 +1053,11 @@ await updateDoc(doc(db,"reservas",id),{statusMarketing:"recusado"});
 if(r){
 const local=r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco;
 const dataFmt=r.data.split("-").reverse().join("/");
-await gravarNotif(r.professorId,"📸 Solicitação de foto/vídeo recusada",`${local} — ${dataFmt} às ${r.horario}`,"recusa");
+const statusFinal=await tentarConfirmarAuto({...r,statusMarketing:"recusado"});
+const extra=r.espaco==="Equipe de Marketing"?"":` A reserva do espaço não foi cancelada por causa disso. ${fraseSituacaoEspaco(statusFinal)}`;
+await gravarNotif(r.professorId,"📸 Solicitação de foto/vídeo recusada",`${local} — ${dataFmt} às ${r.horario}.${extra}`,"recusa");
 _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
-gravarNotif(u.uid,"📸 Marketing recusou solicitação",`${r.professor} — ${local} ${dataFmt} às ${r.horario}`,"info")
+gravarNotif(u.uid,"📸 Marketing recusou solicitação",`${r.professor} — ${local} ${dataFmt} às ${r.horario}.${extra}`,"info")
 );
 }
 re();
@@ -1119,13 +1155,16 @@ re();
 window.tiAprovar=async(id)=>{
 
 const r=_todas.find(r=>r.id===id);
-// Marca equipamento como aprovado E confirma a reserva (status="confirmado")
-try{await updateDoc(doc(db,"reservas",id),{statusEquip:"aprovado",status:"confirmado"});}catch(e){alert("Erro ao aprovar: "+e.message);return;}
+// Marca equipamento como aprovado. Só confirma a reserva do espaço junto se o Admin não precisar aprovar
+// (não é urgente nem fim de semana) — senão o espaço continua pendente aguardando o Admin.
+const podeConfirmarJunto=r&&r.status==="pendente"&&!precisaAdmin(r);
+try{await updateDoc(doc(db,"reservas",id),{statusEquip:"aprovado",...(podeConfirmarJunto?{status:"confirmado"}:{})});}catch(e){alert("Erro ao aprovar: "+e.message);return;}
 if(r){
 const dataFmt=r.data.split("-").reverse().join("/");
-await gravarNotif(r.professorId,"✅ Equipamento confirmado pelo T.I.",`${r.espaco} — ${dataFmt} às ${r.horario}`,"aprovacao");
+const statusFinal=podeConfirmarJunto?"confirmado":r.status;
+await gravarNotif(r.professorId,"✅ Equipamento confirmado pelo T.I.",`${r.espaco} — ${dataFmt} às ${r.horario}. ${fraseSituacaoEspaco(statusFinal)}`,"aprovacao");
 _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
-gravarNotif(u.uid,"✅ T.I. confirmou equipamento",`${r.professor} — ${r.espaco} ${dataFmt} às ${r.horario}`,"info")
+gravarNotif(u.uid,"✅ T.I. confirmou equipamento",`${r.professor} — ${r.espaco} ${dataFmt} às ${r.horario}. ${fraseSituacaoEspaco(statusFinal)}`,"info")
 );
 }
 re();
@@ -1133,13 +1172,14 @@ re();
 window.tiRecusar=async(id)=>{
 
 const r=_todas.find(r=>r.id===id);
-// Apenas marca equipamento como recusado — NÃO altera status da reserva de espaço
+// Apenas marca equipamento como recusado — a reserva do espaço só é confirmada automaticamente se o Admin não precisar agir
 try{await updateDoc(doc(db,"reservas",id),{statusEquip:"recusado"});}catch(e){alert("Erro ao recusar: "+e.message);return;}
 if(r){
 const dataFmt=r.data.split("-").reverse().join("/");
-await gravarNotif(r.professorId,"❌ Equipamento indisponível",`T.I. informou que não haverá equipamento disponível para ${r.espaco} — ${dataFmt} às ${r.horario}. Sua reserva do espaço continua confirmada.`,"recusa");
+const statusFinal=await tentarConfirmarAuto({...r,statusEquip:"recusado"});
+await gravarNotif(r.professorId,"❌ Equipamento indisponível",`T.I. informou que não haverá equipamento disponível para ${r.espaco} — ${dataFmt} às ${r.horario}. ${fraseSituacaoEspaco(statusFinal)}`,"recusa");
 _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
-gravarNotif(u.uid,"❌ T.I. recusou equipamento",`${r.professor} — ${r.espaco} ${dataFmt} às ${r.horario}`,"info")
+gravarNotif(u.uid,"❌ T.I. recusou equipamento",`${r.professor} — ${r.espaco} ${dataFmt} às ${r.horario}. ${fraseSituacaoEspaco(statusFinal)}`,"info")
 );
 }
 re();
@@ -3085,7 +3125,7 @@ if(_A.fStatus&&r.status!==_A.fStatus)return false;
 return true;
 });
 const urgentes=_todas.filter(r=>r.status==="pendente"&&!r.reservaAutomatica&&isUrgente(r.data,r.horario));
-const pend=_todas.filter(r=>r.status==="pendente"&&!r.reservaAutomatica).length;
+const pend=_todas.filter(r=>r.status==="pendente"&&!r.reservaAutomatica&&precisaAdmin(r)).length;
 const hoje_rs=_todas.filter(r=>r.data===h&&r.status!=="recusado"&&!r.reservaAutomatica).length;
 
 // ── HEADER ──
@@ -3202,7 +3242,7 @@ html+=`<div class="fade-in" style="margin-top:14px;background:${c.surface};borde
          <button onclick="_A.diaSel=null;re()" style="background:rgba(255,255,255,.2);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;padding:4px 10px;cursor:pointer">✕</button>
        </div>
        <div style="padding:12px 16px">
-         ${!rsdia.length?`<p style="font-size:13px;color:${c.textMuted};text-align:center;padding:14px 0">🎉 Nenhum agendamento.</p>`:rsdia.map(r=>admRow(r)).join("")}
+         ${!rsdia.length?`<p style="font-size:13px;color:${c.textMuted};text-align:center;padding:14px 0">🎉 Nenhum agendamento.</p>`:rsdia.map(r=>admRow(r,false,r.status!=="pendente"||precisaAdmin(r))).join("")}
        </div>
      </div>`;
 }
@@ -3211,7 +3251,8 @@ html+=`<div class="fade-in" style="margin-top:14px;background:${c.surface};borde
 // ── AGENDA ──
 if(_A.modoVisu==="agenda"){
 const urg=filtradas.filter(r=>r.status==="pendente"&&isUrgente(r.data,r.horario)&&(!_A.fData||r.data===_A.fData));
-const pend=filtradas.filter(r=>r.status==="pendente"&&!isUrgente(r.data,r.horario)&&(!_A.fData||r.data===_A.fData));
+const pend=filtradas.filter(r=>r.status==="pendente"&&!isUrgente(r.data,r.horario)&&isFds(r.data)&&(!_A.fData||r.data===_A.fData));
+const aguardandoAreas=filtradas.filter(r=>r.status==="pendente"&&!precisaAdmin(r)&&(!_A.fData||r.data===_A.fData));
 const conf=filtradas.filter(r=>r.status!=="pendente"&&(_A.historico||r.data>=h)&&(!_A.fData||r.data===_A.fData)&&(!_A.fDataAte||r.data<=_A.fDataAte));
 
 html+=`<div style="display:flex;gap:4px;margin-bottom:16px;background:${c.surface};border-radius:10px;padding:4px;border:1px solid ${c.border};width:fit-content;flex-wrap:wrap">
@@ -3221,20 +3262,25 @@ html+=`<div style="display:flex;gap:4px;margin-bottom:16px;background:${c.surfac
 if(_A.aba==="reservas"){
 if(urg.length){
 html+=`<div style="margin-bottom:16px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="width:8px;height:8px;border-radius:50%;background:#f97316"></div><p style="font-size:12px;font-weight:800;color:#c2410c;text-transform:uppercase">⚡ Urgentes · ${urg.length}</p><div style="flex:1;height:1px;background:#fed7aa"></div></div>`;
-urg.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1).forEach(r=>{html+=admRow(r,true);});
+urg.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1).forEach(r=>{html+=admRow(r,true,true);});
 html+=`</div>`;
 }
 if(pend.length){
-html+=`<div style="margin-bottom:16px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="width:8px;height:8px;border-radius:50%;background:#d97706"></div><p style="font-size:12px;font-weight:800;color:${c.amber};text-transform:uppercase">Pendentes · ${pend.length}</p><div style="flex:1;height:1px;background:${c.amberBorder}"></div></div>`;
-pend.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1).forEach(r=>{html+=admRow(r,true);});
+html+=`<div style="margin-bottom:16px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="width:8px;height:8px;border-radius:50%;background:#d97706"></div><p style="font-size:12px;font-weight:800;color:${c.amber};text-transform:uppercase">Pendentes (fim de semana) · ${pend.length}</p><div style="flex:1;height:1px;background:${c.amberBorder}"></div></div>`;
+pend.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1).forEach(r=>{html+=admRow(r,true,true);});
+html+=`</div>`;
+}
+if(aguardandoAreas.length){
+html+=`<div style="margin-bottom:16px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="width:8px;height:8px;border-radius:50%;background:#94a3b8"></div><p style="font-size:12px;font-weight:800;color:#64748b;text-transform:uppercase">Aguardando T.I./Marketing · ${aguardandoAreas.length}</p><div style="flex:1;height:1px;background:#e2e8f0"></div></div><p style="font-size:11px;color:${c.textMuted};margin:-4px 0 8px">Sem ação necessária sua — a área responsável aprova ou recusa. Mesmo que recuse o equipamento/foto, o espaço fica confirmado normalmente. Assim que resolvido, confirma sozinho.</p>`;
+aguardandoAreas.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1).forEach(r=>{html+=admRow(r,true,false);});
 html+=`</div>`;
 }
 if(conf.length){
 html+=`<div style="margin-bottom:16px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="width:8px;height:8px;border-radius:50%;background:#1a6b47"></div><p style="font-size:12px;font-weight:800;color:${c.green};text-transform:uppercase">Confirmados · ${conf.length}</p><div style="flex:1;height:1px;background:${c.greenBorder}"></div></div>`;
-conf.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1).forEach(r=>{html+=admRow(r,true);});
+conf.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1).forEach(r=>{html+=admRow(r,true,true);});
 html+=`</div>`;
 }
-if(!urg.length&&!pend.length&&!conf.length)html+=`<div style="text-align:center;padding:40px;color:${c.textMuted}"><p style="font-size:32px">🎉</p><p>Nenhum agendamento encontrado.</p></div>`;
+if(!urg.length&&!pend.length&&!aguardandoAreas.length&&!conf.length)html+=`<div style="text-align:center;padding:40px;color:${c.textMuted}"><p style="font-size:32px">🎉</p><p>Nenhum agendamento encontrado.</p></div>`;
 }
 
 if(_A.aba==="espacos"){
@@ -3248,7 +3294,7 @@ html+=`<div style="margin-bottom:16px;background:${c.surface};border:1px solid $
            <p style="font-size:14px;font-weight:800;color:#fff">${esp}</p>
            <span style="margin-left:auto;background:rgba(255,255,255,.2);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px">${rs.length}</span>
          </div>
-         <div style="padding:10px 14px">${rs.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1).map(r=>admRow(r,true)).join("")}</div>
+         <div style="padding:10px 14px">${rs.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1).map(r=>admRow(r,true,r.status!=="pendente"||precisaAdmin(r))).join("")}</div>
        </div>`;
 });
 if(!Object.keys(porEspaco).length)html+=`<div style="text-align:center;padding:40px;color:${c.textMuted}"><p style="font-size:32px">🏛️</p><p>Nenhum agendamento.</p></div>`;
@@ -3349,13 +3395,14 @@ return html;
 
 function gerarRankingProfessores(todas,modo){const c={};const agora=new Date();const hoje=fmtHoje();const mesIni=`${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,'0')}-01`;const mesFim=`${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,'0')}-31`;todas.filter(r=>!r.reservaAutomatica&&r.status!=="recusado"&&r.data>=mesIni&&r.data<=mesFim&&(modo==="total"||r.data<=hoje)).forEach(r=>{if(r.professor)c[r.professor]=(c[r.professor]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,6);}
 
-function admRow(r,showDate=false){
+function admRow(r,showDate=false,mostrarBotoes=true){
 const c=C(),h=fmtHoje();
 const urg=isUrgente(r.data,r.horario);
 const bc=r.status==="confirmado"?"#1a6b47":r.status==="pendente"?"#d97706":"#dc2626";
 const[a2,m2,d2]=r.data.split("-");
 const range=r.horarioFim&&r.horarioFim!==r.horario?` → ${r.horarioFim}`:"";
 const turmaLabel=(r.turmaInicio||r.turma||"")+(r.turmaFim&&r.turmaFim!==(r.turmaInicio||r.turma)?` → ${r.turmaFim}`:"");
+const podeAprovarEspaco=mostrarBotoes&&r.status==="pendente"&&precisaAdmin(r);
 return`<div class="row-hover" style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;margin-bottom:6px;flex-wrap:wrap;background:${urg&&r.status==="pendente"?"#fff7ed":r.data===h?"rgba(26,107,71,.05)":c.surface};border:1px solid ${urg&&r.status==="pendente"?"#f97316":c.border};border-left:4px solid ${urg&&r.status==="pendente"?"#f97316":bc}">
    <span style="font-size:13px;font-family:'DM Mono',monospace;font-weight:800;color:${urg&&r.status==="pendente"?"#c2410c":c.blueMid};flex-shrink:0">${r.horario}${range}${showDate?` <span style="font-size:11px;color:${c.textMuted};font-weight:600">· ${d2}/${m2}</span>`:""}</span>
    <div style="flex:1;min-width:0">
@@ -3369,6 +3416,8 @@ return`<div class="row-hover" style="display:flex;align-items:center;gap:8px;pad
      <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
        ${badge(r.status)}
        ${urg&&r.status==="pendente"?`<span style="font-size:10.5px;font-weight:800;background:#fff7ed;color:#c2410c;border:1.5px solid #f97316;padding:1px 8px;border-radius:10px;white-space:nowrap">⚡ URGENTE</span>`:""}
+       ${r.statusEquip==="pendente"?`<span style="font-size:10.5px;font-weight:800;background:#f1f5f9;color:#475569;border:1.5px solid #cbd5e1;padding:1px 8px;border-radius:10px;white-space:nowrap">🔧 Pendente T.I.</span>`:""}
+       ${r.statusMarketing==="pendente"?`<span style="font-size:10.5px;font-weight:800;background:#f1f5f9;color:#475569;border:1.5px solid #cbd5e1;padding:1px 8px;border-radius:10px;white-space:nowrap">📸 Pendente Mkt</span>`:""}
        ${r.laboratorista?`<span style="font-size:10.5px;font-weight:800;background:#e2f4ea;color:#0f4c2b;border:1.5px solid #86efac;padding:1px 8px;border-radius:10px;white-space:nowrap">🔬 ${r.laboratorista==="Sim"?"c/ lab.":"s/ lab."}</span>`:""}
        ${r.precisaFoto?`<span style="font-size:10.5px;font-weight:800;background:#f5f3ff;color:#7c3aed;border:1.5px solid #ddd6fe;padding:1px 8px;border-radius:10px;white-space:nowrap">📸 Foto</span>`:""}${r.precisaVideo?`<span style="font-size:10.5px;font-weight:800;background:#eff6ff;color:#1d4ed8;border:1.5px solid #bfdbfe;padding:1px 8px;border-radius:10px;white-space:nowrap">🎬 Vídeo</span>`:""}
      </div>
@@ -3379,8 +3428,8 @@ return`<div class="row-hover" style="display:flex;align-items:center;gap:8px;pad
    </div>
    <div style="display:flex;gap:5px;flex-shrink:0;align-items:center;margin-left:auto">
      <button onclick="abrirEdicao('${r.id}')" title="Editar agendamento" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:14px;padding:5px 6px;display:flex;align-items:center;font-family:inherit">✏️</button>
-     ${r.status==="pendente"?`<button onclick="aModerar('${r.id}','confirmado')" style="${btn("success","","sm")}">✓</button><button onclick="aModerar('${r.id}','recusado')" style="${btn("danger","","sm")}">✗</button>`:""}
-     ${r.status==="confirmado"?`<button onclick="aModerar('${r.id}','recusado')" style="${btn("danger","","sm")}">✕</button>`:""}
+     ${podeAprovarEspaco?`<button onclick="aModerar('${r.id}','confirmado')" style="${btn("success","","sm")}">✓</button><button onclick="aModerar('${r.id}','recusado')" style="${btn("danger","","sm")}">✗</button>`:""}
+     ${mostrarBotoes&&r.status==="confirmado"?`<button onclick="aModerar('${r.id}','recusado')" style="${btn("danger","","sm")}">✕</button>`:""}
      <button onclick="aExcluir('${r.id}')" title="Excluir agendamento" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:13px;padding:4px">🗑</button>
    </div>
  </div>`;
