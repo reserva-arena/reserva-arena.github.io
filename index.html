@@ -607,6 +607,10 @@ if(_usuario.perfil==="ti"||_usuario.perfil==="coord_ti"){renderTI();return;}
 if(_usuario.perfil==="coord_inf"||_usuario.perfil==="coord_fund1"||_usuario.perfil==="coord_fund2"){renderCoord();return;}
 renderApp();
 }
+// Exposto em window: scripts inline (onclick="...") em HTML injetado via innerHTML rodam no escopo
+// global, não no escopo deste <script type="module"> — então funções/variáveis referenciadas
+// diretamente em onclick (sem passar por outra função já em window.xxx) precisam estar aqui.
+window.re=re;
 
 // ════════════════════════════════════════════════════════════════════════════
 // TELA PÚBLICA
@@ -1412,6 +1416,7 @@ window.scrollTo({top:0,behavior:"smooth"});re();
 // PROFESSOR VIEW
 // ════════════════════════════════════════════════════════════════════════════
 let _P={modoProf:"escolha_inicial",modoCard:"calendario",modoVisu:"semana",filtroGrade:"todos",filtroEspaco:"",semIni:"",diaSel:null,mesCal:null,mostrarHistorico:false,filtroPendente:false,selecionados:new Set(),modoSelecao:false,espacoEscolhido:null,agendaDiasVisiveis:5};
+window._P=_P;
 
 function renderProfessorView(){
 
@@ -3167,6 +3172,7 @@ fecharEdicao();
 // ADMIN VIEW
 // ════════════════════════════════════════════════════════════════════════════
 let _A={fSegmento:"",modoVisu:"calendario",aba:"reservas",fEspaco:"",fProf:"",fStatus:"",fTurma:"",mesCal:null,diaSel:null,historico:false,feedExpandido:false,rankModo:"realizado"};
+window._A=_A;
 window.setRankModo=v=>{_A.rankModo=v;re();};
 
 function renderAdminView(){
