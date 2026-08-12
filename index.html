@@ -1432,7 +1432,7 @@ if(!_P.mesCal){const d=new Date();_P.mesCal={a:d.getFullYear(),m:d.getMonth()};}
 const fonteBase=(_P.filtroGrade==='todos'?_todas:_minhas).filter(r=>!r.reservaAutomatica&&(!_P.filtroEspaco||r.espaco===_P.filtroEspaco));
 const futuras=fonteBase.filter(r=>r.data>=h&&r.status!=="recusado");
 const passadas=fonteBase.filter(r=>r.data<h).reverse();
-const pendentes=_minhas.filter(r=>r.status==="pendente"&&!r.reservaAutomatica&&(!_P.filtroEspaco||r.espaco===_P.filtroEspaco));
+const pendentes=fonteBase.filter(r=>r.status==="pendente");
 
 let html=`<div>`;
 
