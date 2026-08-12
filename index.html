@@ -3153,6 +3153,15 @@ salvarRascunhoLocal({espaco,data,blocos:_MA.blocos,bibAV:_MA.bibAV,bibMic:_MA.bi
 _MA.erro=_MA._escritaIniciada
 ?"⚠️ O sistema está sobrecarregado e não deu pra confirmar se o agendamento foi salvo. Antes de tentar de novo, confira em 'Ver agendamentos' se ele já aparece lá (pra não duplicar). Seus dados também ficaram salvos aqui neste aparelho, caso precise reenviar. Se o problema persistir, o limite volta ao normal por volta das 4h da manhã."
 :"⚠️ O sistema está sobrecarregado agora (muitos agendamentos ao mesmo tempo). Não se preocupe — seus dados ficaram salvos aqui neste aparelho. Toque em 'Confirmar agendamento' novamente daqui a alguns minutos. Se ainda não funcionar, o limite volta ao normal por volta das 4h da manhã.";
+// Avisa o Admin no sino — assim dá pra entrar em contato com o professor e ajudar a reenviar,
+// em vez de depender só do rascunho local (que é invisível pra quem administra o app).
+try{
+const horarioFalha=_MA.blocos?.[0]?.horario||"";
+const dataFmt=data?data.split("-").reverse().join("/"):"";
+_usuarios.filter(u=>u.perfil==="admin").forEach(u=>
+gravarNotif(u.uid,"⚠️ Professor não conseguiu agendar (sistema sobrecarregado)",`${_usuario?.nome||"Professor"} tentou agendar ${espaco||"?"} — ${dataFmt} às ${horarioFalha}, mas o sistema estava sobrecarregado. Os dados ficaram salvos no aparelho dele; pode valer entrar em contato pra ajudar a reenviar.`,"info")
+);
+}catch(en){console.warn("notif admin sobrecarga:",en);}
 }else{
 _MA.erro="Erro ao salvar. Tente novamente.";
 }
