@@ -1394,7 +1394,7 @@ window.doSignOut=()=>signOut(auth);
 window.toggleAdminVisu=()=>{};
 window.setAdminVisu=(v)=>{
 _adminVisu=v;
-if(v==="professor"){_P.modoProf="escolha_inicial";_P.modoCard="calendario";_P.modoVisu="semana";_P.semIni=getSegunda(fmtHoje());_P.diaSel=null;_P.filtroGrade="todos";_P.mostrarHistorico=false;_P.filtroPendente=false;}
+if(v==="professor"){_P.modoProf="escolha_inicial";_P.modoCard="calendario";_P.modoVisu="semana";_P.semIni=getSegunda(fmtHoje());_P.diaSel=null;_P.filtroGrade="meus";_P.mostrarHistorico=false;_P.filtroPendente=false;}
 if(v==="ti"&&window._TI)_TI.aba="minhas";
 if(v==="marketing"&&window._MK)_MK.aba="minhas";
 re();
@@ -1406,7 +1406,7 @@ _A.diaSel=null;_A.historico=false;
 const d=new Date();_A.mesCal={a:d.getFullYear(),m:d.getMonth()};
 } else {
 _P.modoProf="escolha_inicial";_P.modoCard="calendario";_P.modoVisu="mes";
-_P.semIni=getSegunda(fmtHoje());_P.diaSel=null;_P.filtroGrade="todos";
+_P.semIni=getSegunda(fmtHoje());_P.diaSel=null;_P.filtroGrade="meus";
 _P.mostrarHistorico=false;_P.filtroPendente=false;
 }
 window.scrollTo({top:0,behavior:"smooth"});re();
@@ -1423,7 +1423,34 @@ function renderProfessorView(){
 // TELA INICIAL: professor escolhe entre Agendar ou Ver agendamentos
 if(_P.modoProf==="escolha_inicial"){
 const c=C();
-return `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:40px;padding:20px"><div style="text-align:center"><p style="font-size:14px;color:${c.textMuted};margin-bottom:20px">Bem-vindo, ${_usuario?.nome||"Professor"}! 👋</p><p style="font-size:20px;font-weight:700;margin-bottom:40px;color:${c.text}">Como você deseja começar?</p><div style="display:flex;gap:20px;flex-wrap:wrap;justify-content:center"><button onclick="pSetModoProf('agendar')" style="background:#1a6b47;color:#fff;border:none;border-radius:12px;padding:24px 48px;font-size:16px;font-weight:700;cursor:pointer;min-width:220px;transition:all .2s;box-shadow:0 2px 8px rgba(26,107,71,.2)">📅 Agendar um espaço</button><button onclick="pSetModoProf('ver');carregarTodas();" style="background:#0d5a3d;color:#fff;border:none;border-radius:12px;padding:24px 48px;font-size:16px;font-weight:700;cursor:pointer;min-width:220px;transition:all .2s;box-shadow:0 2px 8px rgba(13,90,61,.2)">👀 Ver agendamentos</button></div></div></div>`;
+return `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:40px;padding:20px"><div style="text-align:center"><p style="font-size:14px;color:${c.textMuted};margin-bottom:20px">Bem-vindo, ${_usuario?.nome||"Professor"}! 👋</p><p style="font-size:20px;font-weight:700;margin-bottom:40px;color:${c.text}">Como você deseja começar?</p><div style="display:flex;gap:20px;flex-wrap:wrap;justify-content:center"><button onclick="pSetModoProf('agendar')" style="background:#1a6b47;color:#fff;border:none;border-radius:12px;padding:24px 48px;font-size:16px;font-weight:700;cursor:pointer;min-width:220px;transition:all .2s;box-shadow:0 2px 8px rgba(26,107,71,.2)">📅 Agendar um espaço</button><button onclick="pSetModoProf('ver_escolha')" style="background:#0d5a3d;color:#fff;border:none;border-radius:12px;padding:24px 48px;font-size:16px;font-weight:700;cursor:pointer;min-width:220px;transition:all .2s;box-shadow:0 2px 8px rgba(13,90,61,.2)">👀 Ver agendamentos</button></div></div></div>`;
+}
+// TELA DE ESCOLHA: antes de carregar qualquer coisa, pergunta o que o professor
+// realmente precisa ver — evita buscar o espaço/agendamentos de todo mundo à toa.
+if(_P.modoProf==="ver_escolha"){
+const c=C();
+if(_P.filtroGradeEscolha===undefined)_P.filtroGradeEscolha="meus";
+if(_P.filtroEspacoEscolha===undefined)_P.filtroEspacoEscolha="";
+return `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:28px;padding:20px"><div style="text-align:center;max-width:380px;width:100%">
+   <p style="font-size:20px;font-weight:700;margin-bottom:8px;color:${c.text}">O que você quer ver?</p>
+   <p style="font-size:13px;color:${c.textMuted};margin-bottom:28px">Escolha pra carregar só o necessário.</p>
+   <div style="text-align:left;margin-bottom:20px">
+     <label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase;margin-bottom:6px;display:block">🏛️ Qual espaço?</label>
+     <select onchange="_P.filtroEspacoEscolha=this.value;re()" style="width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid ${c.border};background:${c.surface};color:${c.text};font-size:14px;font-family:inherit">
+       <option value="" ${_P.filtroEspacoEscolha===""?"selected":""}>🌐 Todos os espaços</option>
+       ${ESPACOS.map(e=>`<option value="${e.nome}" ${_P.filtroEspacoEscolha===e.nome?"selected":""}>${tipoIcon(e.tipo,e.nome)} ${e.nome}</option>`).join("")}
+     </select>
+   </div>
+   <div style="text-align:left;margin-bottom:28px">
+     <label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase;margin-bottom:6px;display:block">👤 Agendamentos de quem?</label>
+     <div style="display:flex;gap:8px">
+       <button onclick="_P.filtroGradeEscolha='meus';re()" style="flex:1;padding:12px;border-radius:10px;border:2px solid ${_P.filtroGradeEscolha==='meus'?'#0d5a3d':c.border};background:${_P.filtroGradeEscolha==='meus'?'#0d5a3d':c.surface};color:${_P.filtroGradeEscolha==='meus'?'#fff':c.text};font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">Só os meus</button>
+       <button onclick="_P.filtroGradeEscolha='todos';re()" style="flex:1;padding:12px;border-radius:10px;border:2px solid ${_P.filtroGradeEscolha==='todos'?'#0d5a3d':c.border};background:${_P.filtroGradeEscolha==='todos'?'#0d5a3d':c.surface};color:${_P.filtroGradeEscolha==='todos'?'#fff':c.text};font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">De todos os professores</button>
+     </div>
+   </div>
+   <button onclick="pConfirmarEscolhaVer()" style="width:100%;background:#1a6b47;color:#fff;border:none;border-radius:12px;padding:16px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(26,107,71,.2)">Ver agendamentos →</button>
+   <button onclick="pSetModoProf('escolha_inicial')" style="width:100%;background:none;border:none;color:${c.textMuted};padding:12px;font-size:13px;cursor:pointer;margin-top:4px;font-family:inherit">← Voltar</button>
+ </div></div>`;
 }
 const c=C(),h=fmtHoje();
 if(!_P.semIni)_P.semIni=getSegunda(h);
@@ -1491,7 +1518,7 @@ html+=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;paddin
        <option value="" style="background:#1a6b47">Todos os espaços</option>
        ${ESPACOS.map(e=>`<option value="${e.nome}" ${_P.filtroEspaco===e.nome?"selected":""} style="background:#1a6b47">${e.nome}</option>`).join("")}
      </select>
-     <button onclick="_todasCarregadas=false;carregarTodas();" title="Atualizar agendamentos" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:7px;color:#fff;font-weight:600;font-size:11.5px;cursor:pointer;padding:5px 10px;display:flex;align-items:center;gap:4px;font-family:inherit">🔄 Atualizar</button>
+     <button onclick="_todasCarregadas=false;_todasCarregadasChave=null;carregarTodas(_P.filtroEspaco||undefined);" title="Atualizar agendamentos" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:7px;color:#fff;font-weight:600;font-size:11.5px;cursor:pointer;padding:5px 10px;display:flex;align-items:center;gap:4px;font-family:inherit">🔄 Atualizar</button>
    </div>
    <div style="background:${c.surface};border-bottom:1px solid ${c.border};padding:8px 14px;font-size:11.5px;color:${c.blueMid}">
      <p style="display:flex;align-items:center;gap:6px;margin-bottom:4px">💡 Descrição da aula, páginas do livro e outros detalhes só aparecem no modo <strong style="cursor:pointer;text-decoration:underline" onclick="pSetModo('lista')">☰ Agenda</strong></p>
@@ -1588,7 +1615,7 @@ html+=`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin
        ${ESPACOS.map(e=>`<option value="${e.nome}" ${_P.filtroEspaco===e.nome?"selected":""}>${tipoIcon(e.tipo,e.nome)} ${e.nome}</option>`).join("")}
      </select>
      ${_P.filtroEspaco?`<button onclick="pSetEspaco('')" style="${btn('ghost')};padding:7px 12px;font-size:12px;white-space:nowrap">✕ Limpar</button>`:""}
-     <button onclick="_todasCarregadas=false;carregarTodas();" title="Atualizar agendamentos" style="${btn('ghost')};padding:7px 12px;font-size:12px;white-space:nowrap">🔄 Atualizar</button>
+     <button onclick="_todasCarregadas=false;_todasCarregadasChave=null;carregarTodas(_P.filtroEspaco||undefined);" title="Atualizar agendamentos" style="${btn('ghost')};padding:7px 12px;font-size:12px;white-space:nowrap">🔄 Atualizar</button>
      ${meusFuturos.length>1?'<button onclick="_P.modoSelecao=!_P.modoSelecao;_P.selecionados=new Set();re()" style="padding:7px 12px;font-size:12px;white-space:nowrap;border-radius:8px;border:1.5px solid '+(_P.modoSelecao?"#dc2626":c.border)+';background:'+(_P.modoSelecao?"#fef2f2":"transparent")+';color:'+(_P.modoSelecao?"#dc2626":c.textMuted)+';font-weight:700;cursor:pointer;font-family:inherit">'+(_P.modoSelecao?"✕ Cancelar seleção":"☑ Selecionar")+'</button>':''}
    </div>
    ${_P.modoSelecao&&_P.selecionados.size>0?`<div style="display:flex;align-items:center;gap:10px;background:#fef2f2;border:1.5px solid #fca5a5;border-radius:10px;padding:10px 14px;margin-bottom:12px">
@@ -1685,6 +1712,13 @@ re();
 }
 };
 }
+window.pConfirmarEscolhaVer=()=>{
+_P.filtroEspaco=_P.filtroEspacoEscolha||"";
+_P.filtroGrade=_P.filtroGradeEscolha||"meus";
+_P.modoProf="ver";_P.modoCard="calendario";
+if(_P.filtroGrade==="todos")carregarTodas(_P.filtroEspaco||undefined);
+re();
+};
 window.pSetModoProf=v=>{_P.modoProf=v;if(v==='agendar'){
 _MA={step:1,espaco:"",data:"",blocos:[bVazio()],resumo:false,salvando:false,sucesso:null,erro:"",calA:new Date().getFullYear(),calM:new Date().getMonth(),bibAV:null,recorrente:false,recorrenciaTipo:"semanal"};
 const rascunho=lerRascunhoLocal();
@@ -1719,13 +1753,13 @@ re();
 }catch(e){alert('Erro ao cancelar: '+e.message);}
 };
 window.pFiltroRapido=tipo=>{
-if(tipo==='pendente'){_P.modoProf='ver';_P.modoCard='lista';_P.filtroPendente=true;re();}
+if(tipo==='pendente'){_P.modoProf='ver';_P.modoCard='lista';_P.filtroGrade='meus';_P.filtroPendente=true;re();}
 else if(tipo==='proximos'){_P.modoProf='ver';_P.modoCard='lista';_P.filtroGrade='meus';_P.agendaDiasVisiveis=5;re();}
 };
 window.pSetVisu=v=>{_P.modoVisu=v;re();};
 window.pNavMes=dir=>{if(!_P.mesCal){const d=new Date();_P.mesCal={a:d.getFullYear(),m:d.getMonth()};}let nm=_P.mesCal.m+dir,na=_P.mesCal.a;if(nm>11){nm=0;na++;}if(nm<0){nm=11;na--;}_P.mesCal={a:na,m:nm};re();};
-window.pSetGrade=v=>{_P.filtroGrade=v;_P.agendaDiasVisiveis=5;if(v==="todos")carregarTodas();re();};
-window.pSetEspaco=v=>{_P.filtroEspaco=v;_P.agendaDiasVisiveis=5;re();};
+window.pSetGrade=v=>{_P.filtroGrade=v;_P.agendaDiasVisiveis=5;if(v==="todos")carregarTodas(_P.filtroEspaco||undefined);re();};
+window.pSetEspaco=v=>{_P.filtroEspaco=v;_P.agendaDiasVisiveis=5;if(_P.filtroGrade==="todos")carregarTodas(v||undefined);re();};
 window.pClicarDia=data=>{
 if(data>=fmtHoje()&&isDiaLetivo(data)){
 _P.modoProf="agendar";
@@ -3916,17 +3950,31 @@ let _todasCarregadas=false;
 let _unsubTodas=null;
 let _paginaAtual=0,_carregadosAté=30;
 
-window.carregarTodas=function carregarTodas(){
-if(_todasCarregadas)return;
+let _todasCarregadasChave=null; // null=nada | 'broad'=tudo (janela 60d) | nome do espaço específico carregado
+window.carregarTodas=function carregarTodas(espaco){
+const chave=espaco||"broad";
+if(_todasCarregadas&&_todasCarregadasChave===chave)return;
 // Carrega uma vez (não fica em tempo real) — evita que muitas sessões de
 // professores fiquem escutando a coleção inteira pra sempre. O painel do
 // admin (_unsub1, mais acima) continua em tempo real normalmente, pois
 // são poucas sessões e é de lá que vem o toast de "novo agendamento".
-const hoje=new Date();hoje.setDate(hoje.getDate()-7);
-const dataCorte=hoje.toISOString().slice(0,10);
-getDocs(query(collection(db,"reservas"),where("data",">=",dataCorte))).then(snap=>{
+// Se um espaço específico foi escolhido, busca só dele (bem mais barato que tudo).
+// Senão, busca "tudo" mas limitado a uma janela de 60 dias pra frente — quem
+// precisar ver mais longe pode escolher um espaço específico ou usar o Calendário
+// e navegar (que busca sob demanda o mês, ver pNavMes).
+let q;
+if(espaco){
+q=query(collection(db,"reservas"),where("espaco","==",espaco));
+}else{
+const hojeMenos=new Date();hojeMenos.setDate(hojeMenos.getDate()-7);
+const dataCorte=hojeMenos.toISOString().slice(0,10);
+const hojeMais=new Date();hojeMais.setDate(hojeMais.getDate()+60);
+const dataLimite=hojeMais.toISOString().slice(0,10);
+q=query(collection(db,"reservas"),where("data",">=",dataCorte),where("data","<=",dataLimite));
+}
+getDocs(q).then(snap=>{
 _todas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario);
-_todasCarregadas=true;re();
+_todasCarregadas=true;_todasCarregadasChave=chave;re();
 }).catch(e=>{console.error("Erro ao carregar reservas:",e);});
 }
 
@@ -3955,7 +4003,7 @@ const dataCorte=hoje.toISOString().slice(0,10);
 if(isProfOnly){
 // Professor: por padrão só carrega _minhas
 // _todas é carregado sob demanda (botão Todos ou ao agendar)
-_todas=[];_todasCarregadas=false;
+_todas=[];_todasCarregadas=false;_todasCarregadasChave=null;
 } else {
 // Admin, TI, Marketing, Coord: carrega _todas filtrada por data
 _unsub1=onSnapshot(query(collection(db,"reservas"),where("data",">=",dataCorte)),snap=>{
@@ -3995,7 +4043,7 @@ re();
 function pararUsuariosLive(){
 if(_unsub3){_unsub3();_unsub3=null;}
 }
-function stopListeners(){[_unsub1,_unsub2,_unsub3,_unsubTodas].forEach(u=>{try{u&&u();}catch{}});_unsub1=_unsub2=_unsub3=_unsubTodas=null;_todasCarregadas=false;}
+function stopListeners(){[_unsub1,_unsub2,_unsub3,_unsubTodas].forEach(u=>{try{u&&u();}catch{}});_unsub1=_unsub2=_unsub3=_unsubTodas=null;_todasCarregadas=false;_todasCarregadasChave=null;}
 function unloadHistorico(){if(_unsubTodas){_unsubTodas();_unsubTodas=null;}_todasCarregadas=false;}
 
 // ════════════════════════════════════════════════════════════════════════════
