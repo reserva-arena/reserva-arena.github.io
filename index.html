@@ -1626,7 +1626,7 @@ if(pendentes.length){
 html+=`<div data-filtro="pendente" style="margin-bottom:16px">
        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="width:8px;height:8px;border-radius:50%;background:${c.amber}"></div><p style="font-size:12px;font-weight:800;color:${c.amber};text-transform:uppercase">⏳ Pendentes · ${pendentes.length}</p><div style="flex:1;height:1px;background:${c.amberBorder}"></div></div>`;
 if(_P.filtroPendente){
-pendentes.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1).forEach(r=>{html+=profRRow(r);});
+pendentes.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1).forEach(r=>{html+=profRRow(r,true);});
 } else {
 html+=`<div onclick="_P.filtroPendente=true;re()" style="background:${c.amberBg};border:1.5px solid ${c.amberBorder};border-radius:10px;padding:10px 14px;cursor:pointer;display:flex;align-items:center;justify-content:space-between"><p style="font-size:13px;font-weight:700;color:${c.amber}">${pendentes.length} agendamento${pendentes.length!==1?"s":""} aguardando aprovação</p><span style="color:${c.amber};font-size:14px">▼ ver</span></div>`;
 }
@@ -1663,7 +1663,7 @@ html+=`</div></div>`;
 return html;
 }
 
-function profRRow(r){
+function profRRow(r,forcarData=false){
 const c=C(),h=fmtHoje();
 const isMeu=r.professorId===_usuario?.uid;
 const isPend=r.status==="pendente";
@@ -1681,7 +1681,7 @@ return`<div class="row-hover" ${selClick?`onclick="toggleSelProf('${r.id}')"`:''
    <div style="flex:1;min-width:0">
      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px">
        <span style="font-weight:700;font-size:13px;color:${c.navy};white-space:nowrap">${r.espaco}</span>
-       ${r.data&&r.data<fmtHoje()?`<span style="font-size:11px;color:${c.textMuted};font-weight:600;white-space:nowrap">${r.data.split("-").reverse().join("/")}</span>`:""}
+       ${(forcarData||(r.data&&r.data<fmtHoje()))?`<span style="font-size:11px;color:${c.textMuted};font-weight:600;white-space:nowrap">${r.data.split("-").reverse().join("/")}</span>`:""}
        ${range?`<span style="font-size:11px;font-weight:700;color:${c.blueMid};background:${c.greenBg};padding:1px 7px;border-radius:10px;white-space:nowrap">${r.horario}${range}</span>`:""}
        <span style="font-size:11px;color:${c.textMuted}">·</span>
        <span style="font-size:12px;color:${c.textMid};white-space:nowrap">${turmaLabel}${turmaFimLabel}</span>
