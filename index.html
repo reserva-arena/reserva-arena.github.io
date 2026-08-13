@@ -1682,7 +1682,7 @@ return`<div class="row-hover" ${selClick?`onclick="toggleSelProf('${r.id}')"`:''
    <div style="flex:1;min-width:0">
      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px">
        <span style="font-weight:700;font-size:13px;color:${c.navy};white-space:nowrap">${r.espaco}</span>
-       ${evento?`<span style="font-size:10.5px;font-weight:800;background:#eab308;color:#422006;padding:1px 9px;border-radius:10px;white-space:nowrap">🎉 ${evento}</span>`:""}
+       ${evento?`<span style="font-size:10.5px;font-weight:800;background:#eab308;color:#422006;padding:1px 9px;border-radius:10px;white-space:nowrap">📚 ${evento}</span>`:""}
        ${(forcarData||(r.data&&r.data<fmtHoje()))?`<span style="font-size:11px;color:${c.textMuted};font-weight:600;white-space:nowrap">${r.data.split("-").reverse().join("/")}</span>`:""}
        ${range?`<span style="font-size:11px;font-weight:700;color:${c.blueMid};background:${c.greenBg};padding:1px 7px;border-radius:10px;white-space:nowrap">${r.horario}${range}</span>`:""}
        <span style="font-size:11px;color:${c.textMuted}">·</span>
@@ -3524,7 +3524,7 @@ return`<div class="row-hover" style="display:flex;align-items:center;gap:8px;pad
      </div>
      <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
        ${badge(r.status)}
-       ${evento?`<span style="font-size:10.5px;font-weight:800;background:#eab308;color:#422006;padding:1px 9px;border-radius:10px;white-space:nowrap">🎉 ${evento}</span>`:""}
+       ${evento?`<span style="font-size:10.5px;font-weight:800;background:#eab308;color:#422006;padding:1px 9px;border-radius:10px;white-space:nowrap">📚 ${evento}</span>`:""}
        ${urg&&r.status==="pendente"?`<span style="font-size:10.5px;font-weight:800;background:#fff7ed;color:#c2410c;border:1.5px solid #f97316;padding:1px 8px;border-radius:10px;white-space:nowrap">⚡ URGENTE</span>`:""}
        ${precisaTagTI?`<span style="font-size:10.5px;font-weight:800;background:#e0f2fe;color:#0369a1;border:1.5px solid #7dd3fc;padding:1px 8px;border-radius:10px;white-space:nowrap">🔧 Pendente T.I.</span>`:""}
        ${r.statusMarketing==="pendente"?`<span style="font-size:10.5px;font-weight:800;background:#fff7ed;color:#c2410c;border:1.5px solid #fdba74;padding:1px 8px;border-radius:10px;white-space:nowrap">📸 Pendente Mkt</span>`:""}
