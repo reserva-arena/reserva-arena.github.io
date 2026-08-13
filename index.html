@@ -378,7 +378,22 @@ function isFds(data){
 try{const[a,m,d]=data.split("-").map(Number);const dow=new Date(a,m-1,d).getDay();return dow===0||dow===6;}catch{return false;}
 }
 function precisaAdmin(r){
-return isUrgente(r.data,r.horario)||isFds(r.data);
+if(isUrgente(r.data,r.horario)||isFds(r.data))return true;
+// Reserva pendente sem urgência/fim de semana, mas que NUNCA teve componente de T.I. nem de
+// Marketing associado (ex: bloqueio de espaço criado direto pelo Admin, sem equipamento/mídia) —
+// ninguém mais vai confirmar isso sozinho, então precisa do Admin mesmo.
+// Importante: olha se o CAMPO existe (teve o componente em algum momento), não só se está "pendente"
+// agora — senão quebraria a auto-confirmação de quando T.I./Marketing acabaram de resolver a parte deles.
+if(r.status==="pendente"&&!temComponenteTI(r)&&!temComponenteMkt(r))return true;
+return false;
+}
+function temComponenteTI(r){
+if(r.statusEquip!==undefined)return true;
+const eo=ESPACOS.find(e=>e.nome===r.espaco);
+return eo?.tipo==="audiovisual";
+}
+function temComponenteMkt(r){
+return r.statusMarketing!==undefined;
 }
 // Após T.I. ou Marketing aprovar/recusar sua parte, verifica se a reserva do espaço
 // pode ser confirmada automaticamente (quando o Admin não precisa agir: não é urgente nem fim de semana,
@@ -3357,7 +3372,7 @@ html+=`<div class="fade-in" style="margin-top:14px;background:${c.surface};borde
 // ── AGENDA ──
 if(_A.modoVisu==="agenda"){
 const urg=filtradas.filter(r=>r.status==="pendente"&&isUrgente(r.data,r.horario)&&(!_A.fData||r.data===_A.fData));
-const pend=filtradas.filter(r=>r.status==="pendente"&&!isUrgente(r.data,r.horario)&&isFds(r.data)&&(!_A.fData||r.data===_A.fData));
+const pend=filtradas.filter(r=>r.status==="pendente"&&!isUrgente(r.data,r.horario)&&precisaAdmin(r)&&(!_A.fData||r.data===_A.fData));
 const aguardandoAreas=filtradas.filter(r=>r.status==="pendente"&&!precisaAdmin(r)&&(!_A.fData||r.data===_A.fData));
 const conf=filtradas.filter(r=>r.status!=="pendente"&&(_A.historico||r.data>=h)&&(!_A.fData||r.data===_A.fData)&&(!_A.fDataAte||r.data<=_A.fDataAte));
 
@@ -3372,7 +3387,7 @@ urg.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1).forEa
 html+=`</div>`;
 }
 if(pend.length){
-html+=`<div style="margin-bottom:16px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="width:8px;height:8px;border-radius:50%;background:#d97706"></div><p style="font-size:12px;font-weight:800;color:${c.amber};text-transform:uppercase">Pendentes (fim de semana) · ${pend.length}</p><div style="flex:1;height:1px;background:${c.amberBorder}"></div></div>`;
+html+=`<div style="margin-bottom:16px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="width:8px;height:8px;border-radius:50%;background:#d97706"></div><p style="font-size:12px;font-weight:800;color:${c.amber};text-transform:uppercase">Pendentes · ${pend.length}</p><div style="flex:1;height:1px;background:${c.amberBorder}"></div></div>`;
 pend.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1).forEach(r=>{html+=admRow(r,true,true);});
 html+=`</div>`;
 }
