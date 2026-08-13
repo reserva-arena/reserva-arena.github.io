@@ -2759,7 +2759,7 @@ html+=`<div style="background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:1
    </div>`;
 }
 
-html+=`<div style="display:flex;gap:10px"><button onclick="maVoltarRevisao()" style="${btn("ghost")};flex:1;padding:11px">✏️ Editar</button><button id="btn-conf" onclick="maSalvar()" style="flex:2;padding:11px;font-size:13.5px;border-radius:8px;border:none;font-weight:700;font-family:inherit;cursor:${precisaCiencia?'not-allowed':'pointer'};background:${precisaCiencia?'#cbd5e1':'#1a6b47'};color:${precisaCiencia?'#94a3b8':'#fff'}" ${precisaCiencia?"disabled":""}>${m.salvando?"⏳ Aguarde...":"✓ Confirmar"}</button></div></div>`;
+html+=`<div style="display:flex;gap:10px"><button onclick="maVoltarRevisao()" style="${btn("ghost")};flex:1;padding:11px" ${m.salvando?"disabled":""}>✏️ Editar</button><button id="btn-conf" onclick="maSalvar()" style="flex:2;padding:11px;font-size:13.5px;border-radius:8px;border:none;font-weight:700;font-family:inherit;cursor:${precisaCiencia||m.salvando?'not-allowed':'pointer'};background:${precisaCiencia||m.salvando?'#cbd5e1':'#1a6b47'};color:${precisaCiencia||m.salvando?'#94a3b8':'#fff'}" ${precisaCiencia||m.salvando?"disabled":""}>${m.salvando?"⏳ Aguarde...":"✓ Confirmar"}</button></div></div>`;
 return html;
 }
 
@@ -2916,6 +2916,9 @@ btnConf.style.cursor=todosVal?"pointer":"not-allowed";
 
 // ─── SALVAR AGENDAMENTO ───────────────────────────────────────────────────
 window.maSalvar=async(isRetry=false)=>{
+// Trava contra clique duplo/rápido: se já está salvando (e isso não é o próprio retry
+// automático/manual chamando de novo), ignora — evita duplicar a reserva.
+if(_MA.salvando&&!isRetry)return;
 // Bloquear se precisaCiencia e checkbox não marcado
 const chkCiente=document.getElementById('chk-ciente');
 if(chkCiente&&!chkCiente.checked){
