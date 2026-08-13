@@ -611,6 +611,9 @@ if(_usuario.ativo===false){console.warn('Acesso negado: conta inativa');return f
 if(!perfisPermitidos.includes(_usuario.perfil)){console.warn('Acesso negado: perfil sem permissão');return false;}
 return true;
 }
+function isCoordenador(perfil){
+return perfil==="coord_inf"||perfil==="coord_fund1"||perfil==="coord_fund2";
+}
 function re(){if(_trocandoSenha)return;
 const c=C();
 document.body.style.background=c.bg;
@@ -619,7 +622,7 @@ if(!_usuario){renderLogin();return;}
 if(_usuario.perfil==="sem_acesso"||_usuario.ativo===false){renderSemAcesso();return;}
 if(_usuario.perfil==="fotografo"||_usuario.perfil==="marketing"){renderMarketing();return;}
 if(_usuario.perfil==="ti"||_usuario.perfil==="coord_ti"){renderTI();return;}
-if(_usuario.perfil==="coord_inf"||_usuario.perfil==="coord_fund1"||_usuario.perfil==="coord_fund2"){renderCoord();return;}
+if(isCoordenador(_usuario.perfil)){if(_P.modoProf==="agendar")renderCoordAgendar();else renderCoord();return;}
 renderApp();
 }
 // Exposto em window: scripts inline (onclick="...") em HTML injetado via innerHTML rodam no escopo
@@ -1244,11 +1247,37 @@ if(perfil==="coord_fund2")return"🎓 Coord. Fund. 2";
 return"Coordenador";
 }
 
-if(!window._CO)window._CO={fProf:"",fTurma:"",fEspaco:"",historico:false};
+if(!window._CO)window._CO={fProf:"",fTurma:"",fEspaco:"",historico:false,avisoOculto:false};
 
+// Casca simples reaproveitando o fluxo de "Agendar" do professor (renderProfessorView),
+// mas com o cabeçalho e o botão de voltar do coordenador — sem duplicar nenhuma lógica de agendamento.
+function renderCoordAgendar(){
+const c=C();
+$("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="no">
+   <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#0d2b1a,#1a6b47)"};padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(13,43,26,.25)">
+     <div style="display:flex;align-items:center;gap:10px">
+       <button onclick="_P.modoProf='escolha_inicial';re()" title="Voltar ao painel" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:6px 12px;cursor:pointer;font-size:12px;font-weight:700;color:#fff;font-family:inherit;display:flex;align-items:center;gap:5px">← Painel</button>
+       ${logoHTML(30)}<p style="font-size:13px;font-weight:800;color:#fff">${labelCoord(_usuario?.perfil)}</p>
+     </div>
+     <div style="display:flex;align-items:center;gap:6px">
+       ${avatarHTML(_usuario?.nome,28,"green")}
+       <button id="sino-btn" onclick="abrirPainelNotif()" title="Notificações" style="display:flex;position:relative;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:30px;height:30px;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;font-family:inherit">🔔<span id="sino-badge" style="display:${_notifNaoLidas>0?"flex":"none"};position:absolute;top:-4px;right:-4px;background:#dc2626;color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:99px;align-items:center;justify-content:center;padding:0 3px;font-family:inherit">${_notifNaoLidas>9?"9+":_notifNaoLidas}</span></button>
+       <button onclick="toggleDark()" title="${_dark?'Modo claro':'Modo escuro'}" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0">${_dark?"☀️":"🌙"}</button>
+       <button onclick="doSignOut()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">Sair</button>
+     </div>
+   </header>
+   <div style="max-width:900px;margin:0 auto;padding:16px 14px">
+     <div style="background:#fdf4e3;border:1.5px solid #eab308;border-radius:10px;padding:10px 14px;margin-bottom:16px;display:flex;align-items:center;gap:8px">
+       <span style="font-size:16px">⭐</span>
+       <p style="font-size:12px;color:#713f12;font-weight:600">Como coordenador, você pode reservar mais de um espaço no mesmo horário — inclua uma observação explicando o motivo.</p>
+     </div>
+     ${renderProfessorView()}
+   </div>
+ </div>`;
+}
 function renderCoord(){
 const c=C(),h=fmtHoje();
-if(!window._CO)window._CO={fProf:"",fTurma:"",fEspaco:"",historico:false};
+if(!window._CO)window._CO={fProf:"",fTurma:"",fEspaco:"",historico:false,avisoOculto:false};
 const seg=segmentoCoord(_usuario?.perfil);
 const turmasSeg=turmasDoSegmento(seg);
 
@@ -1296,6 +1325,7 @@ $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="
    <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#0d2b1a,#1a6b47)"};padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(13,43,26,.25)">
      <div style="display:flex;align-items:center;gap:8px">${logoHTML(36)}<p style="font-size:13px;font-weight:800;color:#fff">${labelCoord(_usuario?.perfil)}</p></div>
      <div style="display:flex;align-items:center;gap:6px">
+       <button onclick="pSetModoProf('agendar')" style="background:#fff;color:#0d2b1a;border:none;border-radius:20px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:800;display:flex;align-items:center;gap:5px;font-family:inherit">📅 Agendar</button>
        ${avatarHTML(_usuario?.nome,28,"green")}
        <button id="sino-btn" onclick="abrirPainelNotif()" style="display:flex;position:relative;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:30px;height:30px;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;font-family:inherit">🔔<span id="sino-badge" style="display:${_notifNaoLidas>0?"flex":"none"};position:absolute;top:-4px;right:-4px;background:#dc2626;color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:99px;align-items:center;justify-content:center;padding:0 3px;font-family:inherit">${_notifNaoLidas>9?"9+":_notifNaoLidas}</span></button>
        <button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button>
@@ -1303,6 +1333,13 @@ $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="
      </div>
    </header>
    <div style="max-width:800px;margin:0 auto;padding:16px 14px">
+     ${!_CO.avisoOculto?`<div style="background:#fdf4e3;border:1.5px solid #eab308;border-radius:10px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:flex-start;gap:10px">
+       <span style="font-size:18px;flex-shrink:0">⭐</span>
+       <div style="flex:1">
+         <p style="font-size:12.5px;color:#713f12;font-weight:600;line-height:1.5">Como coordenador, você tem acesso ampliado: pode <strong>reservar mais de um espaço no mesmo horário</strong> (sempre com uma observação explicando o motivo), <strong>editar</strong> agendamentos de qualquer professor do seu segmento, e <strong>excluir</strong> apenas os que você mesmo criou. Use os filtros abaixo pra ver rapidinho os agendamentos dos professores do seu segmento.</p>
+       </div>
+       <button onclick="window._CO.avisoOculto=true;re()" title="Não mostrar de novo" style="background:none;border:none;color:#a16207;cursor:pointer;font-size:16px;flex-shrink:0;padding:0 2px">✕</button>
+     </div>`:""}
      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:14px">
        <select onchange="window._CO.fProf=this.value;re()" style="padding:8px 10px;border-radius:8px;border:1.5px solid ${c.border};background:${c.surface};color:${c.text};font-size:12px;font-family:inherit;outline:none">
          <option value="">👤 Todos professores</option>
@@ -1330,13 +1367,16 @@ const[,m2,d2]=r.data.split("-");
 const isH=r.data===h;
 const isPend=r.status==="pendente";
 const isRec=r.status==="recusado";
+const isDono=r.professorId===_usuario?.uid;
+const evento=r.eventoEspecial||"";
 const editadoCoord=r.editadoPorCoord?`<span style="font-size:10px;color:#7c3aed;font-weight:700">✏️ Editado pelo coord.</span>`:"";
-return`<div style="background:${c.surface};border-radius:10px;border:1.5px solid ${isPend?c.amberBorder:isRec?"#fecaca":c.greenBorder};border-left:4px solid ${isPend?c.amber:isRec?"#dc2626":"#1a6b47"};padding:12px 14px;margin-bottom:8px">
+return`<div style="background:${evento?"#fdf4e3":c.surface};border-radius:10px;border:1.5px solid ${evento?"#eab308":isPend?c.amberBorder:isRec?"#fecaca":c.greenBorder};border-left:4px solid ${evento?"#ca8a04":isPend?c.amber:isRec?"#dc2626":"#1a6b47"};padding:12px 14px;margin-bottom:8px">
    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
      <div style="flex:1">
        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px">
          <span style="font-family:'DM Mono',monospace;font-weight:800;color:${isPend?c.amber:"#1a6b47"};font-size:13px">${r.horario}${r.horarioFim&&r.horarioFim!==r.horario?" → "+r.horarioFim:""}</span>
          <span style="font-size:13px;font-weight:700;color:${c.navy}">${r.espaco}</span>
+         ${evento?`<span style="font-size:10px;font-weight:800;background:#eab308;color:#422006;padding:2px 8px;border-radius:10px">📚 ${evento}</span>`:""}
          ${isH?`<span style="background:#1a6b47;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px">Hoje</span>`:""}
          ${isPend?`<span style="background:${c.amberBg};color:${c.amber};font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;border:1px solid ${c.amberBorder}">⏳ Pendente</span>`:isRec?`<span style="background:#fef2f2;color:#dc2626;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;border:1px solid #fecaca">❌ Recusado</span>`:`<span style="background:${c.greenBg};color:${c.green};font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;border:1px solid ${c.greenBorder}">✅ Confirmado</span>`}
          ${editadoCoord}
@@ -1344,11 +1384,28 @@ return`<div style="background:${c.surface};border-radius:10px;border:1.5px solid
        <p style="font-size:12px;color:${c.textMid};margin-bottom:2px">👤 ${r.professor} · ${r.turmaInicio||r.turma||"—"}</p>
        <p style="font-size:12px;color:${c.textMuted}">${r.conteudo||""}</p>
      </div>
-     ${!isRec?`<button onclick="coordEditar('${r.id}')" style="padding:6px 12px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.textMid};font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit">✏️ Editar</button>`:""}
+     <div style="display:flex;gap:6px;flex-shrink:0">
+       ${!isRec?`<button onclick="coordEditar('${r.id}')" style="padding:6px 12px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.textMid};font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit">✏️ Editar</button>`:""}
+       ${isDono?`<button onclick="coordExcluir('${r.id}')" title="Só é possível excluir agendamentos que você mesmo criou" style="padding:6px 10px;border-radius:8px;border:1.5px solid #fecaca;background:transparent;color:#dc2626;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit">🗑️</button>`:""}
+     </div>
    </div>
  </div>`;
 }
 
+window.coordExcluir=async(id)=>{
+const r=_todas.find(r=>r.id===id);
+if(!r){alert("Agendamento não encontrado.");return;}
+if(r.professorId!==_usuario?.uid){alert("Você só pode excluir agendamentos que você mesmo criou.");return;}
+if(!confirm(`Excluir o agendamento de "${r.espaco}" às ${r.horario} do dia ${r.data.split("-").reverse().join("/")}?`))return;
+try{
+const b=writeBatch(db);
+b.delete(doc(db,"reservas",id));
+_todas.filter(a=>a.reservaAutomatica&&a.espaco===r.espaco&&a.data===r.data&&a.professorId===r.professorId)
+.forEach(a=>b.delete(doc(db,"reservas",a.id)));
+await b.commit();
+re();
+}catch(e){alert("Erro ao excluir: "+e.message);}
+};
 window.coordEditar=async(id)=>{
 const r=_todas.find(r=>r.id===id);
 if(!r)return;
@@ -2856,12 +2913,15 @@ if(existe){_MA.erro=`Horário ${rangeHors[i]} já reservado por ${existe.profess
 }
 
 // 1b. Verificar se o próprio professor já tem algo marcado nesse horário, em outro espaço
+// (coordenador pode reservar mais de um espaço ao mesmo tempo — pula essa checagem pra esse perfil)
+if(!isCoordenador(_usuario?.perfil)){
 const snapConflitosProf=await Promise.all(rangeHors.map(h=>
 getDocs(query(collection(db,"reservas"),where("professorId","==",_usuario.uid),where("data","==",data),where("horario","==",h)))
 ));
 for(let i=0;i<rangeHors.length;i++){
 const existeProf=snapConflitosProf[i].docs.map(d=>d.data()).find(r=>r?.status!=="recusado"&&r.espaco!==espaco);
 if(existeProf){_MA.erro=`Você já tem "${existeProf.espaco}" agendado às ${rangeHors[i]} nesse mesmo dia.`;_MA.salvando=false;_MA.resumo=false;re();return;}
+}
 }
 
 // 1b2. Laboratorista é compartilhado entre os dois labs de ciências — não pode
@@ -2880,8 +2940,9 @@ if(conflitoLab){_MA.erro=`O laboratorista já está escalado às ${rangeHors[i]}
 
 // 1b. Verificar se o professor já tem outro ESPAÇO reservado nos mesmos horários
 // (equipamentos avulsos não bloqueiam — professor pode ter sala + tablets no mesmo horário)
+// Coordenador pula essa checagem também — pode reservar mais de um espaço ao mesmo tempo.
 const isEquipAvulsoSalvar=eo?.equipAvulso;
-if(!isEquipAvulsoSalvar){
+if(!isEquipAvulsoSalvar&&!isCoordenador(_usuario?.perfil)){
 const snapProfConflitos=await Promise.all(rangeHors.map(h=>
 getDocs(query(collection(db,"reservas"),
 where("professorId","==",_usuario.uid),
