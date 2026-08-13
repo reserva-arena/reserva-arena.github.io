@@ -1675,12 +1675,14 @@ const turmaLabel=r.turmaInicio||(r.turma||"");
 const turmaFimLabel=r.turmaFim&&r.turmaFim!==r.turmaInicio?` → ${r.turmaFim}`:"";
 const isSel=_P.selecionados?.has(r.id);
 const selClick=_P.modoSelecao&&isMeu&&r.data>=h&&r.status!=='recusado';
-return`<div class="row-hover" ${selClick?`onclick="toggleSelProf('${r.id}')"`:''} style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;background:${_P.modoSelecao&&isSel?'#fef2f2':bg};border:1px solid ${_P.modoSelecao&&isSel?'#fca5a5':c.border};margin-bottom:4px;border-left:4px solid ${_P.modoSelecao&&isSel?'#dc2626':bl};${selClick?'cursor:pointer':''}">
+const evento=r.eventoEspecial||"";
+return`<div class="row-hover" ${selClick?`onclick="toggleSelProf('${r.id}')"`:''} style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;background:${_P.modoSelecao&&isSel?'#fef2f2':evento?'#fdf4e3':bg};border:1px solid ${_P.modoSelecao&&isSel?'#fca5a5':evento?'#eab308':c.border};margin-bottom:4px;border-left:4px solid ${_P.modoSelecao&&isSel?'#dc2626':evento?'#ca8a04':bl};${selClick?'cursor:pointer':''}">
    ${selClick?`<div style="width:20px;height:20px;border-radius:5px;border:2px solid ${isSel?'#dc2626':c.border};background:${isSel?'#dc2626':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0">${isSel?'<span style="color:#fff;font-size:12px;font-weight:900">✓</span>':''}</div>`:''}
    <span style="font-size:13px;font-family:'DM Mono',monospace;font-weight:800;color:${isMeu?c.green:"#64748b"};min-width:42px;flex-shrink:0">${r.horario}</span>
    <div style="flex:1;min-width:0">
      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px">
        <span style="font-weight:700;font-size:13px;color:${c.navy};white-space:nowrap">${r.espaco}</span>
+       ${evento?`<span style="font-size:10.5px;font-weight:800;background:#eab308;color:#422006;padding:1px 9px;border-radius:10px;white-space:nowrap">🎉 ${evento}</span>`:""}
        ${(forcarData||(r.data&&r.data<fmtHoje()))?`<span style="font-size:11px;color:${c.textMuted};font-weight:600;white-space:nowrap">${r.data.split("-").reverse().join("/")}</span>`:""}
        ${range?`<span style="font-size:11px;font-weight:700;color:${c.blueMid};background:${c.greenBg};padding:1px 7px;border-radius:10px;white-space:nowrap">${r.horario}${range}</span>`:""}
        <span style="font-size:11px;color:${c.textMuted}">·</span>
@@ -3509,7 +3511,8 @@ const turmaLabel=(r.turmaInicio||r.turma||"")+(r.turmaFim&&r.turmaFim!==(r.turma
 const podeAprovarEspaco=mostrarBotoes&&r.status==="pendente"&&precisaAdmin(r);
 const eoR=ESPACOS.find(e=>e.nome===r.espaco);
 const precisaTagTI=r.statusEquip==="pendente"||(r.statusEquip===undefined&&eoR?.tipo==="audiovisual"&&r.status==="pendente");
-return`<div class="row-hover" style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;margin-bottom:6px;flex-wrap:wrap;background:${urg&&r.status==="pendente"?"#fff7ed":r.data===h?"rgba(26,107,71,.05)":c.surface};border:1px solid ${urg&&r.status==="pendente"?"#f97316":c.border};border-left:4px solid ${urg&&r.status==="pendente"?"#f97316":bc}">
+const evento=r.eventoEspecial||"";
+return`<div class="row-hover" style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;margin-bottom:6px;flex-wrap:wrap;background:${evento?"#fdf4e3":urg&&r.status==="pendente"?"#fff7ed":r.data===h?"rgba(26,107,71,.05)":c.surface};border:1px solid ${evento?"#eab308":urg&&r.status==="pendente"?"#f97316":c.border};border-left:4px solid ${evento?"#ca8a04":urg&&r.status==="pendente"?"#f97316":bc}">
    <span style="font-size:13px;font-family:'DM Mono',monospace;font-weight:800;color:${urg&&r.status==="pendente"?"#c2410c":c.blueMid};flex-shrink:0">${r.horario}${range}${showDate?` <span style="font-size:11px;color:${c.textMuted};font-weight:600">· ${d2}/${m2}</span>`:""}</span>
    <div style="flex:1;min-width:0">
      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px">
@@ -3521,6 +3524,7 @@ return`<div class="row-hover" style="display:flex;align-items:center;gap:8px;pad
      </div>
      <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
        ${badge(r.status)}
+       ${evento?`<span style="font-size:10.5px;font-weight:800;background:#eab308;color:#422006;padding:1px 9px;border-radius:10px;white-space:nowrap">🎉 ${evento}</span>`:""}
        ${urg&&r.status==="pendente"?`<span style="font-size:10.5px;font-weight:800;background:#fff7ed;color:#c2410c;border:1.5px solid #f97316;padding:1px 8px;border-radius:10px;white-space:nowrap">⚡ URGENTE</span>`:""}
        ${precisaTagTI?`<span style="font-size:10.5px;font-weight:800;background:#e0f2fe;color:#0369a1;border:1.5px solid #7dd3fc;padding:1px 8px;border-radius:10px;white-space:nowrap">🔧 Pendente T.I.</span>`:""}
        ${r.statusMarketing==="pendente"?`<span style="font-size:10.5px;font-weight:800;background:#fff7ed;color:#c2410c;border:1.5px solid #fdba74;padding:1px 8px;border-radius:10px;white-space:nowrap">📸 Pendente Mkt</span>`:""}
