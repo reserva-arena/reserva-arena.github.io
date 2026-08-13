@@ -918,7 +918,7 @@ return`<div style="background:${c.surface};border-radius:12px;border:1.5px solid
      </div>`:`<div style="margin-top:10px"><button onclick="mkRecusar('${r.id}')" style="padding:7px 18px;border-radius:8px;border:1.5px solid #fca5a5;background:#fff;color:#dc2626;font-weight:700;font-size:12px;cursor:pointer">❌ Cancelar aprovação</button></div>`}
    </div>`;
 };
-const minhas=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&(_MK.historico||r.data>=h)&&r.status!=="recusado").sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
+const minhas=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&(_MK.historico||r.data>=h)&&r.status!=="recusado"&&!r.reservaAutomatica).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
 const pendentes=minhas.filter(r=>r.statusMarketing==="pendente");
 const aprovados=minhas.filter(r=>r.statusMarketing==="aprovado");
 const btnAba=(id,l)=>`<button onclick="mkSetAba('${id}')" style="padding:7px 16px;font-size:12.5px;border-radius:8px;border:1.5px solid ${_MK.aba===id?'#7c3aed':c.border};background:${_MK.aba===id?'#7c3aed':'transparent'};color:${_MK.aba===id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${l}</button>`;
@@ -1007,6 +1007,13 @@ const dias=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
 const dow=dias[new Date(r.data+"T12:00:00").getDay()];
 const midiaTags=(r.precisaFoto?`<span style="background:#f5f3ff;color:#7c3aed;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #ddd6fe">📸 Foto</span>`:"")+(r.precisaVideo?`<span style="background:#eff6ff;color:#1d4ed8;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #bfdbfe">🎬 Vídeo</span>`:"")+(r.bibMic>0?`<span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #bae6fd">🎤 ${r.bibMic} mic</span>`:"")+(r.bibCaixa>0?`<span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #bae6fd">🔊 ${r.bibCaixa} cx</span>`:"")+(r.bibProj>0?`<span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #bae6fd">📽️ ${r.bibProj} proj</span>`:"")+(r.recorrente?`<span style="background:#eff6ff;color:#1d4ed8;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #bfdbfe">🔁</span>`:"");
 const objTag=r.objetivoMidia?`<span style="background:#fef9c3;color:#854d0e;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #fde68a">${r.objetivoMidia==="social"?"📱 Rede Social":"📚 Pedagógico"}</span>`:"";
+// Um agendamento de vários horários seguidos gera 1 registro principal + registros "[Auto]" pra
+// cada horário extra. Pra quem vai tirar foto/filmar, isso é UM pedido só — junta todos os horários
+// desse grupo aqui pra deixar escolher qual horário consegue atender (não precisa estar disponível a manhã toda).
+const grupoHorarios=[r.horario,..._todas.filter(a=>a.reservaAutomatica&&a.espaco===r.espaco&&a.data===r.data&&a.professorId===r.professorId).map(a=>a.horario)].filter((v,i,arr)=>v&&arr.indexOf(v)===i).sort();
+const temVarios=grupoHorarios.length>1;
+if(!window._MK.sel)window._MK.sel={};
+if(!_MK.sel[r.id])_MK.sel[r.id]={horario:grupoHorarios[0]||r.horario,obs:""};
 return`<div style="background:${c.surface};border-radius:12px;border:1.5px solid ${pend?"#ddd6fe":"#a7f3d0"};padding:14px 18px;margin-bottom:10px;border-left:4px solid ${pend?"#7c3aed":"#1a6b47"}">
      <div style="display:flex;gap:14px;align-items:flex-start">
        <div style="text-align:center;min-width:52px;background:${pend?"#f5f3ff":"#e2f4ea"};border-radius:8px;padding:6px 8px">
@@ -1026,6 +1033,16 @@ return`<div style="background:${c.surface};border-radius:12px;border:1.5px solid
          ${r.descritivo?`<div style="margin-top:6px;padding:8px 10px;background:#fef9c3;border-radius:6px;border:1px solid #fde68a"><p style="font-size:11px;font-weight:700;color:#854d0e;margin-bottom:2px">📝 Publicação:</p><p style="font-size:12px;color:#713f12">${r.descritivo}</p></div>`:""}
        </div>
      </div>
+     ${pend&&temVarios?`<div style="margin-top:10px;padding:10px;background:#f5f3ff;border-radius:8px;border:1px solid #ddd6fe">
+       <p style="font-size:11px;font-weight:700;color:#7c3aed;margin-bottom:6px">⏰ Esse pedido cobre vários horários seguidos — em qual você consegue estar?</p>
+       <div style="display:flex;flex-wrap:wrap;gap:6px">
+         ${grupoHorarios.map(hr=>`<label style="display:flex;align-items:center;gap:5px;background:${_MK.sel[r.id].horario===hr?'#7c3aed':'#fff'};color:${_MK.sel[r.id].horario===hr?'#fff':'#4c1d95'};border:1.5px solid #ddd6fe;border-radius:20px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer"><input type="radio" name="mk-hr-${r.id}" value="${hr}" ${_MK.sel[r.id].horario===hr?"checked":""} onchange="window._MK.sel['${r.id}'].horario=this.value;re()" style="display:none">${hr}</label>`).join("")}
+       </div>
+     </div>`:""}
+     ${pend?`<div style="margin-top:10px">
+       <label style="font-size:11px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Observação (opcional)</label><br>
+       <textarea rows="2" placeholder="Ex: vou chegar com uns minutos de atraso, ou motivo da recusa..." oninput="window._MK.sel['${r.id}']=window._MK.sel['${r.id}']||{horario:'${r.horario}'};window._MK.sel['${r.id}'].obs=this.value" style="width:100%;margin-top:4px;padding:8px 10px;border-radius:8px;border:1.5px solid ${c.border};background:${c.surface};color:${c.text};font-size:12.5px;font-family:inherit;resize:vertical;box-sizing:border-box">${_MK.sel[r.id]?.obs||""}</textarea>
+     </div>`:""}
      ${pend?`<div style="display:flex;gap:8px;margin-top:12px">
        <button onclick="mkAprovar('${r.id}')" style="flex:1;padding:9px;border-radius:8px;border:none;background:#1a6b47;color:#fff;font-weight:700;font-size:13px;cursor:pointer">✅ Aprovar</button>
        <button onclick="mkRecusar('${r.id}')" style="flex:1;padding:9px;border-radius:8px;border:none;background:#dc2626;color:#fff;font-weight:700;font-size:13px;cursor:pointer">❌ Recusar</button>
@@ -1033,7 +1050,7 @@ return`<div style="background:${c.surface};border-radius:12px;border:1.5px solid
    </div>`;
 };
 // Filtro por aba
-const minhas=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&(_MK.historico||r.data>=h)&&r.status!=="recusado").sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
+const minhas=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&(_MK.historico||r.data>=h)&&r.status!=="recusado"&&!r.reservaAutomatica).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
 const pendentes=minhas.filter(r=>r.statusMarketing==="pendente");
 const aprovados=minhas.filter(r=>r.statusMarketing==="aprovado");
 const todos=_todas.filter(r=>(_MK.historico||r.data>=h)&&r.status!=="recusado"&&!r.reservaAutomatica).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
@@ -1073,32 +1090,42 @@ $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="
 window.mkAprovar=async(id)=>{
 if(!confirm("Aprovar esta solicitação de foto/vídeo?"))return;
 const r=_todas.find(r=>r.id===id);
-await updateDoc(doc(db,"reservas",id),{statusMarketing:"aprovado"});
+const sel=window._MK?.sel?.[id]||{};
+const horarioEscolhido=sel.horario||r?.horario;
+const obs=(sel.obs||"").trim();
+await updateDoc(doc(db,"reservas",id),{statusMarketing:"aprovado",fotografoHorario:horarioEscolhido,fotografoObs:obs});
 if(r){
 const local=r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco;
 const dataFmt=r.data.split("-").reverse().join("/");
 const statusFinal=await tentarConfirmarAuto({...r,statusMarketing:"aprovado"});
 const extra=r.espaco==="Equipe de Marketing"?"":` ${fraseSituacaoEspaco(statusFinal)}`;
-await gravarNotif(r.professorId,"📸 Solicitação de foto/vídeo aprovada!",`${local} — ${dataFmt} às ${r.horario}.${extra}`,"aprovacao");
+const infoHorario=horarioEscolhido&&horarioEscolhido!==r.horario?` A equipe de Marketing vai estar lá às ${horarioEscolhido} (não no período todo).`:"";
+const infoObs=obs?` Obs. do Marketing: "${obs}"`:"";
+await gravarNotif(r.professorId,"📸 Solicitação de foto/vídeo aprovada!",`${local} — ${dataFmt} às ${r.horario}.${extra}${infoHorario}${infoObs}`,"aprovacao");
 _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
-gravarNotif(u.uid,"📸 Marketing aprovou solicitação",`${r.professor} — ${local} ${dataFmt} às ${r.horario}.${extra}`,"info")
+gravarNotif(u.uid,"📸 Marketing aprovou solicitação",`${r.professor} — ${local} ${dataFmt} às ${r.horario}.${extra}${infoHorario}${infoObs}`,"info")
 );
+if(window._MK?.sel)delete window._MK.sel[id];
 }
 re();
 };
 window.mkRecusar=async(id)=>{
 if(!confirm("Recusar esta solicitação?"))return;
 const r=_todas.find(r=>r.id===id);
-await updateDoc(doc(db,"reservas",id),{statusMarketing:"recusado"});
+const sel=window._MK?.sel?.[id]||{};
+const obs=(sel.obs||"").trim();
+await updateDoc(doc(db,"reservas",id),{statusMarketing:"recusado",fotografoObs:obs});
 if(r){
 const local=r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco;
 const dataFmt=r.data.split("-").reverse().join("/");
 const statusFinal=await tentarConfirmarAuto({...r,statusMarketing:"recusado"});
 const extra=r.espaco==="Equipe de Marketing"?"":` A reserva do espaço não foi cancelada por causa disso. ${fraseSituacaoEspaco(statusFinal)}`;
-await gravarNotif(r.professorId,"📸 Solicitação de foto/vídeo recusada",`${local} — ${dataFmt} às ${r.horario}.${extra}`,"recusa");
+const infoObs=obs?` Motivo: "${obs}"`:"";
+await gravarNotif(r.professorId,"📸 Solicitação de foto/vídeo recusada",`${local} — ${dataFmt} às ${r.horario}.${extra}${infoObs}`,"recusa");
 _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
-gravarNotif(u.uid,"📸 Marketing recusou solicitação",`${r.professor} — ${local} ${dataFmt} às ${r.horario}.${extra}`,"info")
+gravarNotif(u.uid,"📸 Marketing recusou solicitação",`${r.professor} — ${local} ${dataFmt} às ${r.horario}.${extra}${infoObs}`,"info")
 );
+if(window._MK?.sel)delete window._MK.sel[id];
 }
 re();
 };
