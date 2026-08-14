@@ -1035,12 +1035,14 @@ return`<div style="background:${c.surface};border-radius:12px;border:1.5px solid
          ${r.descritivo?`<div style="margin-top:6px;padding:8px 10px;background:#fef9c3;border-radius:6px;border:1px solid #fde68a"><p style="font-size:11px;font-weight:700;color:#854d0e;margin-bottom:2px">📝 Publicação:</p><p style="font-size:12px;color:#713f12">${r.descritivo}</p></div>`:""}
        </div>
      </div>
-     ${temVarios?`<div style="margin-top:10px;padding:10px;background:${pend?"#f5f3ff":"#e2f4ea"};border-radius:8px;border:1px solid ${pend?"#ddd6fe":"#a7f3d0"}">
+     ${temVarios&&r.objetivoMidia==="social"?`<div style="margin-top:10px;padding:10px;background:${pend?"#f5f3ff":"#e2f4ea"};border-radius:8px;border:1px solid ${pend?"#ddd6fe":"#a7f3d0"}">
        <p style="font-size:11px;font-weight:700;color:${pend?"#7c3aed":"#1a6b47"};margin-bottom:6px">⏰ Esse pedido cobre vários horários seguidos — em qual você consegue estar?${!pend?" (imprevisto? pode trocar aqui a qualquer momento)":""}</p>
        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:${pend?"0":"8px"}">
          ${grupoHorarios.map(hr=>`<label style="display:flex;align-items:center;gap:5px;background:${_MK.sel[r.id].horario===hr?(pend?'#7c3aed':'#1a6b47'):'#fff'};color:${_MK.sel[r.id].horario===hr?'#fff':(pend?'#4c1d95':'#166534')};border:1.5px solid ${pend?'#ddd6fe':'#a7f3d0'};border-radius:20px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer"><input type="radio" name="mk-hr-${r.id}" value="${hr}" ${_MK.sel[r.id].horario===hr?"checked":""} onchange="window._MK.sel['${r.id}'].horario=this.value;re()" style="display:none">${hr}</label>`).join("")}
        </div>
        ${!pend?`<button onclick="mkAtualizarHorario('${r.id}')" style="padding:7px 14px;border-radius:8px;border:none;background:#1a6b47;color:#fff;font-weight:700;font-size:12px;cursor:pointer">💾 Atualizar horário</button>`:""}
+     </div>`:temVarios?`<div style="margin-top:10px;padding:10px;background:#fef9c3;border-radius:8px;border:1px solid #fde68a">
+       <p style="font-size:11.5px;font-weight:700;color:#854d0e">📚 Pedagógico — esse pedido cobre várias turmas (${grupoHorarios.join(", ")}). Diferente da Rede Social, aqui é pra acompanhar <strong>todas</strong>, não só passar em uma.</p>
      </div>`:""}
      ${pend?`<div style="margin-top:10px">
        <label style="font-size:11px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Observação (opcional)</label><br>
@@ -2607,6 +2609,7 @@ html+=`<div style="background:${c.surface};border-radius:10px;padding:12px 14px;
      <option value="social" ${b.objetivoMidia==="social"?"selected":""}>📱 Publicação em Rede Social</option>
      <option value="pedagogico" ${b.objetivoMidia==="pedagogico"?"selected":""}>📚 Projeto Pedagógico</option>
    </select>
+   ${b.objetivoMidia==="pedagogico"&&b.horario&&b.horarioFim&&b.horario!==b.horarioFim?`<div style="background:#fef9c3;border:1.5px solid #fde68a;border-radius:8px;padding:10px 12px;margin-bottom:6px"><p style="font-size:12px;color:#713f12;line-height:1.5">⚠️ <strong>Projeto Pedagógico com várias turmas:</strong> crie uma reserva separada pra cada turma/horário, em vez de agrupar tudo num período só. É diferente do caso de Rede Social — ali a equipe de Marketing só precisa passar em um horário pra tirar uma foto, mas no Pedagógico ela precisa acompanhar <strong>todas</strong> as turmas, então cada uma precisa aparecer como um pedido separado pra ela.</p></div>`:""}
    ${b.objetivoMidia==="social"?`<label style="font-size:11px;font-weight:700;color:#854d0e;display:block;margin-bottom:3px">📝 Texto para a publicação *</label><textarea onchange="maSetBlocoRe(${i},'descritivo',this.value)" rows="3" placeholder="Descreva o contexto para publicação... (obrigatório)" style="${inp()};resize:none">${b.descritivo||""}</textarea>`:""}`:""}`:""}
  </div>`;
 } // fim if(b.horario&&b.horarioFim) mídia
