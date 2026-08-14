@@ -1791,6 +1791,7 @@ return`<div class="row-hover" ${selClick?`onclick="toggleSelProf('${r.id}')"`:''
        <span style="font-size:11px;color:${isMeu?c.green:c.textMuted};background:${c.bg};padding:1px 8px;border-radius:10px;border:1px solid ${c.borderLight};font-weight:${isMeu?700:400};white-space:nowrap">${isMeu?"👤 eu":r.professor?.split(" ")[0]||""}</span>
      </div>
      ${r.conteudo?`<p style="font-size:11.5px;color:${c.textMuted};margin:2px 0 0;line-height:1.4">📝 ${r.conteudo}</p>`:""}
+     ${r.descritivo?`<div style="margin-top:4px;padding:6px 9px;background:#fef9c3;border-radius:6px;border:1px solid #fde68a"><p style="font-size:10px;font-weight:700;color:#854d0e;margin-bottom:1px">📝 Texto p/ publicação:</p><p style="font-size:11px;color:#713f12">${r.descritivo}</p></div>`:""}
      ${r.paginas?`<p style="font-size:11px;color:${c.textMuted};margin:2px 0 0">📖 Págs.: ${r.paginas}</p>`:""}
      ${r.tipoAtividade?`<p style="font-size:11px;color:${c.textMuted};margin:2px 0 0">${r.tipoAtividade==="Nave a Vela"?"🚀":"📋"} ${r.tipoAtividade}</p>`:""}
      ${equipBadgesHTML(r)}
@@ -2269,6 +2270,8 @@ const rangeAtual=b.horario&&b.horarioFim?horariosRange(b.horario,b.horarioFim):[
 const isAvulso=eo?.equipAvulso;
 const bValMulti=b=>{
 if(!b.horario||!b.horarioFim)return false;
+// Se o objetivo da foto/vídeo é publicação em Rede Social, o texto da publicação é obrigatório
+if(b.objetivoMidia==="social"&&!(b.descritivo&&b.descritivo.trim()))return false;
 // Marketing: precisa de sala e pelo menos foto ou vídeo
 if(eo?.tipo==="marketing")return !!(b.salaAtividade&&b.conteudo&&(b.precisaFoto||b.precisaVideo));
 // Equipamentos avulsos: precisam de local início, conteúdo e término (quando exigido pelo *)
@@ -2581,7 +2584,7 @@ html+=`<div style="background:${c.surface};border-radius:10px;padding:12px 14px;
      <option value="social" ${b.objetivoMidia==="social"?"selected":""}>📱 Publicação em Rede Social</option>
      <option value="pedagogico" ${b.objetivoMidia==="pedagogico"?"selected":""}>📚 Projeto Pedagógico</option>
    </select>
-   ${b.objetivoMidia==="social"?`<textarea onchange="maSetBlocoRe(${i},'descritivo',this.value)" rows="3" placeholder="Descreva o contexto para publicação..." style="${inp()};resize:none">${b.descritivo||""}</textarea>`:""}`:""}`:""}
+   ${b.objetivoMidia==="social"?`<label style="font-size:11px;font-weight:700;color:#854d0e;display:block;margin-bottom:3px">📝 Texto para a publicação *</label><textarea onchange="maSetBlocoRe(${i},'descritivo',this.value)" rows="3" placeholder="Descreva o contexto para publicação... (obrigatório)" style="${inp()};resize:none">${b.descritivo||""}</textarea>`:""}`:""}`:""}
  </div>`;
 } // fim if(b.horario&&b.horarioFim) mídia
 if(!isEquip&&!isAvulso&&eo?.tipo!=="audiovisual"&&eo?.tipo!=="marketing"){
@@ -3639,6 +3642,7 @@ return`<div class="row-hover" style="display:flex;align-items:center;gap:8px;pad
        ${r.precisaFoto?`<span style="font-size:10.5px;font-weight:800;background:#f5f3ff;color:#7c3aed;border:1.5px solid #ddd6fe;padding:1px 8px;border-radius:10px;white-space:nowrap">📸 Foto</span>`:""}${r.precisaVideo?`<span style="font-size:10.5px;font-weight:800;background:#eff6ff;color:#1d4ed8;border:1.5px solid #bfdbfe;padding:1px 8px;border-radius:10px;white-space:nowrap">🎬 Vídeo</span>`:""}
      </div>
      ${r.conteudo?`<p style="font-size:11.5px;color:${c.textMuted};margin:3px 0 0;line-height:1.4">📝 ${r.conteudo}</p>`:""}
+     ${r.descritivo?`<div style="margin-top:4px;padding:6px 9px;background:#fef9c3;border-radius:6px;border:1px solid #fde68a"><p style="font-size:10px;font-weight:700;color:#854d0e;margin-bottom:1px">📝 Texto p/ publicação:</p><p style="font-size:11px;color:#713f12">${r.descritivo}</p></div>`:""}
      ${r.paginas?`<p style="font-size:11px;color:${c.textMuted};margin:2px 0 0">📖 Págs.: ${r.paginas}</p>`:""}
      ${r.tipoAtividade?`<p style="font-size:11px;color:${c.textMuted};margin:2px 0 0">${r.tipoAtividade==="Nave a Vela"?"🚀":"📋"} ${r.tipoAtividade}</p>`:""}
      ${equipBadgesHTML(r)}
