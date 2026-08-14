@@ -1014,7 +1014,7 @@ const objTag=r.objetivoMidia?`<span style="background:#fef9c3;color:#854d0e;font
 const grupoHorarios=[r.horario,..._todas.filter(a=>a.reservaAutomatica&&a.espaco===r.espaco&&a.data===r.data&&a.professorId===r.professorId).map(a=>a.horario)].filter((v,i,arr)=>v&&arr.indexOf(v)===i).sort();
 const temVarios=grupoHorarios.length>1;
 if(!window._MK.sel)window._MK.sel={};
-if(!_MK.sel[r.id])_MK.sel[r.id]={horario:grupoHorarios[0]||r.horario,obs:""};
+if(!_MK.sel[r.id])_MK.sel[r.id]={horario:(pend?(grupoHorarios[0]||r.horario):(r.fotografoHorario||r.horario)),obs:pend?"":(r.fotografoObs||"")};
 return`<div style="background:${c.surface};border-radius:12px;border:1.5px solid ${pend?"#ddd6fe":"#a7f3d0"};padding:14px 18px;margin-bottom:10px;border-left:4px solid ${pend?"#7c3aed":"#1a6b47"}">
      <div style="display:flex;gap:14px;align-items:flex-start">
        <div style="text-align:center;min-width:52px;background:${pend?"#f5f3ff":"#e2f4ea"};border-radius:8px;padding:6px 8px">
@@ -1027,6 +1027,7 @@ return`<div style="background:${c.surface};border-radius:12px;border:1.5px solid
            <span style="font-family:'DM Mono',monospace;font-weight:800;color:${pend?"#7c3aed":"#1a6b47"};font-size:13px">${r.horario}${r.horarioFim&&r.horarioFim!==r.horario?" → "+r.horarioFim:""}</span>
            <span style="font-size:13px;font-weight:700;color:${c.navy}">${r.espaco==="Equipe de Marketing"?(r.salaAtividade||"Sala não informada"):r.espaco}</span>
            ${isH?`<span style="background:#1a6b47;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">📌 Hoje</span>`:""}
+           ${!pend&&r.fotografoHorario?`<span style="background:#e2f4ea;color:#1a6b47;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">📍 Vai às ${r.fotografoHorario}</span>`:""}
          </div>
          <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px">${midiaTags}${objTag}</div>
          <p style="font-size:12px;color:${c.textMid};margin-bottom:2px">👤 ${r.professor} · ${r.turmaInicio||r.turma||"—"}</p>
@@ -1034,11 +1035,12 @@ return`<div style="background:${c.surface};border-radius:12px;border:1.5px solid
          ${r.descritivo?`<div style="margin-top:6px;padding:8px 10px;background:#fef9c3;border-radius:6px;border:1px solid #fde68a"><p style="font-size:11px;font-weight:700;color:#854d0e;margin-bottom:2px">📝 Publicação:</p><p style="font-size:12px;color:#713f12">${r.descritivo}</p></div>`:""}
        </div>
      </div>
-     ${pend&&temVarios?`<div style="margin-top:10px;padding:10px;background:#f5f3ff;border-radius:8px;border:1px solid #ddd6fe">
-       <p style="font-size:11px;font-weight:700;color:#7c3aed;margin-bottom:6px">⏰ Esse pedido cobre vários horários seguidos — em qual você consegue estar?</p>
-       <div style="display:flex;flex-wrap:wrap;gap:6px">
-         ${grupoHorarios.map(hr=>`<label style="display:flex;align-items:center;gap:5px;background:${_MK.sel[r.id].horario===hr?'#7c3aed':'#fff'};color:${_MK.sel[r.id].horario===hr?'#fff':'#4c1d95'};border:1.5px solid #ddd6fe;border-radius:20px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer"><input type="radio" name="mk-hr-${r.id}" value="${hr}" ${_MK.sel[r.id].horario===hr?"checked":""} onchange="window._MK.sel['${r.id}'].horario=this.value;re()" style="display:none">${hr}</label>`).join("")}
+     ${temVarios?`<div style="margin-top:10px;padding:10px;background:${pend?"#f5f3ff":"#e2f4ea"};border-radius:8px;border:1px solid ${pend?"#ddd6fe":"#a7f3d0"}">
+       <p style="font-size:11px;font-weight:700;color:${pend?"#7c3aed":"#1a6b47"};margin-bottom:6px">⏰ Esse pedido cobre vários horários seguidos — em qual você consegue estar?${!pend?" (imprevisto? pode trocar aqui a qualquer momento)":""}</p>
+       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:${pend?"0":"8px"}">
+         ${grupoHorarios.map(hr=>`<label style="display:flex;align-items:center;gap:5px;background:${_MK.sel[r.id].horario===hr?(pend?'#7c3aed':'#1a6b47'):'#fff'};color:${_MK.sel[r.id].horario===hr?'#fff':(pend?'#4c1d95':'#166534')};border:1.5px solid ${pend?'#ddd6fe':'#a7f3d0'};border-radius:20px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer"><input type="radio" name="mk-hr-${r.id}" value="${hr}" ${_MK.sel[r.id].horario===hr?"checked":""} onchange="window._MK.sel['${r.id}'].horario=this.value;re()" style="display:none">${hr}</label>`).join("")}
        </div>
+       ${!pend?`<button onclick="mkAtualizarHorario('${r.id}')" style="padding:7px 14px;border-radius:8px;border:none;background:#1a6b47;color:#fff;font-weight:700;font-size:12px;cursor:pointer">💾 Atualizar horário</button>`:""}
      </div>`:""}
      ${pend?`<div style="margin-top:10px">
        <label style="font-size:11px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Observação (opcional)</label><br>
@@ -1129,6 +1131,23 @@ gravarNotif(u.uid,"📸 Marketing recusou solicitação",`${r.professor} — ${l
 if(window._MK?.sel)delete window._MK.sel[id];
 }
 re();
+};
+window.mkAtualizarHorario=async(id)=>{
+const r=_todas.find(r=>r.id===id);
+if(!r)return;
+const novoHorario=window._MK?.sel?.[id]?.horario;
+if(!novoHorario)return;
+if(novoHorario===r.fotografoHorario){alert("Esse já é o horário atual.");return;}
+try{
+await updateDoc(doc(db,"reservas",id),{fotografoHorario:novoHorario});
+const local=r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco;
+const dataFmt=r.data.split("-").reverse().join("/");
+await gravarNotif(r.professorId,"📸 Horário do Marketing mudou",`Por conta de um imprevisto, a equipe de Marketing agora vai estar em ${local} — ${dataFmt} às ${novoHorario} (em vez do horário combinado antes).`,"info");
+_usuarios.filter(u=>u.perfil==="admin").forEach(u=>
+gravarNotif(u.uid,"📸 Marketing trocou o horário",`${r.professor} — ${local} ${dataFmt}: Marketing agora vai às ${novoHorario}.`,"info")
+);
+re();
+}catch(e){alert("Erro ao atualizar horário: "+e.message);}
 };
 
 function renderTI(){
