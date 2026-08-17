@@ -3591,7 +3591,7 @@ html+=`<div style="position:sticky;top:16px">
      const limite=_metricaUso.limiteGratisLeituras||50000;
      const pct=Math.min(100,Math.round((leituras/limite)*100));
      const cor=pct>=90?"#dc2626":pct>=60?"#ea580c":"#1a6b47";
-     const atualizadoEm=_metricaUso.atualizadoEm?new Date(_metricaUso.atualizadoEm):null;
+     const atualizadoEm=_metricaUso.atualizadoEm?.toDate?_metricaUso.atualizadoEm.toDate():(_metricaUso.atualizadoEm?new Date(_metricaUso.atualizadoEm):null);
      const horaFmt=atualizadoEm?atualizadoEm.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):"—";
      return `<div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:12px 14px;margin-bottom:10px">
        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
