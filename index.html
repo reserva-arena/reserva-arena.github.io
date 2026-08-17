@@ -3359,6 +3359,7 @@ window.setRankModo=v=>{_A.rankModo=v;re();};
 function renderAdminView(){
 const c=C(),h=fmtHoje();
 if(!_A.mesCal){const d=new Date();_A.mesCal={a:d.getFullYear(),m:d.getMonth()};}
+carregarMetricaUso();
 const filtradas=_todas.filter(r=>{
 if(r.reservaAutomatica)return false;
 if(_A.fEspaco&&r.espaco!==_A.fEspaco)return false;
@@ -3583,6 +3584,30 @@ html+=`<div style="position:sticky;top:16px">
        <p style="font-size:9px;color:${c.textMuted};font-weight:600">Total</p>
      </div>
    </div>
+
+   ${(()=>{
+     if(!_metricaUso)return `<div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:10px 12px;margin-bottom:10px;font-size:11px;color:${c.textMuted};text-align:center">📊 Carregando uso do banco...</div>`;
+     const leituras=_metricaUso.leituras||0;
+     const limite=_metricaUso.limiteGratisLeituras||50000;
+     const pct=Math.min(100,Math.round((leituras/limite)*100));
+     const cor=pct>=90?"#dc2626":pct>=60?"#ea580c":"#1a6b47";
+     const atualizadoEm=_metricaUso.atualizadoEm?new Date(_metricaUso.atualizadoEm):null;
+     const horaFmt=atualizadoEm?atualizadoEm.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):"—";
+     return `<div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:12px 14px;margin-bottom:10px">
+       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+         <p style="font-size:11px;font-weight:700;color:${c.textMid}">📊 Uso do banco hoje</p>
+         <button onclick="_metricaUsoCarregada=false;carregarMetricaUso()" title="Atualizar" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:12px;padding:2px">🔄</button>
+       </div>
+       <div style="display:flex;align-items:baseline;gap:4px;margin-bottom:5px">
+         <span style="font-size:18px;font-weight:900;color:${cor}">${leituras.toLocaleString('pt-BR')}</span>
+         <span style="font-size:11px;color:${c.textMuted}">/ ${limite.toLocaleString('pt-BR')} leituras grátis</span>
+       </div>
+       <div style="height:6px;background:${c.bg};border-radius:10px;overflow:hidden">
+         <div style="height:100%;width:${pct}%;background:${cor};border-radius:10px"></div>
+       </div>
+       <p style="font-size:9.5px;color:${c.textMuted};margin-top:5px">Estimativa · atualizado às ${horaFmt} · gravações: ${(_metricaUso.gravacoes||0).toLocaleString('pt-BR')}</p>
+     </div>`;
+   })()}
 
    <div style="display:flex;gap:6px;margin-bottom:4px">
      <button onclick="setRankModo('realizado')" style="flex:1;padding:7px;border-radius:8px;border:1px solid ${_A.rankModo!=="total"?"#1a6b47":c.border};background:${_A.rankModo!=="total"?"#1a6b47":c.surface};color:${_A.rankModo!=="total"?"#fff":c.textMuted};font-size:10.5px;font-weight:700;cursor:pointer">✅ Já realizado</button>
@@ -4124,6 +4149,15 @@ let _unsubTodas=null;
 let _paginaAtual=0,_carregadosAté=30;
 
 let _todasCarregadasChave=null; // null=nada | 'broad'=tudo (janela 60d) | nome do espaço específico carregado
+let _metricaUso=null,_metricaUsoCarregada=false;
+async function carregarMetricaUso(){
+if(_metricaUsoCarregada)return;
+_metricaUsoCarregada=true;
+try{
+const snap=await getDoc(doc(db,"metricas_uso","hoje"));
+if(snap.exists()){_metricaUso=snap.data();re();}
+}catch(e){console.warn("carregarMetricaUso:",e);}
+}
 window.carregarTodas=function carregarTodas(espaco){
 const chave=espaco||"broad";
 if(_todasCarregadas&&_todasCarregadasChave===chave)return;
