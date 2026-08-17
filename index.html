@@ -4014,6 +4014,7 @@ h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><span style="fo
 h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><div style="display:flex;gap:5px">';
 h+='<button data-uid="'+u.id+'" data-ativo="'+(u.ativo!==false?'1':'0')+'" data-nome="'+u.nome+'" class="gu-toggle-btn" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid '+(u.ativo!==false?'#fed7aa':'#6ee7a0')+';background:'+(u.ativo!==false?'#fff7ed':'#e2f4ea')+';color:'+(u.ativo!==false?'#7c2d12':'#0f4c2b')+';cursor:pointer;font-weight:700">'+(u.ativo!==false?'🔒 Desativar':'🔓 Ativar')+'</button>';
 h+='<button data-email="'+u.email+'" class="gu-senha-btn" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid #c7dfd4;background:#fff;color:#607060;cursor:pointer;font-weight:700">🔑 Senha</button>';
+h+='<button data-email="'+u.email+'" class="gu-reset123-btn" title="Reseta a senha para 123456 via GitHub (não depende de e-mail)" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid #ddd6fe;background:#f5f3ff;color:#5b21b6;cursor:pointer;font-weight:700">🔄 Reset 123456</button>';
 h+='<button data-uid="'+u.id+'" data-nome="'+u.nome.replace(/"/g,'&quot;')+'" data-email="'+u.email.replace(/"/g,'&quot;')+'" data-perfil="'+u.perfil+'" class="gu-editar-btn" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid #bfdbfe;background:#eff6ff;color:#1e40af;cursor:pointer;font-weight:700">✏️ Editar</button>';
 h+='</div></td></tr>';
 });
@@ -4061,6 +4062,22 @@ lista.querySelectorAll('.gu-senha-btn').forEach(b=>{
 b.addEventListener('click',()=>{
 const email=b.getAttribute('data-email');
 if(confirm('Enviar redefinição de senha para '+email+'?'))sendPasswordResetEmail(auth,email,RESET_ACTION_SETTINGS).then(()=>alert('Link enviado!')).catch(()=>alert('Erro ao enviar.'));
+});
+});
+lista.querySelectorAll('.gu-reset123-btn').forEach(b=>{
+b.addEventListener('click',async()=>{
+const email=b.getAttribute('data-email');
+try{await navigator.clipboard.writeText(email);}catch{}
+alert(
+'📋 E-mail copiado: '+email+'\n\n'+
+'Passo a passo (abrindo o GitHub numa nova aba):\n\n'+
+'1. Clique no botão cinza "Run workflow" (canto direito)\n'+
+'2. Cole o e-mail (já está na área de transferência — Ctrl+V) no campo que aparecer\n'+
+'3. Clique no botão verde "Run workflow" para confirmar\n'+
+'4. Espere uns 20-30s e atualize a página — uma bolinha verde ✅ confirma que deu certo\n\n'+
+'Depois disso, o professor já pode entrar com esse e-mail e a senha 123456 — o app vai forçar a troca automaticamente no login.'
+);
+window.open('https://github.com/reserva-arena/reserva-notificacoes/actions/workflows/reset-senha.yml','_blank');
 });
 });
 let _editUID=null;
