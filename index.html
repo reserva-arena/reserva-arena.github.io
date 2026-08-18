@@ -1998,6 +1998,14 @@ a.data===r.data&&
 a.professorId===r.professorId
 ).forEach(a=>b.delete(doc(db,"reservas",a.id)));
 await b.commit();
+// Avisar os admins que o professor cancelou
+try{
+const dataFmt=r.data.split("-").reverse().join("/");
+const range=r.horarioFim&&r.horarioFim!==r.horario?` → ${r.horarioFim}`:"";
+_usuarios.filter(u=>u.perfil==="admin").forEach(u=>
+gravarNotif(u.uid,"🗑️ Professor cancelou agendamento",`${r.professor||_usuario?.nome||"Professor"} cancelou "${r.espaco}" — ${dataFmt} às ${r.horario}${range}`,"info")
+);
+}catch(e){console.warn("notif cancelarR:",e);}
 };
 
 // ════════════════════════════════════════════════════════════════════════════
