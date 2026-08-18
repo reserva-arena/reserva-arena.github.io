@@ -267,13 +267,16 @@ const HORARIOS_COMPLETO = [
 {hora:"14:30", tipo:"aula"},
 {hora:"15:20", tipo:"aula"},
 {hora:"16:10", tipo:"aula"},
-{hora:"17:00", tipo:"aula"}
+{hora:"17:00", tipo:"aula"},
+{hora:"17:40", tipo:"fim"}
 ];
 
 // ── HORÁRIOS (COMPATIBILIDADE) ──
-// Apenas as horas válidas de aula (sem intervalos)
-// Mantém compatibilidade com código que usa indexOf(), etc.
+// Apenas as horas válidas de aula (sem intervalos) — usado pra "horário de início"
 const HORARIOS = HORARIOS_COMPLETO.filter(h => h.tipo === "aula").map(h => h.hora);
+// Aula + marcador de fim do último período — usado só pra calcular "horário de fim"
+// (17:40 nunca aparece como opção de início, só como fim válido do período das 17:00)
+const HORARIOS_COM_FIM = HORARIOS_COMPLETO.filter(h => h.tipo === "aula" || h.tipo === "fim").map(h => h.hora);
 
 // ── ESPAÇOS ──
 // multiHorario: true  → formulário de range (início→fim) em vez de blocos individuais
@@ -464,7 +467,7 @@ return addDias(s,dow===0?-6:1-dow);
 
 // Retorna array de horários entre inicio e fim (inclusivos)
 function horariosRange(ini,fim){
-const iIni=HORARIOS.indexOf(ini),iFim=HORARIOS.indexOf(fim);
+const iIni=HORARIOS.indexOf(ini),iFim=HORARIOS_COM_FIM.indexOf(fim);
 if(iIni<0||iFim<0||iFim<iIni)return ini?[ini]:[];
 return HORARIOS.slice(iIni,iFim);
 }
@@ -2280,11 +2283,15 @@ return false;
 let dispFim=[];
 if(b.horario){
 const iIni=HORARIOS.indexOf(b.horario);
+let parou=false;
 for(let idx=iIni+1;idx<HORARIOS.length;idx++){
 const horAtual=HORARIOS[idx];
-if(ocpFire.includes(horAtual)||isBloqueado(horAtual))break;
+if(ocpFire.includes(horAtual)||isBloqueado(horAtual)){parou=true;break;}
 dispFim.push(horAtual);
 }
+// 17:40 é o horário real de término do último período do dia (que começa às 17:00) —
+// só não aparece na lista de "início" porque não é o começo de uma aula nova.
+if(!parou)dispFim.push("17:40");
 if(dispFim.length===0)dispFim=[b.horario]; // fallback
 }
 
