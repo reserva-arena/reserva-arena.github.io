@@ -2150,6 +2150,28 @@ local:"",localDevolucao:"",qtdTablets:0,qtdNotebooks:0,turmasPorHorario:{},recor
 });
 
 window.fecharModalAgendar=()=>{$("mod-ag").style.display="none";};
+window.abrirListaProf=()=>{
+const el=$("mod-prof-lista");if(!el)return;
+el.style.display="flex";
+const bu=$("mod-prof-busca");if(bu)bu.value="";
+filtrarListaProf("");
+setTimeout(()=>{if(bu)bu.focus();},100);
+};
+window.fecharListaProf=()=>{const el=$("mod-prof-lista");if(el)el.style.display="none";};
+window.filtrarListaProf=termo=>{
+const norm=s=>(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+const f=norm(termo);
+const nomes=[..._usuarios].map(u=>u.nome).filter(Boolean).sort((a,b)=>a.localeCompare(b,'pt-BR'));
+const matches=f?nomes.filter(n=>norm(n).includes(f)):nomes;
+const cont=$("mod-prof-itens");if(!cont)return;
+if(!matches.length){cont.innerHTML=`<p style="text-align:center;color:#94a3b8;padding:24px;font-size:13px">Nenhum professor encontrado.</p>`;return;}
+cont.innerHTML=matches.map(n=>`<div onclick="selecionarProfLista('${n.replace(/'/g,"\\'")}')" style="padding:12px 16px;font-size:14px;cursor:pointer;border-bottom:1px solid #f1f5f9">${n}</div>`).join("");
+};
+window.selecionarProfLista=nome=>{
+_A.fProf=nome;
+fecharListaProf();
+re();
+};
 window.maVoltarRevisao=()=>{_MA.resumo=false;re();};
 window.setBibAV=v=>{_MA.bibAV=v;re();};
 
@@ -3493,7 +3515,10 @@ if(urgentes.length)html+=`<div style="background:linear-gradient(135deg,#f97316,
 html+=`<div style="background:${c.surface};border-radius:12px;border:1px solid ${c.border};padding:8px 12px;margin-bottom:16px">
    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
      <select id="adm-sel-espaco" style="${sel()};font-size:12px;padding:5px 8px;flex:1;min-width:100px"><option value="">🏛️ Espaço</option>${ESPACOS.map(e=>`<option value="${e.nome}" ${_A.fEspaco===e.nome?"selected":""}>${e.nome}</option>`).join("")}</select>
-     <input id="adm-sel-prof" list="adm-prof-datalist" type="text" placeholder="👤 Professor" value="${_A.fProf||""}" style="${sel()};font-size:12px;padding:5px 8px;flex:1;min-width:100px"><datalist id="adm-prof-datalist">${[..._usuarios].sort((a,b)=>(a.nome||"").localeCompare(b.nome||"",'pt-BR')).map(u=>`<option value="${u.nome}">`).join("")}</datalist>
+     <div style="position:relative;flex:1;min-width:100px">
+       <input id="adm-sel-prof" type="text" autocomplete="off" placeholder="👤 Professor" value="${_A.fProf||""}" style="${sel()};font-size:12px;padding:5px 8px;width:100%">
+       <div id="adm-prof-sugg" style="display:none;position:absolute;top:100%;left:0;right:0;background:${c.surface};border:1.5px solid ${c.border};border-radius:8px;margin-top:4px;max-height:220px;overflow-y:auto;z-index:50;box-shadow:0 4px 14px rgba(0,0,0,.15)"></div>
+     </div>
      <select id="adm-sel-turma" style="${sel()};font-size:12px;padding:5px 8px;flex:1;min-width:90px"><option value="">🎓 Turma</option>${TURMAS.map(t=>`<option value="${t}" ${_A.fTurma===t?"selected":""}>${t}</option>`).join("")}</select>
      <select id="adm-sel-status" style="${sel()};font-size:12px;padding:5px 8px;min-width:90px"><option value="">● Status</option><option value="confirmado" ${_A.fStatus==="confirmado"?"selected":""}>✅ Confirmado</option><option value="pendente" ${_A.fStatus==="pendente"?"selected":""}>⏳ Pendente</option><option value="recusado" ${_A.fStatus==="recusado"?"selected":""}>❌ Recusado</option></select>
      ${_A.fEspaco||_A.fProf||_A.fStatus||_A.fTurma?`<button id="adm-btn-limpar" style="${btn("ghost")};padding:5px 10px;font-size:12px">✕</button>`:""}
@@ -3788,6 +3813,20 @@ html+=`<div style="position:sticky;top:16px">
    </div>
  </div>`;
 
+html+=`<div id="mod-prof-lista" style="display:none;position:fixed;inset:0;z-index:1200;align-items:flex-end;justify-content:center">
+   <div onclick="fecharListaProf()" style="position:absolute;inset:0;background:rgba(0,0,0,.5)"></div>
+   <div style="position:relative;background:${c.surface};border-radius:20px 20px 0 0;width:100%;max-width:600px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 -8px 40px rgba(0,0,0,.25)">
+     <div style="padding:16px 16px 10px;border-bottom:1px solid ${c.border};flex-shrink:0">
+       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+         <h3 style="font-size:16px;font-weight:800;color:${c.navy}">👤 Selecionar Professor</h3>
+         <button onclick="fecharListaProf()" style="background:none;border:none;font-size:20px;color:${c.textMuted};cursor:pointer;line-height:1;padding:4px">✕</button>
+       </div>
+       <input id="mod-prof-busca" type="text" placeholder="🔍 Buscar por nome..." oninput="filtrarListaProf(this.value)" style="${inp()};width:100%">
+     </div>
+     <div id="mod-prof-itens" style="overflow-y:auto;padding:8px 0;flex:1"></div>
+   </div>
+ </div>`;
+
 html+=`</div></div>`;
 return html;
 }
@@ -3852,7 +3891,25 @@ const ss=document.getElementById("adm-sel-status");
 const bl=document.getElementById("adm-btn-limpar");
 const bh=document.getElementById("adm-btn-hist");
 if(se)se.addEventListener("change",e=>{_A.fEspaco=e.target.value;re();});
-if(sp)sp.addEventListener("change",e=>{const v=e.target.value.trim();_A.fProf=_usuarios.some(u=>u.nome===v)?v:"";re();});
+const sugg=document.getElementById("adm-prof-sugg");
+if(sp&&sugg){
+const norm=s=>(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+const profNomes=[..._usuarios].map(u=>u.nome).filter(Boolean).sort((a,b)=>a.localeCompare(b,'pt-BR'));
+const renderSugg=filtro=>{
+const f=norm(filtro);
+const matches=f?profNomes.filter(n=>norm(n).includes(f)):profNomes;
+if(!matches.length){sugg.innerHTML=`<div style="padding:9px 12px;font-size:12.5px;color:${C().textMuted}">Nenhum resultado.</div><div class="prof-sugg-vertodos" style="padding:9px 12px;font-size:12.5px;font-weight:700;color:${C().blueMid};cursor:pointer;text-align:center;border-top:1px solid ${C().border}">📋 Ver lista completa</div>`;sugg.style.display="block";sugg.querySelector(".prof-sugg-vertodos").addEventListener("mousedown",ev=>{ev.preventDefault();sugg.style.display="none";abrirListaProf();});return;}
+sugg.innerHTML=matches.slice(0,40).map(n=>`<div class="prof-sugg-item" data-nome="${n}" style="padding:9px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid ${C().border}">${n}</div>`).join("")+`<div class="prof-sugg-vertodos" style="padding:9px 12px;font-size:12.5px;font-weight:700;color:${C().blueMid};cursor:pointer;text-align:center">📋 Ver lista completa</div>`;
+sugg.style.display="block";
+sugg.querySelector(".prof-sugg-vertodos").addEventListener("mousedown",ev=>{ev.preventDefault();sugg.style.display="none";abrirListaProf();});
+sugg.querySelectorAll(".prof-sugg-item").forEach(el=>{
+el.addEventListener("mousedown",ev=>{ev.preventDefault();const nome=el.getAttribute("data-nome");sp.value=nome;_A.fProf=nome;sugg.style.display="none";re();});
+});
+};
+sp.addEventListener("focus",()=>renderSugg(sp.value));
+sp.addEventListener("input",()=>{renderSugg(sp.value);if(!sp.value.trim())_A.fProf="";});
+sp.addEventListener("blur",()=>{setTimeout(()=>{sugg.style.display="none";if(!_usuarios.some(u=>u.nome===sp.value.trim()))sp.value=_A.fProf||"";},150);});
+}
 if(ss)ss.addEventListener("change",e=>{_A.fStatus=e.target.value;re();});
 const st2=document.getElementById("adm-sel-turma");
 if(st2)st2.addEventListener("change",e=>{_A.fTurma=e.target.value;re();});
