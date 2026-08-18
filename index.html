@@ -1330,7 +1330,8 @@ $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="
 }
 function renderCoord(){
 const c=C(),h=fmtHoje();
-if(!window._CO)window._CO={fProf:"",fTurma:"",fEspaco:"",historico:false,avisoOculto:false};
+if(!window._CO)window._CO={fProf:"",fTurma:"",fEspaco:"",historico:false,avisoOculto:false,modoVisu:"agenda",mesCal:null,diaSel:null};
+if(!_CO.mesCal){const d=new Date();_CO.mesCal={a:d.getFullYear(),m:d.getMonth()};}
 const TODAS_TURMAS=[...TURMAS_EDUCACAO_INFANTIL,...TURMAS_INTEGRAL,...TURMAS_FUND1,...TURMAS_INTEGRAL_FUND1,...TURMAS_FUND2,...TURMAS_EXTRAS];
 
 // Coordenador enxerga todas as reservas (perfil único, sem segmento) — os filtros abaixo
@@ -1400,12 +1401,84 @@ $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="
          ${ESPACOS.map(e=>`<option value="${e.nome}" ${_CO.fEspaco===e.nome?"selected":""}>${e.nome}</option>`).join("")}
        </select>
        <button onclick="window._CO.historico=!window._CO.historico;re()" style="padding:8px 10px;border-radius:8px;border:1.5px solid ${_CO.historico?c.navy:c.border};background:${_CO.historico?c.navy:"transparent"};color:${_CO.historico?"#fff":c.textMid};font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🕐 ${_CO.historico?"Ocultar hist.":"Histórico"}</button>
+       <button onclick="window._CO.modoVisu=_CO.modoVisu==='calendario'?'agenda':'calendario';re()" style="padding:8px 10px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.textMid};font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">${_CO.modoVisu==="calendario"?"☰ Agenda":"📅 Calendário"}</button>
      </div>
      <p style="font-size:11px;color:${c.textMuted};margin-bottom:12px">${fonte.length} agendamento${fonte.length!==1?"s":""} encontrado${fonte.length!==1?"s":""}</p>
-     ${corpo}
+     ${_CO.modoVisu==="calendario"?coordCalendarioHTML(porData,c,h):corpo}
    </div>
  </div>`;
 }
+
+function coordCalendarioHTML(porData,c,h){
+const{a:ano,m:mes}=_CO.mesCal;
+const primeiroDia=new Date(Date.UTC(ano,mes,1));
+const diasNoMes=new Date(Date.UTC(ano,mes+1,0)).getUTCDate();
+const inicioGrid=primeiroDia.getUTCDay();
+const cells=[];for(let i=0;i<inicioGrid;i++)cells.push(null);for(let d=1;d<=diasNoMes;d++)cells.push(d);
+const calMobile=window.innerWidth<768;
+const calCols=calMobile?"repeat(5,110px)":"0.6fr repeat(5,1fr) 0.6fr";
+const calDias=calMobile?["Seg.","Ter.","Qua.","Qui.","Sexta"]:["Dom.","Seg.","Ter.","Qua.","Qui.","Sexta","Sáb."];
+let html=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+   <div style="display:flex;align-items:center;gap:8px">
+     <button onclick="window.coordNavMes(-1)" style="background:${c.surface};border:1px solid ${c.border};border-radius:8px;width:32px;height:32px;cursor:pointer;color:${c.textMid};font-size:16px">‹</button>
+     <p style="font-size:17px;font-weight:800;color:${c.navy};min-width:120px;text-align:center">${MESES[mes]} ${ano}</p>
+     <button onclick="window.coordNavMes(1)" style="background:${c.surface};border:1px solid ${c.border};border-radius:8px;width:32px;height:32px;cursor:pointer;color:${c.textMid};font-size:16px">›</button>
+   </div>
+   <button onclick="const d=new Date();window._CO.mesCal={a:d.getFullYear(),m:d.getMonth()};window._CO.diaSel=null;re()" style="${btn("ghost")};padding:5px 12px;font-size:12px">Hoje</button>
+ </div>
+ <div style="background:${c.surface};border-radius:14px;border:1px solid ${c.border};overflow:hidden;box-shadow:${c.cardShadow}">
+ <div style="overflow-x:${calMobile?"auto":"visible"}">
+   <div style="display:grid;grid-template-columns:${calCols};border-bottom:2px solid ${c.border};min-width:${calMobile?"550px":"auto"}">
+     ${calDias.map((d,i)=>{const isWk=calMobile?false:(i===0||i===6);return`<div style="padding:8px 0;text-align:center;font-size:11px;font-weight:700;color:${isWk?"#ef4444":c.textMuted};text-transform:uppercase">${d}</div>`;}).join("")}
+   </div>
+   <div style="display:grid;grid-template-columns:${calCols};min-width:${calMobile?"550px":"auto"}">`;
+cells.forEach((d,i)=>{
+if(!d){
+const dowVazia=i%7;
+if(calMobile&&(dowVazia===0||dowVazia===6))return;
+html+=`<div style="min-height:80px;border-right:1px solid ${c.borderLight};border-bottom:1px solid ${c.borderLight}"></div>`;return;
+}
+const ds=`${ano}-${String(mes+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+const isPast=ds<h,isH=ds===h,isSel=ds===_CO.diaSel;
+const rsdia=porData[ds]||[];
+const pend=rsdia.filter(r=>r.status==="pendente");
+const conf=rsdia.filter(r=>r.status==="confirmado");
+const dow=new Date(Date.UTC(ano,mes,d)).getUTCDay();
+if(calMobile&&(dow===0||dow===6))return;
+html+=`<div onclick="window._CO.diaSel=_CO.diaSel==='${ds}'?null:'${ds}';re()" style="min-height:80px;border-right:1px solid ${c.borderLight};border-bottom:1px solid ${c.borderLight};padding:5px 6px;cursor:pointer;background:${isSel?"rgba(26,107,71,.08)":isH?"rgba(26,107,71,.04)":"transparent"};transition:background .15s">
+   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
+     <span style="font-size:13px;font-weight:${isH?900:500};color:${isSel||isH?"#40b07a":isPast?c.textMuted:dow===0||dow===6?"#ef4444":c.navy};width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:${isH?"rgba(26,107,71,.15)":"transparent"}">${d}</span>
+   </div>
+   <div style="display:flex;flex-direction:column;gap:2px">
+     ${isPast?(rsdia.length?`<div style="height:5px;border-radius:3px;background:${pend.length?c.amber:c.green};margin-top:2px"></div><p style="font-size:8.5px;color:${c.textMuted};margin-top:2px">${rsdia.length} agend.</p>`:""):`
+     ${pend.slice(0,1).map(r=>{const range=r.horarioFim&&r.horarioFim!==r.horario?`→${r.horarioFim}`:"";return`<div style="background:${c.amberBg};border:1px solid ${c.amberBorder};border-radius:4px;padding:2px 4px;font-size:9px;font-weight:700;color:${c.amber};overflow:hidden"><div style="white-space:nowrap;text-overflow:ellipsis;overflow:hidden">⏳${r.horario}${range} ${espacoCurto(r.espaco)}</div><div style="font-size:8px;color:#92400e;white-space:nowrap;text-overflow:ellipsis;overflow:hidden">${r.professor?.split(" ")[0]||""}</div></div>`;}).join("")}
+     ${conf.slice(0,2).map(r=>{const range=r.horarioFim&&r.horarioFim!==r.horario?`→${r.horarioFim}`:"";return`<div style="background:${c.greenBg};border:1px solid ${c.greenBorder};border-radius:4px;padding:2px 4px;font-size:9px;font-weight:600;color:${c.green};overflow:hidden"><div style="white-space:nowrap;text-overflow:ellipsis;overflow:hidden">${r.horario}${range} ${espacoCurto(r.espaco)}</div><div style="font-size:8px;color:#166534;white-space:nowrap;text-overflow:ellipsis;overflow:hidden">${r.professor?.split(" ")[0]||""}</div></div>`;}).join("")}
+     ${rsdia.length>3?`<div style="font-size:9px;color:${c.blueMid};font-weight:700;padding-left:2px">+${rsdia.length-3} mais</div>`:""}
+     `}
+   </div>
+ </div>`;
+});
+html+=`</div></div></div>
+ <div style="display:flex;gap:14px;margin-top:8px;flex-wrap:wrap;align-items:center">
+   ${[{l:"Pendente",bg:c.amberBg,b:c.amberBorder},{l:"Confirmado",bg:c.greenBg,b:c.greenBorder}].map(l=>`<div style="display:flex;align-items:center;gap:5px"><div style="width:12px;height:12px;border-radius:3px;background:${l.bg};border:1.5px solid ${l.b}"></div><span style="font-size:11px;color:${c.textMuted};font-weight:600">${l.l}</span></div>`).join("")}
+   <span style="margin-left:auto;font-size:11px;color:${c.textMuted}">Clique para detalhes</span>
+ </div>`;
+if(_CO.diaSel){
+const[a2,m2,d2]=_CO.diaSel.split("-");
+const rsdia=(porData[_CO.diaSel]||[]).sort((a,b)=>a.horario>b.horario?1:-1);
+html+=`<div class="fade-in" style="margin-top:14px;background:${c.surface};border-radius:14px;border:1px solid ${c.border};overflow:hidden">
+   <div style="background:linear-gradient(135deg,#1a6b47,#0f4c2b);padding:10px 16px;display:flex;align-items:center;justify-content:space-between">
+     <p style="font-size:15px;font-weight:800;color:#fff">📅 ${d2}/${m2}/${a2}</p>
+     <button onclick="window._CO.diaSel=null;re()" style="background:rgba(255,255,255,.2);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;padding:4px 10px;cursor:pointer">✕</button>
+   </div>
+   <div style="padding:12px 16px">
+     ${!rsdia.length?`<p style="font-size:13px;color:${c.textMuted};text-align:center;padding:14px 0">🎉 Nenhum agendamento.</p>`:rsdia.map(r=>coordRow(r)).join("")}
+   </div>
+ </div>`;
+}
+return html;
+}
+window.coordNavMes=dir=>{let nm=_CO.mesCal.m+dir,na=_CO.mesCal.a;if(nm>11){nm=0;na++;}if(nm<0){nm=11;na--;}window._CO.mesCal={a:na,m:nm};window._CO.diaSel=null;re();};
 
 function coordRow(r){
 const c=C(),h=fmtHoje();
