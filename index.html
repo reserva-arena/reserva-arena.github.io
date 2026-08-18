@@ -3521,7 +3521,7 @@ html+=`<div style="background:${c.surface};border-radius:12px;border:1px solid $
      </div>
      <select id="adm-sel-turma" style="${sel()};font-size:12px;padding:5px 8px;flex:1;min-width:90px"><option value="">🎓 Turma</option>${TURMAS.map(t=>`<option value="${t}" ${_A.fTurma===t?"selected":""}>${t}</option>`).join("")}</select>
      <select id="adm-sel-status" style="${sel()};font-size:12px;padding:5px 8px;min-width:90px"><option value="">● Status</option><option value="confirmado" ${_A.fStatus==="confirmado"?"selected":""}>✅ Confirmado</option><option value="pendente" ${_A.fStatus==="pendente"?"selected":""}>⏳ Pendente</option><option value="recusado" ${_A.fStatus==="recusado"?"selected":""}>❌ Recusado</option></select>
-     ${_A.fEspaco||_A.fProf||_A.fStatus||_A.fTurma?`<button id="adm-btn-limpar" style="${btn("ghost")};padding:5px 10px;font-size:12px">✕</button>`:""}
+     ${_A.fEspaco||_A.fProf||_A.fStatus||_A.fTurma?`<button id="adm-btn-limpar" style="background:#fef2f2;border:1.5px solid #fecaca;border-radius:8px;color:#b91c1c;font-weight:700;padding:5px 12px;font-size:12px;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:4px">✕ Limpar filtros</button>`:""}
      <button id="adm-btn-hist" style="background:${_A.historico?c.navy:"transparent"};border:1.5px solid ${_A.historico?c.navy:c.border};border-radius:8px;color:${_A.historico?"#fff":c.textMuted};font-size:12px;padding:5px 10px;cursor:pointer;font-weight:600;white-space:nowrap;margin-left:auto">🕐 ${_A.historico?"Ocultar":"Histórico"}</button>
    </div>
  </div>`;
