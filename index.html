@@ -2798,7 +2798,7 @@ const rangeHors=isMulti?horariosRange(b.horario,b.horarioFim):[];
 const urgentes=isMulti
 ?rangeHors.filter(h=>isUrgente(m.data,h))
 :m.blocos.filter(b=>isUrgente(m.data,b.horario));
-const precisaCiencia=urgentes.length>0||fimSem;
+const precisaCiencia=!isCoordenador(_usuario?.perfil)&&(urgentes.length>0||fimSem);
 
 let html=`<div style="padding:28px 20px">
    <div style="text-align:center;margin-bottom:20px"><div style="width:52px;height:52px;border-radius:50%;background:${precisaCiencia?"#fff7ed":"#e2f4ea"};display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 12px">${precisaCiencia?"⚠️":"📋"}</div><h3 style="font-size:17px;font-weight:800;color:${c.navy}">Revisar agendamento</h3></div>`;
@@ -3158,7 +3158,10 @@ const temAV=eoSalvar?.tipo==="audiovisual"||((_MA.bibAV===true)&&(_MA.bibMic>0||
 // Equipe de Marketing: sempre pendente (aguarda aprovação da equipe)
 const statusMarketing=temMidia?"pendente":null;
 // Pendente se: urgente, fim de semana, mídia solicitada OU equipamento AV solicitado
-const st=(algUrgente||dow===0||dow===6||temMidia||temAV)?"pendente":"confirmado";
+// Coordenador é isento das regras de urgente/fim de semana (mas NÃO das de T.I./Marketing,
+// que continuam valendo pra todo mundo igual — são regras de topo, não dependem de quem agenda).
+const souCoordenadorSalvar=isCoordenador(_usuario?.perfil);
+const st=((!souCoordenadorSalvar&&(algUrgente||dow===0||dow===6))||temMidia||temAV)?"pendente":"confirmado";
 
 const tph=b.turmasPorHorario||{};
 const isEquipSalvar=eo?.tipo==="equipamento"||eo?.tipo==="audiovisual";
