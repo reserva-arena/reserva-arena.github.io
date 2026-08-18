@@ -3493,7 +3493,7 @@ if(urgentes.length)html+=`<div style="background:linear-gradient(135deg,#f97316,
 html+=`<div style="background:${c.surface};border-radius:12px;border:1px solid ${c.border};padding:8px 12px;margin-bottom:16px">
    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
      <select id="adm-sel-espaco" style="${sel()};font-size:12px;padding:5px 8px;flex:1;min-width:100px"><option value="">🏛️ Espaço</option>${ESPACOS.map(e=>`<option value="${e.nome}" ${_A.fEspaco===e.nome?"selected":""}>${e.nome}</option>`).join("")}</select>
-     <select id="adm-sel-prof" style="${sel()};font-size:12px;padding:5px 8px;flex:1;min-width:100px"><option value="">👤 Professor</option>${_usuarios.map(u=>`<option value="${u.nome}" ${_A.fProf===u.nome?"selected":""}>${u.nome}</option>`).join("")}</select>
+     <input id="adm-sel-prof" list="adm-prof-datalist" type="text" placeholder="👤 Professor" value="${_A.fProf||""}" style="${sel()};font-size:12px;padding:5px 8px;flex:1;min-width:100px"><datalist id="adm-prof-datalist">${[..._usuarios].sort((a,b)=>(a.nome||"").localeCompare(b.nome||"",'pt-BR')).map(u=>`<option value="${u.nome}">`).join("")}</datalist>
      <select id="adm-sel-turma" style="${sel()};font-size:12px;padding:5px 8px;flex:1;min-width:90px"><option value="">🎓 Turma</option>${TURMAS.map(t=>`<option value="${t}" ${_A.fTurma===t?"selected":""}>${t}</option>`).join("")}</select>
      <select id="adm-sel-status" style="${sel()};font-size:12px;padding:5px 8px;min-width:90px"><option value="">● Status</option><option value="confirmado" ${_A.fStatus==="confirmado"?"selected":""}>✅ Confirmado</option><option value="pendente" ${_A.fStatus==="pendente"?"selected":""}>⏳ Pendente</option><option value="recusado" ${_A.fStatus==="recusado"?"selected":""}>❌ Recusado</option></select>
      ${_A.fEspaco||_A.fProf||_A.fStatus||_A.fTurma?`<button id="adm-btn-limpar" style="${btn("ghost")};padding:5px 10px;font-size:12px">✕</button>`:""}
@@ -3852,7 +3852,7 @@ const ss=document.getElementById("adm-sel-status");
 const bl=document.getElementById("adm-btn-limpar");
 const bh=document.getElementById("adm-btn-hist");
 if(se)se.addEventListener("change",e=>{_A.fEspaco=e.target.value;re();});
-if(sp)sp.addEventListener("change",e=>{_A.fProf=e.target.value;re();});
+if(sp)sp.addEventListener("change",e=>{const v=e.target.value.trim();_A.fProf=_usuarios.some(u=>u.nome===v)?v:"";re();});
 if(ss)ss.addEventListener("change",e=>{_A.fStatus=e.target.value;re();});
 const st2=document.getElementById("adm-sel-turma");
 if(st2)st2.addEventListener("change",e=>{_A.fTurma=e.target.value;re();});
