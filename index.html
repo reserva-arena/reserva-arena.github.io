@@ -3157,13 +3157,16 @@ const dow=new Date(Date.UTC(ano,mes-1,dia)).getUTCDay();
 const eoSalvar=ESPACOS.find(e=>e.nome===espaco);
 const temMidia=blocos[0]?.precisaFoto||blocos[0]?.precisaVideo||eoSalvar?.tipo==="marketing";
 const temAV=eoSalvar?.tipo==="audiovisual"||((_MA.bibAV===true)&&(_MA.bibMic>0||_MA.bibCaixa>0||_MA.bibProj>0));
+// Tablets/notebooks: equipe T.E. (Admin), não T.I. — não seta statusEquip, só força pendente
+// para o Admin aprovar diretamente (mesmo fluxo de "sem componente TI/Mkt" do precisaAdmin()).
+const temTabletsNotebooks=qtdTablets>0||qtdNotebooks>0;
 // Equipe de Marketing: sempre pendente (aguarda aprovação da equipe)
 const statusMarketing=temMidia?"pendente":null;
-// Pendente se: urgente, fim de semana, mídia solicitada OU equipamento AV solicitado
-// Coordenador é isento das regras de urgente/fim de semana (mas NÃO das de T.I./Marketing,
+// Pendente se: urgente, fim de semana, mídia solicitada, equipamento AV solicitado, OU tablets/notebooks (T.E.)
+// Coordenador é isento das regras de urgente/fim de semana (mas NÃO das de T.I./Marketing/T.E.,
 // que continuam valendo pra todo mundo igual — são regras de topo, não dependem de quem agenda).
 const souCoordenadorSalvar=isCoordenador(_usuario?.perfil);
-const st=((!souCoordenadorSalvar&&(algUrgente||dow===0||dow===6))||temMidia||temAV)?"pendente":"confirmado";
+const st=((!souCoordenadorSalvar&&(algUrgente||dow===0||dow===6))||temMidia||temAV||temTabletsNotebooks)?"pendente":"confirmado";
 
 const tph=b.turmasPorHorario||{};
 const isEquipSalvar=eo?.tipo==="equipamento"||eo?.tipo==="audiovisual";
@@ -3448,7 +3451,7 @@ fecharEdicao();
 // ════════════════════════════════════════════════════════════════════════════
 // ADMIN VIEW
 // ════════════════════════════════════════════════════════════════════════════
-let _A={fSegmento:"",modoVisu:"calendario",aba:"reservas",fEspaco:"",fProf:"",fStatus:"",fTurma:"",mesCal:null,diaSel:null,historico:false,feedExpandido:false,rankModo:"realizado"};
+let _A={fSegmento:"",modoVisu:"calendario",aba:"reservas",subAba:"hoje",fEspaco:"",fProf:"",fStatus:"",fTurma:"",mesCal:null,diaSel:null,historico:false,feedExpandido:false,rankModo:"realizado"};
 window._A=_A;
 window.setRankModo=v=>{_A.rankModo=v;re();};
 
@@ -3483,7 +3486,7 @@ let html=`<div>
 if(urgentes.length)html+=`<div style="background:linear-gradient(135deg,#f97316,#ea580c);border-radius:14px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;box-shadow:0 4px 16px rgba(249,115,22,.3)">
    <div style="width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">⚡</div>
    <div style="flex:1"><p style="font-size:13px;font-weight:800;color:#fff">${urgentes.length} agendamento${urgentes.length!==1?"s":""} urgente${urgentes.length!==1?"s":""} pendente${urgentes.length!==1?"s":""}</p><p style="font-size:11px;color:rgba(255,255,255,.8);margin-top:2px">Menos de 24h para o horário</p></div>
-   <button onclick="aSetModo('agenda');_A.fStatus='pendente';re()" style="background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.4);border-radius:10px;color:#fff;font-weight:800;font-size:12px;padding:7px 14px;cursor:pointer">Ver →</button>
+   <button onclick="aSetModo('agenda');_A.aba='reservas';_A.subAba='pendentes';re()" style="background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.4);border-radius:10px;color:#fff;font-weight:800;font-size:12px;padding:7px 14px;cursor:pointer">Ver →</button>
  </div>`;
 
 // ── FILTROS ──
@@ -3601,6 +3604,37 @@ html+=`<div style="display:flex;gap:4px;margin-bottom:16px;background:${c.surfac
    </div>`;
 
 if(_A.aba==="reservas"){
+const hojeList=filtradas.filter(r=>r.data===h&&r.status!=="recusado").sort((a,b)=>a.horario>b.horario?1:a.horario<b.horario?-1:0);
+const totalPendentes=urg.length+pend.length+aguardandoAreas.length;
+html+=`<div style="display:flex;gap:4px;margin-bottom:14px;background:${c.surface};border-radius:10px;padding:4px;border:1px solid ${c.border};width:fit-content;flex-wrap:wrap">
+     ${[{id:"hoje",l:`📅 Hoje · ${hojeList.length}`},{id:"pendentes",l:`⏳ Pendentes${totalPendentes?` · ${totalPendentes}`:""}`},{id:"todos",l:"☰ Todos"}].map(t=>`<button onclick="aSetSubAba('${t.id}')" style="padding:6px 13px;font-size:12px;white-space:nowrap;border-radius:8px;border:1.5px solid ${_A.subAba===t.id?(_dark?'#1a6b47':c.navy):c.border};background:${_A.subAba===t.id?(_dark?'#1a6b47':c.navy):'transparent'};color:${_A.subAba===t.id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${t.l}</button>`).join("")}
+   </div>`;
+
+if(_A.subAba==="hoje"){
+if(!hojeList.length)html+=`<div style="text-align:center;padding:40px;color:${c.textMuted}"><p style="font-size:32px">🎉</p><p>Nenhum agendamento hoje.</p></div>`;
+else hojeList.forEach(r=>{html+=admRow(r,false,r.status!=="pendente"||precisaAdmin(r));});
+}
+
+if(_A.subAba==="pendentes"){
+if(urg.length){
+html+=`<div style="margin-bottom:16px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="width:8px;height:8px;border-radius:50%;background:#f97316"></div><p style="font-size:12px;font-weight:800;color:#c2410c;text-transform:uppercase">⚡ Urgentes · ${urg.length}</p><div style="flex:1;height:1px;background:#fed7aa"></div></div>`;
+urg.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1).forEach(r=>{html+=admRow(r,true,true);});
+html+=`</div>`;
+}
+if(pend.length){
+html+=`<div style="margin-bottom:16px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="width:8px;height:8px;border-radius:50%;background:#d97706"></div><p style="font-size:12px;font-weight:800;color:${c.amber};text-transform:uppercase">Pendentes · ${pend.length}</p><div style="flex:1;height:1px;background:${c.amberBorder}"></div></div>`;
+pend.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1).forEach(r=>{html+=admRow(r,true,true);});
+html+=`</div>`;
+}
+if(aguardandoAreas.length){
+html+=`<div style="margin-bottom:16px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="width:8px;height:8px;border-radius:50%;background:#94a3b8"></div><p style="font-size:12px;font-weight:800;color:#64748b;text-transform:uppercase">Aguardando T.I./Marketing · ${aguardandoAreas.length}</p><div style="flex:1;height:1px;background:#e2e8f0"></div></div><p style="font-size:11px;color:${c.textMuted};margin:-4px 0 8px">Sem ação necessária sua — a área responsável aprova ou recusa. Mesmo que recuse o equipamento/foto, o espaço fica confirmado normalmente. Assim que resolvido, confirma sozinho.</p>`;
+aguardandoAreas.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1).forEach(r=>{html+=admRow(r,true,false);});
+html+=`</div>`;
+}
+if(!urg.length&&!pend.length&&!aguardandoAreas.length)html+=`<div style="text-align:center;padding:40px;color:${c.textMuted}"><p style="font-size:32px">🎉</p><p>Nenhum pendente.</p></div>`;
+}
+
+if(_A.subAba==="todos"){
 if(urg.length){
 html+=`<div style="margin-bottom:16px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="width:8px;height:8px;border-radius:50%;background:#f97316"></div><p style="font-size:12px;font-weight:800;color:#c2410c;text-transform:uppercase">⚡ Urgentes · ${urg.length}</p><div style="flex:1;height:1px;background:#fed7aa"></div></div>`;
 urg.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1).forEach(r=>{html+=admRow(r,true,true);});
@@ -3622,6 +3656,7 @@ conf.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1).forE
 html+=`</div>`;
 }
 if(!urg.length&&!pend.length&&!aguardandoAreas.length&&!conf.length)html+=`<div style="text-align:center;padding:40px;color:${c.textMuted}"><p style="font-size:32px">🎉</p><p>Nenhum agendamento encontrado.</p></div>`;
+}
 }
 
 if(_A.aba==="espacos"){
@@ -3845,6 +3880,7 @@ tip.style.left=x+"px";tip.style.top=y+"px";tip.classList.add("show");
 window.admDayLeave=function(){const tip=document.getElementById("adm-tip");if(tip)tip.classList.remove("show");};
 window.aSetModo=v=>{_A.modoVisu=v;re();};
 window.aSetAba=v=>{_A.aba=v;re();};
+window.aSetSubAba=v=>{_A.subAba=v;re();};
 window.aNavMes=dir=>{let nm=_A.mesCal.m+dir,na=_A.mesCal.a;if(nm>11){nm=0;na++;}if(nm<0){nm=11;na--;}_A.mesCal={a:na,m:nm};_A.diaSel=null;re();};
 window.aModerar=async(id,status)=>{
 if(!exigePermissao(['admin'])){alert('Acesso negado.');return;}
