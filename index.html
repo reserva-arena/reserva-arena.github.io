@@ -1346,7 +1346,8 @@ fonte=fonte.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-
 
 // Professores do segmento (para filtro)
 const profsSet=new Set(_todas.filter(r=>!r.reservaAutomatica).map(r=>r.professor).filter(Boolean));
-const profs=[...profsSet].sort();
+const profs=[...profsSet].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+window._coordProfNomes=profs;
 
 // Montar lista por data
 const porData={};
@@ -1388,10 +1389,10 @@ $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="
        <button onclick="window._CO.avisoOculto=true;re()" title="Não mostrar de novo" style="background:none;border:none;color:#a16207;cursor:pointer;font-size:16px;flex-shrink:0;padding:0 2px">✕</button>
      </div>`:""}
      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:14px">
-       <select onchange="window._CO.fProf=this.value;re()" style="padding:8px 10px;border-radius:8px;border:1.5px solid ${c.border};background:${c.surface};color:${c.text};font-size:12px;font-family:inherit;outline:none">
-         <option value="">👤 Todos professores</option>
-         ${profs.map(p=>`<option value="${p}" ${_CO.fProf===p?"selected":""}>${p}</option>`).join("")}
-       </select>
+       <div style="position:relative">
+         <input id="co-sel-prof" type="text" autocomplete="off" placeholder="👤 Professor" value="${_CO.fProf||""}" oninput="coordProfInput(this)" onfocus="coordProfInput(this)" onblur="coordProfBlur()" style="padding:8px 10px;border-radius:8px;border:1.5px solid ${c.border};background:${c.surface};color:${c.text};font-size:12px;font-family:inherit;outline:none;width:100%;box-sizing:border-box">
+         <div id="co-prof-sugg" style="display:none;position:absolute;top:100%;left:0;right:0;background:${c.surface};border:1.5px solid ${c.border};border-radius:8px;margin-top:4px;max-height:220px;overflow-y:auto;z-index:50;box-shadow:0 4px 14px rgba(0,0,0,.15)"></div>
+       </div>
        <select onchange="window._CO.fTurma=this.value;re()" style="padding:8px 10px;border-radius:8px;border:1.5px solid ${c.border};background:${c.surface};color:${c.text};font-size:12px;font-family:inherit;outline:none">
          <option value="">🎓 Todas turmas</option>
          ${TODAS_TURMAS.map(t=>`<option value="${t}" ${_CO.fTurma===t?"selected":""}>${t}</option>`).join("")}
@@ -1400,11 +1401,25 @@ $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="
          <option value="">🏛️ Todos espaços</option>
          ${ESPACOS.map(e=>`<option value="${e.nome}" ${_CO.fEspaco===e.nome?"selected":""}>${e.nome}</option>`).join("")}
        </select>
+       ${_CO.fProf||_CO.fTurma||_CO.fEspaco?`<button onclick="window._CO.fProf='';window._CO.fTurma='';window._CO.fEspaco='';re()" style="padding:8px 10px;border-radius:8px;background:#fef2f2;border:1.5px solid #fecaca;color:#b91c1c;font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap;font-family:inherit">✕ Limpar filtros</button>`:""}
        <button onclick="window._CO.historico=!window._CO.historico;re()" style="padding:8px 10px;border-radius:8px;border:1.5px solid ${_CO.historico?c.navy:c.border};background:${_CO.historico?c.navy:"transparent"};color:${_CO.historico?"#fff":c.textMid};font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🕐 ${_CO.historico?"Ocultar hist.":"Histórico"}</button>
        <button onclick="window._CO.modoVisu=_CO.modoVisu==='calendario'?'agenda':'calendario';re()" style="padding:8px 10px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.textMid};font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">${_CO.modoVisu==="calendario"?"☰ Agenda":"📅 Calendário"}</button>
      </div>
      <p style="font-size:11px;color:${c.textMuted};margin-bottom:12px">${fonte.length} agendamento${fonte.length!==1?"s":""} encontrado${fonte.length!==1?"s":""}</p>
      ${_CO.modoVisu==="calendario"?coordCalendarioHTML(porData,c,h):corpo}
+     <div id="mod-prof-lista-co" style="display:none;position:fixed;inset:0;z-index:1200;align-items:flex-end;justify-content:center">
+       <div onclick="fecharListaProf()" style="position:absolute;inset:0;background:rgba(0,0,0,.5)"></div>
+       <div style="position:relative;background:${c.surface};border-radius:20px 20px 0 0;width:100%;max-width:600px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 -8px 40px rgba(0,0,0,.25)">
+         <div style="padding:16px 16px 10px;border-bottom:1px solid ${c.border};flex-shrink:0">
+           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+             <h3 style="font-size:16px;font-weight:800;color:${c.navy}">👤 Selecionar Professor</h3>
+             <button onclick="fecharListaProf()" style="background:none;border:none;font-size:20px;color:${c.textMuted};cursor:pointer;line-height:1;padding:4px">✕</button>
+           </div>
+           <input id="mod-prof-busca-co" type="text" placeholder="🔍 Buscar por nome..." oninput="filtrarListaProf(this.value)" style="${inp()};width:100%">
+         </div>
+         <div id="mod-prof-itens-co" style="overflow-y:auto;padding:8px 0;flex:1"></div>
+       </div>
+     </div>
    </div>
  </div>`;
 }
@@ -2150,27 +2165,61 @@ local:"",localDevolucao:"",qtdTablets:0,qtdNotebooks:0,turmasPorHorario:{},recor
 });
 
 window.fecharModalAgendar=()=>{$("mod-ag").style.display="none";};
-window.abrirListaProf=()=>{
-const el=$("mod-prof-lista");if(!el)return;
+window.abrirListaProf=(escopo,fonte)=>{
+window._profModalCtx={escopo:escopo||"admin",fonte:fonte||null};
+const suf=window._profModalCtx.escopo==="coord"?"-co":"";
+const el=$("mod-prof-lista"+suf);if(!el)return;
 el.style.display="flex";
-const bu=$("mod-prof-busca");if(bu)bu.value="";
+const bu=$("mod-prof-busca"+suf);if(bu)bu.value="";
 filtrarListaProf("");
 setTimeout(()=>{if(bu)bu.focus();},100);
 };
-window.fecharListaProf=()=>{const el=$("mod-prof-lista");if(el)el.style.display="none";};
+window.fecharListaProf=()=>{
+const suf=(window._profModalCtx&&window._profModalCtx.escopo==="coord")?"-co":"";
+const el=$("mod-prof-lista"+suf);if(el)el.style.display="none";
+};
 window.filtrarListaProf=termo=>{
+const ctx=window._profModalCtx||{escopo:"admin"};
+const suf=ctx.escopo==="coord"?"-co":"";
 const norm=s=>(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
 const f=norm(termo);
-const nomes=[..._usuarios].map(u=>u.nome).filter(Boolean).sort((a,b)=>a.localeCompare(b,'pt-BR'));
+const nomes=(ctx.fonte||[..._usuarios].map(u=>u.nome).filter(Boolean)).slice().sort((a,b)=>a.localeCompare(b,'pt-BR'));
 const matches=f?nomes.filter(n=>norm(n).includes(f)):nomes;
-const cont=$("mod-prof-itens");if(!cont)return;
+const cont=$("mod-prof-itens"+suf);if(!cont)return;
 if(!matches.length){cont.innerHTML=`<p style="text-align:center;color:#94a3b8;padding:24px;font-size:13px">Nenhum professor encontrado.</p>`;return;}
 cont.innerHTML=matches.map(n=>`<div onclick="selecionarProfLista('${n.replace(/'/g,"\\'")}')" style="padding:12px 16px;font-size:14px;cursor:pointer;border-bottom:1px solid #f1f5f9">${n}</div>`).join("");
 };
 window.selecionarProfLista=nome=>{
-_A.fProf=nome;
+const ctx=window._profModalCtx||{escopo:"admin"};
+if(ctx.escopo==="coord")window._CO.fProf=nome;else _A.fProf=nome;
 fecharListaProf();
 re();
+};
+window.coordProfInput=input=>{
+const norm=s=>(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+const f=norm(input.value);
+const nomes=window._coordProfNomes||[];
+const matches=f?nomes.filter(n=>norm(n).includes(f)):nomes;
+const sugg=$("co-prof-sugg");if(!sugg)return;
+const vertodosHTML=`<div class="co-prof-vertodos" style="padding:9px 12px;font-size:12.5px;font-weight:700;color:#0369a1;cursor:pointer;text-align:center;border-bottom:1.5px solid #e2e8f0">📋 Ver lista completa</div>`;
+if(!matches.length){
+sugg.innerHTML=vertodosHTML+`<div style="padding:9px 12px;font-size:12.5px;color:#94a3b8">Nenhum resultado.</div>`;
+}else{
+sugg.innerHTML=vertodosHTML+matches.slice(0,40).map(n=>`<div class="co-prof-item" data-nome="${n}" style="padding:9px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid #e2e8f0">${n}</div>`).join("");
+}
+sugg.style.display="block";
+sugg.querySelectorAll(".co-prof-item").forEach(el=>{
+el.addEventListener("mousedown",ev=>{ev.preventDefault();const nome=el.getAttribute("data-nome");input.value=nome;window._CO.fProf=nome;sugg.style.display="none";re();});
+});
+const vt=sugg.querySelector(".co-prof-vertodos");
+if(vt)vt.addEventListener("mousedown",ev=>{ev.preventDefault();sugg.style.display="none";abrirListaProf("coord",window._coordProfNomes||[]);});
+};
+window.coordProfBlur=()=>{
+setTimeout(()=>{
+const sugg=$("co-prof-sugg");if(sugg)sugg.style.display="none";
+const input=$("co-sel-prof");
+if(input&&!(window._coordProfNomes||[]).includes(input.value.trim()))input.value=window._CO.fProf||"";
+},150);
 };
 window.maVoltarRevisao=()=>{_MA.resumo=false;re();};
 window.setBibAV=v=>{_MA.bibAV=v;re();};
