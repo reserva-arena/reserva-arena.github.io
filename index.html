@@ -606,7 +606,21 @@ return`<div style="background:${c.surface};border-radius:16px;border:1px solid $
 
 // ─── ESTADO GLOBAL ────────────────────────────────────────────────────────────
 let _usuario=null,_todas=[],_minhas=[],_usuarios=[],_trocandoSenha=false;
-let _unsub1=null,_unsub2=null,_unsub3=null;
+let _unsub1=null,_unsub2=null,_unsub3=null,_unsubPend=null,_unsubMes=null;
+// _todasMes = reservas do mês atualmente "assinado" no calendário admin/coordenador (ver assinarMesAdmin)
+// _pendentesGlobais = TODAS as reservas com status pendente, sem limite de data (poucos docs, sempre em tempo real)
+// _todas = união das duas, recalculada a cada snapshot novo — mantém pendentes sempre visíveis
+// mesmo fora do mês carregado, sem precisar carregar o banco inteiro pra frente.
+let _todasMes=[],_pendentesGlobais=[],_mesAssinadoChave=null;
+function mesclarTodasAdmin(){
+// Se T.I. ou Marketing estiver com "Ver histórico" ligado, eles já fizeram uma busca própria e
+// mais ampla via carregarTodas() — não sobrescrever isso com o merge do mês+pendentes.
+if((window._TI&&_TI.historico)||(window._MK&&_MK.historico))return;
+const porId={};
+_todasMes.forEach(r=>{porId[r.id]=r;});
+_pendentesGlobais.forEach(r=>{porId[r.id]=r;}); // pendentes prevalecem se o doc também estiver em _todasMes
+_todas=Object.values(porId);
+}
 
 function exigePermissao(perfisPermitidos){
 if(!_usuario){console.warn('Acesso negado: não autenticado');return false;}
@@ -942,7 +956,7 @@ Object.entries(pd).filter(([d])=>todosFeed.some(r=>r.data===d)).forEach(([data,r
 return`<div style="padding:4px 0">
    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
      <div style="display:flex;gap:6px">${btnAba("minhas","📸 Minhas solicitações")}${btnAba("todos","📅 Todos agendamentos")}</div>
-     <button onclick="window._MK.historico=!window._MK.historico;if(window._MK.historico)carregarTodas();re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_MK.historico?c.navy:'transparent'};color:${_MK.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_MK.historico?"Ocultar hist.":"Ver histórico"}</button>
+     <button onclick="window._MK.historico=!window._MK.historico;if(window._MK.historico)carregarTodas();else{mesclarTodasAdmin();}re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_MK.historico?c.navy:'transparent'};color:${_MK.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_MK.historico?"Ocultar hist.":"Ver histórico"}</button>
    </div>
    ${pendentes.length&&_MK.aba==="todos"?`<div style="background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="mkSetAba('minhas')"><p style="font-size:13px;font-weight:700;color:#7c3aed">⏳ ${pendentes.length} solicitaç${pendentes.length===1?"ão":"ões"} aguardando aprovação — Ver agora →</p></div>`:""}
    ${corpo}
@@ -995,7 +1009,7 @@ Object.entries(pd).forEach(([data,rs])=>{const[a2,m2,d2]=data.split("-");const i
 return`<div style="padding:4px 0">
    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
      <div style="display:flex;gap:6px">${btnAba("minhas","🔊 Minhas solicitações")}${btnAba("todos","📅 Todos agendamentos")}</div>
-     <button onclick="window._TI.historico=!window._TI.historico;if(window._TI.historico)carregarTodas();re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_TI.historico?c.navy:'transparent'};color:${_TI.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_TI.historico?"Ocultar hist.":"Ver histórico"}</button>
+     <button onclick="window._TI.historico=!window._TI.historico;if(window._TI.historico)carregarTodas();else{mesclarTodasAdmin();}re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_TI.historico?c.navy:'transparent'};color:${_TI.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_TI.historico?"Ocultar hist.":"Ver histórico"}</button>
    </div>
    ${pendentes.length&&_TI.aba==="todos"?`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="tiSetAba('minhas')"><p style="font-size:13px;font-weight:700;color:#c2410c">⏳ ${pendentes.length} agendamento${pendentes.length===1?"":"s"} aguardando aprovação — Ver agora →</p></div>`:""}
    ${corpo}
@@ -1088,7 +1102,7 @@ $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="
    <div style="max-width:700px;margin:0 auto;padding:16px 14px">
      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
        <div style="display:flex;gap:6px">${btnAba("minhas","📸 Minhas solicitações")}${btnAba("todos","📅 Todos agendamentos")}</div>
-       <button onclick="window._MK.historico=!window._MK.historico;if(window._MK.historico)carregarTodas();re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_MK.historico?c.navy:'transparent'};color:${_MK.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_MK.historico?"Ocultar hist.":"Ver histórico"}</button>
+       <button onclick="window._MK.historico=!window._MK.historico;if(window._MK.historico)carregarTodas();else{mesclarTodasAdmin();}re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_MK.historico?c.navy:'transparent'};color:${_MK.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_MK.historico?"Ocultar hist.":"Ver histórico"}</button>
      </div>
      ${pendentes.length&&_MK.aba==="todos"?`<div style="background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="mkSetAba('minhas')"><p style="font-size:13px;font-weight:700;color:#7c3aed">⏳ ${pendentes.length} solicitaç${pendentes.length===1?"ão":"ões"} aguardando sua aprovação — Ver agora →</p></div>`:""}
      ${corpo}
@@ -1187,7 +1201,7 @@ $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="
    <div style="max-width:700px;margin:0 auto;padding:16px 14px">
      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
        <div style="display:flex;gap:6px">${btnAba("minhas","🔊 Minhas solicitações")}${btnAba("todos","📅 Todos agendamentos")}</div>
-       <button onclick="window._TI.historico=!window._TI.historico;if(window._TI.historico)carregarTodas();re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_TI.historico?c.navy:'transparent'};color:${_TI.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_TI.historico?"Ocultar hist.":"Ver histórico"}</button>
+       <button onclick="window._TI.historico=!window._TI.historico;if(window._TI.historico)carregarTodas();else{mesclarTodasAdmin();}re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_TI.historico?c.navy:'transparent'};color:${_TI.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_TI.historico?"Ocultar hist.":"Ver histórico"}</button>
      </div>
      ${pendentes.length&&_TI.aba==="todos"?`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="tiSetAba('minhas')"><p style="font-size:13px;font-weight:700;color:#c2410c">⏳ ${pendentes.length} agendamento${pendentes.length===1?"":"s"} aguardando aprovação — Ver agora →</p></div>`:""}
      ${feedTIHtml}
@@ -1439,7 +1453,7 @@ let html=`<div style="display:flex;align-items:center;justify-content:space-betw
      <p style="font-size:17px;font-weight:800;color:${c.navy};min-width:120px;text-align:center">${MESES[mes]} ${ano}</p>
      <button onclick="window.coordNavMes(1)" style="background:${c.surface};border:1px solid ${c.border};border-radius:8px;width:32px;height:32px;cursor:pointer;color:${c.textMid};font-size:16px">›</button>
    </div>
-   <button onclick="const d=new Date();window._CO.mesCal={a:d.getFullYear(),m:d.getMonth()};window._CO.diaSel=null;re()" style="${btn("ghost")};padding:5px 12px;font-size:12px">Hoje</button>
+   <button onclick="const d=new Date();window._CO.mesCal={a:d.getFullYear(),m:d.getMonth()};window._CO.diaSel=null;assinarMesAdmin(d.getFullYear(),d.getMonth());re()" style="${btn("ghost")};padding:5px 12px;font-size:12px">Hoje</button>
  </div>
  <div style="background:${c.surface};border-radius:14px;border:1px solid ${c.border};overflow:hidden;box-shadow:${c.cardShadow}">
  <div style="overflow-x:${calMobile?"auto":"visible"}">
@@ -1493,7 +1507,7 @@ html+=`<div class="fade-in" style="margin-top:14px;background:${c.surface};borde
 }
 return html;
 }
-window.coordNavMes=dir=>{let nm=_CO.mesCal.m+dir,na=_CO.mesCal.a;if(nm>11){nm=0;na++;}if(nm<0){nm=11;na--;}window._CO.mesCal={a:na,m:nm};window._CO.diaSel=null;re();};
+window.coordNavMes=dir=>{let nm=_CO.mesCal.m+dir,na=_CO.mesCal.a;if(nm>11){nm=0;na++;}if(nm<0){nm=11;na--;}window._CO.mesCal={a:na,m:nm};window._CO.diaSel=null;assinarMesAdmin(na,nm);re();};
 
 function coordRow(r){
 const c=C(),h=fmtHoje();
@@ -3601,7 +3615,7 @@ html+=`<div style="display:flex;align-items:center;justify-content:space-between
        <p style="font-size:17px;font-weight:800;color:${c.navy};min-width:120px;text-align:center">${MESES[mes]} ${ano}</p>
        <button onclick="aNavMes(1)" style="background:${c.surface};border:1px solid ${c.border};border-radius:8px;width:32px;height:32px;cursor:pointer;color:${c.textMid};font-size:16px">›</button>
      </div>
-     <button onclick="const d=new Date();_A.mesCal={a:d.getFullYear(),m:d.getMonth()};_A.diaSel=null;re()" style="${btn("ghost")};padding:5px 12px;font-size:12px">Hoje</button>
+     <button onclick="const d=new Date();_A.mesCal={a:d.getFullYear(),m:d.getMonth()};_A.diaSel=null;assinarMesAdmin(d.getFullYear(),d.getMonth());re()" style="${btn("ghost")};padding:5px 12px;font-size:12px">Hoje</button>
    </div>
    <div style="background:${c.surface};border-radius:14px;border:1px solid ${c.border};overflow:hidden;box-shadow:${c.cardShadow}">`;
 const calMobile=window.innerWidth<768;
@@ -3988,7 +4002,7 @@ window.admDayLeave=function(){const tip=document.getElementById("adm-tip");if(ti
 window.aSetModo=v=>{_A.modoVisu=v;re();};
 window.aSetAba=v=>{_A.aba=v;re();};
 window.aSetSubAba=v=>{_A.subAba=v;re();};
-window.aNavMes=dir=>{let nm=_A.mesCal.m+dir,na=_A.mesCal.a;if(nm>11){nm=0;na++;}if(nm<0){nm=11;na--;}_A.mesCal={a:na,m:nm};_A.diaSel=null;re();};
+window.aNavMes=dir=>{let nm=_A.mesCal.m+dir,na=_A.mesCal.a;if(nm>11){nm=0;na++;}if(nm<0){nm=11;na--;}_A.mesCal={a:na,m:nm};_A.diaSel=null;assinarMesAdmin(na,nm);re();};
 window.aModerar=async(id,status)=>{
 if(!exigePermissao(['admin'])){alert('Acesso negado.');return;}
 if(!confirm(`${status==="confirmado"?"Aprovar":"Recusar"} esta reserva?`))return;
@@ -4404,8 +4418,9 @@ const chave=espaco||"broad";
 if(_todasCarregadas&&_todasCarregadasChave===chave)return;
 // Carrega uma vez (não fica em tempo real) — evita que muitas sessões de
 // professores fiquem escutando a coleção inteira pra sempre. O painel do
-// admin (_unsub1, mais acima) continua em tempo real normalmente, pois
-// são poucas sessões e é de lá que vem o toast de "novo agendamento".
+// admin (_unsubPend + _unsubMes, ver startListeners/assinarMesAdmin) continua
+// em tempo real normalmente, pois são poucas sessões e é de lá que vem o
+// toast de "novo agendamento".
 // Se um espaço específico foi escolhido, busca só dele (bem mais barato que tudo).
 // Senão, busca "tudo" mas limitado a uma janela de 60 dias pra frente — quem
 // precisar ver mais longe pode escolher um espaço específico ou usar o Calendário
@@ -4442,21 +4457,41 @@ div.style.opacity="0";div.style.transform="translateY(-10px)";
 setTimeout(()=>div.remove(),300);
 },6000);
 }
+// Assina (em tempo real) as reservas do mês informado, trocando a assinatura anterior.
+// Se for o mês atual, começa em "hoje" (não o mês inteiro) pra não carregar dias já passados.
+// Chamada no login (mês atual) e sempre que o admin/coordenador navega pra outro mês no calendário.
+window.assinarMesAdmin=function assinarMesAdmin(ano,mes){
+const chave=`${ano}-${mes}`;
+if(_mesAssinadoChave===chave)return;
+_mesAssinadoChave=chave;
+if(_unsubMes){_unsubMes();_unsubMes=null;}
+const hojeD=new Date();
+const ehMesAtual=ano===hojeD.getFullYear()&&mes===hojeD.getMonth();
+const inicio=ehMesAtual?fmtHoje():`${ano}-${String(mes+1).padStart(2,"0")}-01`;
+const ultimoDiaNum=new Date(ano,mes+1,0).getDate();
+const fim=`${ano}-${String(mes+1).padStart(2,"0")}-${String(ultimoDiaNum).padStart(2,"0")}`;
+_unsubMes=onSnapshot(query(collection(db,"reservas"),where("data",">=",inicio),where("data","<=",fim)),snap=>{
+_todasMes=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario);
+mesclarTodasAdmin();re();
+});
+};
 function startListeners(uid){
 const perfil=_usuario?.perfil||"professor";
 const isProfOnly=perfil==="professor";
-const hoje=new Date();hoje.setDate(hoje.getDate()-7);
-const dataCorte=hoje.toISOString().slice(0,10);
 
 if(isProfOnly){
 // Professor: por padrão só carrega _minhas
 // _todas é carregado sob demanda (botão Todos ou ao agendar)
 _todas=[];_todasCarregadas=false;_todasCarregadasChave=null;
 } else {
-// Admin, TI, Marketing, Coord: carrega _todas filtrada por data
-_unsub1=onSnapshot(query(collection(db,"reservas"),where("data",">=",dataCorte)),snap=>{
+// Admin, TI, Marketing, Coord: dois listeners separados —
+// (1) pendentes sem limite de data (poucos docs, precisa estar sempre visível pra não
+//     perder aprovação de algo agendado pra um mês futuro que não está sendo visualizado)
+// (2) reservas do mês em foco no calendário (hoje→fim do mês atual de início; ao navegar
+//     pra outro mês, assinarMesAdmin troca a assinatura pro mês navegado)
+_unsubPend=onSnapshot(query(collection(db,"reservas"),where("status","==","pendente")),snap=>{
 const jaCarregado=_todasCarregadas;
-_todas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario);
+_pendentesGlobais=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario);
 if(jaCarregado){
 const novos=snap.docChanges().filter(ch=>ch.type==="added").map(ch=>({id:ch.doc.id,...ch.doc.data()})).filter(r=>r&&r.professor&&!r.reservaAutomatica&&r.professorId!==_usuario?.uid);
 if(novos.length===1){
@@ -4465,8 +4500,11 @@ mostrarToastNovoAgendamento(`${novos[0].professor} agendou ${novos[0].espaco} �
 mostrarToastNovoAgendamento(`${novos.length} novos agendamentos criados`);
 }
 }
-_todasCarregadas=true;re();
+_todasCarregadas=true;
+mesclarTodasAdmin();re();
 });
+const hojeD=new Date();
+assinarMesAdmin(hojeD.getFullYear(),hojeD.getMonth());
 }
 _unsub2=onSnapshot(query(collection(db,"reservas"),where("professorId","==",uid)),snap=>{
 _minhas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>!r.reservaAutomatica).sort((a,b)=>a.data>b.data?1:-1);re();
@@ -4491,7 +4529,7 @@ re();
 function pararUsuariosLive(){
 if(_unsub3){_unsub3();_unsub3=null;}
 }
-function stopListeners(){[_unsub1,_unsub2,_unsub3,_unsubTodas].forEach(u=>{try{u&&u();}catch{}});_unsub1=_unsub2=_unsub3=_unsubTodas=null;_todasCarregadas=false;_todasCarregadasChave=null;}
+function stopListeners(){[_unsub1,_unsub2,_unsub3,_unsubTodas,_unsubPend,_unsubMes].forEach(u=>{try{u&&u();}catch{}});_unsub1=_unsub2=_unsub3=_unsubTodas=_unsubPend=_unsubMes=null;_todasCarregadas=false;_todasCarregadasChave=null;_mesAssinadoChave=null;}
 function unloadHistorico(){if(_unsubTodas){_unsubTodas();_unsubTodas=null;}_todasCarregadas=false;}
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -4512,7 +4550,7 @@ _usuario=snap.exists()?{uid:user.uid,...snap.data()}:{uid:user.uid,email:user.em
 else re();
 }else{
 _usuario=null;
-if(_unsub1){_unsub1();_unsub1=null;}
+stopListeners();
 _todas=[];
 re();
 }
