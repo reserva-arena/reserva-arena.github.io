@@ -1495,13 +1495,14 @@ html+=`</div></div></div>
 if(_CO.diaSel){
 const[a2,m2,d2]=_CO.diaSel.split("-");
 const rsdia=(porData[_CO.diaSel]||[]).sort((a,b)=>a.horario>b.horario?1:-1);
+const diaSelPassadoCo=_CO.diaSel<h;
 html+=`<div class="fade-in" style="margin-top:14px;background:${c.surface};border-radius:14px;border:1px solid ${c.border};overflow:hidden">
    <div style="background:linear-gradient(135deg,#1a6b47,#0f4c2b);padding:10px 16px;display:flex;align-items:center;justify-content:space-between">
      <p style="font-size:15px;font-weight:800;color:#fff">📅 ${d2}/${m2}/${a2}</p>
      <button onclick="window._CO.diaSel=null;re()" style="background:rgba(255,255,255,.2);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;padding:4px 10px;cursor:pointer">✕</button>
    </div>
    <div style="padding:12px 16px">
-     ${!rsdia.length?`<p style="font-size:13px;color:${c.textMuted};text-align:center;padding:14px 0">🎉 Nenhum agendamento.</p>`:rsdia.map(r=>coordRow(r)).join("")}
+     ${!rsdia.length?(diaSelPassadoCo?`<p style="font-size:13px;color:${c.textMuted};text-align:center;padding:14px 0">📁 Dia já passado — dados de histórico não ficam pré-carregados.</p>`:`<p style="font-size:13px;color:${c.textMuted};text-align:center;padding:14px 0">🎉 Nenhum agendamento.</p>`):rsdia.map(r=>coordRow(r)).join("")}
    </div>
  </div>`;
 }
@@ -3668,13 +3669,14 @@ html+=`</div></div></div>
 if(_A.diaSel){
 const[a2,m2,d2]=_A.diaSel.split("-");
 const rsdia=(porData[_A.diaSel]||[]).sort((a,b)=>a.horario>b.horario?1:-1);
+const diaSelPassado=_A.diaSel<h;
 html+=`<div class="fade-in" style="margin-top:14px;background:${c.surface};border-radius:14px;border:1px solid ${c.border};overflow:hidden">
        <div style="background:linear-gradient(135deg,#1a6b47,#0f4c2b);padding:10px 16px;display:flex;align-items:center;justify-content:space-between">
          <p style="font-size:15px;font-weight:800;color:#fff">📅 ${d2}/${m2}/${a2}</p>
          <button onclick="_A.diaSel=null;re()" style="background:rgba(255,255,255,.2);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;padding:4px 10px;cursor:pointer">✕</button>
        </div>
        <div style="padding:12px 16px">
-         ${!rsdia.length?`<p style="font-size:13px;color:${c.textMuted};text-align:center;padding:14px 0">🎉 Nenhum agendamento.</p>`:rsdia.map(r=>admRow(r,false,r.status!=="pendente"||precisaAdmin(r))).join("")}
+         ${!rsdia.length?(diaSelPassado?`<p style="font-size:13px;color:${c.textMuted};text-align:center;padding:14px 0">📁 Dia já passado — dados de histórico não ficam pré-carregados.</p>`:`<p style="font-size:13px;color:${c.textMuted};text-align:center;padding:14px 0">🎉 Nenhum agendamento.</p>`):rsdia.map(r=>admRow(r,false,r.status!=="pendente"||precisaAdmin(r))).join("")}
        </div>
      </div>`;
 }
@@ -3986,8 +3988,10 @@ let tip=document.getElementById("adm-tip");
 if(!tip){tip=document.createElement("div");tip.id="adm-tip";tip.className="adm-day-tooltip";document.body.appendChild(tip);}
 const rs=_todas.filter(r=>r.data===ds&&r.status!=="recusado"&&!r.reservaAutomatica).sort((a,b)=>a.horario>b.horario?1:-1);
 const c=C();const[a,m,d]=ds.split("-");
-let html=`<p style="font-size:11px;font-weight:800;color:#1a6b47;margin-bottom:8px">${d}/${m}/${a} · ${rs.length} agendamento${rs.length!==1?"s":""}</p>`;
-if(!rs.length)html+=`<p style="font-size:12px;color:#607060">🎉 Dia livre</p>`;
+const ehPassado=ds<fmtHoje();
+let html=`<p style="font-size:11px;font-weight:800;color:#1a6b47;margin-bottom:8px">${d}/${m}/${a}${!ehPassado||rs.length?` · ${rs.length} agendamento${rs.length!==1?"s":""}`:""}</p>`;
+if(!rs.length&&ehPassado)html+=`<p style="font-size:11.5px;color:#94a3b8">📁 Dia já passado — dados de histórico não ficam pré-carregados.</p>`;
+else if(!rs.length)html+=`<p style="font-size:12px;color:#607060">🎉 Dia livre</p>`;
 else rs.slice(0,6).forEach(r=>{
 const urg=isUrgente(r.data,r.horario);
 const range=r.horarioFim&&r.horarioFim!==r.horario?` → ${r.horarioFim}`:"";
