@@ -900,10 +900,10 @@ catch{render("login-erro",alertHTML("error","Erro ao enviar. Verifique o e-mail.
 // ════════════════════════════════════════════════════════════════════════════
 // FOTÓGRAFO
 // ════════════════════════════════════════════════════════════════════════════
-window.mkSetAba=(v)=>{if(!window._MK)window._MK={aba:"minhas",historico:false};_MK.aba=v;re();};
+window.mkSetAba=(v)=>{if(!window._MK)window._MK={aba:"hoje",historico:false};_MK.aba=v;re();};
 function renderMarketingInline(){
 const c=C(),h=fmtHoje();
-if(!window._MK)window._MK={aba:"minhas",historico:false};
+if(!window._MK)window._MK={aba:"hoje",historico:false};
 const mkCard=(r,pend)=>{
 const[a,m2,d]=r.data.split("-");const isH=r.data===h;
 const dias=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
@@ -936,14 +936,25 @@ return`<div style="background:${c.surface};border-radius:12px;border:1.5px solid
    </div>`;
 };
 const minhas=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&(_MK.historico||r.data>=h)&&r.status!=="recusado"&&!r.reservaAutomatica).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
-const pendentes=minhas.filter(r=>r.statusMarketing==="pendente");
-const aprovados=minhas.filter(r=>r.statusMarketing==="aprovado");
-const btnAba=(id,l)=>`<button onclick="mkSetAba('${id}')" style="padding:7px 16px;font-size:12.5px;border-radius:8px;border:1.5px solid ${_MK.aba===id?'#7c3aed':c.border};background:${_MK.aba===id?'#7c3aed':'transparent'};color:${_MK.aba===id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${l}</button>`;
+const hojeList=minhas.filter(r=>r.data===h);
+const pendentes=minhas.filter(r=>r.statusMarketing==="pendente"&&r.data>=h);
+const pendRealizados=minhas.filter(r=>r.statusMarketing==="pendente"&&r.data<h);
+const proximosList=minhas.filter(r=>r.data>h);
+const btnAba=(id,l)=>`<button onclick="mkSetAba('${id}')" style="padding:7px 16px;font-size:12.5px;border-radius:8px;border:1.5px solid ${_MK.aba===id?'#7c3aed':c.border};background:${_MK.aba===id?'#7c3aed':'transparent'};color:${_MK.aba===id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">${l}</button>`;
 let corpo="";
-if(_MK.aba==="minhas"){
-if(pendentes.length)corpo+=`<div style="margin-bottom:20px"><div style="margin-bottom:10px"><span style="background:#7c3aed;color:#fff;font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px">⏳ PENDENTES — ${pendentes.length}</span></div>${pendentes.map(r=>mkCard(r,true)).join("")}</div>`;
-if(aprovados.length)corpo+=`<div><p style="font-size:12px;font-weight:800;color:${c.green};text-transform:uppercase;margin-bottom:10px">✅ Aprovados (${aprovados.length})</p>${aprovados.map(r=>mkCard(r,false)).join("")}</div>`;
-if(!minhas.length)corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">📸</p><p style="margin-top:12px">Nenhuma solicitação no momento.</p></div>`;
+if(_MK.aba==="hoje"){
+if(hojeList.length)corpo+=hojeList.map(r=>mkCard(r,r.statusMarketing==="pendente")).join("");
+else corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">📸</p><p style="margin-top:12px">Nenhuma solicitação hoje.</p></div>`;
+} else if(_MK.aba==="pendentes"){
+if(pendentes.length)corpo+=pendentes.map(r=>mkCard(r,true)).join("");
+if(pendRealizados.length)corpo+=`<div style="margin-top:16px"><p style="font-size:12px;font-weight:800;color:${c.textMuted};text-transform:uppercase;margin-bottom:10px">📁 Realizados (${pendRealizados.length})</p>${pendRealizados.map(r=>mkCard(r,true)).join("")}</div>`;
+if(!pendentes.length&&!pendRealizados.length)corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">🎉</p><p style="margin-top:12px">Nenhum pendente.</p></div>`;
+} else if(_MK.aba==="proximos"){
+if(!proximosList.length)corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">📅</p><p style="margin-top:12px">Nada agendado pros próximos dias.</p></div>`;
+else{
+const pdProx={};proximosList.forEach(r=>{if(!pdProx[r.data])pdProx[r.data]=[];pdProx[r.data].push(r);});
+Object.entries(pdProx).forEach(([data,rs])=>{const[a2,m2,d2]=data.split("-");corpo+=`<div style="margin-bottom:16px"><p style="font-size:12px;font-weight:800;color:${c.textMuted};text-transform:uppercase;margin-bottom:8px">${d2}/${m2}/${a2}</p>${rs.map(r=>mkCard(r,r.statusMarketing==="pendente")).join("")}</div>`;});
+}
 } else {
 const todos=_todas.filter(r=>(_MK.historico||r.data>=h)&&r.status!=="recusado"&&!r.reservaAutomatica).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
 const pd={};todos.forEach(r=>{if(!pd[r.data])pd[r.data]=[];pd[r.data].push(r);});
@@ -955,10 +966,10 @@ Object.entries(pd).filter(([d])=>todosFeed.some(r=>r.data===d)).forEach(([data,r
 }
 return`<div style="padding:4px 0">
    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-     <div style="display:flex;gap:6px">${btnAba("minhas","📸 Minhas solicitações")}${btnAba("todos","📅 Todos agendamentos")}</div>
+     <div style="display:flex;gap:6px;flex-wrap:wrap">${btnAba("hoje",`📅 Hoje · ${hojeList.length}`)}${btnAba("pendentes",`⏳ Pendentes${pendentes.length?` · ${pendentes.length}`:""}`)}${btnAba("proximos","🔜 Próximos dias")}${btnAba("todos","📅 Todos agendamentos")}</div>
      <button onclick="window._MK.historico=!window._MK.historico;if(window._MK.historico)carregarTodas();else{mesclarTodasAdmin();}re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_MK.historico?c.navy:'transparent'};color:${_MK.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_MK.historico?"Ocultar hist.":"Ver histórico"}</button>
    </div>
-   ${pendentes.length&&_MK.aba==="todos"?`<div style="background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="mkSetAba('minhas')"><p style="font-size:13px;font-weight:700;color:#7c3aed">⏳ ${pendentes.length} solicitaç${pendentes.length===1?"ão":"ões"} aguardando aprovação — Ver agora →</p></div>`:""}
+   ${pendentes.length&&_MK.aba==="todos"?`<div style="background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="mkSetAba('pendentes')"><p style="font-size:13px;font-weight:700;color:#7c3aed">⏳ ${pendentes.length} solicitaç${pendentes.length===1?"ão":"ões"} aguardando aprovação — Ver agora →</p></div>`:""}
    ${corpo}
  </div>`;
 }
@@ -1018,7 +1029,7 @@ return`<div style="padding:4px 0">
 
 function renderMarketing(){
 const c=C(),h=fmtHoje();
-if(!window._MK)window._MK={aba:"minhas",historico:false};
+if(!window._MK)window._MK={aba:"pendentes",historico:false};
 const mkCard=(r,pend)=>{
 const[a,m2,d]=r.data.split("-");const isH=r.data===h;
 const dias=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
@@ -1073,15 +1084,26 @@ return`<div style="background:${c.surface};border-radius:12px;border:1.5px solid
 };
 // Filtro por aba
 const minhas=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&(_MK.historico||r.data>=h)&&r.status!=="recusado"&&!r.reservaAutomatica).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
-const pendentes=minhas.filter(r=>r.statusMarketing==="pendente");
-const aprovados=minhas.filter(r=>r.statusMarketing==="aprovado");
+const hojeList=minhas.filter(r=>r.data===h);
+const pendentes=minhas.filter(r=>r.statusMarketing==="pendente"&&r.data>=h);
+const pendRealizados=minhas.filter(r=>r.statusMarketing==="pendente"&&r.data<h);
+const proximosList=minhas.filter(r=>r.data>h);
 const todos=_todas.filter(r=>(_MK.historico||r.data>=h)&&r.status!=="recusado"&&!r.reservaAutomatica).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
-const btnAba=(id,l)=>`<button onclick="window._MK.aba='${id}';re()" style="padding:7px 16px;font-size:12.5px;border-radius:8px;border:1.5px solid ${_MK.aba===id?'#7c3aed':c.border};background:${_MK.aba===id?'#7c3aed':'transparent'};color:${_MK.aba===id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${l}</button>`;
+const btnAba=(id,l)=>`<button onclick="window._MK.aba='${id}';re()" style="padding:7px 16px;font-size:12.5px;border-radius:8px;border:1.5px solid ${_MK.aba===id?'#7c3aed':c.border};background:${_MK.aba===id?'#7c3aed':'transparent'};color:${_MK.aba===id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">${l}</button>`;
 let corpo="";
-if(_MK.aba==="minhas"){
-if(pendentes.length)corpo+=`<div style="margin-bottom:20px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="background:#7c3aed;color:#fff;font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px">⏳ PENDENTES — ${pendentes.length}</span></div>${pendentes.map(r=>mkCard(r,true)).join("")}</div>`;
-if(aprovados.length)corpo+=`<div><p style="font-size:12px;font-weight:800;color:${c.green};text-transform:uppercase;margin-bottom:10px">✅ Aprovados (${aprovados.length})</p>${aprovados.map(r=>mkCard(r,false)).join("")}</div>`;
-if(!minhas.length)corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">📸</p><p style="margin-top:12px;font-size:14px">Nenhuma solicitação no momento.</p></div>`;
+if(_MK.aba==="hoje"){
+if(hojeList.length)corpo+=hojeList.map(r=>mkCard(r,r.statusMarketing==="pendente")).join("");
+else corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">📸</p><p style="margin-top:12px;font-size:14px">Nenhuma solicitação hoje.</p></div>`;
+} else if(_MK.aba==="pendentes"){
+if(pendentes.length)corpo+=pendentes.map(r=>mkCard(r,true)).join("");
+if(pendRealizados.length)corpo+=`<div style="margin-top:16px"><p style="font-size:12px;font-weight:800;color:${c.textMuted};text-transform:uppercase;margin-bottom:10px">📁 Realizados (${pendRealizados.length})</p>${pendRealizados.map(r=>mkCard(r,true)).join("")}</div>`;
+if(!pendentes.length&&!pendRealizados.length)corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">🎉</p><p style="margin-top:12px;font-size:14px">Nenhum pendente.</p></div>`;
+} else if(_MK.aba==="proximos"){
+if(!proximosList.length)corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">📅</p><p style="margin-top:12px;font-size:14px">Nada agendado pros próximos dias.</p></div>`;
+else{
+const pdProx={};proximosList.forEach(r=>{if(!pdProx[r.data])pdProx[r.data]=[];pdProx[r.data].push(r);});
+Object.entries(pdProx).forEach(([data,rs])=>{const[a2,m2,d2]=data.split("-");corpo+=`<div style="margin-bottom:16px"><p style="font-size:12px;font-weight:800;color:${c.textMuted};text-transform:uppercase;margin-bottom:8px">${d2}/${m2}/${a2}</p>${rs.map(r=>mkCard(r,r.statusMarketing==="pendente")).join("")}</div>`;});
+}
 } else {
 // Agrupar por data
 const pd={};todos.forEach(r=>{if(!pd[r.data])pd[r.data]=[];pd[r.data].push(r);});
@@ -1101,10 +1123,10 @@ $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="
    </header>
    <div style="max-width:700px;margin:0 auto;padding:16px 14px">
      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-       <div style="display:flex;gap:6px">${btnAba("minhas","📸 Minhas solicitações")}${btnAba("todos","📅 Todos agendamentos")}</div>
+       <div style="display:flex;gap:6px;flex-wrap:wrap">${btnAba("hoje",`📅 Hoje · ${hojeList.length}`)}${btnAba("pendentes",`⏳ Pendentes${pendentes.length?` · ${pendentes.length}`:""}`)}${btnAba("proximos","🔜 Próximos dias")}${btnAba("todos","📅 Todos agendamentos")}</div>
        <button onclick="window._MK.historico=!window._MK.historico;if(window._MK.historico)carregarTodas();else{mesclarTodasAdmin();}re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_MK.historico?c.navy:'transparent'};color:${_MK.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_MK.historico?"Ocultar hist.":"Ver histórico"}</button>
      </div>
-     ${pendentes.length&&_MK.aba==="todos"?`<div style="background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="mkSetAba('minhas')"><p style="font-size:13px;font-weight:700;color:#7c3aed">⏳ ${pendentes.length} solicitaç${pendentes.length===1?"ão":"ões"} aguardando sua aprovação — Ver agora →</p></div>`:""}
+     ${pendentes.length&&_MK.aba==="todos"?`<div style="background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="mkSetAba('pendentes')"><p style="font-size:13px;font-weight:700;color:#7c3aed">⏳ ${pendentes.length} solicitaç${pendentes.length===1?"ão":"ões"} aguardando sua aprovação — Ver agora →</p></div>`:""}
      ${corpo}
    </div>
  </div>`;
@@ -1625,7 +1647,7 @@ window.setAdminVisu=(v)=>{
 _adminVisu=v;
 if(v==="professor"){_P.modoProf="escolha_inicial";_P.modoCard="calendario";_P.modoVisu="semana";_P.semIni=getSegunda(fmtHoje());_P.diaSel=null;_P.filtroGrade="meus";_P.mostrarHistorico=false;_P.filtroPendente=false;}
 if(v==="ti"&&window._TI)_TI.aba="minhas";
-if(v==="marketing"&&window._MK)_MK.aba="minhas";
+if(v==="marketing"&&window._MK)_MK.aba="hoje";
 re();
 };
 window.irInicio=()=>{
