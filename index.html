@@ -611,6 +611,31 @@ return`<div style="background:${c.surface};border-radius:16px;border:1px solid $
 // ─── ESTADO GLOBAL ────────────────────────────────────────────────────────────
 let _usuario=null,_todas=[],_minhas=[],_usuarios=[],_trocandoSenha=false;
 let _unsub1=null,_unsub2=null,_unsub3=null,_unsubPend=null,_unsubMes=null;
+// Alerta sonoro do T.E. (Tablets/Notebooks): bipe periódico enquanto houver pendência
+// e o admin não estiver na aba, gerado via Web Audio API (sem depender de arquivo externo).
+let _tbAlertTimer=null,_tbAudioCtx=null;
+function tbAlertTick(){
+try{
+if(!_tbAudioCtx)_tbAudioCtx=new(window.AudioContext||window.webkitAudioContext)();
+const ctx=_tbAudioCtx;
+if(ctx.state==="suspended")ctx.resume();
+[0,0.22].forEach(delay=>{
+const osc=ctx.createOscillator(),gain=ctx.createGain();
+osc.type="sine";osc.frequency.value=880;
+gain.gain.setValueAtTime(0.001,ctx.currentTime+delay);
+gain.gain.exponentialRampToValueAtTime(0.18,ctx.currentTime+delay+0.02);
+gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+delay+0.2);
+osc.connect(gain);gain.connect(ctx.destination);
+osc.start(ctx.currentTime+delay);osc.stop(ctx.currentTime+delay+0.22);
+});
+}catch(e){}
+}
+window.pararAlertaTablets=()=>{if(_tbAlertTimer){clearInterval(_tbAlertTimer);_tbAlertTimer=null;}};
+window.atualizarAlertaTablets=count=>{
+const deveTocar=count>0&&_usuario?.perfil==="admin"&&_A.aba!=="tablets"&&_adminVisu==="admin";
+if(deveTocar&&!_tbAlertTimer){tbAlertTick();_tbAlertTimer=setInterval(tbAlertTick,4000);}
+else if(!deveTocar)pararAlertaTablets();
+};
 // _todasMes = reservas do mês atualmente "assinado" no calendário admin/coordenador (ver assinarMesAdmin)
 // _pendentesGlobais = TODAS as reservas com status pendente, sem limite de data (poucos docs, sempre em tempo real)
 // _todas = união das duas, recalculada a cada snapshot novo — mantém pendentes sempre visíveis
@@ -1649,6 +1674,7 @@ window.doSignOut=()=>signOut(auth);
 window.toggleAdminVisu=()=>{};
 window.setAdminVisu=(v)=>{
 _adminVisu=v;
+if(v!=="admin")pararAlertaTablets();
 if(v==="professor"){_P.modoProf="escolha_inicial";_P.modoCard="calendario";_P.modoVisu="semana";_P.semIni=getSegunda(fmtHoje());_P.diaSel=null;_P.filtroGrade="meus";_P.mostrarHistorico=false;_P.filtroPendente=false;}
 if(v==="ti"&&window._TI)_TI.aba="minhas";
 if(v==="marketing"&&window._MK)_MK.aba="hoje";
@@ -3585,6 +3611,7 @@ const hoje_rs=_todas.filter(r=>r.data===h&&r.status!=="recusado"&&!r.reservaAuto
 const mkPendCount=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&r.statusMarketing==="pendente"&&r.status!=="recusado"&&!r.reservaAutomatica&&r.data>=h).length;
 const tiPendCount=_todas.filter(r=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);return(r.statusEquip==="pendente"||(r.statusEquip===undefined&&eo?.tipo==="audiovisual"&&r.status==="pendente"))&&!r.reservaAutomatica&&r.data>=h;}).length;
 const tbPendCount=_todas.filter(r=>(r.qtdTablets>0||r.qtdNotebooks>0)&&r.status==="pendente"&&!r.reservaAutomatica&&r.data>=h).length;
+atualizarAlertaTablets(tbPendCount);
 
 // ── HEADER ──
 let html=`<div>
@@ -4565,7 +4592,7 @@ re();
 function pararUsuariosLive(){
 if(_unsub3){_unsub3();_unsub3=null;}
 }
-function stopListeners(){[_unsub1,_unsub2,_unsub3,_unsubTodas,_unsubPend,_unsubMes].forEach(u=>{try{u&&u();}catch{}});_unsub1=_unsub2=_unsub3=_unsubTodas=_unsubPend=_unsubMes=null;_todasCarregadas=false;_todasCarregadasChave=null;_mesAssinadoChave=null;}
+function stopListeners(){[_unsub1,_unsub2,_unsub3,_unsubTodas,_unsubPend,_unsubMes].forEach(u=>{try{u&&u();}catch{}});_unsub1=_unsub2=_unsub3=_unsubTodas=_unsubPend=_unsubMes=null;_todasCarregadas=false;_todasCarregadasChave=null;_mesAssinadoChave=null;pararAlertaTablets();}
 function unloadHistorico(){if(_unsubTodas){_unsubTodas();_unsubTodas=null;}_todasCarregadas=false;}
 
 // ════════════════════════════════════════════════════════════════════════════
