@@ -3563,7 +3563,7 @@ fecharEdicao();
 // ════════════════════════════════════════════════════════════════════════════
 // ADMIN VIEW
 // ════════════════════════════════════════════════════════════════════════════
-let _A={fSegmento:"",modoVisu:"calendario",aba:"reservas",subAba:"hoje",fEspaco:"",fProf:"",fStatus:"",fTurma:"",mesCal:null,diaSel:null,historico:false,feedExpandido:false,rankModo:"realizado"};
+let _A={fSegmento:"",modoVisu:"agenda",aba:"reservas",subAba:"hoje",fEspaco:"",fProf:"",fStatus:"",fTurma:"",mesCal:null,diaSel:null,historico:false,feedExpandido:false,rankModo:"realizado"};
 window._A=_A;
 window.setRankModo=v=>{_A.rankModo=v;re();};
 
@@ -3627,7 +3627,7 @@ html+=`<div style="display:grid;grid-template-columns:${isDesktop?'1fr 300px':'1
 
 // ── CALENDÁRIO ──
 if(_A.modoVisu==="calendario"){
-const _abasBtns2=[{id:"marketing",l:`📸 Marketing${mkPendCount?" · "+mkPendCount:""}`},{id:"ti",l:`💻 T.I.${tiPendCount?" · "+tiPendCount:""}`},{id:"tablets",l:`📱 Tablets/Notebooks${tbPendCount?" · "+tbPendCount:""}`}].map(t=>`<button onclick="aSetAba('${t.id}');re()" style="padding:6px 13px;font-size:12px;white-space:nowrap;border-radius:8px;border:1.5px solid ${_A.aba===t.id?(_dark?'#1a6b47':c.navy):c.border};background:${_A.aba===t.id?(_dark?'#1a6b47':c.navy):'transparent'};color:${_A.aba===t.id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${t.l}</button>`).join("");
+const _abasBtns2=[{id:"marketing",l:`📸 Marketing${mkPendCount?" · "+mkPendCount:""}`,p:mkPendCount},{id:"ti",l:`💻 T.I.${tiPendCount?" · "+tiPendCount:""}`,p:tiPendCount},{id:"tablets",l:`📱 Tablets/Notebooks${tbPendCount?" · "+tbPendCount:""}`,p:tbPendCount}].map(t=>`<button onclick="aSetAba('${t.id}');re()" style="padding:6px 13px;font-size:12px;white-space:nowrap;border-radius:8px;border:1.5px solid ${_A.aba===t.id?(_dark?'#1a6b47':c.navy):(t.p?'#dc2626':c.border)};background:${_A.aba===t.id?(_dark?'#1a6b47':c.navy):'transparent'};color:${_A.aba===t.id?'#fff':(t.p?'#dc2626':c.text)};font-weight:700;cursor:pointer;font-family:inherit${t.p&&_A.aba!==t.id?';animation:pulse 1.4s ease-in-out infinite':''}">${t.l}</button>`).join("");
 if(["marketing","ti","tablets"].includes(_A.aba)){html+=`<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap"><button onclick="aSetAba('reservas');re()" style="padding:6px 13px;font-size:12px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.text};font-weight:700;cursor:pointer">📋 Reservas</button><button onclick="aSetAba('espacos');re()" style="padding:6px 13px;font-size:12px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.text};font-weight:700;cursor:pointer">🏛️ Por Espaço</button>${_abasBtns2}</div>`;}
 const{a:ano,m:mes}=_A.mesCal;
 const porData={};
@@ -3721,7 +3721,7 @@ const aguardandoAreas=filtradas.filter(r=>r.status==="pendente"&&!precisaAdmin(r
 const conf=filtradas.filter(r=>r.status!=="pendente"&&(_A.historico||r.data>=h)&&(!_A.fData||r.data===_A.fData)&&(!_A.fDataAte||r.data<=_A.fDataAte));
 
 html+=`<div style="display:flex;gap:4px;margin-bottom:16px;background:${c.surface};border-radius:10px;padding:4px;border:1px solid ${c.border};width:fit-content;flex-wrap:wrap">
-     ${[{id:"reservas",l:"📋 Reservas"},{id:"espacos",l:"🏛️ Por Espaço"},{id:"marketing",l:`📸 Marketing${mkPendCount?" · "+mkPendCount:""}`},{id:"ti",l:`💻 T.I.${tiPendCount?" · "+tiPendCount:""}`},{id:"tablets",l:`📱 Tablets/Notebooks${tbPendCount?" · "+tbPendCount:""}`}].map(t=>`<button onclick="aSetAba('${t.id}')" style="padding:6px 13px;font-size:12px;white-space:nowrap;border-radius:8px;border:1.5px solid ${_A.aba===t.id?(_dark?'#1a6b47':c.navy):c.border};background:${_A.aba===t.id?(_dark?'#1a6b47':c.navy):'transparent'};color:${_A.aba===t.id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${t.l}</button>`).join("")}
+     ${[{id:"reservas",l:"📋 Reservas",p:0},{id:"espacos",l:"🏛️ Por Espaço",p:0},{id:"marketing",l:`📸 Marketing${mkPendCount?" · "+mkPendCount:""}`,p:mkPendCount},{id:"ti",l:`💻 T.I.${tiPendCount?" · "+tiPendCount:""}`,p:tiPendCount},{id:"tablets",l:`📱 Tablets/Notebooks${tbPendCount?" · "+tbPendCount:""}`,p:tbPendCount}].map(t=>`<button onclick="aSetAba('${t.id}')" style="padding:6px 13px;font-size:12px;white-space:nowrap;border-radius:8px;border:1.5px solid ${_A.aba===t.id?(_dark?'#1a6b47':c.navy):(t.p?'#dc2626':c.border)};background:${_A.aba===t.id?(_dark?'#1a6b47':c.navy):'transparent'};color:${_A.aba===t.id?'#fff':(t.p?'#dc2626':c.text)};font-weight:700;cursor:pointer;font-family:inherit${t.p&&_A.aba!==t.id?';animation:pulse 1.4s ease-in-out infinite':''}">${t.l}</button>`).join("")}
    </div>`;
 
 if(_A.aba==="reservas"){
