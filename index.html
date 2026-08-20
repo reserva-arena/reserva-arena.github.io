@@ -51,6 +51,10 @@ h1{font-size:15px!important}
 @media(min-width:600px){#header-nome-block{display:block!important}}
 @media(max-width:599px){.header-nome{display:none!important}}
 @media(max-width:599px){.admin-visu-select{font-size:10px!important;max-width:75px!important;padding:2px 4px!important}}
+/* Telas de "gestão" (Admin, T.I., Marketing, Coordenador) ganham fonte maior e aproveitam
+   melhor telas largas de computador — zoom não afeta elementos position:fixed (modais
+   continuam no tamanho normal), então é seguro mesmo com os modais existentes. */
+@media(min-width:900px){.desktop-zoom{zoom:1.15}}
 </style>
 <!-- Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-80RD7HXHBT"></script>
@@ -1121,7 +1125,7 @@ $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="
      <div style="display:flex;align-items:center;gap:8px">${logoHTML(36)}<p style="font-size:13px;font-weight:800;color:#fff">📸 Marketing</p></div>
      <div style="display:flex;align-items:center;gap:6px">${avatarHTML(_usuario?.nome,28,"purple")}<button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button><button onclick="doSignOut()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">Sair</button></div>
    </header>
-   <div style="max-width:700px;margin:0 auto;padding:16px 14px">
+   <div class="desktop-zoom" style="max-width:1000px;margin:0 auto;padding:16px 14px">
      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
        <div style="display:flex;gap:6px;flex-wrap:wrap">${btnAba("hoje",`📅 Hoje · ${hojeList.length}`)}${btnAba("pendentes",`⏳ Pendentes${pendentes.length?` · ${pendentes.length}`:""}`)}${btnAba("proximos","🔜 Próximos dias")}${btnAba("todos","📅 Todos agendamentos")}</div>
        <button onclick="window._MK.historico=!window._MK.historico;if(window._MK.historico)carregarTodas();else{mesclarTodasAdmin();}re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_MK.historico?c.navy:'transparent'};color:${_MK.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_MK.historico?"Ocultar hist.":"Ver histórico"}</button>
@@ -1220,7 +1224,7 @@ $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="
      <div style="display:flex;align-items:center;gap:8px">${logoHTML(36)}<p style="font-size:13px;font-weight:800;color:#fff">💻 T.I.</p></div>
      <div style="display:flex;align-items:center;gap:6px">${avatarHTML(_usuario?.nome,28,"blue")}<button id="sino-btn" onclick="abrirPainelNotif()" title="Notificações" style="display:flex;position:relative;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:30px;height:30px;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;font-family:inherit">🔔<span id="sino-badge" style="display:${_notifNaoLidas>0?"flex":"none"};position:absolute;top:-4px;right:-4px;background:#dc2626;color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:99px;align-items:center;justify-content:center;padding:0 3px;font-family:inherit">${_notifNaoLidas>9?"9+":_notifNaoLidas}</span></button><button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button><button onclick="doSignOut()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">Sair</button></div>
    </header>
-   <div style="max-width:700px;margin:0 auto;padding:16px 14px">
+   <div class="desktop-zoom" style="max-width:1000px;margin:0 auto;padding:16px 14px">
      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
        <div style="display:flex;gap:6px">${btnAba("minhas","🔊 Minhas solicitações")}${btnAba("todos","📅 Todos agendamentos")}</div>
        <button onclick="window._TI.historico=!window._TI.historico;if(window._TI.historico)carregarTodas();else{mesclarTodasAdmin();}re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_TI.historico?c.navy:'transparent'};color:${_TI.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_TI.historico?"Ocultar hist.":"Ver histórico"}</button>
@@ -1355,7 +1359,7 @@ $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="
        <button onclick="doSignOut()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">Sair</button>
      </div>
    </header>
-   <div style="max-width:900px;margin:0 auto;padding:16px 14px">
+   <div class="desktop-zoom" style="max-width:1200px;margin:0 auto;padding:16px 14px">
      <div style="background:#fdf4e3;border:1.5px solid #eab308;border-radius:10px;padding:10px 14px;margin-bottom:16px;display:flex;align-items:center;gap:8px">
        <span style="font-size:16px">⭐</span>
        <p style="font-size:12px;color:#713f12;font-weight:600">Como coordenador, você pode reservar mais de um espaço no mesmo horário — inclua uma observação explicando o motivo.</p>
@@ -1629,7 +1633,7 @@ $("app").innerHTML=`
      </div>
    </header>
    <div id="main-content" style="max-width:100%;width:100%;margin:0 auto;padding:20px 20px;overflow-x:hidden;box-sizing:border-box">
-     <div style="max-width:1200px;margin:0 auto;width:100%">${isAdmin&&_adminVisu==="admin"?renderAdminView():isAdmin&&_adminVisu==="ti"?renderTIInline():isAdmin&&_adminVisu==="marketing"?renderMarketingInline():renderProfessorView()}</div>
+     <div class="${isAdmin&&_adminVisu==='admin'?'desktop-zoom':''}" style="max-width:${isAdmin&&_adminVisu==='admin'?'1500':'1200'}px;margin:0 auto;width:100%">${isAdmin&&_adminVisu==="admin"?renderAdminView():isAdmin&&_adminVisu==="ti"?renderTIInline():isAdmin&&_adminVisu==="marketing"?renderMarketingInline():renderProfessorView()}</div>
    </div>
    <footer style="margin-top:40px;padding:16px 24px;border-top:1px solid ${c.border};background:${_dark?'#0a1a12':'#0d2b1a'};text-align:center">
      <p style="font-size:10px;color:rgba(255,255,255,.5)">Reserva de Espaços e Equipamentos · Dev: Luciano Galdino · Frontend: HTML · CSS · JS · ☁️ GitHub Pages · Backend: 🔥 Firebase</p>
