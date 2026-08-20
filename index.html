@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260820094454"/>
-<meta name="app-build-perfis" content="admin,ti,marketing,coordenador"/>
+<meta name="app-build" content="20260820112834"/>
+<meta name="app-build-perfis" content="admin,ti"/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -1302,7 +1302,6 @@ $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="
        <button onclick="window._TI.historico=!window._TI.historico;if(window._TI.historico)carregarTodas();else{mesclarTodasAdmin();}re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_TI.historico?c.navy:'transparent'};color:${_TI.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_TI.historico?"Ocultar hist.":"Ver histórico"}</button>
      </div>
      ${pendentes.length&&_TI.aba==="todos"?`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="tiSetAba('minhas')"><p style="font-size:13px;font-weight:700;color:#c2410c">⏳ ${pendentes.length} agendamento${pendentes.length===1?"":"s"} aguardando aprovação — Ver agora →</p></div>`:""}
-     ${feedTIHtml}
      ${corpo}
    </div>
  </div>`;
