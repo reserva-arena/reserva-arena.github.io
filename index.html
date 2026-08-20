@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260820112834"/>
-<meta name="app-build-perfis" content="admin,ti"/>
+<meta name="app-build" content="20260820114527"/>
+<meta name="app-build-perfis" content="todos"/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -1742,7 +1742,7 @@ window.scrollTo({top:0,behavior:"smooth"});re();
 // ════════════════════════════════════════════════════════════════════════════
 // PROFESSOR VIEW
 // ════════════════════════════════════════════════════════════════════════════
-let _P={modoProf:"escolha_inicial",modoCard:"calendario",modoVisu:"semana",filtroGrade:"todos",filtroEspaco:"",semIni:"",diaSel:null,mesCal:null,mostrarHistorico:false,filtroPendente:false,selecionados:new Set(),modoSelecao:false,espacoEscolhido:null,agendaDiasVisiveis:5};
+let _P={modoProf:"escolha_inicial",modoCard:"calendario",modoVisu:"semana",filtroGrade:"todos",filtroEspaco:"",semIni:"",diaSel:null,mesCal:null,mostrarHistorico:false,filtroPendente:false,selecionados:new Set(),modoSelecao:false,espacoEscolhido:null,agendaDiasVisiveis:5,diasExtras:0};
 window._P=_P;
 
 function renderProfessorView(){
@@ -1973,6 +1973,8 @@ html+=`</div>`;
 });
 if(diasTotais.length>_P.agendaDiasVisiveis){
 html+=`<button onclick="_P.agendaDiasVisiveis+=5;re()" style="width:100%;padding:12px;border-radius:10px;border:1.5px dashed ${c.border};background:transparent;color:${c.textMuted};font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;margin-bottom:14px">▼ Ver mais 5 dias (${diasTotais.length-_P.agendaDiasVisiveis} restantes)</button>`;
+} else if(_P.filtroGrade==="todos"&&!_P.filtroEspaco){
+html+=`<button onclick="pVerProximoMes()" style="width:100%;padding:12px;border-radius:10px;border:1.5px dashed ${c.border};background:transparent;color:${c.textMuted};font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;margin-bottom:14px">📅 Ver próximo mês</button>`;
 }
 }
 if(passadas.length){
@@ -2090,8 +2092,14 @@ else if(tipo==='proximos'){_P.modoProf='ver';_P.modoCard='lista';_P.filtroGrade=
 };
 window.pSetVisu=v=>{_P.modoVisu=v;re();};
 window.pNavMes=dir=>{if(!_P.mesCal){const d=new Date();_P.mesCal={a:d.getFullYear(),m:d.getMonth()};}let nm=_P.mesCal.m+dir,na=_P.mesCal.a;if(nm>11){nm=0;na++;}if(nm<0){nm=11;na--;}_P.mesCal={a:na,m:nm};re();};
-window.pSetGrade=v=>{_P.filtroGrade=v;_P.agendaDiasVisiveis=5;if(v==="todos")carregarTodas(_P.filtroEspaco||undefined);re();};
-window.pSetEspaco=v=>{_P.filtroEspaco=v;_P.agendaDiasVisiveis=5;if(_P.filtroGrade==="todos")carregarTodas(v||undefined);re();};
+window.pSetGrade=v=>{_P.filtroGrade=v;_P.agendaDiasVisiveis=5;_P.diasExtras=0;if(v==="todos")carregarTodas(_P.filtroEspaco||undefined);re();};
+window.pVerProximoMes=()=>{
+_P.diasExtras=(_P.diasExtras||0)+30;
+_P.agendaDiasVisiveis+=30;
+_todasCarregadas=false;_todasCarregadasChave=null;
+carregarTodas(_P.filtroEspaco||undefined,_P.diasExtras);
+};
+window.pSetEspaco=v=>{_P.filtroEspaco=v;_P.agendaDiasVisiveis=5;_P.diasExtras=0;if(_P.filtroGrade==="todos")carregarTodas(v||undefined);re();};
 window.pClicarDia=data=>{
 if(data>=fmtHoje()&&isDiaLetivo(data)){
 _P.modoProf="agendar";
@@ -4522,8 +4530,8 @@ const snap=await getDoc(doc(db,"metricas_uso","hoje"));
 if(snap.exists()){_metricaUso=snap.data();re();}
 }catch(e){console.warn("carregarMetricaUso:",e);}
 }
-window.carregarTodas=function carregarTodas(espaco){
-const chave=espaco||"broad";
+window.carregarTodas=function carregarTodas(espaco,diasExtras){
+const chave=(espaco||"broad")+"|"+(diasExtras||0);
 if(_todasCarregadas&&_todasCarregadasChave===chave)return;
 // Carrega uma vez (não fica em tempo real) — evita que muitas sessões de
 // professores fiquem escutando a coleção inteira pra sempre. O painel do
@@ -4540,7 +4548,7 @@ q=query(collection(db,"reservas"),where("espaco","==",espaco));
 }else{
 const hojeMenos=new Date();hojeMenos.setDate(hojeMenos.getDate()-7);
 const dataCorte=hojeMenos.toISOString().slice(0,10);
-const hojeMais=new Date();hojeMais.setDate(hojeMais.getDate()+60);
+const hojeMais=new Date();hojeMais.setDate(hojeMais.getDate()+60+(diasExtras||0));
 const dataLimite=hojeMais.toISOString().slice(0,10);
 q=query(collection(db,"reservas"),where("data",">=",dataCorte),where("data","<=",dataLimite));
 }
