@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="app-build" content="20260820085404"/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -631,6 +632,15 @@ osc.start(ctx.currentTime+delay);osc.stop(ctx.currentTime+delay+0.22);
 }catch(e){}
 }
 window.pararAlertaTablets=()=>{if(_tbAlertTimer){clearInterval(_tbAlertTimer);_tbAlertTimer=null;}};
+// Navegadores só liberam áudio de verdade durante um clique direto do usuário — como o alerta
+// é disparado por evento assíncrono do Firestore (não por clique), o primeiro bipe pode ficar
+// mudo. Este listener "destrava" o AudioContext assim que o admin clicar em qualquer lugar.
+document.addEventListener("click",()=>{
+try{
+if(!_tbAudioCtx)_tbAudioCtx=new(window.AudioContext||window.webkitAudioContext)();
+if(_tbAudioCtx.state==="suspended")_tbAudioCtx.resume();
+}catch(e){}
+},{passive:true});
 window.atualizarAlertaTablets=count=>{
 const deveTocar=count>0&&_usuario?.perfil==="admin"&&_A.aba!=="tablets"&&_adminVisu==="admin";
 if(deveTocar&&!_tbAlertTimer){tbAlertTick();_tbAlertTimer=setInterval(tbAlertTick,4000);}
@@ -4618,6 +4628,37 @@ _todas=[];
 re();
 }
 });
+
+// ── Verificação de nova versão publicada ──
+// A cada poucos minutos, busca o próprio index.html (sem cache) e compara a tag <meta name="app-build">
+// com a atual. Se mudou, mostra um aviso discreto — nunca recarrega sozinho, pra não interromper
+// ninguém no meio de um formulário.
+const _BUILD_ATUAL=document.querySelector('meta[name="app-build"]')?.content||"";
+let _versaoAvisada=false;
+async function checarNovaVersao(){
+if(_versaoAvisada)return;
+try{
+const resp=await fetch("/?_v="+Date.now(),{cache:"no-store"});
+const texto=await resp.text();
+const m=texto.match(/<meta name="app-build" content="([^"]*)"/);
+if(m&&m[1]&&_BUILD_ATUAL&&m[1]!==_BUILD_ATUAL){
+_versaoAvisada=true;
+mostrarAvisoNovaVersao();
+}
+}catch(e){}
+}
+function mostrarAvisoNovaVersao(){
+if(document.getElementById("aviso-nova-versao"))return;
+const div=document.createElement("div");
+div.id="aviso-nova-versao";
+div.style.cssText="position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:9999;background:#0f4c2b;color:#fff;padding:10px 14px;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.3);display:flex;align-items:center;gap:10px;font-family:'DM Sans',system-ui,sans-serif;font-size:13px;font-weight:600";
+div.innerHTML=`<span>🔄 Nova versão disponível</span><button onclick="location.reload()" style="background:#fff;color:#0f4c2b;border:none;border-radius:8px;padding:6px 12px;font-weight:800;cursor:pointer;font-size:12.5px;font-family:inherit">Atualizar</button><button onclick="document.getElementById('aviso-nova-versao').remove()" style="background:none;border:none;color:rgba(255,255,255,.7);cursor:pointer;font-size:16px;padding:0 2px;line-height:1">✕</button>`;
+document.body.appendChild(div);
+}
+setInterval(checarNovaVersao,30*60*1000);
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")checarNovaVersao();});
+window.addEventListener("focus",checarNovaVersao);
+setTimeout(checarNovaVersao,20000);
 </script>
 <script>
 // Registrar Service Worker
