@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260821170644"/>
+<meta name="app-build" content="20260824073120"/>
 <meta name="app-build-perfis" content="admin"/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -620,8 +620,8 @@ return`<div style="background:${c.surface};border-radius:16px;border:1px solid $
 
 // ─── ESTADO GLOBAL ────────────────────────────────────────────────────────────
 let _usuario=null,_todas=[],_minhas=[],_usuarios=[],_trocandoSenha=false;
-let _unsub1=null,_unsub2=null,_unsub3=null,_unsubPend=null,_unsubMes=null,_unsubTI=null,_unsubMkt=null,_unsubTbTablets=null,_unsubTbNotebooks=null,_unsubMaker=null;
-let _tiGlobal=[],_mktGlobal=[],_tbGlobalTablets=[],_tbGlobalNotebooks=[],_tbGlobal=[],_makerGlobal=[];
+let _unsub1=null,_unsub2=null,_unsub3=null,_unsubPend=null,_unsubMes=null,_unsubTI=null,_unsubMkt=null,_unsubTbTablets=null,_unsubTbNotebooks=null,_unsubMaker=null,_unsubLab=null;
+let _tiGlobal=[],_mktGlobal=[],_tbGlobalTablets=[],_tbGlobalNotebooks=[],_tbGlobal=[],_makerGlobal=[],_labGlobal=[];
 function mesclarTbGlobal(){
 const porId={};
 _tbGlobalTablets.forEach(r=>{porId[r.id]=r;});
@@ -647,7 +647,7 @@ return h;
 // Busca uma reserva em todas as fontes conhecidas — necessário porque as filas de aprovação
 // de T.I./Marketing/Tablets agora enxergam itens fora do mês carregado em _todas.
 function buscarReservaGlobal(id){
-return _todas.find(r=>r.id===id)||_tiGlobal.find(r=>r.id===id)||_mktGlobal.find(r=>r.id===id)||_tbGlobal.find(r=>r.id===id)||_makerGlobal.find(r=>r.id===id)||null;
+return _todas.find(r=>r.id===id)||_tiGlobal.find(r=>r.id===id)||_mktGlobal.find(r=>r.id===id)||_tbGlobal.find(r=>r.id===id)||_makerGlobal.find(r=>r.id===id)||_labGlobal.find(r=>r.id===id)||null;
 }
 // Alerta sonoro do T.E. (Tablets/Notebooks): bipe periódico enquanto houver pendência
 // e o admin não estiver na aba, gerado via Web Audio API (sem depender de arquivo externo).
@@ -716,6 +716,7 @@ if(_usuario.perfil==="sem_acesso"||_usuario.ativo===false){renderSemAcesso();ret
 if(_usuario.perfil==="fotografo"||_usuario.perfil==="marketing"){renderMarketing();return;}
 if(_usuario.perfil==="ti"||_usuario.perfil==="coord_ti"){renderTI();return;}
 if(_usuario.perfil==="maker"){renderMaker();return;}
+if(_usuario.perfil==="laboratorista"){renderLaboratorista();return;}
 if(isCoordenador(_usuario.perfil)){if(_P.modoProf==="agendar")renderCoordAgendar();else renderCoord();return;}
 renderApp();
 }
@@ -1146,6 +1147,57 @@ $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="
    <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#4c1d95,#7c3aed)"};padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100">
      <div style="display:flex;align-items:center;gap:8px">${logoHTML(36)}<p style="font-size:13px;font-weight:800;color:#fff">🔨 Maker</p></div>
      <div style="display:flex;align-items:center;gap:6px">${avatarHTML(_usuario?.nome,28,"purple")}<button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button><button onclick="doSignOut()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">Sair</button></div>
+   </header>
+   <div class="desktop-zoom" style="max-width:1000px;margin:0 auto;padding:16px 14px">
+     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">${btnAba("hoje",`📅 Hoje · ${hojeList.length}`)}${btnAba("proximos","🔜 Próximos dias")}${btnAba("todos","📅 Todos agendamentos")}</div>
+     ${corpo}
+   </div>
+   ${modalEdicaoHTML()}
+ </div>`;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// LABORATORISTA — visão combinada dos dois Labs de Ciências, com permissão de mover entre as duas salas
+// ════════════════════════════════════════════════════════════════════════════
+function renderLaboratorista(){
+const c=C(),h=fmtHoje();
+const corSala=nome=>nome==="Lab. de Ciências Anos Iniciais"?"#059669":"#0284c7";
+const labCard=r=>{
+const statusBadge=r.status==="pendente"?`<span style="background:#f97316;color:#fff;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:20px">Pendente</span>`:r.status==="confirmado"?`<span style="background:#1a6b47;color:#fff;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:20px">Confirmado</span>`:"";
+return`<div style="background:${c.surface};border:1.5px solid ${c.border};border-left:4px solid ${corSala(r.espaco)};border-radius:10px;padding:12px 14px;margin-bottom:8px">
+   <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:4px">
+     <span style="font-family:'DM Mono',monospace;font-weight:800;color:${c.green}">${r.horario}${r.horarioFim&&r.horarioFim!==r.horario?" → "+r.horarioFim:""}</span>
+     <span style="background:${corSala(r.espaco)};color:#fff;font-size:11px;font-weight:800;padding:2px 9px;border-radius:20px">${r.espaco}</span>
+     ${statusBadge}
+   </div>
+   <p style="font-size:13px;color:${c.textMid}">${r.professor} · ${r.turma||"—"}</p>
+   ${r.conteudo?`<p style="font-size:12px;color:${c.textMuted};margin-top:3px">📝 ${r.conteudo}</p>`:""}
+   <div style="margin-top:10px"><button onclick="abrirEdicao('${r.id}')" style="padding:7px 16px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.textMid};font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">✏️ Editar / Mover de sala</button></div>
+ </div>`;
+};
+const todosOrdenados=[..._labGlobal].sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
+const hojeList=todosOrdenados.filter(r=>r.data===h);
+const proximosList=todosOrdenados.filter(r=>r.data>h);
+if(!window._LAB)window._LAB={aba:"hoje"};
+const btnAba=(id,l)=>`<button onclick="window._LAB.aba='${id}';re()" style="padding:7px 16px;font-size:12.5px;border-radius:8px;border:1.5px solid ${_LAB.aba===id?'#059669':c.border};background:${_LAB.aba===id?'#059669':'transparent'};color:${_LAB.aba===id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">${l}</button>`;
+let corpo="";
+if(_LAB.aba==="hoje"){
+if(hojeList.length)corpo+=hojeList.map(labCard).join("");
+else corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">🔬</p><p style="margin-top:12px">Nenhum agendamento hoje.</p></div>`;
+} else if(_LAB.aba==="proximos"){
+if(!proximosList.length)corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">📅</p><p style="margin-top:12px">Nada agendado pros próximos dias.</p></div>`;
+else{
+const pd={};proximosList.forEach(r=>{if(!pd[r.data])pd[r.data]=[];pd[r.data].push(r);});
+Object.entries(pd).forEach(([data,rs])=>{const[a2,m2,d2]=data.split("-");corpo+=`<div style="margin-bottom:16px"><p style="font-size:12px;font-weight:800;color:${c.textMuted};text-transform:uppercase;margin-bottom:8px">${d2}/${m2}/${a2}</p>${rs.map(labCard).join("")}</div>`;});
+}
+} else {
+if(!todosOrdenados.length)corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">🔬</p><p style="margin-top:12px">Nenhum agendamento.</p></div>`;
+else corpo+=todosOrdenados.map(labCard).join("");
+}
+$("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="no">
+   <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#065f46,#059669)"};padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100">
+     <div style="display:flex;align-items:center;gap:8px">${logoHTML(36)}<p style="font-size:13px;font-weight:800;color:#fff">🔬 Laboratorista</p></div>
+     <div style="display:flex;align-items:center;gap:6px">${avatarHTML(_usuario?.nome,28,"blue")}<button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button><button onclick="doSignOut()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">Sair</button></div>
    </header>
    <div class="desktop-zoom" style="max-width:1000px;margin:0 auto;padding:16px 14px">
      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">${btnAba("hoje",`📅 Hoje · ${hojeList.length}`)}${btnAba("proximos","🔜 Próximos dias")}${btnAba("todos","📅 Todos agendamentos")}</div>
@@ -4229,6 +4281,7 @@ return`<div id="mod-gu" style="display:none;position:fixed;inset:0;background:rg
                <option value="ti">💻 T.I.</option>
                <option value="coord_ti">🖥️ Coord. T.I.</option>
                <option value="maker">🔨 Maker (Maker 1 + 2)</option>
+               <option value="laboratorista">🔬 Laboratorista (Labs Iniciais + Finais)</option>
              </select></div>
            <button onclick="guCriarDireto()" style="background:#1a6b47;color:#fff;border:none;border-radius:8px;font-weight:700;padding:10px 18px;font-size:13.5px;cursor:pointer;height:42px;width:100%">+ Cadastrar</button>
          </div>
@@ -4449,7 +4502,7 @@ profs.forEach((u,i)=>{
 h+='<tr style="background:'+(i%2===0?'#fff':'#f8faf8')+'">';
 h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb;color:#132318;font-weight:600">'+u.nome+'</td>';
 h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb;color:#607060;font-size:12px">'+u.email+'</td>';
-h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:#e0e7ff;color:#3730a3">'+(u.perfil==="fotografo"||u.perfil==="marketing"?"📸 Marketing":u.perfil==="ti"?"💻 T.I.":u.perfil==="maker"?"🔨 Maker":u.perfil==="coord_inf"?"👶 Coord. Inf.":u.perfil==="coord_fund1"?"📚 Coord. Fund.1":u.perfil==="coord_fund2"?"🎓 Coord. Fund.2":u.perfil==="coord_ti"?"🖥️ Coord. T.I.":u.perfil==="coordenador"?"🧭 Coordenador":"👨‍🏫 Professor")+'</span></td>';
+h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:#e0e7ff;color:#3730a3">'+(u.perfil==="fotografo"||u.perfil==="marketing"?"📸 Marketing":u.perfil==="ti"?"💻 T.I.":u.perfil==="maker"?"🔨 Maker":u.perfil==="laboratorista"?"🔬 Laboratorista":u.perfil==="coord_inf"?"👶 Coord. Inf.":u.perfil==="coord_fund1"?"📚 Coord. Fund.1":u.perfil==="coord_fund2"?"🎓 Coord. Fund.2":u.perfil==="coord_ti"?"🖥️ Coord. T.I.":u.perfil==="coordenador"?"🧭 Coordenador":"👨‍🏫 Professor")+'</span></td>';
 h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:'+(u.ativo!==false?'#e2f4ea':'#fef2f2')+';color:'+(u.ativo!==false?'#0f4c2b':'#7f1d1d')+'">'+(u.ativo!==false?'● Ativo':'○ Inativo')+'</span></td>';
       h+=(()=>{
         if(!u.ultimoAcesso)return'<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb;color:#94a3b8;font-size:12px">—</td>';
@@ -4495,6 +4548,7 @@ h+='<option value="marketing">📸 Equipe de Marketing</option>';
 h+='<option value="ti">💻 T.I.</option>';
 h+='<option value="coord_ti">🖥️ Coord. T.I.</option>';
 h+='<option value="maker">🔨 Maker (Maker 1 + 2)</option>';
+h+='<option value="laboratorista">🔬 Laboratorista (Labs Iniciais + Finais)</option>';
 h+='<option value="sem_acesso">🔒 Sem acesso</option>';
 h+='</select>';
 h+='<div id="gu-edit-flash" style="margin-bottom:10px"></div>';
@@ -4693,6 +4747,9 @@ _tbGlobalNotebooks=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.prof
 _unsubMaker=onSnapshot(query(collection(db,"reservas"),where("espaco","in",["Maker 1","Maker 2"])),snap=>{
 _makerGlobal=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario&&!r.reservaAutomatica&&r.status!=="recusado");re();
 });
+_unsubLab=onSnapshot(query(collection(db,"reservas"),where("espaco","in",["Lab. de Ciências Anos Iniciais","Lab. de Ciências Anos Finais"])),snap=>{
+_labGlobal=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario&&!r.reservaAutomatica&&r.status!=="recusado");re();
+});
 const hojeD=new Date();
 assinarMesAdmin(hojeD.getFullYear(),hojeD.getMonth());
 }
@@ -4719,7 +4776,7 @@ re();
 function pararUsuariosLive(){
 if(_unsub3){_unsub3();_unsub3=null;}
 }
-function stopListeners(){[_unsub1,_unsub2,_unsub3,_unsubTodas,_unsubPend,_unsubMes,_unsubTI,_unsubMkt,_unsubTbTablets,_unsubTbNotebooks,_unsubMaker].forEach(u=>{try{u&&u();}catch{}});_unsub1=_unsub2=_unsub3=_unsubTodas=_unsubPend=_unsubMes=_unsubTI=_unsubMkt=_unsubTbTablets=_unsubTbNotebooks=_unsubMaker=null;_todasCarregadas=false;_todasCarregadasChave=null;_mesAssinadoChave=null;pararAlertaTablets();}
+function stopListeners(){[_unsub1,_unsub2,_unsub3,_unsubTodas,_unsubPend,_unsubMes,_unsubTI,_unsubMkt,_unsubTbTablets,_unsubTbNotebooks,_unsubMaker,_unsubLab].forEach(u=>{try{u&&u();}catch{}});_unsub1=_unsub2=_unsub3=_unsubTodas=_unsubPend=_unsubMes=_unsubTI=_unsubMkt=_unsubTbTablets=_unsubTbNotebooks=_unsubMaker=_unsubLab=null;_todasCarregadas=false;_todasCarregadasChave=null;_mesAssinadoChave=null;pararAlertaTablets();}
 function unloadHistorico(){if(_unsubTodas){_unsubTodas();_unsubTodas=null;}_todasCarregadas=false;}
 
 // ════════════════════════════════════════════════════════════════════════════
