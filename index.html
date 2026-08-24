@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260824073120"/>
+<meta name="app-build" content="20260824120916"/>
 <meta name="app-build-perfis" content="admin"/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -99,6 +99,7 @@ const app     = initializeApp(firebaseConfig);
 const auth    = getAuth(app);
 const db      = getFirestore(app);
 window.__db__ = db; // exposto para scripts de migração
+window.__fs__ = {collection,getDocs,doc,deleteDoc,writeBatch,query,where}; // exposto para scripts de migração/limpeza
 // URL de retorno do e-mail de redefinição de senha — aponta pro próprio app
 // (GitHub Pages) em vez do domínio padrão do Firebase, que está vazio.
 const RESET_ACTION_SETTINGS = { url: "https://reserva-arena.github.io/" };
@@ -1743,15 +1744,18 @@ return`<div style="background:${evento?"#fdf4e3":c.surface};border-radius:10px;b
 }
 
 window.coordExcluir=async(id)=>{
-const r=_todas.find(r=>r.id===id);
+const r=buscarReservaGlobal(id);
 if(!r){alert("Agendamento não encontrado.");return;}
 if(r.professorId!==_usuario?.uid){alert("Você só pode excluir agendamentos que você mesmo criou.");return;}
 if(!confirm(`Excluir o agendamento de "${r.espaco}" às ${r.horario} do dia ${r.data.split("-").reverse().join("/")}?`))return;
 try{
 const b=writeBatch(db);
 b.delete(doc(db,"reservas",id));
-_todas.filter(a=>a.reservaAutomatica&&a.espaco===r.espaco&&a.data===r.data&&a.professorId===r.professorId)
-.forEach(a=>b.delete(doc(db,"reservas",a.id)));
+const siblingsMap={};
+[..._todas,..._tiGlobal,..._mktGlobal,..._tbGlobal,..._makerGlobal,..._labGlobal].forEach(a=>{
+if(a.reservaAutomatica&&a.espaco===r.espaco&&a.data===r.data&&a.professorId===r.professorId)siblingsMap[a.id]=a;
+});
+Object.keys(siblingsMap).forEach(aid=>b.delete(doc(db,"reservas",aid)));
 await b.commit();
 const dataFmt=r.data.split("-").reverse().join("/");
 _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
@@ -2224,19 +2228,20 @@ console.log(`✅ ${snap.docs.length} reservas removidas de ${espaco} em ${data}`
 };
 window.cancelarR=async id=>{
 if(!confirm("Cancelar esta reserva?"))return;
-// Buscar a reserva principal para saber espaco, data, horario
-const r=_todas.find(r=>r.id===id);
+// Busca em _minhas primeiro (sempre completo, sem limite de data) — _todas pode estar vazio pro professor
+const r=_minhas.find(r=>r.id===id)||_todas.find(r=>r.id===id);
 if(!r){await deleteDoc(doc(db,"reservas",id));return;}
 // Deletar reserva principal
 const b=writeBatch(db);
 b.delete(doc(db,"reservas",id));
-// Deletar todas as reservas automáticas do mesmo espaco+data+professor
-_todas.filter(a=>
-a.reservaAutomatica&&
-a.espaco===r.espaco&&
-a.data===r.data&&
-a.professorId===r.professorId
-).forEach(a=>b.delete(doc(db,"reservas",a.id)));
+// Deletar todas as reservas automáticas do mesmo espaco+data+professor — busca em _minhas+_todas
+// combinados (sem isso, um documento auxiliar de equipamento pode ficar "fantasma", contando
+// como horário ocupado pra sempre mesmo depois do cancelamento).
+const siblingsMap={};
+[..._minhas,..._todas].forEach(a=>{
+if(a.reservaAutomatica&&a.espaco===r.espaco&&a.data===r.data&&a.professorId===r.professorId)siblingsMap[a.id]=a;
+});
+Object.keys(siblingsMap).forEach(aid=>b.delete(doc(db,"reservas",aid)));
 await b.commit();
 // Avisar os admins que o professor cancelou
 try{
@@ -4241,12 +4246,17 @@ await gravarNotif(r.professorId,"❌ Agendamento recusado",`${r.espaco} — ${da
 window.aExcluir=async id=>{
 if(!exigePermissao(['admin'])){alert('Acesso negado.');return;}
 if(!confirm("Excluir esta reserva?"))return;
-const r=_todas.find(r=>r.id===id);
+const r=buscarReservaGlobal(id);
 if(!r){await deleteDoc(doc(db,"reservas",id));return;}
 const b=writeBatch(db);
 b.delete(doc(db,"reservas",id));
-_todas.filter(a=>a.reservaAutomatica&&a.espaco===r.espaco&&a.data===r.data&&a.professorId===r.professorId)
-.forEach(a=>b.delete(doc(db,"reservas",a.id)));
+// Junta todas as fontes conhecidas pra achar documentos auxiliares de equipamento (evita
+// deixar "fantasmas" que continuam contando como horário ocupado depois da exclusão).
+const siblingsMap={};
+[..._todas,..._tiGlobal,..._mktGlobal,..._tbGlobal,..._makerGlobal,..._labGlobal].forEach(a=>{
+if(a.reservaAutomatica&&a.espaco===r.espaco&&a.data===r.data&&a.professorId===r.professorId)siblingsMap[a.id]=a;
+});
+Object.keys(siblingsMap).forEach(aid=>b.delete(doc(db,"reservas",aid)));
 await b.commit();
 };
 
