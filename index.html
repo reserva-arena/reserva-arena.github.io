@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260824120916"/>
-<meta name="app-build-perfis" content="admin"/>
+<meta name="app-build" content="20260825072354"/>
+<meta name="app-build-perfis" content="admin,ti,marketing,coordenador,maker,laboratorista"/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -83,7 +83,7 @@ gtag('config', 'G-80RD7HXHBT');
 <script type="module">
 import{initializeApp,getApps}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,onAuthStateChanged,sendPasswordResetEmail,updatePassword,confirmPasswordReset,verifyPasswordResetCode}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import{getFirestore,collection,addDoc,onSnapshot,doc,updateDoc,query,where,orderBy,getDocs,Timestamp,setDoc,getDoc,deleteDoc,writeBatch}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import{getFirestore,collection,addDoc,onSnapshot,doc,updateDoc,query,where,or,orderBy,getDocs,Timestamp,setDoc,getDoc,deleteDoc,writeBatch}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import{getMessaging,getToken,onMessage}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
 
 const firebaseConfig = {
@@ -4719,11 +4719,13 @@ if(isProfOnly){
 // _todas é carregado sob demanda (botão Todos ou ao agendar)
 _todas=[];_todasCarregadas=false;_todasCarregadasChave=null;
 } else {
-// Admin, TI, Marketing, Coord: dois listeners separados —
-// (1) pendentes sem limite de data (poucos docs, precisa estar sempre visível pra não
-//     perder aprovação de algo agendado pra um mês futuro que não está sendo visualizado)
-// (2) reservas do mês em foco no calendário (hoje→fim do mês atual de início; ao navegar
-//     pra outro mês, assinarMesAdmin troca a assinatura pro mês navegado)
+const ehAdmin=perfil==="admin";
+const ehMaker=perfil==="maker";
+const ehLab=perfil==="laboratorista";
+// _todas (mês em foco + pendentes globais): usado por Admin, T.I., Marketing, Coordenador —
+// Maker e Laboratorista têm telas próprias isoladas (só a sala deles) e não navegam pelo
+// calendário geral, então não precisam desses dois listeners.
+if(!ehMaker&&!ehLab){
 _unsubPend=onSnapshot(query(collection(db,"reservas"),where("status","==","pendente")),snap=>{
 const jaCarregado=_todasCarregadas;
 _pendentesGlobais=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario);
@@ -4738,30 +4740,34 @@ mostrarToastNovoAgendamento(`${novos.length} novos agendamentos criados`);
 _todasCarregadas=true;
 mesclarTodasAdmin();re();
 });
-// Filas de aprovação de T.I., Marketing e Tablets/Notebooks (T.E.): sem limite de data —
-// precisam ver TUDO que está pendente ou já resolvido, não só o mês em foco no calendário.
-// São poucos documentos (só quem tem equipamento/mídia envolvido), então o custo é baixo
-// mesmo sendo sempre em tempo real e sem corte de data.
+const hojeD0=new Date();
+assinarMesAdmin(hojeD0.getFullYear(),hojeD0.getMonth());
+}
+// Filas de aprovação de T.I./Marketing/Tablets (dentro do Painel Admin): só o Admin usa
+// essas abas — T.I./Marketing/Coordenador têm suas próprias telas de login que não
+// dependem desses listeners.
+if(ehAdmin){
 _unsubTI=onSnapshot(query(collection(db,"reservas"),where("statusEquip","in",["pendente","aprovado"])),snap=>{
 _tiGlobal=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario&&!r.reservaAutomatica);re();
 });
 _unsubMkt=onSnapshot(query(collection(db,"reservas"),where("statusMarketing","in",["pendente","aprovado"])),snap=>{
 _mktGlobal=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario&&!r.reservaAutomatica);re();
 });
-_unsubTbTablets=onSnapshot(query(collection(db,"reservas"),where("qtdTablets",">",0)),snap=>{
+_unsubTbTablets=onSnapshot(query(collection(db,"reservas"),or(where("qtdTablets",">",0),where("qtdNotebooks",">",0))),snap=>{
 _tbGlobalTablets=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario&&!r.reservaAutomatica&&(r.status==="pendente"||r.status==="confirmado"));mesclarTbGlobal();re();
 });
-_unsubTbNotebooks=onSnapshot(query(collection(db,"reservas"),where("qtdNotebooks",">",0)),snap=>{
-_tbGlobalNotebooks=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario&&!r.reservaAutomatica&&(r.status==="pendente"||r.status==="confirmado"));mesclarTbGlobal();re();
-});
+}
+// Maker e Laboratorista: só o listener da própria área — ninguém mais precisa dele.
+if(ehMaker){
 _unsubMaker=onSnapshot(query(collection(db,"reservas"),where("espaco","in",["Maker 1","Maker 2"])),snap=>{
 _makerGlobal=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario&&!r.reservaAutomatica&&r.status!=="recusado");re();
 });
+}
+if(ehLab){
 _unsubLab=onSnapshot(query(collection(db,"reservas"),where("espaco","in",["Lab. de Ciências Anos Iniciais","Lab. de Ciências Anos Finais"])),snap=>{
 _labGlobal=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario&&!r.reservaAutomatica&&r.status!=="recusado");re();
 });
-const hojeD=new Date();
-assinarMesAdmin(hojeD.getFullYear(),hojeD.getMonth());
+}
 }
 _unsub2=onSnapshot(query(collection(db,"reservas"),where("professorId","==",uid)),snap=>{
 _minhas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>!r.reservaAutomatica).sort((a,b)=>a.data>b.data?1:-1);re();
