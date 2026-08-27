@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260827074015"/>
-<meta name="app-build-perfis" content="admin"/>
+<meta name="app-build" content="20260827095849"/>
+<meta name="app-build-perfis" content="todos"/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -1812,7 +1812,7 @@ $("app").innerHTML=`
      </div>
    </header>
    <div id="main-content" style="max-width:100%;width:100%;margin:0 auto;padding:20px 20px;overflow-x:hidden;box-sizing:border-box">
-     <div class="${isAdmin&&_adminVisu==='admin'?'desktop-zoom':''}" style="max-width:${isAdmin&&_adminVisu==='admin'?'1500':'1200'}px;margin:0 auto;width:100%">${isAdmin&&_adminVisu==="admin"?renderAdminView():isAdmin&&_adminVisu==="ti"?renderTIInline():isAdmin&&_adminVisu==="marketing"?renderMarketingInline():renderProfessorView()}</div>
+     <div class="${isAdmin&&(_adminVisu==='ti'||_adminVisu==='marketing')?'':'desktop-zoom'}" style="max-width:${isAdmin&&(_adminVisu==='ti'||_adminVisu==='marketing')?'1200':'1500'}px;margin:0 auto;width:100%">${isAdmin&&_adminVisu==="admin"?renderAdminView():isAdmin&&_adminVisu==="ti"?renderTIInline():isAdmin&&_adminVisu==="marketing"?renderMarketingInline():renderProfessorView()}</div>
    </div>
    <footer style="margin-top:40px;padding:16px 24px;border-top:1px solid ${c.border};background:${_dark?'#0a1a12':'#0d2b1a'};text-align:center">
      <p style="font-size:10px;color:rgba(255,255,255,.5)">Reserva de Espaços e Equipamentos · Dev: Luciano Galdino · Frontend: HTML · CSS · JS · ☁️ GitHub Pages · Backend: 🔥 Firebase</p>
@@ -1850,7 +1850,7 @@ window.scrollTo({top:0,behavior:"smooth"});re();
 // ════════════════════════════════════════════════════════════════════════════
 // PROFESSOR VIEW
 // ════════════════════════════════════════════════════════════════════════════
-let _P={modoProf:"escolha_inicial",modoCard:"calendario",modoVisu:"semana",filtroGrade:"todos",filtroEspaco:"",semIni:"",diaSel:null,mesCal:null,mostrarHistorico:false,filtroPendente:false,selecionados:new Set(),modoSelecao:false,espacoEscolhido:null,agendaDiasVisiveis:5,diasExtras:0};
+let _P={modoProf:"escolha_inicial",modoCard:"calendario",modoVisu:"semana",filtroGrade:"todos",filtroEspaco:"",semIni:"",diaSel:null,diaMobIdx:null,mesCal:null,mostrarHistorico:false,filtroPendente:false,selecionados:new Set(),modoSelecao:false,espacoEscolhido:null,agendaDiasVisiveis:5,diasExtras:0};
 window._P=_P;
 
 function renderProfessorView(){
@@ -1966,18 +1966,56 @@ while(diasLetivos.length<5){const dow=new Date(dCursor+"T12:00:00").getDay();if(
 while(diasLetivos.length<5)diasLetivos.push(addDias(diasLetivos[diasLetivos.length-1],1));
 const nomes=diasLetivos.map(d=>{const dow=new Date(d+"T12:00:00").getDay();return["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"][dow]+"."});
 const isMobSemana=window.innerWidth<768;
-html+=`<div style="display:grid;grid-template-columns:repeat(5,${isMobSemana?"minmax(140px,1fr)":"minmax(0,1fr)"});gap:4px;padding:8px;overflow-x:${isMobSemana?"auto":"visible"}">`;
+
+if(isMobSemana){
+// Mobile: um dia por vez, com abas em cima e arraste pro lado pra trocar de dia.
+if(_P.diaMobIdx==null||_P.diaMobIdx<0||_P.diaMobIdx>4)_P.diaMobIdx=Math.max(0,diasLetivos.indexOf(h));
+const diaAtual=diasLetivos[_P.diaMobIdx];
+const rsD=fonte.filter(r=>r.data===diaAtual).sort((a,b)=>a.horario>b.horario?1:-1);
+html+=`<div style="display:flex;gap:4px;padding:8px 8px 0;overflow-x:auto">`;
+diasLetivos.forEach((d,i)=>{
+const isSel=i===_P.diaMobIdx;const[,,dia]=d.split("-");
+html+=`<button onclick="pDiaMobIr(${i})" style="flex:1;min-width:0;text-align:center;padding:6px 4px;border-radius:8px;border:1.5px solid ${isSel?c.green:c.borderLight};background:${isSel?c.green:c.bg};cursor:pointer;font-family:inherit">
+         <p style="font-size:10px;color:${isSel?"rgba(255,255,255,.85)":c.textMuted};margin:0;text-transform:uppercase">${nomes[i]}</p>
+         <p style="font-size:13px;font-weight:800;color:${isSel?"#fff":c.text};margin:0">${dia}</p>
+       </button>`;
+});
+html+=`</div>`;
+html+=`<p style="text-align:center;font-size:11px;color:${c.textMuted};margin:6px 0 8px">← arraste para o lado para trocar de dia →</p>`;
+html+=`<div id="dia-mob-conteudo" ontouchstart="pSwipeInicio(event)" ontouchend="pSwipeFim(event)" style="background:${c.surface};border-radius:12px;padding:10px 8px;margin:0 8px 8px">`;
+if(!rsD.length){
+html+=`<div style="text-align:center;padding:32px 0;color:${c.textMuted}"><p style="font-size:28px">🎉</p><p style="font-size:13px;margin-top:6px">Nenhum agendamento nesse dia.</p></div>`;
+} else {
+rsD.forEach(r=>{
+const isMeu=ehMeu(r),isPend=r.status==="pendente";
+const range=r.horarioFim&&r.horarioFim!==r.horario?`→${r.horarioFim}`:"";
+html+=`<div style="background:${isMeu?"rgba(187,235,210,.5)":c.bg};border-radius:8px;padding:10px 12px;border:1px solid ${isMeu?"#40b07a":c.border};border-left:4px solid ${isMeu?"#1a6b47":"#cbd5e1"};margin-bottom:8px">
+           <div style="display:flex;align-items:baseline;gap:6px">
+             <p style="font-size:16px;font-weight:800;font-family:'DM Mono',monospace;color:${isMeu?c.green:"#64748b"}">${r.horario}${range}</p>
+             ${isMeu&&isPend?`<span style="font-size:12px;color:${c.amber}">⏳</span>`:""}
+           </div>
+           <p style="font-size:14px;color:${c.navy};font-weight:700;margin-top:3px">${espacoCurto(r.espaco)}</p>
+           <p style="font-size:13px;color:${c.textMuted}">${(r.turmaInicio||r.turma)}·${nomeProf(r.professor)}</p>
+           ${r.laboratorista?`<p style="font-size:12px;font-weight:700;color:#0f4c2b">🔬 ${r.laboratorista==="Sim"?"c/ lab.":"s/ lab."}</p>`:""}
+           ${equipBadgesCompacto(r)?`<p style="font-size:12px;font-weight:700;color:#0369a1">${equipBadgesCompacto(r)}</p>`:""}
+         </div>`;
+});
+}
+if(diaAtual>=h&&isDiaLetivo(diaAtual))html+=`<button onclick="pClicarDia('${diaAtual}')" style="width:100%;padding:10px;border-radius:8px;border:1.5px dashed ${c.border};background:transparent;color:${c.textMid};font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;margin-top:4px">+ Agendar nesse dia</button>`;
+html+=`</div>`;
+} else {
+// Desktop: grade com os 5 dias lado a lado (ganha fonte maior via zoom automaticamente)
+html+=`<div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;padding:8px">`;
 diasLetivos.forEach((d,i)=>{
 const[,,dia]=d.split("-");const isH=d===h;
 const rsD=fonte.filter(r=>r.data===d).sort((a,b)=>a.horario>b.horario?1:-1);
 const naoL=!isDiaLetivo(d)&&d>=h&&new Date(d).getDay()!==0&&new Date(d).getDay()!==6;
-const isMob=window.innerWidth<768,temRes=rsD.length>0;
-html+=`<div style="background:${isH?"rgba(26,107,71,.06)":c.bg};border:1px solid ${isH?c.blueMid:c.borderLight};border-radius:10px;padding:${isMob&&!temRes?"3px 2px":"10px 8px"};min-height:${isMob&&!temRes?"auto":"80px"};cursor:pointer" onclick="pClicarDia('${d}')">
-         <div style="text-align:center;margin-bottom:${isMob&&!temRes?0:6}px">
+html+=`<div style="background:${isH?"rgba(26,107,71,.06)":c.bg};border:1px solid ${isH?c.blueMid:c.borderLight};border-radius:10px;padding:10px 8px;min-height:80px;cursor:pointer" onclick="pClicarDia('${d}')">
+         <div style="text-align:center;margin-bottom:6px">
            <p style="font-size:10px;font-weight:700;color:${naoL?"#ef4444":c.textMid};text-transform:uppercase">${nomes[i]}</p>
-           <p style="font-size:${isMob&&!temRes?11:18}px;font-weight:900;line-height:1;color:${isH?c.blueMid:c.text}">${dia}</p>
+           <p style="font-size:18px;font-weight:900;line-height:1;color:${isH?c.blueMid:c.text}">${dia}</p>
          </div>`;
-if(!rsD.length)html+=isMob?"":`<p style="font-size:9px;color:${c.textMid};opacity:.6;text-align:center;margin-top:8px">livre</p>`;
+if(!rsD.length)html+=`<p style="font-size:9px;color:${c.textMid};opacity:.6;text-align:center;margin-top:8px">livre</p>`;
 else rsD.forEach(r=>{
 const isMeu=ehMeu(r),isPend=r.status==="pendente";
 const range=r.horarioFim&&r.horarioFim!==r.horario?`→${r.horarioFim}`:"";
@@ -1995,6 +2033,7 @@ html+=`<div style="background:${isMeu?"rgba(187,235,210,.65)":c.surface};border-
 html+=`</div>`;
 });
 html+=`</div>`;
+}
 }
 
 if(_P.modoVisu==="mes"){
@@ -2215,6 +2254,17 @@ _MA={step:1,espaco:"",data:data,blocos:[bVazio()],resumo:false,salvando:false,su
 re();
 } else {
 _P.diaSel=_P.diaSel===data?null:data;re();
+}
+};
+window.pDiaMobIr=i=>{_P.diaMobIdx=i;re();};
+let _swipeX=0,_swipeY=0;
+window.pSwipeInicio=e=>{const t=e.changedTouches[0];_swipeX=t.clientX;_swipeY=t.clientY;};
+window.pSwipeFim=e=>{
+const t=e.changedTouches[0];
+const dx=t.clientX-_swipeX,dy=t.clientY-_swipeY;
+if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.5){
+const novoIdx=(_P.diaMobIdx||0)+(dx<0?1:-1);
+if(novoIdx>=0&&novoIdx<=4){_P.diaMobIdx=novoIdx;re();}
 }
 };
 // Função de limpeza — use no console: limparHorariosTravados("Lab. de Matemática","2026-06-17")
