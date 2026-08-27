@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260827095849"/>
-<meta name="app-build-perfis" content="todos"/>
+<meta name="app-build" content="20260827123452"/>
+<meta name="app-build-perfis" content="admin"/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -3802,9 +3802,39 @@ fecharEdicao();
 // ════════════════════════════════════════════════════════════════════════════
 // ADMIN VIEW
 // ════════════════════════════════════════════════════════════════════════════
-let _A={fSegmento:"",modoVisu:"agenda",aba:"reservas",subAba:"hoje",fEspaco:"",fProf:"",fStatus:"",fTurma:"",mesCal:null,diaSel:null,historico:false,feedExpandido:false,rankModo:"realizado"};
+let _A={fSegmento:"",modoVisu:"agenda",aba:"reservas",subAba:"hoje",fEspaco:"",fProf:"",fStatus:"",fTurma:"",mesCal:null,diaSel:null,historico:false,feedExpandido:false,rankModo:"realizado",rankPeriodo:"mes"};
 window._A=_A;
 window.setRankModo=v=>{_A.rankModo=v;re();};
+// Ranking Semana/Mês usa _todas (já carregado, sem custo extra). Ranking Ano precisa de uma
+// busca própria, pontual (não em tempo real), só quando alguém realmente escolhe "Ano" —
+// evita carregar um ano inteiro de reservas em toda sessão de admin por padrão.
+let _rankAnoData=[],_rankAnoCarregado=false,_rankAnoCarregando=false;
+window.carregarRankAno=async function carregarRankAno(){
+if(_rankAnoCarregado||_rankAnoCarregando)return;
+_rankAnoCarregando=true;re();
+try{
+const ano=new Date().getFullYear();
+const snap=await getDocs(query(collection(db,"reservas"),where("data",">=",`${ano}-01-01`),where("data","<=",`${ano}-12-31`)));
+_rankAnoData=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario);
+_rankAnoCarregado=true;
+}catch(e){console.warn("carregarRankAno:",e);}
+_rankAnoCarregando=false;re();
+};
+window.setRankPeriodo=v=>{_A.rankPeriodo=v;if(v==="ano")carregarRankAno();re();};
+// Calcula {ini,fim,fonte} de acordo com o período escolhido — usado pelos dois widgets de ranking.
+function rankIntervalo(){
+const hojeD=new Date();const anoAtual=hojeD.getFullYear();
+if(_A.rankPeriodo==="semana"){
+const ini=getSegunda(fmtHoje());
+return{ini,fim:addDias(ini,6),fonte:_todas};
+}
+if(_A.rankPeriodo==="ano"){
+return{ini:`${anoAtual}-01-01`,fim:`${anoAtual}-12-31`,fonte:_rankAnoCarregado?_rankAnoData:[]};
+}
+const mesIni=`${anoAtual}-${String(hojeD.getMonth()+1).padStart(2,"0")}-01`;
+const mesFim=`${anoAtual}-${String(hojeD.getMonth()+1).padStart(2,"0")}-31`;
+return{ini:mesIni,fim:mesFim,fonte:_todas};
+}
 
 function renderAdminView(){
 const c=C(),h=fmtHoje();
@@ -4104,21 +4134,23 @@ html+=`<div style="position:sticky;top:16px">
      </div>`;
    })()}
 
+   <div style="display:flex;gap:6px;margin-bottom:6px">
+     ${[{id:"semana",l:"Semana"},{id:"mes",l:"Mês"},{id:"ano",l:"Ano"}].map(p=>`<button onclick="setRankPeriodo('${p.id}')" style="flex:1;padding:6px;border-radius:8px;border:1px solid ${_A.rankPeriodo===p.id?c.navy:c.border};background:${_A.rankPeriodo===p.id?c.navy:c.surface};color:${_A.rankPeriodo===p.id?'#fff':c.textMuted};font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">${p.l}</button>`).join("")}
+   </div>
    <div style="display:flex;gap:6px;margin-bottom:4px">
      <button onclick="setRankModo('realizado')" style="flex:1;padding:7px;border-radius:8px;border:1px solid ${_A.rankModo!=="total"?"#1a6b47":c.border};background:${_A.rankModo!=="total"?"#1a6b47":c.surface};color:${_A.rankModo!=="total"?"#fff":c.textMuted};font-size:10.5px;font-weight:700;cursor:pointer">✅ Já realizado</button>
-     <button onclick="setRankModo('total')" style="flex:1;padding:7px;border-radius:8px;border:1px solid ${_A.rankModo==="total"?"#1a6b47":c.border};background:${_A.rankModo==="total"?"#1a6b47":c.surface};color:${_A.rankModo==="total"?"#fff":c.textMuted};font-size:10.5px;font-weight:700;cursor:pointer">📅 Agendado (mês todo)</button>
+     <button onclick="setRankModo('total')" style="flex:1;padding:7px;border-radius:8px;border:1px solid ${_A.rankModo==="total"?"#1a6b47":c.border};background:${_A.rankModo==="total"?"#1a6b47":c.surface};color:${_A.rankModo==="total"?"#fff":c.textMuted};font-size:10.5px;font-weight:700;cursor:pointer">📅 Agendado (${_A.rankPeriodo==="semana"?"semana":_A.rankPeriodo==="ano"?"ano":"mês"} todo)</button>
    </div>
-   <p style="font-size:10px;color:${c.textMuted};margin:0 0 12px;line-height:1.4">${_A.rankModo==="total"?"Inclui agendamentos futuros já confirmados para este mês.":"Somente o que já aconteceu até hoje."}</p>
+   <p style="font-size:10px;color:${c.textMuted};margin:0 0 12px;line-height:1.4">${_A.rankModo==="total"?`Inclui agendamentos futuros já confirmados para ${_A.rankPeriodo==="semana"?"esta semana":_A.rankPeriodo==="ano"?"este ano":"este mês"}.`:"Somente o que já aconteceu até hoje."}</p>
 
    <div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:12px 14px">
-     <p style="font-size:11px;font-weight:800;color:${c.textMuted};text-transform:uppercase;margin-bottom:10px">🏆 Espaços mais ${_A.rankModo==="total"?"agendados":"usados"} — este mês</p>
+     <p style="font-size:11px;font-weight:800;color:${c.textMuted};text-transform:uppercase;margin-bottom:10px">🏆 Espaços mais ${_A.rankModo==="total"?"agendados":"usados"} — ${_A.rankPeriodo==="semana"?"esta semana":_A.rankPeriodo==="ano"?"este ano":"este mês"}</p>
      ${(()=>{
+       if(_A.rankPeriodo==="ano"&&_rankAnoCarregando)return`<p style="color:${c.textMuted};font-size:11px">⏳ Carregando dados do ano...</p>`;
+       const{ini,fim,fonte}=rankIntervalo();
        const contagem={};
-       const agora=new Date();
        const hoje=fmtHoje();
-       const mesIni=`${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,'0')}-01`;
-       const mesFim=`${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,'0')}-31`;
-       _todas.filter(r=>!r.reservaAutomatica&&r.status!=="recusado"&&r.data>=mesIni&&r.data<=mesFim&&(_A.rankModo==="total"||r.data<=hoje)).forEach(r=>{
+       fonte.filter(r=>!r.reservaAutomatica&&r.status!=="recusado"&&r.data>=ini&&r.data<=fim&&(_A.rankModo==="total"||r.data<=hoje)).forEach(r=>{
          if(r.espaco)contagem[r.espaco]=(contagem[r.espaco]||0)+1;
        });
        const ranking=Object.entries(contagem).sort((a,b)=>b[1]-a[1]).slice(0,5);
@@ -4139,9 +4171,11 @@ html+=`<div style="position:sticky;top:16px">
    </div>
 
    <div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:12px 14px;margin-top:12px">
-     <p style="font-size:11px;font-weight:800;color:${c.textMuted};text-transform:uppercase;margin-bottom:10px">👨‍🏫 Professores que mais ${_A.rankModo==="total"?"agendam":"usaram"} — este mês</p>
+     <p style="font-size:11px;font-weight:800;color:${c.textMuted};text-transform:uppercase;margin-bottom:10px">👨‍🏫 Professores que mais ${_A.rankModo==="total"?"agendam":"usaram"} — ${_A.rankPeriodo==="semana"?"esta semana":_A.rankPeriodo==="ano"?"este ano":"este mês"}</p>
      ${(()=>{
-       const ranking=gerarRankingProfessores(_todas,_A.rankModo);
+       if(_A.rankPeriodo==="ano"&&_rankAnoCarregando)return`<p style="color:${c.textMuted};font-size:11px">⏳ Carregando dados do ano...</p>`;
+       const{ini,fim,fonte}=rankIntervalo();
+       const ranking=gerarRankingProfessores(fonte,_A.rankModo,ini,fim);
        if(ranking.length===0)return"<p style=\"color:#999;font-size:11px\">Sem dados</p>";
        const max=ranking[0][1]||1;
        const cores=["#ec4899","#f59e0b","#06b6d4","#8b5cf6","#14b8a6","#f97316"];
@@ -4169,7 +4203,7 @@ return html;
 }
 
 
-function gerarRankingProfessores(todas,modo){const c={};const agora=new Date();const hoje=fmtHoje();const mesIni=`${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,'0')}-01`;const mesFim=`${agora.getFullYear()}-${String(agora.getMonth()+1).padStart(2,'0')}-31`;todas.filter(r=>!r.reservaAutomatica&&r.status!=="recusado"&&r.data>=mesIni&&r.data<=mesFim&&(modo==="total"||r.data<=hoje)).forEach(r=>{if(r.professor)c[r.professor]=(c[r.professor]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,6);}
+function gerarRankingProfessores(todas,modo,ini,fim){const c={};const hoje=fmtHoje();todas.filter(r=>!r.reservaAutomatica&&r.status!=="recusado"&&r.data>=ini&&r.data<=fim&&(modo==="total"||r.data<=hoje)).forEach(r=>{if(r.professor)c[r.professor]=(c[r.professor]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,6);}
 
 function admRow(r,showDate=false,mostrarBotoes=true){
 const c=C(),h=fmtHoje();
