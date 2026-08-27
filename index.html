@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260825072354"/>
-<meta name="app-build-perfis" content="admin,ti,marketing,coordenador,maker,laboratorista"/>
+<meta name="app-build" content="20260827074015"/>
+<meta name="app-build-perfis" content="admin"/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -4041,7 +4041,7 @@ html+=`<div style="position:sticky;top:16px">
      return `<div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:12px 14px;margin-bottom:10px">
        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
          <p style="font-size:11px;font-weight:700;color:${c.textMid}">📊 Uso do banco hoje</p>
-         <button onclick="_metricaUsoCarregada=false;carregarMetricaUso()" title="Atualizar" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:12px;padding:2px">🔄</button>
+         <button onclick="atualizarMetricaUso()" title="Atualizar" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:12px;padding:2px">🔄</button>
        </div>
        <div style="display:flex;align-items:baseline;gap:4px;margin-bottom:5px">
          <span style="font-size:18px;font-weight:900;color:${cor}">${leituras.toLocaleString('pt-BR')}</span>
@@ -4648,6 +4648,8 @@ const snap=await getDoc(doc(db,"metricas_uso","hoje"));
 if(snap.exists()){_metricaUso=snap.data();re();}
 }catch(e){console.warn("carregarMetricaUso:",e);}
 }
+window.carregarMetricaUso=carregarMetricaUso;
+window.atualizarMetricaUso=()=>{_metricaUsoCarregada=false;carregarMetricaUso();};
 window.carregarTodas=function carregarTodas(espaco,diasExtras){
 const chave=(espaco||"broad")+"|"+(diasExtras||0);
 if(_todasCarregadas&&_todasCarregadasChave===chave)return;
