@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260828071557"/>
-<meta name="app-build-perfis" content="admin,maker,laboratorista"/>
+<meta name="app-build" content="20260828074228"/>
+<meta name="app-build-perfis" content="todos"/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -2712,19 +2712,24 @@ return false;
 
 // Horários disponíveis para fim (a partir do início)
 // ✅ Mostrar TODOS os horários de aula, pular os intervalos
+// O primeiro candidato de fim (= reservar só o período do horário de início, já confirmado
+// livre) é SEMPRE válido — mesmo que o horário seguinte apareça "ocupado" como INÍCIO de
+// outra reserva, isso não conflita: a reserva atual terminaria exatamente ali, sem entrar
+// nesse período. A checagem de ocupação só importa pra decidir se dá pra ESTENDER além do
+// primeiro período — por isso ela olha pro horário ANTERIOR ao candidato, não pro candidato.
 let dispFim=[];
 if(b.horario){
 const iIni=HORARIOS.indexOf(b.horario);
 let parou=false;
 for(let idx=iIni+1;idx<HORARIOS.length;idx++){
 const horAtual=HORARIOS[idx];
-if(ocpFire.includes(horAtual)||isBloqueado(horAtual)){parou=true;break;}
+if(idx>iIni+1&&(ocpFire.includes(HORARIOS[idx-1])||isBloqueado(HORARIOS[idx-1]))){parou=true;break;}
 dispFim.push(horAtual);
 }
 // 17:40 é o horário real de término do último período do dia (que começa às 17:00) —
 // só não aparece na lista de "início" porque não é o começo de uma aula nova.
 if(!parou)dispFim.push("17:40");
-if(dispFim.length===0)dispFim=[b.horario]; // fallback
+if(dispFim.length===0)dispFim=[b.horario]; // fallback (não deveria mais acontecer, mas mantido por segurança)
 }
 
 // Range de horários selecionado
