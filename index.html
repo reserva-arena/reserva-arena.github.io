@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260828074228"/>
+<meta name="app-build" content="20260828085530"/>
 <meta name="app-build-perfis" content="todos"/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -57,13 +57,9 @@ h1{font-size:15px!important}
    melhor telas largas de computador — zoom não afeta elementos position:fixed (modais
    continuam no tamanho normal), então é seguro mesmo com os modais existentes. */
 @media(min-width:900px){.desktop-zoom{zoom:1.15}}
-@keyframes flutuarLento{
-0%{top:75%;left:25%}
-20%{top:15%;left:65%}
-40%{top:50%;left:78%}
-60%{top:80%;left:50%}
-80%{top:20%;left:22%}
-100%{top:75%;left:25%}
+@keyframes pulseAviso{
+0%,100%{transform:translate(-50%,-50%) scale(1)}
+50%{transform:translate(-50%,-50%) scale(1.03)}
 }
 </style>
 <!-- Google Analytics -->
@@ -4951,10 +4947,15 @@ mostrarAvisoNovaVersao();
 }
 function mostrarAvisoNovaVersao(){
 if(document.getElementById("aviso-nova-versao"))return;
+const overlay=document.createElement("div");
+overlay.id="aviso-nova-versao-overlay";
+overlay.style.cssText="position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.35)";
+overlay.onclick=()=>{document.getElementById('aviso-nova-versao')?.remove();overlay.remove();};
+document.body.appendChild(overlay);
 const div=document.createElement("div");
 div.id="aviso-nova-versao";
-div.style.cssText="position:fixed;z-index:9999;background:#0f4c2b;color:#fff;padding:10px 14px;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.3);display:flex;align-items:center;gap:10px;font-family:'DM Sans',system-ui,sans-serif;font-size:13px;font-weight:600;transform:translate(-50%,-50%);animation:flutuarLento 45s ease-in-out infinite;max-width:min(320px,90vw);flex-wrap:wrap";
-div.innerHTML=`<span>🔄 Nova versão disponível</span><button onclick="location.reload()" style="background:#fff;color:#0f4c2b;border:none;border-radius:8px;padding:6px 12px;font-weight:800;cursor:pointer;font-size:12.5px;font-family:inherit">Atualizar</button><button onclick="document.getElementById('aviso-nova-versao').remove()" style="background:none;border:none;color:rgba(255,255,255,.7);cursor:pointer;font-size:16px;padding:0 2px;line-height:1">✕</button>`;
+div.style.cssText="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;background:#0f4c2b;color:#fff;padding:20px 22px;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.4);display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;font-family:'DM Sans',system-ui,sans-serif;max-width:min(340px,90vw);animation:pulseAviso 2s ease-in-out infinite";
+div.innerHTML=`<span style="font-size:16px;font-weight:800">🔄 Nova versão disponível</span><span style="font-size:12.5px;color:rgba(255,255,255,.75);line-height:1.4">Atualize pra garantir que está com as correções e melhorias mais recentes.</span><div style="display:flex;gap:8px;margin-top:2px"><button onclick="location.reload()" style="background:#fff;color:#0f4c2b;border:none;border-radius:8px;padding:9px 18px;font-weight:800;cursor:pointer;font-size:13.5px;font-family:inherit">Atualizar agora</button><button onclick="document.getElementById('aviso-nova-versao').remove();document.getElementById('aviso-nova-versao-overlay')?.remove()" style="background:none;border:1.5px solid rgba(255,255,255,.4);color:rgba(255,255,255,.85);border-radius:8px;padding:9px 14px;cursor:pointer;font-size:13px;font-family:inherit">Depois</button></div>`;
 document.body.appendChild(div);
 }
 setInterval(checarNovaVersao,30*60*1000);
