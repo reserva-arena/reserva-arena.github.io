@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260828085530"/>
-<meta name="app-build-perfis" content="todos"/>
+<meta name="app-build" content="20260828090225"/>
+<meta name="app-build-perfis" content="admin"/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -501,6 +501,7 @@ const espacoCurto=nome=>NOME_CURTO[nome]||(nome?nome.split(" ")[0]:"");
 // Badges de equipamento solicitado (tablets, computadores, microfone, caixa, projetor)
 function equipBadgesHTML(r){
 const itens=[];
+if((r.quantidade||0)>0)itens.push(`<span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #bae6fd;white-space:nowrap">🔢 Qtd: ${r.quantidade}</span>`);
 if((r.qtdTablets||0)>0)itens.push(`<span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #bae6fd;white-space:nowrap">📱 ${r.qtdTablets} tablet(s)</span>`);
 if((r.qtdNotebooks||0)>0)itens.push(`<span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #bae6fd;white-space:nowrap">💻 ${r.qtdNotebooks} computador(es)</span>`);
 if(((r.microfones||0)+(r.bibMic||0))>0)itens.push(`<span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #bae6fd;white-space:nowrap">🎤 ${(r.microfones||0)+(r.bibMic||0)} microfone(s)</span>`);
@@ -512,6 +513,7 @@ return `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px">${itens.
 // Versão compacta (só ícone+número), pra caber nos cards pequenos da grade Semana
 function equipBadgesCompacto(r){
 const p=[];
+if((r.quantidade||0)>0)p.push(`🔢${r.quantidade}`);
 if((r.qtdTablets||0)>0)p.push(`📱${r.qtdTablets}`);
 if((r.qtdNotebooks||0)>0)p.push(`💻${r.qtdNotebooks}`);
 if(((r.microfones||0)+(r.bibMic||0))>0)p.push(`🎤${(r.microfones||0)+(r.bibMic||0)}`);
@@ -522,6 +524,7 @@ return p.join(" ");
 // Resumo curto pra texto de notificação
 function equipResumoTexto(r){
 const p=[];
+if((r.quantidade||0)>0)p.push(`${r.quantidade} unidade(s)`);
 if((r.qtdTablets||0)>0)p.push(`${r.qtdTablets} tablet(s)`);
 if((r.qtdNotebooks||0)>0)p.push(`${r.qtdNotebooks} computador(es)`);
 if(((r.microfones||0)+(r.bibMic||0))>0)p.push(`${(r.microfones||0)+(r.bibMic||0)} microfone(s)`);
