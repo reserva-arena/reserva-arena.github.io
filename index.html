@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260828090225"/>
-<meta name="app-build-perfis" content="admin"/>
+<meta name="app-build" content="20260831094158"/>
+<meta name="app-build-perfis" content="coordenador"/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -2182,7 +2182,6 @@ return`<div class="row-hover" ${selClick?`onclick="toggleSelProf('${r.id}')"`:''
  </div>`;
 }
 
-function bindProf(){
 window._calNav=(cid,dir)=>{
 if(cid==="pmes"||cid==="pagin"||cid==="ma"){
 let nm=(cid==="pmes"?_P.mesCal.m:_MA.calM)+dir,na=(cid==="pmes"?_P.mesCal.a:_MA.calA);
@@ -2191,6 +2190,7 @@ if(cid==="pmes")_P.mesCal={a:na,m:nm};else{_MA.calM=nm;_MA.calA=na;}
 re();
 }
 };
+function bindProf(){
 }
 window.pConfirmarEscolhaVer=()=>{
 _P.filtroEspaco=_P.filtroEspacoEscolha||"";
