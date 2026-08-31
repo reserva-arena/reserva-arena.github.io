@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260831094158"/>
-<meta name="app-build-perfis" content="coordenador"/>
+<meta name="app-build" content="20260831123707"/>
+<meta name="app-build-perfis" content="admin,maker,laboratorista"/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -715,8 +715,8 @@ if(!_usuario){renderLogin();return;}
 if(_usuario.perfil==="sem_acesso"||_usuario.ativo===false){renderSemAcesso();return;}
 if(_usuario.perfil==="fotografo"||_usuario.perfil==="marketing"){renderMarketing();return;}
 if(_usuario.perfil==="ti"||_usuario.perfil==="coord_ti"){renderTI();return;}
-if(_usuario.perfil==="maker"){renderMaker();return;}
-if(_usuario.perfil==="laboratorista"){renderLaboratorista();return;}
+if(_usuario.perfil==="maker"){if(_P.modoProf==="agendar")renderMakerAgendar();else renderMaker();return;}
+if(_usuario.perfil==="laboratorista"){if(_P.modoProf==="agendar")renderLaboratoristaAgendar();else renderLaboratorista();return;}
 if(isCoordenador(_usuario.perfil)){if(_P.modoProf==="agendar")renderCoordAgendar();else renderCoord();return;}
 renderApp();
 }
@@ -1141,18 +1141,40 @@ Object.entries(pd).forEach(([data,rs])=>{const[a2,m2,d2]=data.split("-");corpo+=
 }
 } else {
 if(!todosOrdenados.length)corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">🔨</p><p style="margin-top:12px">Nenhum agendamento.</p></div>`;
-else corpo+=todosOrdenados.map(makerCard).join("");
+else{
+const pdTodos={};todosOrdenados.forEach(r=>{if(!pdTodos[r.data])pdTodos[r.data]=[];pdTodos[r.data].push(r);});
+Object.entries(pdTodos).forEach(([data,rs])=>{const[a2,m2,d2]=data.split("-");const isHoje=data===h;corpo+=`<div style="margin-bottom:16px"><p style="font-size:12px;font-weight:800;color:${isHoje?"#7c3aed":c.textMuted};text-transform:uppercase;margin-bottom:8px">${isHoje?"📌 Hoje · ":""}${d2}/${m2}/${a2}</p>${rs.map(makerCard).join("")}</div>`;});
+}
 }
 $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="no">
    <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#4c1d95,#7c3aed)"};padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100">
      <div style="display:flex;align-items:center;gap:8px">${logoHTML(36)}<p style="font-size:13px;font-weight:800;color:#fff">🔨 Maker</p></div>
-     <div style="display:flex;align-items:center;gap:6px">${avatarHTML(_usuario?.nome,28,"purple")}<button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button><button onclick="doSignOut()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">Sair</button></div>
+     <div style="display:flex;align-items:center;gap:6px"><button onclick="pSetModoProf('agendar')" style="background:#fff;color:#7c3aed;border:none;border-radius:20px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:800;font-family:inherit">+ Agendar</button>${avatarHTML(_usuario?.nome,28,"purple")}<button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button><button onclick="doSignOut()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">Sair</button></div>
    </header>
    <div class="desktop-zoom" style="max-width:1000px;margin:0 auto;padding:16px 14px">
      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">${btnAba("hoje",`📅 Hoje · ${hojeList.length}`)}${btnAba("proximos","🔜 Próximos dias")}${btnAba("todos","📅 Todos agendamentos")}</div>
      ${corpo}
    </div>
    ${modalEdicaoHTML()}
+ </div>`;
+}
+
+// Casca simples reaproveitando o fluxo de "Agendar" do professor (renderProfessorView),
+// igual o Coordenador já faz — sem duplicar nenhuma lógica de agendamento. O passo 1
+// (escolher espaço) já vem restrito só às salas do Maker, feito lá em cima.
+function renderMakerAgendar(){
+const c=C();
+$("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="no">
+   <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#4c1d95,#7c3aed)"};padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100">
+     <div style="display:flex;align-items:center;gap:10px">
+       <button onclick="_P.modoProf='escolha_inicial';re()" title="Voltar" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:6px 12px;cursor:pointer;font-size:12px;font-weight:700;color:#fff;font-family:inherit">← Voltar</button>
+       ${logoHTML(30)}<p style="font-size:13px;font-weight:800;color:#fff">🔨 Maker</p>
+     </div>
+     <div style="display:flex;align-items:center;gap:6px">${avatarHTML(_usuario?.nome,28,"purple")}<button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button><button onclick="doSignOut()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">Sair</button></div>
+   </header>
+   <div class="desktop-zoom" style="max-width:1200px;margin:0 auto;padding:16px 14px">
+     ${renderProfessorView()}
+   </div>
  </div>`;
 }
 
@@ -1192,18 +1214,39 @@ Object.entries(pd).forEach(([data,rs])=>{const[a2,m2,d2]=data.split("-");corpo+=
 }
 } else {
 if(!todosOrdenados.length)corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">🔬</p><p style="margin-top:12px">Nenhum agendamento.</p></div>`;
-else corpo+=todosOrdenados.map(labCard).join("");
+else{
+const pdTodos={};todosOrdenados.forEach(r=>{if(!pdTodos[r.data])pdTodos[r.data]=[];pdTodos[r.data].push(r);});
+Object.entries(pdTodos).forEach(([data,rs])=>{const[a2,m2,d2]=data.split("-");const isHoje=data===h;corpo+=`<div style="margin-bottom:16px"><p style="font-size:12px;font-weight:800;color:${isHoje?"#059669":c.textMuted};text-transform:uppercase;margin-bottom:8px">${isHoje?"📌 Hoje · ":""}${d2}/${m2}/${a2}</p>${rs.map(labCard).join("")}</div>`;});
+}
 }
 $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="no">
    <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#065f46,#059669)"};padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100">
      <div style="display:flex;align-items:center;gap:8px">${logoHTML(36)}<p style="font-size:13px;font-weight:800;color:#fff">🔬 Laboratorista</p></div>
-     <div style="display:flex;align-items:center;gap:6px">${avatarHTML(_usuario?.nome,28,"blue")}<button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button><button onclick="doSignOut()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">Sair</button></div>
+     <div style="display:flex;align-items:center;gap:6px"><button onclick="pSetModoProf('agendar')" style="background:#fff;color:#059669;border:none;border-radius:20px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:800;font-family:inherit">+ Agendar</button>${avatarHTML(_usuario?.nome,28,"blue")}<button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button><button onclick="doSignOut()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">Sair</button></div>
    </header>
    <div class="desktop-zoom" style="max-width:1000px;margin:0 auto;padding:16px 14px">
      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">${btnAba("hoje",`📅 Hoje · ${hojeList.length}`)}${btnAba("proximos","🔜 Próximos dias")}${btnAba("todos","📅 Todos agendamentos")}</div>
      ${corpo}
    </div>
    ${modalEdicaoHTML()}
+ </div>`;
+}
+
+// Casca simples reaproveitando o fluxo de "Agendar" do professor (renderProfessorView),
+// igual o Coordenador e o Maker já fazem. Passo 1 já vem restrito só aos Labs, feito lá em cima.
+function renderLaboratoristaAgendar(){
+const c=C();
+$("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="no">
+   <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#065f46,#059669)"};padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100">
+     <div style="display:flex;align-items:center;gap:10px">
+       <button onclick="_P.modoProf='escolha_inicial';re()" title="Voltar" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:6px 12px;cursor:pointer;font-size:12px;font-weight:700;color:#fff;font-family:inherit">← Voltar</button>
+       ${logoHTML(30)}<p style="font-size:13px;font-weight:800;color:#fff">🔬 Laboratorista</p>
+     </div>
+     <div style="display:flex;align-items:center;gap:6px">${avatarHTML(_usuario?.nome,28,"blue")}<button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button><button onclick="doSignOut()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">Sair</button></div>
+   </header>
+   <div class="desktop-zoom" style="max-width:1200px;margin:0 auto;padding:16px 14px">
+     ${renderProfessorView()}
+   </div>
  </div>`;
 }
 
@@ -2609,6 +2652,8 @@ if(m.erro)html+=alertHTML("error",m.erro);
 
 // PASSO 1 — Seleção de espaço
 if(m.step===1){
+const gruposRestritosAgendar={maker:["Maker 1","Maker 2"],laboratorista:["Lab. de Ciências Anos Iniciais","Lab. de Ciências Anos Finais"]};
+const salasPermitidasAgendar=gruposRestritosAgendar[_usuario?.perfil]||null;
 const grupos=[
 {tipo:"espaco",   label:"🏛️ Espaços"},
 {tipo:"laboratorio",label:"🔬 Laboratórios"},
@@ -2617,7 +2662,7 @@ const grupos=[
 {tipo:"marketing",label:"📸 Equipe de Marketing"},
 ];
 grupos.forEach(({tipo,label})=>{
-const lista=ESPACOS.filter(e=>e.tipo===tipo);
+const lista=ESPACOS.filter(e=>e.tipo===tipo&&(!salasPermitidasAgendar||salasPermitidasAgendar.includes(e.nome)));
 if(!lista.length)return;
 html+=`<p style="font-size:11px;font-weight:700;color:${c.textMuted};text-transform:uppercase;margin:14px 0 8px">${label}</p><div style="display:grid;gap:8px">`;
 lista.forEach(e=>{
