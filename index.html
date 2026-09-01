@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260901072450"/>
-<meta name="app-build-perfis" content="admin,maker,laboratorista"/>
+<meta name="app-build" content="20260901075730"/>
+<meta name="app-build-perfis" content="admin"/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -4202,6 +4202,17 @@ html+=`<div style="position:sticky;top:16px">
      <button onclick="setRankModo('total')" style="flex:1;padding:7px;border-radius:8px;border:1px solid ${_A.rankModo==="total"?"#1a6b47":c.border};background:${_A.rankModo==="total"?"#1a6b47":c.surface};color:${_A.rankModo==="total"?"#fff":c.textMuted};font-size:10.5px;font-weight:700;cursor:pointer">📅 Agendado (${_A.rankPeriodo==="semana"?"semana":_A.rankPeriodo==="ano"?"ano":"mês"} todo)</button>
    </div>
    <p style="font-size:10px;color:${c.textMuted};margin:0 0 12px;line-height:1.4">${_A.rankModo==="total"?`Inclui agendamentos futuros já confirmados para ${_A.rankPeriodo==="semana"?"esta semana":_A.rankPeriodo==="ano"?"este ano":"este mês"}.`:"Somente o que já aconteceu até hoje."}</p>
+
+   ${(()=>{
+     if(_A.rankPeriodo==="ano"&&_rankAnoCarregando)return"";
+     const{ini,fim,fonte}=rankIntervalo();
+     const hojeT=fmtHoje();
+     const totalGeral=fonte.filter(r=>!r.reservaAutomatica&&r.status!=="recusado"&&r.data>=ini&&r.data<=fim&&(_A.rankModo==="total"||r.data<=hojeT)).length;
+     return`<div style="background:${c.navy};border-radius:12px;padding:12px 14px;margin-bottom:12px;text-align:center">
+       <p style="font-size:22px;font-weight:900;color:#fff;line-height:1">${totalGeral}</p>
+       <p style="font-size:10.5px;color:rgba(255,255,255,.75);font-weight:700;margin-top:2px">agendamento${totalGeral!==1?"s":""} ${_A.rankModo==="total"?"agendado(s)":"realizado(s)"} — ${_A.rankPeriodo==="semana"?"esta semana":_A.rankPeriodo==="ano"?"este ano":"este mês"}</p>
+     </div>`;
+   })()}
 
    <div style="background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:12px 14px">
      <p style="font-size:11px;font-weight:800;color:${c.textMuted};text-transform:uppercase;margin-bottom:10px">🏆 Espaços mais ${_A.rankModo==="total"?"agendados":"usados"} — ${_A.rankPeriodo==="semana"?"esta semana":_A.rankPeriodo==="ano"?"este ano":"este mês"}</p>
