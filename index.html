@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260831123707"/>
+<meta name="app-build" content="20260901072450"/>
 <meta name="app-build-perfis" content="admin,maker,laboratorista"/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -1132,7 +1132,7 @@ const btnAba=(id,l)=>`<button onclick="window._MAKER.aba='${id}';re()" style="pa
 let corpo="";
 if(_MAKER.aba==="hoje"){
 if(hojeList.length)corpo+=hojeList.map(makerCard).join("");
-else corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">🔨</p><p style="margin-top:12px">Nenhum agendamento hoje.</p></div>`;
+else corpo+=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 220px);color:${c.textMuted}"><p style="font-size:48px">🔨</p><p style="margin-top:12px;font-size:14px">Nenhum agendamento hoje.</p></div>`;
 } else if(_MAKER.aba==="proximos"){
 if(!proximosList.length)corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">📅</p><p style="margin-top:12px">Nada agendado pros próximos dias.</p></div>`;
 else{
@@ -1205,7 +1205,7 @@ const btnAba=(id,l)=>`<button onclick="window._LAB.aba='${id}';re()" style="padd
 let corpo="";
 if(_LAB.aba==="hoje"){
 if(hojeList.length)corpo+=hojeList.map(labCard).join("");
-else corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">🔬</p><p style="margin-top:12px">Nenhum agendamento hoje.</p></div>`;
+else corpo+=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 220px);color:${c.textMuted}"><p style="font-size:48px">🔬</p><p style="margin-top:12px;font-size:14px">Nenhum agendamento hoje.</p></div>`;
 } else if(_LAB.aba==="proximos"){
 if(!proximosList.length)corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">📅</p><p style="margin-top:12px">Nada agendado pros próximos dias.</p></div>`;
 else{
