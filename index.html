@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260901075730"/>
+<meta name="app-build" content="20260902071916"/>
 <meta name="app-build-perfis" content="admin"/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -3813,6 +3813,46 @@ _MA.salvando=false;_MA.resumo=false;re();
 function modalEdicaoHTML(){const c=C();return`<div id="mod-ed" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);align-items:center;justify-content:center;z-index:1000;padding:1rem"><div id="mod-ed-inner" style="background:${c.surface};border-radius:16px;padding:28px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.3)"></div></div>`;}
 
 let _ED={};
+// Troca o equipamento vinculado automaticamente (Tablets ↔ Computadores) de uma reserva
+// principal (ex: Sala Multifuncional que trouxe 16 computadores junto). Atualiza a reserva
+// principal E recria o documento auxiliar corretamente — sem isso, ficaria um fantasma.
+window.trocarEquipamentoLigado=async(id)=>{
+if(!exigePermissao(['admin'])){alert('Acesso negado.');return;}
+const r=buscarReservaGlobal(id);
+if(!r){alert("Reserva não encontrada.");return;}
+const temTablets=(r.qtdTablets||0)>0,temNotebooks=(r.qtdNotebooks||0)>0;
+if(!temTablets&&!temNotebooks){alert("Essa reserva não tem Tablets nem Computadores vinculados.");return;}
+const tipoAtual=temNotebooks?"Computadores (16 disp.)":"Tablets (18 disp.)";
+const novoTipo=temNotebooks?"Tablets (18 disp.)":"Computadores (16 disp.)";
+const qtdAtual=temNotebooks?r.qtdNotebooks:r.qtdTablets;
+const novaQtdStr=prompt(`Trocar de ${tipoAtual} para ${novoTipo}.\n\nQuantas unidades? (atual: ${qtdAtual})`,qtdAtual);
+if(novaQtdStr===null)return;
+const novaQtd=Number(novaQtdStr);
+if(!novaQtd||novaQtd<=0){alert("Quantidade inválida.");return;}
+try{
+const b=writeBatch(db);
+b.update(doc(db,"reservas",r.id),{
+qtdTablets:novoTipo.includes("Tablets")?novaQtd:0,
+qtdNotebooks:novoTipo.includes("Computadores")?novaQtd:0,
+});
+// Acha e apaga o(s) documento(s) auxiliar(es) antigo(s) desse mesmo vínculo
+const snapAntigo=await getDocs(query(collection(db,"reservas"),
+where("professorId","==",r.professorId),where("data","==",r.data),
+where("horario","==",r.horario),where("espaco","==",tipoAtual)));
+snapAntigo.docs.forEach(d=>{if(d.data()?.reservaAutomatica)b.delete(d.ref);});
+// Cria o novo documento auxiliar no formato exato que o sistema usa
+b.set(doc(collection(db,"reservas")),{
+professor:r.professor,professorId:r.professorId,professorEmail:r.professorEmail,
+turma:r.turma||"",espaco:novoTipo,data:r.data,horario:r.horario,horarioFim:r.horario,
+conteudo:`Vinculado à ${r.espaco} — ${r.conteudo}`,
+quantidade:novaQtd,status:r.status,criadoEm:Timestamp.now(),
+precisaFoto:false,observacoes:`Agendado automaticamente via ${r.espaco}`,
+localMontagem:r.espaco,reservaAutomatica:true,paginas:"",laboratorista:"",
+});
+await b.commit();
+alert(`Trocado com sucesso para ${novoTipo} (${novaQtd} unidades)!`);
+}catch(e){console.error(e);alert("Erro ao trocar equipamento. Nada foi alterado.");}
+};
 window.abrirEdicao=id=>{
 const r=buscarReservaGlobal(id);
 if(!r)return;
@@ -4318,6 +4358,7 @@ return`<div class="row-hover" style="display:flex;align-items:center;gap:8px;pad
    </div>
    <div style="display:flex;gap:5px;flex-shrink:0;align-items:center;margin-left:auto">
      <button onclick="abrirEdicao('${r.id}')" title="Editar agendamento" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:14px;padding:5px 6px;display:flex;align-items:center;font-family:inherit">✏️</button>
+     ${((r.qtdTablets||0)>0||(r.qtdNotebooks||0)>0)?`<button onclick="trocarEquipamentoLigado('${r.id}')" title="Trocar Tablets ↔ Computadores" style="background:none;border:none;color:#0369a1;cursor:pointer;font-size:14px;padding:5px 6px;display:flex;align-items:center;font-family:inherit">🔁</button>`:""}
      ${podeAprovarEspaco?`<button onclick="aModerar('${r.id}','confirmado')" style="${btn("success","","sm")}">✓</button><button onclick="aModerar('${r.id}','recusado')" style="${btn("danger","","sm")}">✗</button>`:""}
      ${mostrarBotoes&&r.status==="confirmado"?`<button onclick="aModerar('${r.id}','recusado')" style="${btn("danger","","sm")}">✕</button>`:""}
      <button onclick="aExcluir('${r.id}')" title="Excluir agendamento" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:13px;padding:4px">🗑</button>
