@@ -3,8 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260902073112"/>
-<meta name="app-build-perfis" content="admin"/>
+<meta name="app-build" content="20260902121840"/>
+<meta name="app-build-perfis" content="admin,coordenador"/>
+<meta name="app-build-mensagem" content="Agora, ao agendar um espaço, você Coordenador pode escolher em nome de qual professor está reservando (opcional — deixando em branco, fica no seu próprio nome)."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -2243,7 +2244,7 @@ if(_P.filtroGrade==="todos")carregarTodas(_P.filtroEspaco||undefined);
 re();
 };
 window.pSetModoProf=v=>{_P.modoProf=v;if(v==='agendar'){
-_MA={step:1,espaco:"",data:"",blocos:[bVazio()],resumo:false,salvando:false,sucesso:null,erro:"",calA:new Date().getFullYear(),calM:new Date().getMonth(),bibAV:null,recorrente:false,recorrenciaTipo:"semanal"};
+_MA={step:1,espaco:"",data:"",blocos:[bVazio()],resumo:false,salvando:false,sucesso:null,erro:"",calA:new Date().getFullYear(),calM:new Date().getMonth(),bibAV:null,recorrente:false,recorrenciaTipo:"semanal",profEscolhido:null};
 const rascunho=lerRascunhoLocal();
 if(rascunho){
 const idadeMs=Date.now()-(rascunho.salvoEm||0);
@@ -2292,7 +2293,7 @@ window.pSetEspaco=v=>{_P.filtroEspaco=v;_P.agendaDiasVisiveis=5;_P.diasExtras=0;
 window.pClicarDia=data=>{
 if(data>=fmtHoje()&&isDiaLetivo(data)){
 _P.modoProf="agendar";
-_MA={step:1,espaco:"",data:data,blocos:[bVazio()],resumo:false,salvando:false,sucesso:null,erro:"",calA:new Date().getFullYear(),calM:new Date().getMonth(),recorrente:false,recorrenciaTipo:"semanal"};
+_MA={step:1,espaco:"",data:data,blocos:[bVazio()],resumo:false,salvando:false,sucesso:null,erro:"",calA:new Date().getFullYear(),calM:new Date().getMonth(),recorrente:false,recorrenciaTipo:"semanal",profEscolhido:null};
 re();
 } else {
 _P.diaSel=_P.diaSel===data?null:data;re();
@@ -2352,7 +2353,7 @@ function fabHTML(){return'';}
 function modalAgendarHTML(){const c=C();return`<div id="mod-ag" style="display:none;position:fixed;inset:0;z-index:1100;align-items:flex-end;justify-content:center"><div onclick="fecharModalAgendar()" style="position:absolute;inset:0;background:rgba(0,0,0,.5)"></div><div id="mod-ag-inner" style="position:relative;background:${c.surface};border-radius:20px 20px 0 0;width:100%;max-width:600px;max-height:92vh;overflow-y:auto;box-shadow:0 -8px 40px rgba(0,0,0,.25)"><div id="mod-ag-body"></div></div></div>`;}
 
 // ─── ESTADO DO FORMULÁRIO DE AGENDAMENTO ──────────────────────────────────
-let _MA={step:1,espaco:"",data:"",blocos:[],resumo:false,salvando:false,sucesso:null,erro:"",avisoConflito:"",calA:new Date().getFullYear(),calM:new Date().getMonth(),bibAV:null,recorrente:false,recorrenciaTipo:"semanal",dispEquip:{tablets:18,notebooks:16}};
+let _MA={step:1,espaco:"",data:"",blocos:[],resumo:false,salvando:false,sucesso:null,erro:"",avisoConflito:"",calA:new Date().getFullYear(),calM:new Date().getMonth(),bibAV:null,recorrente:false,recorrenciaTipo:"semanal",dispEquip:{tablets:18,notebooks:16},profEscolhido:null};
 let _adminVisu="admin";
 let _notifNaoLidas=0;
 let _notifListener=null;
@@ -2543,6 +2544,41 @@ const input=$("co-sel-prof");
 if(input&&!(window._coordProfNomes||[]).includes(input.value.trim()))input.value=window._CO.fProf||"";
 },150);
 };
+// Busca de professor no formulário de Agendar (coordenador escolhendo em nome de quem agenda) —
+// diferente do filtro acima: aqui guarda o objeto completo (nome/uid/email), não só o nome,
+// porque precisa gravar isso na reserva de verdade.
+window.maProfInput=input=>{
+const norm=s=>(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+const f=norm(input.value);
+const todosProf=(_usuarios||[]).filter(u=>u.perfil==="professor");
+const matches=f?todosProf.filter(u=>norm(u.nome).includes(f)):todosProf;
+const sugg=$("ma-prof-sugg");if(!sugg)return;
+if(!matches.length){
+sugg.innerHTML=`<div style="padding:9px 12px;font-size:12.5px;color:${C().textMuted}">Nenhum professor encontrado.</div>`;
+}else{
+sugg.innerHTML=matches.slice(0,40).map(u=>`<div class="ma-prof-item" data-uid="${u.id}" style="padding:9px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid ${C().border}">${u.nome}</div>`).join("");
+}
+sugg.style.display="block";
+sugg.querySelectorAll(".ma-prof-item").forEach(el=>{
+el.addEventListener("mousedown",ev=>{
+ev.preventDefault();
+const uid=el.getAttribute("data-uid");
+const u=(_usuarios||[]).find(x=>x.id===uid);
+if(u){_MA.profEscolhido={nome:u.nome,uid:u.id,email:u.email||""};input.value=u.nome;}
+sugg.style.display="none";
+});
+});
+};
+window.maProfBlur=()=>{
+setTimeout(()=>{
+const sugg=$("ma-prof-sugg");if(sugg)sugg.style.display="none";
+const input=$("ma-sel-prof");
+if(input&&input.value.trim()!==(_MA.profEscolhido?.nome||"")){
+// Digitou algo e saiu sem escolher da lista — limpa, pra não gravar um nome sem uid
+_MA.profEscolhido=null;input.value="";
+}
+},150);
+};
 window.maVoltarRevisao=()=>{_MA.resumo=false;re();};
 window.setBibAV=v=>{_MA.bibAV=v;re();};
 
@@ -2699,7 +2735,7 @@ _MA.data=data;_MA.step=3;_MA.blocos=[bVazio()];re();
 } else {
 if(data>=fmtHoje()&&isDiaLetivo(data)&&_P.modoProf==="ver"){
 _P.modoProf="agendar";
-_MA={step:1,espaco:"",data:data,blocos:[bVazio()],resumo:false,salvando:false,sucesso:null,erro:"",calA:new Date().getFullYear(),calM:new Date().getMonth(),recorrente:false,recorrenciaTipo:"semanal"};
+_MA={step:1,espaco:"",data:data,blocos:[bVazio()],resumo:false,salvando:false,sucesso:null,erro:"",calA:new Date().getFullYear(),calM:new Date().getMonth(),recorrente:false,recorrenciaTipo:"semanal",profEscolhido:null};
 re();
 } else {_P.diaSel=_P.diaSel===data?null:data;re();}
 }
@@ -2717,6 +2753,16 @@ html+=`<div style="background:linear-gradient(135deg,#1a6b47,#0f4c2b);padding:10
    </div>`;
 
 if(isDiaUrgente(m.data))html+=alertHTML("warning","⚠️ Menos de 24h de antecedência. Contate o T.E. para garantir disponibilidade.");
+
+if(isCoordenador(_usuario?.perfil)){
+const profNomeAtual=m.profEscolhido?.nome||"";
+html+=`<div style="background:${c.surface};border:1.5px solid ${c.border};border-radius:10px;padding:12px 14px;margin-bottom:14px;position:relative">
+   <label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">👤 Agendando em nome de</label>
+   <input id="ma-sel-prof" type="text" autocomplete="off" placeholder="Digite pra buscar um professor..." value="${profNomeAtual}" oninput="maProfInput(this)" onfocus="maProfInput(this)" onblur="maProfBlur()" style="margin-top:6px;padding:9px 11px;border-radius:8px;border:1.5px solid ${c.border};background:${c.bg};color:${c.text};font-size:13px;font-family:inherit;outline:none;width:100%;box-sizing:border-box">
+   <div id="ma-prof-sugg" style="display:none;position:absolute;left:14px;right:14px;top:100%;background:${c.surface};border:1.5px solid ${c.border};border-radius:8px;margin-top:4px;max-height:220px;overflow-y:auto;z-index:50;box-shadow:0 8px 24px rgba(0,0,0,.15)"></div>
+   <p style="font-size:10.5px;color:${c.textMuted};margin-top:5px">Se deixar em branco, o agendamento fica em seu próprio nome.</p>
+ </div>`;
+}
 
 // Todos os espaços usam formulário multi-horário com rotação de turmas
 html+=maBlocoMultiHTML(m.blocos[0],0,eo);
@@ -3577,7 +3623,7 @@ const batch=writeBatch(db);
 
 // Reserva principal
 const dadosPrincipal={
-professor:_usuario.nome,professorId:_usuario.uid,professorEmail:_usuario.email,
+professor:(_MA.profEscolhido?.nome)||_usuario.nome,professorId:(_MA.profEscolhido?.uid)||_usuario.uid,professorEmail:(_MA.profEscolhido?.email)||_usuario.email,
 turma:isEquipSalvar?"":(tph[b.horario]||""),
 turmaInicio:isEquipSalvar?"":(tph[b.horario]||""),
 turmaFim:isEquipSalvar?"":(tph[b.horarioFim]||tph[b.horario]||""),
@@ -5040,6 +5086,7 @@ const resp=await fetch("/?_v="+Date.now(),{cache:"no-store"});
 const texto=await resp.text();
 const m=texto.match(/<meta name="app-build" content="([^"]*)"/);
 const mPerfis=texto.match(/<meta name="app-build-perfis" content="([^"]*)"/);
+const mMensagem=texto.match(/<meta name="app-build-mensagem" content="([^"]*)"/);
 const perfisAlvo=(mPerfis?.[1]||"todos").split(",").map(s=>s.trim());
 const meuPerfil=_usuario?.perfil||"";
 const relevante=perfisAlvo.includes("todos")
@@ -5049,11 +5096,11 @@ const relevante=perfisAlvo.includes("todos")
 ||(perfisAlvo.includes("coordenador")&&isCoordenador(meuPerfil));
 if(m&&m[1]&&_BUILD_ATUAL&&m[1]!==_BUILD_ATUAL&&relevante){
 _versaoAvisada=true;
-mostrarAvisoNovaVersao();
+mostrarAvisoNovaVersao(mMensagem?.[1]||"");
 }
 }catch(e){}
 }
-function mostrarAvisoNovaVersao(){
+function mostrarAvisoNovaVersao(mensagem){
 if(document.getElementById("aviso-nova-versao"))return;
 const overlay=document.createElement("div");
 overlay.id="aviso-nova-versao-overlay";
@@ -5063,7 +5110,8 @@ document.body.appendChild(overlay);
 const div=document.createElement("div");
 div.id="aviso-nova-versao";
 div.style.cssText="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;background:#0f4c2b;color:#fff;padding:20px 22px;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.4);display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;font-family:'DM Sans',system-ui,sans-serif;max-width:min(340px,90vw);animation:pulseAviso 2s ease-in-out infinite";
-div.innerHTML=`<span style="font-size:16px;font-weight:800">🔄 Nova versão disponível</span><span style="font-size:12.5px;color:rgba(255,255,255,.75);line-height:1.4">Atualize pra garantir que está com as correções e melhorias mais recentes.</span><div style="display:flex;gap:8px;margin-top:2px"><button onclick="location.reload()" style="background:#fff;color:#0f4c2b;border:none;border-radius:8px;padding:9px 18px;font-weight:800;cursor:pointer;font-size:13.5px;font-family:inherit">Atualizar agora</button><button onclick="document.getElementById('aviso-nova-versao').remove();document.getElementById('aviso-nova-versao-overlay')?.remove()" style="background:none;border:1.5px solid rgba(255,255,255,.4);color:rgba(255,255,255,.85);border-radius:8px;padding:9px 14px;cursor:pointer;font-size:13px;font-family:inherit">Depois</button></div>`;
+const textoExibido=mensagem&&mensagem.trim()?mensagem:"Atualize pra garantir que está com as correções e melhorias mais recentes.";
+div.innerHTML=`<span style="font-size:16px;font-weight:800">🔄 Nova versão disponível</span><span style="font-size:12.5px;color:rgba(255,255,255,.75);line-height:1.4;white-space:pre-line">${textoExibido}</span><div style="display:flex;gap:8px;margin-top:2px"><button onclick="location.reload()" style="background:#fff;color:#0f4c2b;border:none;border-radius:8px;padding:9px 18px;font-weight:800;cursor:pointer;font-size:13.5px;font-family:inherit">Atualizar agora</button><button onclick="document.getElementById('aviso-nova-versao').remove();document.getElementById('aviso-nova-versao-overlay')?.remove()" style="background:none;border:1.5px solid rgba(255,255,255,.4);color:rgba(255,255,255,.85);border-radius:8px;padding:9px 14px;cursor:pointer;font-size:13px;font-family:inherit">Depois</button></div>`;
 document.body.appendChild(div);
 }
 setInterval(checarNovaVersao,30*60*1000);
