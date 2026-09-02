@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260902121840"/>
-<meta name="app-build-perfis" content="admin,coordenador"/>
-<meta name="app-build-mensagem" content="Agora, ao agendar um espaço, você Coordenador pode escolher em nome de qual professor está reservando (opcional — deixando em branco, fica no seu próprio nome)."/>
+<meta name="app-build" content="20260902123918"/>
+<meta name="app-build-perfis" content="admin"/>
+<meta name="app-build-mensagem" content="A fila de Tablets/Notebooks e o alerta sonoro agora também detectam agendamentos avulsos (quando Tablets ou Computadores são reservados como o próprio espaço, não como complemento de outra sala)."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -621,12 +621,14 @@ return`<div style="background:${c.surface};border-radius:16px;border:1px solid $
 
 // ─── ESTADO GLOBAL ────────────────────────────────────────────────────────────
 let _usuario=null,_todas=[],_minhas=[],_usuarios=[],_trocandoSenha=false;
-let _unsub1=null,_unsub2=null,_unsub3=null,_unsubPend=null,_unsubMes=null,_unsubTI=null,_unsubMkt=null,_unsubTbTablets=null,_unsubTbNotebooks=null,_unsubMaker=null,_unsubLab=null;
-let _tiGlobal=[],_mktGlobal=[],_tbGlobalTablets=[],_tbGlobalNotebooks=[],_tbGlobal=[],_makerGlobal=[],_labGlobal=[];
+let _unsub1=null,_unsub2=null,_unsub3=null,_unsubPend=null,_unsubMes=null,_unsubTI=null,_unsubMkt=null,_unsubTbTablets=null,_unsubTbNotebooks=null,_unsubTbAvulsoTablets=null,_unsubTbAvulsoComp=null,_unsubMaker=null,_unsubLab=null;
+let _tiGlobal=[],_mktGlobal=[],_tbGlobalTablets=[],_tbGlobalNotebooks=[],_tbGlobalAvulsoTablets=[],_tbGlobalAvulsoComp=[],_tbGlobal=[],_makerGlobal=[],_labGlobal=[];
 function mesclarTbGlobal(){
 const porId={};
 _tbGlobalTablets.forEach(r=>{porId[r.id]=r;});
 _tbGlobalNotebooks.forEach(r=>{porId[r.id]=r;});
+_tbGlobalAvulsoTablets.forEach(r=>{porId[r.id]=r;});
+_tbGlobalAvulsoComp.forEach(r=>{porId[r.id]=r;});
 _tbGlobal=Object.values(porId);
 }
 // Agrupa uma lista de reservas (já ordenada) por dia, com um cabeçalho destacado por data
@@ -5008,6 +5010,15 @@ _tbGlobalTablets=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.profes
 _unsubTbNotebooks=onSnapshot(query(collection(db,"reservas"),where("qtdNotebooks",">",0)),snap=>{
 _tbGlobalNotebooks=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario&&!r.reservaAutomatica&&(r.status==="pendente"||r.status==="confirmado"));mesclarTbGlobal();re();
 });
+// Tablets/Computadores AVULSOS (a pessoa escolheu "Tablets"/"Computadores" como o próprio
+// espaço, não como complemento de outra sala) — usam o campo "espaco", não qtdTablets/
+// qtdNotebooks, então precisam de listeners próprios pra entrar nessa mesma fila.
+_unsubTbAvulsoTablets=onSnapshot(query(collection(db,"reservas"),where("espaco","==","Tablets (18 disp.)")),snap=>{
+_tbGlobalAvulsoTablets=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario&&!r.reservaAutomatica&&(r.status==="pendente"||r.status==="confirmado"));mesclarTbGlobal();re();
+});
+_unsubTbAvulsoComp=onSnapshot(query(collection(db,"reservas"),where("espaco","==","Computadores (16 disp.)")),snap=>{
+_tbGlobalAvulsoComp=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario&&!r.reservaAutomatica&&(r.status==="pendente"||r.status==="confirmado"));mesclarTbGlobal();re();
+});
 }
 // Maker e Laboratorista: só o listener da própria área — ninguém mais precisa dele.
 if(ehMaker){
@@ -5044,7 +5055,7 @@ re();
 function pararUsuariosLive(){
 if(_unsub3){_unsub3();_unsub3=null;}
 }
-function stopListeners(){[_unsub1,_unsub2,_unsub3,_unsubTodas,_unsubPend,_unsubMes,_unsubTI,_unsubMkt,_unsubTbTablets,_unsubTbNotebooks,_unsubMaker,_unsubLab].forEach(u=>{try{u&&u();}catch{}});_unsub1=_unsub2=_unsub3=_unsubTodas=_unsubPend=_unsubMes=_unsubTI=_unsubMkt=_unsubTbTablets=_unsubTbNotebooks=_unsubMaker=_unsubLab=null;_todasCarregadas=false;_todasCarregadasChave=null;_mesAssinadoChave=null;pararAlertaTablets();}
+function stopListeners(){[_unsub1,_unsub2,_unsub3,_unsubTodas,_unsubPend,_unsubMes,_unsubTI,_unsubMkt,_unsubTbTablets,_unsubTbNotebooks,_unsubTbAvulsoTablets,_unsubTbAvulsoComp,_unsubMaker,_unsubLab].forEach(u=>{try{u&&u();}catch{}});_unsub1=_unsub2=_unsub3=_unsubTodas=_unsubPend=_unsubMes=_unsubTI=_unsubMkt=_unsubTbTablets=_unsubTbNotebooks=_unsubTbAvulsoTablets=_unsubTbAvulsoComp=_unsubMaker=_unsubLab=null;_todasCarregadas=false;_todasCarregadasChave=null;_mesAssinadoChave=null;pararAlertaTablets();}
 function unloadHistorico(){if(_unsubTodas){_unsubTodas();_unsubTodas=null;}_todasCarregadas=false;}
 
 // ════════════════════════════════════════════════════════════════════════════
