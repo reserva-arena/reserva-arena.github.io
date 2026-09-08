@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260908075023"/>
-<meta name="app-build-perfis" content="admin,coordenador,ti,marketing"/>
-<meta name="app-build-mensagem" content="Novo botão 'Relatório' (Admin, Coordenador, T.I. e Marketing): gera um PDF dos agendamentos por período, já filtrado pra área de cada um (Coordenador vê espaços, T.I. vê equipamentos, Marketing vê MKT, e o Admin vê os três)."/>
+<meta name="app-build" content="20260908080202"/>
+<meta name="app-build-perfis" content="admin,coordenador,ti,marketing,laboratorista"/>
+<meta name="app-build-mensagem" content="Botão 'Relatório' agora também disponível pro Laboratorista — gera PDF dos agendamentos dos seus labs (Anos Iniciais e Anos Finais) por período."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -1227,14 +1227,16 @@ Object.entries(pdTodos).forEach(([data,rs])=>{const[a2,m2,d2]=data.split("-");co
 $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="no">
    <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#065f46,#059669)"};padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100">
      <div style="display:flex;align-items:center;gap:8px">${logoHTML(36)}<p style="font-size:13px;font-weight:800;color:#fff">🔬 Laboratorista</p></div>
-     <div style="display:flex;align-items:center;gap:6px"><button onclick="pSetModoProf('agendar')" style="background:#fff;color:#059669;border:none;border-radius:20px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:800;font-family:inherit">+ Agendar</button>${avatarHTML(_usuario?.nome,28,"blue")}<button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button><button onclick="doSignOut()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">Sair</button></div>
+     <div style="display:flex;align-items:center;gap:6px"><button onclick="pSetModoProf('agendar')" style="background:#fff;color:#059669;border:none;border-radius:20px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:800;font-family:inherit">+ Agendar</button>${botaoRelatorioHTML()}${avatarHTML(_usuario?.nome,28,"blue")}<button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button><button onclick="doSignOut()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">Sair</button></div>
    </header>
    <div class="desktop-zoom" style="max-width:1000px;margin:0 auto;padding:16px 14px">
      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">${btnAba("hoje",`📅 Hoje · ${hojeList.length}`)}${btnAba("proximos","🔜 Próximos dias")}${btnAba("todos","📅 Todos agendamentos")}</div>
      ${corpo}
    </div>
    ${modalEdicaoHTML()}
+   ${modalRelatorioHTML()}
  </div>`;
+restaurarRelatorioSeAberto();
 }
 
 // Casca simples reaproveitando o fluxo de "Agendar" do professor (renderProfessorView),
@@ -3881,6 +3883,7 @@ if(perfil==="admin")return{tipos:["espaco","equipamento","mkt"]};
 if(isCoordenador(perfil))return{tipos:["espaco"]};
 if(perfil==="ti"||perfil==="coord_ti")return{tipos:["equipamento"]};
 if(perfil==="marketing"||perfil==="fotografo")return{tipos:["mkt"]};
+if(perfil==="laboratorista")return{tipos:["espaco"],espacosRestritos:["Lab. de Ciências Anos Iniciais","Lab. de Ciências Anos Finais"]};
 return null;
 }
 function modalRelatorioHTML(){const c=C();return`<div id="mod-rel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);align-items:center;justify-content:center;z-index:1000;padding:1rem"><div id="mod-rel-inner" style="background:${c.surface};border-radius:16px;padding:28px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.3)"></div></div>`;}
@@ -3895,7 +3898,7 @@ const info=relatorioPerfilInfo(_usuario?.perfil);
 if(!info){alert("Seu perfil não tem acesso a relatórios.");return;}
 const h=fmtHoje();
 const ate30=(()=>{const d=new Date(h+"T12:00:00");d.setDate(d.getDate()+30);return d.toISOString().slice(0,10);})();
-window._REL={tipos:info.tipos,tipo:info.tipos[0],espaco:"",equip:"",objetivo:"",de:h,ate:ate30,gerando:false,aberto:true};
+window._REL={tipos:info.tipos,tipo:info.tipos[0],espaco:"",equip:"",objetivo:"",de:h,ate:ate30,gerando:false,aberto:true,espacosRestritos:info.espacosRestritos||null};
 $("mod-rel").style.display="flex";renderRelatorioModal();
 };
 window.fecharRelatorio=function(){if(window._REL?.gerando)return;if(window._REL)_REL.aberto=false;$("mod-rel").style.display="none";};
@@ -3908,7 +3911,7 @@ if(window._REL?.aberto&&$("mod-rel")){$("mod-rel").style.display="flex";renderRe
 }
 window.renderRelatorioModal=function(){
 const c=C(),r=window._REL;if(!r)return;
-const espacosNormais=ESPACOS.filter(e=>e.tipo==="espaco"||e.tipo==="laboratorio");
+const espacosNormais=ESPACOS.filter(e=>e.tipo==="espaco"||e.tipo==="laboratorio").filter(e=>!r.espacosRestritos||r.espacosRestritos.includes(e.nome));
 const tipoLabel={espaco:"🏛️ Espaço",equipamento:"💻 Equipamento",mkt:"📸 Marketing"};
 let html=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px"><h3 style="font-size:17px;font-weight:800;color:${c.navy}">📄 Relatório de Agendamentos</h3><button onclick="fecharRelatorio()" style="background:none;border:none;font-size:20px;cursor:pointer;color:${c.textMuted}">✕</button></div>
  <div id="rel-erro"></div>
@@ -3944,8 +3947,9 @@ let corpoTitulo="",colunas=[],linhas=[];
 if(r.tipo==="espaco"){
 docs=docs.filter(x=>!x.reservaAutomatica);
 docs=docs.filter(x=>{const eo=ESPACOS.find(e=>e.nome===x.espaco);return eo&&(eo.tipo==="espaco"||eo.tipo==="laboratorio");});
+if(r.espacosRestritos)docs=docs.filter(x=>r.espacosRestritos.includes(x.espaco));
 if(r.espaco)docs=docs.filter(x=>x.espaco===r.espaco);
-corpoTitulo=`Espaço: ${r.espaco||"Todos os espaços"}`;
+corpoTitulo=`Espaço: ${r.espaco||(r.espacosRestritos?"Meus labs":"Todos os espaços")}`;
 colunas=["Data","Horário","Espaço","Turma","Professor","Status"];
 linhas=docs.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:(a.horario||"").localeCompare(b.horario||"")).map(x=>[dataBR(x.data),x.horarioFim&&x.horarioFim!==x.horario?`${x.horario} - ${x.horarioFim}`:x.horario||"—",x.espaco||"—",x.turmaInicio||x.turma||"—",x.professor||"—",statusLabel(x)]);
 }else if(r.tipo==="equipamento"){
