@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260902123918"/>
-<meta name="app-build-perfis" content="admin"/>
-<meta name="app-build-mensagem" content="A fila de Tablets/Notebooks e o alerta sonoro agora também detectam agendamentos avulsos (quando Tablets ou Computadores são reservados como o próprio espaço, não como complemento de outra sala)."/>
+<meta name="app-build" content="20260908075023"/>
+<meta name="app-build-perfis" content="admin,coordenador,ti,marketing"/>
+<meta name="app-build-mensagem" content="Novo botão 'Relatório' (Admin, Coordenador, T.I. e Marketing): gera um PDF dos agendamentos por período, já filtrado pra área de cada um (Coordenador vê espaços, T.I. vê equipamentos, Marketing vê MKT, e o Admin vê os três)."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -15,6 +15,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="Reserva Arena"/>
 <link rel="apple-touch-icon" href="/icon-192.png"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;max-width:100%}
 html{-webkit-text-size-adjust:100%;overflow-x:hidden;max-width:100vw}
@@ -1345,7 +1347,7 @@ if(todos.length>5)corpo+=`<button onclick="window._TI.feedExp=!window._TI.feedEx
 $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="no">
    <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#0d2b1a,#1a6b47)"};padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100">
      <div style="display:flex;align-items:center;gap:8px">${logoHTML(36)}<p style="font-size:13px;font-weight:800;color:#fff">📸 Marketing</p></div>
-     <div style="display:flex;align-items:center;gap:6px">${avatarHTML(_usuario?.nome,28,"purple")}<button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button><button onclick="doSignOut()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">Sair</button></div>
+     <div style="display:flex;align-items:center;gap:6px">${botaoRelatorioHTML()}${avatarHTML(_usuario?.nome,28,"purple")}<button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button><button onclick="doSignOut()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">Sair</button></div>
    </header>
    <div class="desktop-zoom" style="max-width:1000px;margin:0 auto;padding:16px 14px">
      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
@@ -1355,7 +1357,9 @@ $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="
      ${pendentes.length&&_MK.aba==="todos"?`<div style="background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="mkSetAba('pendentes')"><p style="font-size:13px;font-weight:700;color:#7c3aed">⏳ ${pendentes.length} solicitaç${pendentes.length===1?"ão":"ões"} aguardando sua aprovação — Ver agora →</p></div>`:""}
      ${corpo}
    </div>
+   ${modalRelatorioHTML()}
  </div>`;
+restaurarRelatorioSeAberto();
 }
 window.mkAprovar=async(id)=>{
 if(!confirm("Aprovar esta solicitação de foto/vídeo?"))return;
@@ -1444,7 +1448,7 @@ corpo+=`</div>`;
 $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="no">
    <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#0d2b1a,#1a6b47)"};padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100">
      <div style="display:flex;align-items:center;gap:8px">${logoHTML(36)}<p style="font-size:13px;font-weight:800;color:#fff">💻 T.I.</p></div>
-     <div style="display:flex;align-items:center;gap:6px">${avatarHTML(_usuario?.nome,28,"blue")}<button id="sino-btn" onclick="abrirPainelNotif()" title="Notificações" style="display:flex;position:relative;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:30px;height:30px;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;font-family:inherit">🔔<span id="sino-badge" style="display:${_notifNaoLidas>0?"flex":"none"};position:absolute;top:-4px;right:-4px;background:#dc2626;color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:99px;align-items:center;justify-content:center;padding:0 3px;font-family:inherit">${_notifNaoLidas>9?"9+":_notifNaoLidas}</span></button><button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button><button onclick="doSignOut()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">Sair</button></div>
+     <div style="display:flex;align-items:center;gap:6px">${botaoRelatorioHTML()}${avatarHTML(_usuario?.nome,28,"blue")}<button id="sino-btn" onclick="abrirPainelNotif()" title="Notificações" style="display:flex;position:relative;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:30px;height:30px;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;font-family:inherit">🔔<span id="sino-badge" style="display:${_notifNaoLidas>0?"flex":"none"};position:absolute;top:-4px;right:-4px;background:#dc2626;color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:99px;align-items:center;justify-content:center;padding:0 3px;font-family:inherit">${_notifNaoLidas>9?"9+":_notifNaoLidas}</span></button><button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button><button onclick="doSignOut()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">Sair</button></div>
    </header>
    <div class="desktop-zoom" style="max-width:1000px;margin:0 auto;padding:16px 14px">
      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
@@ -1454,7 +1458,9 @@ $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="
      ${pendentes.length&&_TI.aba==="todos"?`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="tiSetAba('minhas')"><p style="font-size:13px;font-weight:700;color:#c2410c">⏳ ${pendentes.length} agendamento${pendentes.length===1?"":"s"} aguardando aprovação — Ver agora →</p></div>`:""}
      ${corpo}
    </div>
+   ${modalRelatorioHTML()}
  </div>`;
+restaurarRelatorioSeAberto();
 }
 function tiCard(r,pend){
 const c=C(),h=fmtHoje();
@@ -1635,6 +1641,7 @@ $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="
      <div style="display:flex;align-items:center;gap:8px">${logoHTML(36)}<p style="font-size:13px;font-weight:800;color:#fff">${labelCoord(_usuario?.perfil)}</p></div>
      <div style="display:flex;align-items:center;gap:6px">
        <button onclick="pSetModoProf('agendar')" style="background:#fff;color:#0d2b1a;border:none;border-radius:20px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:800;display:flex;align-items:center;gap:5px;font-family:inherit">📅 Agendar</button>
+       ${botaoRelatorioHTML()}
        ${avatarHTML(_usuario?.nome,28,"green")}
        <button id="sino-btn" onclick="abrirPainelNotif()" style="display:flex;position:relative;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:30px;height:30px;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;font-family:inherit">🔔<span id="sino-badge" style="display:${_notifNaoLidas>0?"flex":"none"};position:absolute;top:-4px;right:-4px;background:#dc2626;color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:99px;align-items:center;justify-content:center;padding:0 3px;font-family:inherit">${_notifNaoLidas>9?"9+":_notifNaoLidas}</span></button>
        <button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button>
@@ -1682,7 +1689,9 @@ $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="
        </div>
      </div>
    </div>
+   ${modalRelatorioHTML()}
  </div>`;
+restaurarRelatorioSeAberto();
 }
 
 function coordCalendarioHTML(porData,c,h){
@@ -1851,6 +1860,7 @@ $("app").innerHTML=`
      <div style="display:flex;align-items:center;gap:8px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-ms-overflow-style:none;max-width:100%;flex-shrink:1;box-shadow:${isMobHeader?"inset -16px 0 10px -10px rgba(0,0,0,.35)":"none"}" class="header-icons-scroll">
        <button onclick="irInicio()" title="Início" style="background:${_dark?c.surface:'rgba(255,255,255,.15)'};border:1.5px solid ${_dark?c.border:'rgba(255,255,255,.3)'};border-radius:20px;padding:4px 10px;height:34px;cursor:pointer;display:flex;align-items:center;gap:5px;font-size:15px;flex-shrink:0;font-family:inherit">🏠</button>
        ${isAdmin?`<select onchange="setAdminVisu(this.value)" class="admin-visu-select" style="background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.4);border-radius:20px;padding:3px 8px;height:30px;cursor:pointer;font-size:11px;font-family:inherit;font-weight:700;color:#fff;outline:none"><option value="admin" ${_adminVisu==="admin"?"selected":""} style="color:#132318;background:#fff">🔧 Adm</option><option value="professor" ${_adminVisu==="professor"?"selected":""} style="color:#132318;background:#fff">👨‍🏫 Prof</option><option value="ti" ${_adminVisu==="ti"?"selected":""} style="color:#132318;background:#fff">💻 TI</option><option value="marketing" ${_adminVisu==="marketing"?"selected":""} style="color:#132318;background:#fff">📸 Mkt</option></select>`:""}
+       ${isAdmin?botaoRelatorioHTML():""}
        <button id="profile-menu-btn" onclick="toggleProfileMenu()" style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);border-radius:20px;padding:3px 10px 3px 3px;cursor:pointer;font-family:inherit;flex-shrink:0">${avatarHTML(_usuario?.nome,26,isAdmin?"purple":"navy")}<span class="header-nome" id="header-nome-block" style="font-size:11px;font-weight:700;color:${_dark?c.navy:'#fff'}">${(_usuario?.nome||"").split(" ")[0]}</span><span style="font-size:9px;color:${_dark?c.navy:'#fff'}">▾</span></button>
        <button id="sino-btn" onclick="abrirPainelNotif()" title="Notificações" style="display:flex;position:relative;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:30px;height:30px;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;font-family:inherit">🔔<span id="sino-badge" style="display:${_notifNaoLidas>0?"flex":"none"};position:absolute;top:-4px;right:-4px;background:#dc2626;color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:99px;align-items:center;justify-content:center;padding:0 3px;font-family:inherit">${_notifNaoLidas>9?"9+":_notifNaoLidas}</span></button>
        <button onclick="toggleDark()" title="${_dark?'Modo claro':'Modo escuro'}" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0">${_dark?"☀️":"🌙"}</button>
@@ -1866,8 +1876,10 @@ $("app").innerHTML=`
    ${modalEdicaoHTML()}
    ${modalAgendarHTML()}
    ${modalGerenciarHTML()}
+   ${modalRelatorioHTML()}
  </div>`;
 isAdmin?bindAdmin():bindProf();
+restaurarRelatorioSeAberto();
 }
 window.doSignOut=()=>signOut(auth);
 window.toggleAdminVisu=()=>{};
@@ -3859,6 +3871,138 @@ _MA.salvando=false;_MA.resumo=false;re();
 // MODAL EDIÇÃO
 // ════════════════════════════════════════════════════════════════════════════
 function modalEdicaoHTML(){const c=C();return`<div id="mod-ed" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);align-items:center;justify-content:center;z-index:1000;padding:1rem"><div id="mod-ed-inner" style="background:${c.surface};border-radius:16px;padding:28px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.3)"></div></div>`;}
+
+// ════════════════════════════════════════════════════════════════════════════
+// RELATÓRIO EM PDF — Admin (espaço/equipamento/mkt) · Coordenador (espaço) ·
+// T.I. (equipamento) · Marketing (mkt). Cada perfil só vê o(s) tipo(s) relevante(s).
+// ════════════════════════════════════════════════════════════════════════════
+function relatorioPerfilInfo(perfil){
+if(perfil==="admin")return{tipos:["espaco","equipamento","mkt"]};
+if(isCoordenador(perfil))return{tipos:["espaco"]};
+if(perfil==="ti"||perfil==="coord_ti")return{tipos:["equipamento"]};
+if(perfil==="marketing"||perfil==="fotografo")return{tipos:["mkt"]};
+return null;
+}
+function modalRelatorioHTML(){const c=C();return`<div id="mod-rel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);align-items:center;justify-content:center;z-index:1000;padding:1rem"><div id="mod-rel-inner" style="background:${c.surface};border-radius:16px;padding:28px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.3)"></div></div>`;}
+function botaoRelatorioHTML(estilo){
+const info=relatorioPerfilInfo(_usuario?.perfil);
+if(!info)return"";
+if(estilo==="pill-branco")return`<button onclick="abrirRelatorio()" style="background:#fff;color:#0d2b1a;border:none;border-radius:20px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:800;display:flex;align-items:center;gap:5px;font-family:inherit">📄 Relatório</button>`;
+return`<button onclick="abrirRelatorio()" title="Gerar relatório em PDF" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700;display:flex;align-items:center;gap:5px;font-family:inherit">📄 Relatório</button>`;
+}
+window.abrirRelatorio=function(){
+const info=relatorioPerfilInfo(_usuario?.perfil);
+if(!info){alert("Seu perfil não tem acesso a relatórios.");return;}
+const h=fmtHoje();
+const ate30=(()=>{const d=new Date(h+"T12:00:00");d.setDate(d.getDate()+30);return d.toISOString().slice(0,10);})();
+window._REL={tipos:info.tipos,tipo:info.tipos[0],espaco:"",equip:"",objetivo:"",de:h,ate:ate30,gerando:false,aberto:true};
+$("mod-rel").style.display="flex";renderRelatorioModal();
+};
+window.fecharRelatorio=function(){if(window._REL?.gerando)return;if(window._REL)_REL.aberto=false;$("mod-rel").style.display="none";};
+// Os listeners em tempo real (onSnapshot) chamam re(), que reconstrói a tela inteira —
+// isso recriaria o modal escondido do zero, fechando ele na cara do usuário no meio do
+// preenchimento. Cada tela que inclui o modal chama isso logo depois de montar o HTML,
+// pra reabrir e redesenhar o modal com o estado (_REL) que já estava sendo preenchido.
+function restaurarRelatorioSeAberto(){
+if(window._REL?.aberto&&$("mod-rel")){$("mod-rel").style.display="flex";renderRelatorioModal();}
+}
+window.renderRelatorioModal=function(){
+const c=C(),r=window._REL;if(!r)return;
+const espacosNormais=ESPACOS.filter(e=>e.tipo==="espaco"||e.tipo==="laboratorio");
+const tipoLabel={espaco:"🏛️ Espaço",equipamento:"💻 Equipamento",mkt:"📸 Marketing"};
+let html=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px"><h3 style="font-size:17px;font-weight:800;color:${c.navy}">📄 Relatório de Agendamentos</h3><button onclick="fecharRelatorio()" style="background:none;border:none;font-size:20px;cursor:pointer;color:${c.textMuted}">✕</button></div>
+ <div id="rel-erro"></div>
+ <div style="display:grid;gap:16px">
+ ${r.tipos.length>1?`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Tipo de relatório *</label><br><select onchange="window._REL.tipo=this.value;window._REL.espaco='';window._REL.equip='';window._REL.objetivo='';renderRelatorioModal()" style="${sel()};margin-top:5px">${r.tipos.map(t=>`<option value="${t}" ${r.tipo===t?"selected":""}>${tipoLabel[t]}</option>`).join("")}</select></div>`:""}
+ ${r.tipo==="espaco"?`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Espaço</label><br><select onchange="window._REL.espaco=this.value" style="${sel()};margin-top:5px"><option value="">🌐 Todos os espaços</option>${espacosNormais.map(e=>`<option value="${e.nome}" ${r.espaco===e.nome?"selected":""}>${tipoIcon(e.tipo,e.nome)} ${e.nome}</option>`).join("")}</select></div>`:""}
+ ${r.tipo==="equipamento"?`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Equipamento</label><br><select onchange="window._REL.equip=this.value" style="${sel()};margin-top:5px"><option value="">🌐 Todos os equipamentos</option><option value="Tablets (18 disp.)" ${r.equip==="Tablets (18 disp.)"?"selected":""}>📱 Tablets</option><option value="Computadores (16 disp.)" ${r.equip==="Computadores (16 disp.)"?"selected":""}>💻 Computadores</option><option value="Som, Microfone e Projetor" ${r.equip==="Som, Microfone e Projetor"?"selected":""}>🎤 Som / Microfone / Projetor</option></select></div>`:""}
+ ${r.tipo==="mkt"?`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Objetivo</label><br><select onchange="window._REL.objetivo=this.value" style="${sel()};margin-top:5px"><option value="">🌐 Todos</option><option value="social" ${r.objetivo==="social"?"selected":""}>📱 Rede Social</option><option value="pedagogico" ${r.objetivo==="pedagogico"?"selected":""}>📚 Pedagógico</option></select></div>`:""}
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+   <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">De *</label><br><input id="rel-de" type="date" value="${r.de}" onchange="window._REL.de=this.value" style="${inp()};margin-top:5px"></div>
+   <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Até *</label><br><input id="rel-ate" type="date" value="${r.ate}" onchange="window._REL.ate=this.value" style="${inp()};margin-top:5px"></div>
+ </div>
+ <p style="font-size:10.5px;color:${c.textMuted};margin-top:-8px">💡 O PDF traz espaço/data em destaque e a hora exata em que foi gerado.</p>
+ <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px"><button onclick="fecharRelatorio()" style="${btn("ghost")}">Cancelar</button><button id="rel-btn-gerar" onclick="gerarRelatorioPDF()" ${r.gerando?"disabled":""} style="${btn("success")}">${r.gerando?"⏳ Gerando...":"📄 Gerar PDF"}</button></div>
+ </div>`;
+render("mod-rel-inner",html);
+};
+window.gerarRelatorioPDF=async function(){
+const r=window._REL;if(!r||r.gerando)return;
+if(!r.de||!r.ate){render("rel-erro",alertHTML("error","Selecione o período (De / Até)."));return;}
+if(r.de>r.ate){render("rel-erro",alertHTML("error","A data \"De\" não pode ser depois da data \"Até\"."));return;}
+render("rel-erro","");
+r.gerando=true;renderRelatorioModal();
+try{
+// A fonte padrão do jsPDF (Helvetica/WinAnsi) só entende Latin-1 — qualquer emoji ou
+// seta vira caractere quebrado no PDF. Tira tudo que não é Latin-1 antes de escrever.
+const pdfTxt=s=>{s=String(s==null?"":s).replace(/→/g," - ");return s.replace(/[^\x00-\xFF]/g,"").replace(/\s+/g," ").trim();};
+const snap=await getDocs(query(collection(db,"reservas"),where("data",">=",r.de),where("data","<=",r.ate)));
+let docs=snap.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.status!=="recusado");
+const statusLabel=x=>x.status==="pendente"?"Pendente":x.status==="confirmado"?"Confirmado":(x.status||"—");
+const dataBR=s=>(s||"").split("-").reverse().join("/");
+let corpoTitulo="",colunas=[],linhas=[];
+if(r.tipo==="espaco"){
+docs=docs.filter(x=>!x.reservaAutomatica);
+docs=docs.filter(x=>{const eo=ESPACOS.find(e=>e.nome===x.espaco);return eo&&(eo.tipo==="espaco"||eo.tipo==="laboratorio");});
+if(r.espaco)docs=docs.filter(x=>x.espaco===r.espaco);
+corpoTitulo=`Espaço: ${r.espaco||"Todos os espaços"}`;
+colunas=["Data","Horário","Espaço","Turma","Professor","Status"];
+linhas=docs.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:(a.horario||"").localeCompare(b.horario||"")).map(x=>[dataBR(x.data),x.horarioFim&&x.horarioFim!==x.horario?`${x.horario} - ${x.horarioFim}`:x.horario||"—",x.espaco||"—",x.turmaInicio||x.turma||"—",x.professor||"—",statusLabel(x)]);
+}else if(r.tipo==="equipamento"){
+docs=docs.filter(x=>{const eo=ESPACOS.find(e=>e.nome===x.espaco);return eo&&(eo.tipo==="equipamento"||eo.tipo==="audiovisual");});
+if(r.equip)docs=docs.filter(x=>x.espaco===r.equip);
+corpoTitulo=`Equipamento: ${r.equip||"Todos os equipamentos"}`;
+colunas=["Data","Horário","Equipamento","Qtd","Vínculo","Professor","Status"];
+linhas=docs.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:(a.horario||"").localeCompare(b.horario||"")).map(x=>{
+let qtd="1";
+if(x.quantidade)qtd=String(x.quantidade);
+else if(x.qtdTablets)qtd=String(x.qtdTablets);
+else if(x.qtdNotebooks)qtd=String(x.qtdNotebooks);
+else if(x.bibMic||x.bibCaixa||x.bibProj)qtd=`Mic ${x.bibMic||0} / Caixa ${x.bibCaixa||0} / Proj ${x.bibProj||0}`;
+return[dataBR(x.data),x.horarioFim&&x.horarioFim!==x.horario?`${x.horario} - ${x.horarioFim}`:x.horario||"—",x.espaco||"—",qtd,x.reservaAutomatica?`Vinculado (${x.localMontagem||"—"})`:"Avulso",x.professor||"—",statusLabel({status:x.statusEquip||x.status})];
+});
+}else{
+docs=docs.filter(x=>!x.reservaAutomatica&&(x.precisaFoto||x.precisaVideo||x.espaco==="Equipe de Marketing"));
+if(r.objetivo)docs=docs.filter(x=>x.objetivoMidia===r.objetivo);
+corpoTitulo=`Marketing: ${r.objetivo==="social"?"Rede Social":r.objetivo==="pedagogico"?"Pedagógico":"Todos"}`;
+colunas=["Data","Horário","Local","Turma","Professor","Foto/Vídeo","Status"];
+linhas=docs.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:(a.horario||"").localeCompare(b.horario||"")).map(x=>[dataBR(x.data),x.horario||"—",x.espaco==="Equipe de Marketing"?(x.salaAtividade||"—"):x.espaco||"—",x.turmaInicio||x.turma||"—",x.professor||"—",[x.precisaFoto?"Foto":"",x.precisaVideo?"Vídeo":""].filter(Boolean).join(" + ")||"—",statusLabel({status:x.statusMarketing||x.status})]);
+}
+if(!linhas.length){r.gerando=false;render("rel-erro",alertHTML("warning","Nenhum agendamento encontrado nesse período com esse filtro."));renderRelatorioModal();return;}
+colunas=colunas.map(pdfTxt);
+linhas=linhas.map(linha=>linha.map(pdfTxt));
+const totalConf=docs.filter(x=>(x.status==="confirmado")).length;
+const totalPend=docs.filter(x=>(x.status==="pendente")).length;
+const agora=new Date();
+const carimbo=`${String(agora.getDate()).padStart(2,"0")}/${String(agora.getMonth()+1).padStart(2,"0")}/${agora.getFullYear()} às ${String(agora.getHours()).padStart(2,"0")}:${String(agora.getMinutes()).padStart(2,"0")}`;
+const{jsPDF}=window.jspdf;
+const pdf=new jsPDF();
+// Cabeçalho verde com a logo do Arena
+pdf.setFillColor(26,107,71);pdf.rect(0,0,210,26,"F");
+try{pdf.addImage(ARENA_LOGO,"PNG",14,5,16,16);}catch(e){}
+pdf.setTextColor(255,255,255);pdf.setFontSize(15);pdf.setFont(undefined,"bold");
+pdf.text(pdfTxt("Reserva Arena"),34,13);
+pdf.setFontSize(9.5);pdf.setFont(undefined,"normal");
+pdf.text(pdfTxt("Relatório de Agendamentos · Colégio Arena"),34,19.5);
+// Caixa de destaque: espaço/período + carimbo de quando foi gerado
+pdf.setFillColor(234,246,240);pdf.setDrawColor(26,107,71);pdf.setLineWidth(0.4);
+pdf.roundedRect(14,32,182,26,2,2,"FD");
+pdf.setTextColor(13,43,26);pdf.setFontSize(14);pdf.setFont(undefined,"bold");
+pdf.text(pdfTxt(corpoTitulo),20,41.5);
+pdf.setFontSize(10.5);pdf.setFont(undefined,"normal");pdf.setTextColor(60,60,60);
+pdf.text(pdfTxt(`Período: ${dataBR(r.de)} a ${dataBR(r.ate)}`),20,48.5);
+pdf.setFontSize(9.5);pdf.setFont(undefined,"bold");pdf.setTextColor(26,107,71);
+pdf.text(pdfTxt(`Atualizado em: ${carimbo}`),20,54.5);
+pdf.setFontSize(10.5);pdf.setTextColor(30,30,30);pdf.setFont(undefined,"bold");
+pdf.text(pdfTxt(`Total: ${linhas.length} agendamento${linhas.length!==1?"s":""} · ${totalConf} confirmado${totalConf!==1?"s":""} · ${totalPend} pendente${totalPend!==1?"s":""}`),14,66);
+pdf.autoTable({startY:72,head:[colunas],body:linhas,styles:{fontSize:8.5,cellPadding:3},headStyles:{fillColor:[26,107,71],textColor:255,fontStyle:"bold"},alternateRowStyles:{fillColor:[240,247,243]}});
+const nomeArq=`relatorio-reserva-arena-${r.tipo}-${r.de}-a-${r.ate}.pdf`;
+pdf.save(nomeArq);
+r.gerando=false;
+r.aberto=false;
+$("mod-rel").style.display="none";
+}catch(e){console.error(e);r.gerando=false;render("rel-erro",alertHTML("error","Erro ao gerar relatório: "+e.message));renderRelatorioModal();}
+};
 
 let _ED={};
 // Troca o equipamento vinculado automaticamente (Tablets ↔ Computadores) de uma reserva
