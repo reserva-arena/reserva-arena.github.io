@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260908083409"/>
+<meta name="app-build" content="20260908084354"/>
 <meta name="app-build-perfis" content="admin,coordenador,ti,marketing,laboratorista"/>
-<meta name="app-build-mensagem" content="Correção no Relatório de Equipamento: itens 'vinculados' a outra sala (ex: Som/Mic/Projetor pedido junto com a Biblioteca) tinham um status congelado desde a criação e podiam aparecer como 'pendente' mesmo já resolvidos. Agora aparecem como 'Acompanha a sala' e não entram na contagem de pendentes/confirmados."/>
+<meta name="app-build-mensagem" content="Correção no Relatório de Equipamento: pedidos de Som/Mic/Projetor feitos junto com outra sala (ex: Biblioteca) estavam totalmente ausentes do relatório — pendentes E aprovados. Agora aparecem normalmente, independente do status ou de a data ser futura."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -3966,8 +3966,11 @@ corpoTitulo=`Espaço: ${r.espaco||(r.espacosRestritos?"Meus labs":"Todos os espa
 colunas=["Data","Horário","Espaço","Turma","Professor","Status"];
 linhas=docs.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:(a.horario||"").localeCompare(b.horario||"")).map(x=>[dataBR(x.data),x.horarioFim&&x.horarioFim!==x.horario?`${x.horario} - ${x.horarioFim}`:x.horario||"—",x.espaco||"—",x.turmaInicio||x.turma||"—",x.professor||"—",statusLabel(resolverStatus(x))]);
 }else if(r.tipo==="equipamento"){
-docs=docs.filter(x=>{const eo=ESPACOS.find(e=>e.nome===x.espaco);return eo&&(eo.tipo==="equipamento"||eo.tipo==="audiovisual");});
-if(r.equip)docs=docs.filter(x=>x.espaco===r.equip);
+// Igual ao critério que a própria tela do T.I. usa: equipamento avulso (Tablets/Computadores/AV)
+// OU qualquer reserva de sala que tenha pedido Som/Mic/Projetor junto (aí a aprovação fica
+// registrada na própria reserva da sala, em vez de um documento de equipamento separado).
+docs=docs.filter(x=>{const eo=ESPACOS.find(e=>e.nome===x.espaco);return(eo&&(eo.tipo==="equipamento"||eo.tipo==="audiovisual"))||x.statusEquip!==undefined;});
+if(r.equip)docs=docs.filter(x=>x.espaco===r.equip||(r.equip==="Som, Microfone e Projetor"&&x.statusEquip!==undefined));
 corpoTitulo=`Equipamento: ${r.equip||"Todos os equipamentos"}`;
 colunas=["Data","Horário","Equipamento","Qtd","Vínculo","Professor","Status"];
 linhas=docs.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:(a.horario||"").localeCompare(b.horario||"")).map(x=>{
@@ -3976,7 +3979,11 @@ if(x.quantidade)qtd=String(x.quantidade);
 else if(x.qtdTablets)qtd=String(x.qtdTablets);
 else if(x.qtdNotebooks)qtd=String(x.qtdNotebooks);
 else if(x.bibMic||x.bibCaixa||x.bibProj)qtd=`Mic ${x.bibMic||0} / Caixa ${x.bibCaixa||0} / Proj ${x.bibProj||0}`;
-return[dataBR(x.data),x.horarioFim&&x.horarioFim!==x.horario?`${x.horario} - ${x.horarioFim}`:x.horario||"—",x.espaco||"—",qtd,x.reservaAutomatica?`Vinculado (${x.localMontagem||"—"})`:"Avulso",x.professor||"—",statusLabel(resolverStatus(x))];
+const eo=ESPACOS.find(e=>e.nome===x.espaco);
+const ehSalaComAV=eo&&(eo.tipo==="espaco"||eo.tipo==="laboratorio")&&x.statusEquip!==undefined;
+const nomeEquip=ehSalaComAV?"Som, Microfone e Projetor":x.espaco||"—";
+const vinculo=x.reservaAutomatica?`Vinculado (${x.localMontagem||"—"})`:ehSalaComAV?`Vinculado (${x.espaco})`:"Avulso";
+return[dataBR(x.data),x.horarioFim&&x.horarioFim!==x.horario?`${x.horario} - ${x.horarioFim}`:x.horario||"—",nomeEquip,qtd,vinculo,x.professor||"—",statusLabel(resolverStatus(x))];
 });
 }else{
 docs=docs.filter(x=>!x.reservaAutomatica&&(x.precisaFoto||x.precisaVideo||x.espaco==="Equipe de Marketing"));
