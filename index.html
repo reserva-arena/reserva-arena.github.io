@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260908080202"/>
+<meta name="app-build" content="20260908080943"/>
 <meta name="app-build-perfis" content="admin,coordenador,ti,marketing,laboratorista"/>
-<meta name="app-build-mensagem" content="Botão 'Relatório' agora também disponível pro Laboratorista — gera PDF dos agendamentos dos seus labs (Anos Iniciais e Anos Finais) por período."/>
+<meta name="app-build-mensagem" content="Correção no Relatório: o resumo de confirmados/pendentes no topo do PDF agora bate com a tabela (o total tava considerando o status geral da reserva em vez do status específico do T.I./Marketing, então às vezes mostrava 'pendente' pra algo já aprovado na sua área)."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -3941,7 +3941,15 @@ try{
 const pdfTxt=s=>{s=String(s==null?"":s).replace(/→/g," - ");return s.replace(/[^\x00-\xFF]/g,"").replace(/\s+/g," ").trim();};
 const snap=await getDocs(query(collection(db,"reservas"),where("data",">=",r.de),where("data","<=",r.ate)));
 let docs=snap.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.status!=="recusado");
-const statusLabel=x=>x.status==="pendente"?"Pendente":x.status==="confirmado"?"Confirmado":(x.status||"—");
+const statusLabel=s=>s==="pendente"?"Pendente":(s==="confirmado"||s==="aprovado")?"Confirmado":s==="recusado"?"Recusado":(s||"—");
+// O campo que define "pendente/aprovado" muda conforme o tipo de relatório: pro espaço é
+// o status geral da reserva, pro equipamento é statusEquip, pro marketing é statusMarketing.
+// Usar sempre o campo certo aqui garante que o resumo do topo bate com o que a tabela mostra.
+const resolverStatus=x=>{
+if(r.tipo==="equipamento")return x.statusEquip||x.status;
+if(r.tipo==="mkt")return x.statusMarketing||x.status;
+return x.status;
+};
 const dataBR=s=>(s||"").split("-").reverse().join("/");
 let corpoTitulo="",colunas=[],linhas=[];
 if(r.tipo==="espaco"){
@@ -3951,7 +3959,7 @@ if(r.espacosRestritos)docs=docs.filter(x=>r.espacosRestritos.includes(x.espaco))
 if(r.espaco)docs=docs.filter(x=>x.espaco===r.espaco);
 corpoTitulo=`Espaço: ${r.espaco||(r.espacosRestritos?"Meus labs":"Todos os espaços")}`;
 colunas=["Data","Horário","Espaço","Turma","Professor","Status"];
-linhas=docs.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:(a.horario||"").localeCompare(b.horario||"")).map(x=>[dataBR(x.data),x.horarioFim&&x.horarioFim!==x.horario?`${x.horario} - ${x.horarioFim}`:x.horario||"—",x.espaco||"—",x.turmaInicio||x.turma||"—",x.professor||"—",statusLabel(x)]);
+linhas=docs.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:(a.horario||"").localeCompare(b.horario||"")).map(x=>[dataBR(x.data),x.horarioFim&&x.horarioFim!==x.horario?`${x.horario} - ${x.horarioFim}`:x.horario||"—",x.espaco||"—",x.turmaInicio||x.turma||"—",x.professor||"—",statusLabel(resolverStatus(x))]);
 }else if(r.tipo==="equipamento"){
 docs=docs.filter(x=>{const eo=ESPACOS.find(e=>e.nome===x.espaco);return eo&&(eo.tipo==="equipamento"||eo.tipo==="audiovisual");});
 if(r.equip)docs=docs.filter(x=>x.espaco===r.equip);
@@ -3963,20 +3971,20 @@ if(x.quantidade)qtd=String(x.quantidade);
 else if(x.qtdTablets)qtd=String(x.qtdTablets);
 else if(x.qtdNotebooks)qtd=String(x.qtdNotebooks);
 else if(x.bibMic||x.bibCaixa||x.bibProj)qtd=`Mic ${x.bibMic||0} / Caixa ${x.bibCaixa||0} / Proj ${x.bibProj||0}`;
-return[dataBR(x.data),x.horarioFim&&x.horarioFim!==x.horario?`${x.horario} - ${x.horarioFim}`:x.horario||"—",x.espaco||"—",qtd,x.reservaAutomatica?`Vinculado (${x.localMontagem||"—"})`:"Avulso",x.professor||"—",statusLabel({status:x.statusEquip||x.status})];
+return[dataBR(x.data),x.horarioFim&&x.horarioFim!==x.horario?`${x.horario} - ${x.horarioFim}`:x.horario||"—",x.espaco||"—",qtd,x.reservaAutomatica?`Vinculado (${x.localMontagem||"—"})`:"Avulso",x.professor||"—",statusLabel(resolverStatus(x))];
 });
 }else{
 docs=docs.filter(x=>!x.reservaAutomatica&&(x.precisaFoto||x.precisaVideo||x.espaco==="Equipe de Marketing"));
 if(r.objetivo)docs=docs.filter(x=>x.objetivoMidia===r.objetivo);
 corpoTitulo=`Marketing: ${r.objetivo==="social"?"Rede Social":r.objetivo==="pedagogico"?"Pedagógico":"Todos"}`;
 colunas=["Data","Horário","Local","Turma","Professor","Foto/Vídeo","Status"];
-linhas=docs.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:(a.horario||"").localeCompare(b.horario||"")).map(x=>[dataBR(x.data),x.horario||"—",x.espaco==="Equipe de Marketing"?(x.salaAtividade||"—"):x.espaco||"—",x.turmaInicio||x.turma||"—",x.professor||"—",[x.precisaFoto?"Foto":"",x.precisaVideo?"Vídeo":""].filter(Boolean).join(" + ")||"—",statusLabel({status:x.statusMarketing||x.status})]);
+linhas=docs.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:(a.horario||"").localeCompare(b.horario||"")).map(x=>[dataBR(x.data),x.horario||"—",x.espaco==="Equipe de Marketing"?(x.salaAtividade||"—"):x.espaco||"—",x.turmaInicio||x.turma||"—",x.professor||"—",[x.precisaFoto?"Foto":"",x.precisaVideo?"Vídeo":""].filter(Boolean).join(" + ")||"—",statusLabel(resolverStatus(x))]);
 }
 if(!linhas.length){r.gerando=false;render("rel-erro",alertHTML("warning","Nenhum agendamento encontrado nesse período com esse filtro."));renderRelatorioModal();return;}
 colunas=colunas.map(pdfTxt);
 linhas=linhas.map(linha=>linha.map(pdfTxt));
-const totalConf=docs.filter(x=>(x.status==="confirmado")).length;
-const totalPend=docs.filter(x=>(x.status==="pendente")).length;
+const totalConf=docs.filter(x=>{const s=resolverStatus(x);return s==="confirmado"||s==="aprovado";}).length;
+const totalPend=docs.filter(x=>resolverStatus(x)==="pendente").length;
 const agora=new Date();
 const carimbo=`${String(agora.getDate()).padStart(2,"0")}/${String(agora.getMonth()+1).padStart(2,"0")}/${agora.getFullYear()} às ${String(agora.getHours()).padStart(2,"0")}:${String(agora.getMinutes()).padStart(2,"0")}`;
 const{jsPDF}=window.jspdf;
