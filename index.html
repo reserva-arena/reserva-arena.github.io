@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260909090240"/>
+<meta name="app-build" content="20260909090631"/>
 <meta name="app-build-perfis" content="admin,coordenador,ti,marketing,laboratorista"/>
-<meta name="app-build-mensagem" content="Marketing agora também é avisado quando um agendamento com foto/vídeo solicitado é editado, excluído ou cancelado por qualquer pessoa (Admin, Coordenador, Laboratorista, Maker ou o próprio professor)."/>
+<meta name="app-build-mensagem" content="Notificações de exclusão/cancelamento (🗑️) agora aparecem destacadas em vermelho no painel de notificações, pra não passarem despercebidas entre as outras."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -2453,14 +2453,22 @@ overlay.style.cssText="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0
 overlay.onclick=e=>{if(e.target===overlay)fecharPainelNotif();};
 const temNaoLidas=notifs.some(n=>!n.lida);
 const lista=notifs.length?notifs.map(n=>{
-const cor=n.lida?c.textMuted:c.navy;
-const bg=n.lida?c.surface:(c.bg);
-const borda=n.lida?c.border:"#1a6b47";
+const ehCancelamento=n.titulo?.includes("🗑️");
+let cor,bg,borda;
+if(ehCancelamento){
+cor="#dc2626";
+bg=n.lida?"#fef2f2":"#fee2e2";
+borda=n.lida?"#fecaca":"#dc2626";
+}else{
+cor=n.lida?c.textMuted:c.navy;
+bg=n.lida?c.surface:c.bg;
+borda=n.lida?c.border:"#1a6b47";
+}
 const ts=n.criadoEm?.toDate?n.criadoEm.toDate():new Date();
 const hora=ts.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
 const dia=ts.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"});
 return`<div style="background:${bg};border:1.5px solid ${borda};border-radius:10px;padding:12px 14px;margin-bottom:8px">
-     ${!n.lida?`<span style="font-size:9px;font-weight:800;color:#1a6b47;text-transform:uppercase;letter-spacing:.5px">● NOVA</span>`:""}
+     ${!n.lida?`<span style="font-size:9px;font-weight:800;color:${ehCancelamento?"#dc2626":"#1a6b47"};text-transform:uppercase;letter-spacing:.5px">● NOVA</span>`:""}
      <p style="font-size:13px;font-weight:700;color:${cor};margin:2px 0 4px">${n.titulo}</p>
      <p style="font-size:12px;color:${c.textMuted};line-height:1.4">${n.corpo}</p>
      <p style="font-size:10px;color:${c.textMuted};margin-top:4px">${dia} às ${hora}</p>
