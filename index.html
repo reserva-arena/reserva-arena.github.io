@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260909085339"/>
-<meta name="app-build-perfis" content="admin,coordenador,ti,laboratorista"/>
-<meta name="app-build-mensagem" content="Correção importante: a exclusão feita pela tela de Administração (aExcluir) nunca tinha notificação nenhuma — nem pro professor, nem pros outros admins. Agora avisa o professor dono e todos os admins, igual as outras telas já faziam."/>
+<meta name="app-build" content="20260909085751"/>
+<meta name="app-build-perfis" content="admin,coordenador,ti,marketing,laboratorista"/>
+<meta name="app-build-mensagem" content="CORREÇÃO IMPORTANTE: notificações pra 'os admins', 'o T.I.' etc. nunca funcionaram — usavam um campo (u.uid) que não existe nos documentos de usuário (o identificador certo é u.id). Isso quebrava silenciosamente 13 tipos de notificação: avisos de exclusão/edição pro Admin, aprovação do Marketing, nova solicitação de equipamento pro T.I., entre outras. Agora todas funcionam."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -1379,7 +1379,7 @@ const infoHorario=horarioEscolhido&&horarioEscolhido!==r.horario?` A equipe de M
 const infoObs=obs?` Obs. do Marketing: "${obs}"`:"";
 await gravarNotif(r.professorId,"📸 Solicitação de foto/vídeo aprovada!",`${local} — ${dataFmt} às ${r.horario}.${extra}${infoHorario}${infoObs}`,"aprovacao");
 _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
-gravarNotif(u.uid,"📸 Marketing aprovou solicitação",`${r.professor} — ${local} ${dataFmt} às ${r.horario}.${extra}${infoHorario}${infoObs}`,"info")
+gravarNotif(u.id,"📸 Marketing aprovou solicitação",`${r.professor} — ${local} ${dataFmt} às ${r.horario}.${extra}${infoHorario}${infoObs}`,"info")
 );
 if(window._MK?.sel)delete window._MK.sel[id];
 }
@@ -1399,7 +1399,7 @@ const extra=r.espaco==="Equipe de Marketing"?"":` A reserva do espaço não foi 
 const infoObs=obs?` Motivo: "${obs}"`:"";
 await gravarNotif(r.professorId,"📸 Solicitação de foto/vídeo recusada",`${local} — ${dataFmt} às ${r.horario}.${extra}${infoObs}`,"recusa");
 _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
-gravarNotif(u.uid,"📸 Marketing recusou solicitação",`${r.professor} — ${local} ${dataFmt} às ${r.horario}.${extra}${infoObs}`,"info")
+gravarNotif(u.id,"📸 Marketing recusou solicitação",`${r.professor} — ${local} ${dataFmt} às ${r.horario}.${extra}${infoObs}`,"info")
 );
 if(window._MK?.sel)delete window._MK.sel[id];
 }
@@ -1417,7 +1417,7 @@ const local=r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espac
 const dataFmt=r.data.split("-").reverse().join("/");
 await gravarNotif(r.professorId,"📸 Horário do Marketing mudou",`Por conta de um imprevisto, a equipe de Marketing agora vai estar em ${local} — ${dataFmt} às ${novoHorario} (em vez do horário combinado antes).`,"info");
 _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
-gravarNotif(u.uid,"📸 Marketing trocou o horário",`${r.professor} — ${local} ${dataFmt}: Marketing agora vai às ${novoHorario}.`,"info")
+gravarNotif(u.id,"📸 Marketing trocou o horário",`${r.professor} — ${local} ${dataFmt}: Marketing agora vai às ${novoHorario}.`,"info")
 );
 re();
 }catch(e){alert("Erro ao atualizar horário: "+e.message);}
@@ -1526,7 +1526,7 @@ const dataFmt=r.data.split("-").reverse().join("/");
 const statusFinal=podeConfirmarJunto?"confirmado":r.status;
 await gravarNotif(r.professorId,"✅ Equipamento confirmado pelo T.I.",`${r.espaco} — ${dataFmt} às ${r.horario}. ${fraseSituacaoEspaco(statusFinal)}`,"aprovacao");
 _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
-gravarNotif(u.uid,"✅ T.I. confirmou equipamento",`${r.professor} — ${r.espaco} ${dataFmt} às ${r.horario}. ${fraseSituacaoEspaco(statusFinal)}`,"info")
+gravarNotif(u.id,"✅ T.I. confirmou equipamento",`${r.professor} — ${r.espaco} ${dataFmt} às ${r.horario}. ${fraseSituacaoEspaco(statusFinal)}`,"info")
 );
 }
 re();
@@ -1541,7 +1541,7 @@ const dataFmt=r.data.split("-").reverse().join("/");
 const statusFinal=await tentarConfirmarAuto({...r,statusEquip:"recusado"});
 await gravarNotif(r.professorId,"❌ Equipamento indisponível",`T.I. informou que não haverá equipamento disponível para ${r.espaco} — ${dataFmt} às ${r.horario}. ${fraseSituacaoEspaco(statusFinal)}`,"recusa");
 _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
-gravarNotif(u.uid,"❌ T.I. recusou equipamento",`${r.professor} — ${r.espaco} ${dataFmt} às ${r.horario}. ${fraseSituacaoEspaco(statusFinal)}`,"info")
+gravarNotif(u.id,"❌ T.I. recusou equipamento",`${r.professor} — ${r.espaco} ${dataFmt} às ${r.horario}. ${fraseSituacaoEspaco(statusFinal)}`,"info")
 );
 }
 re();
@@ -1815,7 +1815,7 @@ Object.keys(siblingsMap).forEach(aid=>b.delete(doc(db,"reservas",aid)));
 await b.commit();
 const dataFmt=r.data.split("-").reverse().join("/");
 _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
-gravarNotif(u.uid,"🗑️ Coordenador excluiu agendamento",`${_usuario?.nome||"Coordenador"} excluiu "${r.espaco}" — ${dataFmt} às ${r.horario} (${r.professor})`,"info")
+gravarNotif(u.id,"🗑️ Coordenador excluiu agendamento",`${_usuario?.nome||"Coordenador"} excluiu "${r.espaco}" — ${dataFmt} às ${r.horario} (${r.professor})`,"info")
 );
 re();
 }catch(e){alert("Erro ao excluir: "+e.message);}
@@ -1835,7 +1835,7 @@ editadoPorCoordEm:new Date().toISOString()
 const dataFmt=r.data.split("-").reverse().join("/");
 await gravarNotif(r.professorId,"✏️ Agendamento editado pelo coordenador",`${r.espaco} — ${dataFmt} às ${r.horario}`,"info");
 _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
-gravarNotif(u.uid,"✏️ Coordenador editou agendamento",`${_usuario?.nome||"Coordenador"} editou "${r.espaco}" de ${r.professor} — ${dataFmt} às ${r.horario}`,"info")
+gravarNotif(u.id,"✏️ Coordenador editou agendamento",`${_usuario?.nome||"Coordenador"} editou "${r.espaco}" de ${r.professor} — ${dataFmt} às ${r.horario}`,"info")
 );
 re();
 }catch(e){alert("Erro ao editar: "+e.message);}
@@ -2357,7 +2357,7 @@ try{
 const dataFmt=r.data.split("-").reverse().join("/");
 const range=r.horarioFim&&r.horarioFim!==r.horario?` → ${r.horarioFim}`:"";
 _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
-gravarNotif(u.uid,"🗑️ Professor cancelou agendamento",`${r.professor||_usuario?.nome||"Professor"} cancelou "${r.espaco}" — ${dataFmt} às ${r.horario}${range}`,"info")
+gravarNotif(u.id,"🗑️ Professor cancelou agendamento",`${r.professor||_usuario?.nome||"Professor"} cancelou "${r.espaco}" — ${dataFmt} às ${r.horario}${range}`,"info")
 );
 }catch(e){console.warn("notif cancelarR:",e);}
 };
@@ -3825,7 +3825,7 @@ fetch("https://fcm.googleapis.com/fcm/send",{method:"POST",headers:{"Content-Typ
 const temAV=eoSalvar?.tipo==="audiovisual"||((_MA.bibAV===true)&&(_MA.bibMic>0||_MA.bibCaixa>0||_MA.bibProj>0));
 if(st==="pendente"&&temAV){
 _usuarios.filter(u=>u.perfil==="ti"&&u.ativo!==false).forEach(u=>{
-gravarNotif(u.uid,"💻 Nova solicitação de equipamento",`${profNome} · ${espaco} · ${dataFmt} às ${horFmt}`,"ti");
+gravarNotif(u.id,"💻 Nova solicitação de equipamento",`${profNome} · ${espaco} · ${dataFmt} às ${horFmt}`,"ti");
 });
 }
 
@@ -3858,7 +3858,7 @@ try{
 const horarioFalha=_MA.blocos?.[0]?.horario||"";
 const dataFmt=data?data.split("-").reverse().join("/"):"";
 _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
-gravarNotif(u.uid,"⚠️ Professor não conseguiu agendar (sistema sobrecarregado)",`${_usuario?.nome||"Professor"} tentou agendar ${espaco||"?"} — ${dataFmt} às ${horarioFalha}, mas o sistema estava sobrecarregado. Os dados ficaram salvos no aparelho dele; pode valer entrar em contato pra ajudar a reenviar.`,"info")
+gravarNotif(u.id,"⚠️ Professor não conseguiu agendar (sistema sobrecarregado)",`${_usuario?.nome||"Professor"} tentou agendar ${espaco||"?"} — ${dataFmt} às ${horarioFalha}, mas o sistema estava sobrecarregado. Os dados ficaram salvos no aparelho dele; pode valer entrar em contato pra ajudar a reenviar.`,"info")
 );
 }catch(en){console.warn("notif admin sobrecarga:",en);}
 }else{
@@ -4089,7 +4089,7 @@ const dataFmt=r.data.split("-").reverse().join("/");
 const rotulo=_usuario?.perfil==="maker"?"Maker":"Laboratorista";
 if(r.professorId&&r.professorId!==_usuario?.uid)gravarNotif(r.professorId,`🗑️ Agendamento excluído pelo ${rotulo}`,`${r.espaco} — ${dataFmt} às ${r.horario}`,"info");
 _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
-gravarNotif(u.uid,`🗑️ ${_usuario?.nome||rotulo} excluiu agendamento`,`${r.espaco} de ${r.professor} — ${dataFmt} às ${r.horario}${r.professorId===_usuario?.uid?" (o próprio "+rotulo.toLowerCase()+")":""}`,"info")
+gravarNotif(u.id,`🗑️ ${_usuario?.nome||rotulo} excluiu agendamento`,`${r.espaco} de ${r.professor} — ${dataFmt} às ${r.horario}${r.professorId===_usuario?.uid?" (o próprio "+rotulo.toLowerCase()+")":""}`,"info")
 );
 re();
 }catch(e){alert("Erro ao excluir: "+e.message);}
@@ -4181,7 +4181,7 @@ gravarNotif(e.professorId,`✏️ Agendamento editado ${rotuloEditor}`,`${e.espa
 }
 // O Admin é avisado de TODA edição, mesmo quando o próprio professor edita a reserva dele.
 _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
-gravarNotif(u.uid,`✏️ ${_usuario?.nome||"Alguém"} editou agendamento`,`${e.espaco} de ${e.professor||"—"} — ${dataFmt} às ${e.horario}${naoEhDono?"":" (o próprio professor)"}`,"info")
+gravarNotif(u.id,`✏️ ${_usuario?.nome||"Alguém"} editou agendamento`,`${e.espaco} de ${e.professor||"—"} — ${dataFmt} às ${e.horario}${naoEhDono?"":" (o próprio professor)"}`,"info")
 );
 fecharEdicao();
 }catch{render("ed-erro",alertHTML("error","Erro ao salvar."));}
@@ -4745,7 +4745,7 @@ await b.commit();
 const dataFmt=r.data.split("-").reverse().join("/");
 if(r.professorId&&r.professorId!==_usuario?.uid)gravarNotif(r.professorId,"🗑️ Agendamento excluído pelo Admin",`${r.espaco} — ${dataFmt} às ${r.horario}`,"info");
 _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
-gravarNotif(u.uid,`🗑️ ${_usuario?.nome||"Admin"} excluiu agendamento`,`${r.espaco} de ${r.professor} — ${dataFmt} às ${r.horario}`,"info")
+gravarNotif(u.id,`🗑️ ${_usuario?.nome||"Admin"} excluiu agendamento`,`${r.espaco} de ${r.professor} — ${dataFmt} às ${r.horario}`,"info")
 );
 };
 
