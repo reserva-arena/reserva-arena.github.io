@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260909090631"/>
+<meta name="app-build" content="20260909092453"/>
 <meta name="app-build-perfis" content="admin,coordenador,ti,marketing,laboratorista"/>
-<meta name="app-build-mensagem" content="Notificações de exclusão/cancelamento (🗑️) agora aparecem destacadas em vermelho no painel de notificações, pra não passarem despercebidas entre as outras."/>
+<meta name="app-build-mensagem" content="Ajuste na detecção do vermelho nas notificações de exclusão/cancelamento (checagem mais tolerante). Se ainda aparecer verde, recarregue a página/app pra garantir que pegou a versão mais nova."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -2453,7 +2453,7 @@ overlay.style.cssText="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0
 overlay.onclick=e=>{if(e.target===overlay)fecharPainelNotif();};
 const temNaoLidas=notifs.some(n=>!n.lida);
 const lista=notifs.length?notifs.map(n=>{
-const ehCancelamento=n.titulo?.includes("🗑️");
+const ehCancelamento=/\u{1F5D1}/u.test(n.titulo||"");
 let cor,bg,borda;
 if(ehCancelamento){
 cor="#dc2626";
