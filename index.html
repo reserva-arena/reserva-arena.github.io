@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260908084354"/>
-<meta name="app-build-perfis" content="admin,coordenador,ti,marketing,laboratorista"/>
-<meta name="app-build-mensagem" content="Correção no Relatório de Equipamento: pedidos de Som/Mic/Projetor feitos junto com outra sala (ex: Biblioteca) estavam totalmente ausentes do relatório — pendentes E aprovados. Agora aparecem normalmente, independente do status ou de a data ser futura."/>
+<meta name="app-build" content="20260909081242"/>
+<meta name="app-build-perfis" content="admin,coordenador,ti,laboratorista"/>
+<meta name="app-build-mensagem" content="Correção importante: a checagem de laboratorista (só existe 1 pra atender os dois labs de ciências) agora também vale ao EDITAR um agendamento — antes só bloqueava conflito na criação. Editar um horário ou marcar 'Sim' pro laboratorista num agendamento existente agora avisa se ele já está escalado no outro lab no mesmo horário."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -4113,6 +4113,21 @@ const gruposRestritos={maker:["Maker 1","Maker 2"],laboratorista:["Lab. de Ciên
 const salasPermitidas=gruposRestritos[_usuario?.perfil]||null;
 if(salasPermitidas&&!salasPermitidas.includes(e.espaco)){render("ed-erro",alertHTML("error",`Você só pode mover agendamentos entre suas próprias salas (${salasPermitidas.join(" ou ")}).`));return;}
 const eo=ESPACOS.find(esp=>esp.nome===e.espaco);
+// Laboratorista é compartilhado entre os dois labs de ciências — mesma checagem que existe
+// na criação de um agendamento novo, só que aqui também precisa (edição pode mudar horário,
+// dia ou marcar "Sim" pro laboratorista num agendamento que antes não tinha).
+if(eo?.tipo==="laboratorio"&&e.laboratorista==="Sim"){
+const LABS_CIENCIAS=["Lab. de Ciências Anos Iniciais","Lab. de Ciências Anos Finais"];
+const outroLab=LABS_CIENCIAS.find(nome=>nome!==e.espaco);
+const rangeHorsED=e.horario&&e.horarioFim?horariosRange(e.horario,e.horarioFim):[e.horario];
+const snapLabED=await Promise.all(rangeHorsED.map(h=>
+getDocs(query(collection(db,"reservas"),where("espaco","==",outroLab),where("data","==",e.data),where("horario","==",h)))
+));
+for(let i=0;i<rangeHorsED.length;i++){
+const conflitoLabED=snapLabED[i].docs.map(d=>({id:d.id,...d.data()})).find(r=>r.id!==e._id&&r?.status!=="recusado"&&r.laboratorista==="Sim");
+if(conflitoLabED){render("ed-erro",alertHTML("error",`O laboratorista já está escalado às ${rangeHorsED[i]} no ${outroLab} (${conflitoLabED.professor}). Não é possível marcar "Sim" pro laboratorista nesse horário.`));return;}
+}
+}
 const novoSt=isUrgente(e.data,e.horario||"07:10")?"pendente":"confirmado";
 try{
 await updateDoc(doc(db,"reservas",e._id),{espaco:e.espaco,data:e.data,horario:e.horario,horarioFim:e.horarioFim||e.horario,turma:e.turma,conteudo:e.conteudo,laboratorista:e.laboratorista||"",quantidade:eo?.tipo==="equipamento"?Number(e.quantidade):null,status:novoSt,editadoEm:Timestamp.now()});
