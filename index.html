@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260909092453"/>
-<meta name="app-build-perfis" content="admin,coordenador,ti,marketing,laboratorista"/>
-<meta name="app-build-mensagem" content="Ajuste na detecção do vermelho nas notificações de exclusão/cancelamento (checagem mais tolerante). Se ainda aparecer verde, recarregue a página/app pra garantir que pegou a versão mais nova."/>
+<meta name="app-build" content="20260909102910"/>
+<meta name="app-build-perfis" content="admin,coordenador,ti,marketing,professor,laboratorista"/>
+<meta name="app-build-mensagem" content="Os nomes 'Tablets' e 'Computadores' não mostram mais o '(XX disp.)' junto do nome nas telas de agendamento e filtros — isso confundia com a quantidade que a pessoa está reservando. O identificador interno não mudou, então nada foi perdido nos agendamentos já existentes."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -494,6 +494,11 @@ const ESPACO_ICON={
 "Tablets (18 disp.)":"📱","Computadores (16 disp.)":"💻","Som, Microfone e Projetor":"🔊",
 };
 const tipoIcon=(t,nome)=>ESPACO_ICON[nome]||({espaco:"🏛️",laboratorio:"🔬",equipamento:"💻",audiovisual:"🎙️",marketing:"📸"}[t]||"📍");
+// Tablets/Computadores têm "(18 disp.)"/"(16 disp.)" no NOME real (usado como identificador
+// nas reservas salvas — não pode mudar, quebraria o vínculo com agendamentos existentes).
+// Essa função só tira isso da EXIBIÇÃO, pra não confundir com a quantidade que a pessoa
+// está reservando (ex: pedir 10 unidades enquanto o nome mostra "18 disp." do estoque total).
+const nomeExibicao=nome=>(nome||"").replace(/\s*\(\d+\s*disp\.?\)\s*$/i,"");
 const NOME_CURTO={
 "Lab. de Matemática":"Lab.Mat.",
 "Lab. de Ciências Anos Iniciais":"Lab.Ci.Inic.",
@@ -825,7 +830,7 @@ $("app").innerHTML=`
        </div>
        <select onchange="pubSetEspaco(this.value)" style="flex:1;min-width:140px;padding:7px 10px;border-radius:8px;font-size:12px;border:1.5px solid ${c.border};background:${c.surface};color:${c.text};outline:none;cursor:pointer;font-family:inherit">
          <option value="">🏛️ Todos os espaços</option>
-         ${ESPACOS.map(e=>`<option value="${e.nome}" ${ps.filtroEspaco===e.nome?"selected":""}>${tipoIcon(e.tipo,e.nome)} ${e.nome}</option>`).join("")}
+         ${ESPACOS.map(e=>`<option value="${e.nome}" ${ps.filtroEspaco===e.nome?"selected":""}>${tipoIcon(e.tipo,e.nome)} ${nomeExibicao(e.nome)}</option>`).join("")}
        </select>
        <button onclick="abrirLogin()" style="background:#1a6b47;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;padding:7px 14px;font-size:12px;font-family:inherit;white-space:nowrap">+ Agendar</button>
      </div>
@@ -1669,7 +1674,7 @@ $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="
        </select>
        <select onchange="window._CO.fEspaco=this.value;re()" style="padding:8px 10px;border-radius:8px;border:1.5px solid ${c.border};background:${c.surface};color:${c.text};font-size:12px;font-family:inherit;outline:none">
          <option value="">🏛️ Todos espaços</option>
-         ${ESPACOS.map(e=>`<option value="${e.nome}" ${_CO.fEspaco===e.nome?"selected":""}>${e.nome}</option>`).join("")}
+         ${ESPACOS.map(e=>`<option value="${e.nome}" ${_CO.fEspaco===e.nome?"selected":""}>${nomeExibicao(e.nome)}</option>`).join("")}
        </select>
        ${_CO.fProf||_CO.fTurma||_CO.fEspaco?`<button onclick="window._CO.fProf='';window._CO.fTurma='';window._CO.fEspaco='';re()" style="padding:8px 10px;border-radius:8px;background:#fef2f2;border:1.5px solid #fecaca;color:#b91c1c;font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap;font-family:inherit">✕ Limpar filtros</button>`:""}
        <button onclick="window._CO.historico=!window._CO.historico;re()" style="padding:8px 10px;border-radius:8px;border:1.5px solid ${_CO.historico?c.navy:c.border};background:${_CO.historico?c.navy:"transparent"};color:${_CO.historico?"#fff":c.textMid};font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🕐 ${_CO.historico?"Ocultar hist.":"Histórico"}</button>
@@ -1933,7 +1938,7 @@ return `<div style="display:flex;flex-direction:column;align-items:center;justif
      <label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase;margin-bottom:6px;display:block">🏛️ Qual espaço?</label>
      <select onchange="_P.filtroEspacoEscolha=this.value;re()" style="width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid ${c.border};background:${c.surface};color:${c.text};font-size:14px;font-family:inherit">
        <option value="" ${_P.filtroEspacoEscolha===""?"selected":""}>🌐 Todos os espaços</option>
-       ${ESPACOS.map(e=>`<option value="${e.nome}" ${_P.filtroEspacoEscolha===e.nome?"selected":""}>${tipoIcon(e.tipo,e.nome)} ${e.nome}</option>`).join("")}
+       ${ESPACOS.map(e=>`<option value="${e.nome}" ${_P.filtroEspacoEscolha===e.nome?"selected":""}>${tipoIcon(e.tipo,e.nome)} ${nomeExibicao(e.nome)}</option>`).join("")}
      </select>
    </div>
    <div style="text-align:left;margin-bottom:28px">
@@ -2011,7 +2016,7 @@ html+=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;paddin
      </div>
      <select onchange="pSetEspaco(this.value)" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:7px;color:#fff;font-weight:600;font-size:11.5px;cursor:pointer;outline:none;padding:5px 8px;max-width:150px">
        <option value="" style="background:#1a6b47">Todos os espaços</option>
-       ${ESPACOS.map(e=>`<option value="${e.nome}" ${_P.filtroEspaco===e.nome?"selected":""} style="background:#1a6b47">${e.nome}</option>`).join("")}
+       ${ESPACOS.map(e=>`<option value="${e.nome}" ${_P.filtroEspaco===e.nome?"selected":""} style="background:#1a6b47">${nomeExibicao(e.nome)}</option>`).join("")}
      </select>
      <button onclick="_todasCarregadas=false;_todasCarregadasChave=null;carregarTodas(_P.filtroEspaco||undefined);" title="Atualizar agendamentos" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:7px;color:#fff;font-weight:600;font-size:11.5px;cursor:pointer;padding:5px 10px;display:flex;align-items:center;gap:4px;font-family:inherit">🔄 Atualizar</button>
    </div>
@@ -2146,7 +2151,7 @@ const meusFuturos=futuras.filter(r=>r.professorId===_usuario?.uid&&r.status!=="r
 html+=`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
      <select onchange="pSetEspaco(this.value)" style="padding:7px 12px;border-radius:8px;border:1.5px solid ${c.border};background:${c.surface};color:${c.text};font-size:13px;cursor:pointer;outline:none;font-family:inherit;flex:1;min-width:160px">
        <option value="">🏛️ Todos os espaços</option>
-       ${ESPACOS.map(e=>`<option value="${e.nome}" ${_P.filtroEspaco===e.nome?"selected":""}>${tipoIcon(e.tipo,e.nome)} ${e.nome}</option>`).join("")}
+       ${ESPACOS.map(e=>`<option value="${e.nome}" ${_P.filtroEspaco===e.nome?"selected":""}>${tipoIcon(e.tipo,e.nome)} ${nomeExibicao(e.nome)}</option>`).join("")}
      </select>
      ${_P.filtroEspaco?`<button onclick="pSetEspaco('')" style="${btn('ghost')};padding:7px 12px;font-size:12px;white-space:nowrap">✕ Limpar</button>`:""}
      <button onclick="_todasCarregadas=false;_todasCarregadasChave=null;carregarTodas(_P.filtroEspaco||undefined);" title="Atualizar agendamentos" style="${btn('ghost')};padding:7px 12px;font-size:12px;white-space:nowrap">🔄 Atualizar</button>
@@ -2639,7 +2644,7 @@ const dtStart=icsDataHora(m.data,horaIni,0);
 const dtEnd=horaFimSel?icsDataHora(m.data,horaFimSel,50):icsDataHora(m.data,horaIni,50);
 const turmasSucesso=b0.turmasPorHorario?Object.values(b0.turmasPorHorario).filter(Boolean):[b0.turma||""].filter(Boolean);
 const turmaTxt=turmasSucesso.filter(Boolean).join(", ");
-const titulo=`Reserva Arena: ${m.espaco}${turmaTxt?" · "+turmaTxt:""}`;
+const titulo=`Reserva Arena: ${nomeExibicao(m.espaco)}${turmaTxt?" · "+turmaTxt:""}`;
 const uid=`reserva-${Date.now()}@reserva-arena.github.io`;
 const nowStamp=icsDataHora(new Date().toISOString().slice(0,10),new Date().toTimeString().slice(0,5),0);
 const linhas=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Reserva Arena//PT-BR","CALSCALE:GREGORIAN","BEGIN:VEVENT",`UID:${uid}`,`DTSTAMP:${nowStamp}`,`DTSTART:${dtStart}`,`DTEND:${dtEnd}`,`SUMMARY:${escapeICS(titulo)}`,`DESCRIPTION:${escapeICS(b0.conteudo||"")}`,`LOCATION:${escapeICS(m.espaco||"")}`,"END:VEVENT","END:VCALENDAR"];
@@ -2662,7 +2667,7 @@ const dtStart=icsDataHora(m.data,horaIni,0);
 const dtEnd=horaFimSel?icsDataHora(m.data,horaFimSel,50):icsDataHora(m.data,horaIni,50);
 const turmasSucesso=b0.turmasPorHorario?Object.values(b0.turmasPorHorario).filter(Boolean):[b0.turma||""].filter(Boolean);
 const turmaTxt=turmasSucesso.filter(Boolean).join(", ");
-const titulo=`Reserva Arena: ${m.espaco}${turmaTxt?" · "+turmaTxt:""}`;
+const titulo=`Reserva Arena: ${nomeExibicao(m.espaco)}${turmaTxt?" · "+turmaTxt:""}`;
 const params=new URLSearchParams({action:"TEMPLATE",text:titulo,dates:`${dtStart}/${dtEnd}`,details:b0.conteudo||"",location:m.espaco||""});
 return `https://calendar.google.com/calendar/render?${params.toString()}`;
 };
@@ -2682,7 +2687,7 @@ html+=`<div style="padding:20px 14px;text-align:center">
      <div style="width:64px;height:64px;border-radius:50%;background:${m.sucesso==="confirmado"?"#1a6b47":"#fff7ed"};color:${m.sucesso==="confirmado"?"#fff":"#7c2d12"};display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 16px">${m.sucesso==="confirmado"?"✓":"⏳"}</div>
      <h3 style="font-size:20px;font-weight:800;color:${m.sucesso==="confirmado"?c.green:c.amber};margin-bottom:12px">${m.sucesso==="confirmado"?"Confirmado!":"Pendente — aguardando aprovação"}</h3>
      <div style="background:${c.bg};border:1.5px solid ${c.border};border-radius:10px;padding:12px 14px;margin-bottom:12px;text-align:left">
-       <p style="font-size:13px;font-weight:700;color:${c.navy};margin-bottom:6px">${tipoIcon(m.tipoEspaco,m.espaco)} ${m.espaco}</p>
+       <p style="font-size:13px;font-weight:700;color:${c.navy};margin-bottom:6px">${tipoIcon(m.tipoEspaco,m.espaco)} ${nomeExibicao(m.espaco)}</p>
        <p style="font-size:12px;color:${c.textMid};margin-bottom:3px">📅 ${m.data?.split("-").reverse().join("/")}</p>
        ${horTxt?`<p style="font-size:12px;color:${c.textMid};margin-bottom:3px">⏰ ${horTxt}</p>`:""}
        ${turmaTxt?`<p style="font-size:12px;color:${c.textMid};margin-bottom:3px">🎓 ${turmaTxt}</p>`:""}
@@ -2742,7 +2747,7 @@ const isMulti=e.multiHorario;
 html+=`<button onclick="maEspaco(${eidx})" style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:10px;border:1.5px solid ${c.border};background:${c.surface};cursor:pointer;text-align:left;width:100%;font-family:inherit">
          <span style="font-size:20px">${tipoIcon(tipo,e.nome)}</span>
          <div style="flex:1">
-           <span style="font-size:14px;font-weight:700;color:${c.navy}">${e.nome}</span>
+           <span style="font-size:14px;font-weight:700;color:${c.navy}">${nomeExibicao(e.nome)}</span>
          </div>
          ${e.estoque?`<span style="font-size:11px;color:${c.textMuted}">${e.estoque} disp.</span>`:""}
        </button>`;
@@ -2756,7 +2761,7 @@ if(m.step===2){
 const eo=ESPACOS.find(e=>e.nome===m.espaco);
 html+=`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:${c.greenBg};border-radius:10px;margin-bottom:16px;border:1px solid ${c.greenBorder}">
      <span style="font-size:18px">${tipoIcon(eo?.tipo,m.espaco)}</span>
-     <span style="font-size:13px;font-weight:700;color:${c.green}">${m.espaco}</span>
+     <span style="font-size:13px;font-weight:700;color:${c.green}">${nomeExibicao(m.espaco)}</span>
 
      <button onclick="maBack()" style="margin-left:auto;background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:12px;font-family:inherit">Trocar</button>
    </div>`;
@@ -2783,7 +2788,7 @@ const eo=ESPACOS.find(e=>e.nome===m.espaco);
 const isMulti=eo?.multiHorario;
 html+=`<div style="background:linear-gradient(135deg,#1a6b47,#0f4c2b);padding:10px 14px;border-radius:10px;margin-bottom:14px">
      <p style="font-size:11px;color:rgba(255,255,255,.7);font-weight:700;text-transform:uppercase;margin-bottom:2px">Agendando em</p>
-     <p style="font-size:14px;font-weight:800;color:#fff">${tipoIcon(eo?.tipo,m.espaco)} ${m.espaco} · ${m.data.split("-").reverse().join("/")}</p>
+     <p style="font-size:14px;font-weight:800;color:#fff">${tipoIcon(eo?.tipo,m.espaco)} ${nomeExibicao(m.espaco)} · ${m.data.split("-").reverse().join("/")}</p>
 
    </div>`;
 
@@ -3288,7 +3293,7 @@ if(precisaCiencia)html+=alertHTML("warning",fimSem?"⚠️ Agendamento fora do h
 if(avisoCoordUrgFds)html+=alertHTML("success",fimSem?"ℹ️ Agendamento em fim de semana — como coordenador, confirma automaticamente. Se essa sala precisar de algo específico, fale direto com a T.E.":"ℹ️ Menos de 24h de antecedência — como coordenador, confirma automaticamente. Se essa sala precisar de algo específico por causa do prazo curto, fale direto com a T.E.");
 html+=`<div style="background:${c.bg};border-radius:10px;padding:12px 16px;margin-bottom:12px">
    <p style="font-size:11px;font-weight:700;color:${c.textMuted};text-transform:uppercase;margin-bottom:6px">Local e data</p>
-   <p style="font-size:14px;font-weight:700;color:${c.navy}">${tipoIcon(eo?.tipo,m.espaco)} ${m.espaco}</p>
+   <p style="font-size:14px;font-weight:700;color:${c.navy}">${tipoIcon(eo?.tipo,m.espaco)} ${nomeExibicao(m.espaco)}</p>
    <p style="font-size:13px;color:${c.textMid};margin-top:2px">📅 ${dia}/${mes}/${ano}</p>
  </div>`;
 
@@ -3304,7 +3309,7 @@ html+=`<div style="background:${c.surface};border:1px solid ${c.border};border-r
          <p style="font-family:'DM Mono',monospace;font-weight:800;color:#40b07a;font-size:13px">${b.horarioFim}</p>
        </div>
        <div style="flex:1">
-         <p style="font-size:12px;font-weight:700;color:${c.green}">${rangeHors.length} horário${rangeHors.length!==1?"s":""} · ${m.espaco}</p>
+         <p style="font-size:12px;font-weight:700;color:${c.green}">${rangeHors.length} horário${rangeHors.length!==1?"s":""} · ${nomeExibicao(m.espaco)}</p>
          ${b.local&&eo?.equipAvulso?`<p style="font-size:11px;color:#0369a1;margin-top:2px;font-weight:700">🏫 ${b.local}${b.localDevolucao&&b.localDevolucao!==b.local?" → "+b.localDevolucao:""}</p>`:""}
          ${b.precisaFoto?`<p style="font-size:11px;color:#7c3aed;margin-top:2px">📸 Foto solicitada</p>`:""}${b.precisaVideo?`<p style="font-size:11px;color:#1d4ed8;margin-top:2px">🎬 Vídeo solicitado</p>`:""}
          ${b.qtdTablets>0?`<p style="font-size:11px;color:#0369a1;margin-top:2px">📱 ${b.qtdTablets} tablet${b.qtdTablets>1?"s":""}</p>`:""}
@@ -4135,7 +4140,7 @@ const espacosMostrados=(salasPermitidas&&!_ED.verTodasSalas)?ESPACOS.filter(esp=
 let html=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px"><h3 style="font-size:17px;font-weight:800;color:${c.navy}">✏️ Editar Agendamento</h3><button onclick="fecharEdicao()" style="background:none;border:none;font-size:20px;cursor:pointer;color:${c.textMuted}">✕</button></div>
  <div id="ed-erro"></div>
  <div style="display:grid;gap:16px">
-   <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Espaço *</label><br><select onchange="_ED.espaco=this.value;renderED()" style="${sel()};margin-top:5px">${espacosMostrados.map(esp=>`<option value="${esp.nome}" ${_ED.espaco===esp.nome?"selected":""}>${tipoIcon(esp.tipo,esp.nome)} ${esp.nome}</option>`).join("")}</select>
+   <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Espaço *</label><br><select onchange="_ED.espaco=this.value;renderED()" style="${sel()};margin-top:5px">${espacosMostrados.map(esp=>`<option value="${esp.nome}" ${_ED.espaco===esp.nome?"selected":""}>${tipoIcon(esp.tipo,esp.nome)} ${nomeExibicao(esp.nome)}</option>`).join("")}</select>
    ${salasPermitidas?(_ED.verTodasSalas?`<button onclick="_ED.verTodasSalas=false;renderED()" style="background:none;border:none;color:${c.blueMid};font-size:12px;font-weight:700;cursor:pointer;padding:6px 0">↩️ Voltar pras minhas salas</button>`:`<button onclick="_ED.verTodasSalas=true;renderED()" style="background:none;border:none;color:${c.blueMid};font-size:12px;font-weight:700;cursor:pointer;padding:6px 0">👁️ Ver outras salas</button><p style="font-size:10.5px;color:${c.textMuted};margin-top:2px">Só é possível salvar movendo entre suas próprias salas.</p>`):""}
    </div>
    ${isEquip?`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Quantidade *</label><br><input type="number" min="1" max="${eo.estoque}" value="${e.quantidade||1}" onchange="_ED.quantidade=this.value" style="${inp()};width:140px;margin-top:5px"></div>`:""}
@@ -4287,7 +4292,7 @@ if(urgentes.length)html+=`<div style="background:linear-gradient(135deg,#f97316,
 // ── FILTROS ──
 html+=`<div style="background:${c.surface};border-radius:12px;border:1px solid ${c.border};padding:8px 12px;margin-bottom:16px">
    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-     <select id="adm-sel-espaco" style="${sel()};font-size:12px;padding:5px 8px;flex:1;min-width:100px"><option value="">🏛️ Espaço</option>${ESPACOS.map(e=>`<option value="${e.nome}" ${_A.fEspaco===e.nome?"selected":""}>${e.nome}</option>`).join("")}</select>
+     <select id="adm-sel-espaco" style="${sel()};font-size:12px;padding:5px 8px;flex:1;min-width:100px"><option value="">🏛️ Espaço</option>${ESPACOS.map(e=>`<option value="${e.nome}" ${_A.fEspaco===e.nome?"selected":""}>${nomeExibicao(e.nome)}</option>`).join("")}</select>
      <div style="position:relative;flex:1;min-width:100px">
        <input id="adm-sel-prof" type="text" autocomplete="off" placeholder="👤 Professor" value="${_A.fProf||""}" style="${sel()};font-size:12px;padding:5px 8px;width:100%">
        <div id="adm-prof-sugg" style="display:none;position:absolute;top:100%;left:0;right:0;background:${c.surface};border:1.5px solid ${c.border};border-radius:8px;margin-top:4px;max-height:220px;overflow-y:auto;z-index:50;box-shadow:0 4px 14px rgba(0,0,0,.15)"></div>
