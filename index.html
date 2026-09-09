@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260909085751"/>
+<meta name="app-build" content="20260909090240"/>
 <meta name="app-build-perfis" content="admin,coordenador,ti,marketing,laboratorista"/>
-<meta name="app-build-mensagem" content="CORREÇÃO IMPORTANTE: notificações pra 'os admins', 'o T.I.' etc. nunca funcionaram — usavam um campo (u.uid) que não existe nos documentos de usuário (o identificador certo é u.id). Isso quebrava silenciosamente 13 tipos de notificação: avisos de exclusão/edição pro Admin, aprovação do Marketing, nova solicitação de equipamento pro T.I., entre outras. Agora todas funcionam."/>
+<meta name="app-build-mensagem" content="Marketing agora também é avisado quando um agendamento com foto/vídeo solicitado é editado, excluído ou cancelado por qualquer pessoa (Admin, Coordenador, Laboratorista, Maker ou o próprio professor)."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -1817,6 +1817,7 @@ const dataFmt=r.data.split("-").reverse().join("/");
 _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
 gravarNotif(u.id,"🗑️ Coordenador excluiu agendamento",`${_usuario?.nome||"Coordenador"} excluiu "${r.espaco}" — ${dataFmt} às ${r.horario} (${r.professor})`,"info")
 );
+avisarMarketingSeEnvolvido(r,"🗑️ Agendamento com foto/vídeo foi excluído",`${r.espaco} de ${r.professor} — ${dataFmt} às ${r.horario} foi excluído pelo Coordenador.`);
 re();
 }catch(e){alert("Erro ao excluir: "+e.message);}
 };
@@ -2359,6 +2360,7 @@ const range=r.horarioFim&&r.horarioFim!==r.horario?` → ${r.horarioFim}`:"";
 _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
 gravarNotif(u.id,"🗑️ Professor cancelou agendamento",`${r.professor||_usuario?.nome||"Professor"} cancelou "${r.espaco}" — ${dataFmt} às ${r.horario}${range}`,"info")
 );
+avisarMarketingSeEnvolvido(r,"🗑️ Agendamento com foto/vídeo foi cancelado",`${r.espaco} de ${r.professor||_usuario?.nome} — ${dataFmt} às ${r.horario}${range} foi cancelado pelo professor.`);
 }catch(e){console.warn("notif cancelarR:",e);}
 };
 
@@ -2383,6 +2385,15 @@ lida: false,
 criadoEm: Timestamp.now()
 });
 }catch(e){console.warn("gravarNotif erro:",e);}
+}
+// Se o agendamento tinha foto/vídeo solicitado, o Marketing precisa saber quando ele é
+// editado ou excluído por outra pessoa — senão a equipe pode ir pra um horário que não
+// existe mais, ou perder uma mudança de sala/horário.
+function avisarMarketingSeEnvolvido(r,titulo,corpo){
+if(!(r?.precisaFoto||r?.precisaVideo))return;
+_usuarios.filter(u=>u.perfil==="marketing"||u.perfil==="fotografo").forEach(u=>
+gravarNotif(u.id,titulo,corpo,"info")
+);
 }
 
 function iniciarSinoListener(userId){
@@ -4091,6 +4102,7 @@ if(r.professorId&&r.professorId!==_usuario?.uid)gravarNotif(r.professorId,`🗑�
 _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
 gravarNotif(u.id,`🗑️ ${_usuario?.nome||rotulo} excluiu agendamento`,`${r.espaco} de ${r.professor} — ${dataFmt} às ${r.horario}${r.professorId===_usuario?.uid?" (o próprio "+rotulo.toLowerCase()+")":""}`,"info")
 );
+avisarMarketingSeEnvolvido(r,"🗑️ Agendamento com foto/vídeo foi excluído",`${r.espaco} de ${r.professor} — ${dataFmt} às ${r.horario} foi excluído pelo ${rotulo}.`);
 re();
 }catch(e){alert("Erro ao excluir: "+e.message);}
 };
@@ -4183,6 +4195,7 @@ gravarNotif(e.professorId,`✏️ Agendamento editado ${rotuloEditor}`,`${e.espa
 _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
 gravarNotif(u.id,`✏️ ${_usuario?.nome||"Alguém"} editou agendamento`,`${e.espaco} de ${e.professor||"—"} — ${dataFmt} às ${e.horario}${naoEhDono?"":" (o próprio professor)"}`,"info")
 );
+avisarMarketingSeEnvolvido(e,"✏️ Agendamento com foto/vídeo foi editado",`${e.espaco} de ${e.professor||"—"} — agora ${dataFmt} às ${e.horario}.`);
 fecharEdicao();
 }catch{render("ed-erro",alertHTML("error","Erro ao salvar."));}
 };
@@ -4747,6 +4760,7 @@ if(r.professorId&&r.professorId!==_usuario?.uid)gravarNotif(r.professorId,"🗑�
 _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
 gravarNotif(u.id,`🗑️ ${_usuario?.nome||"Admin"} excluiu agendamento`,`${r.espaco} de ${r.professor} — ${dataFmt} às ${r.horario}`,"info")
 );
+avisarMarketingSeEnvolvido(r,"🗑️ Agendamento com foto/vídeo foi excluído",`${r.espaco} de ${r.professor} — ${dataFmt} às ${r.horario} foi excluído pelo Admin.`);
 };
 
 // ════════════════════════════════════════════════════════════════════════════
