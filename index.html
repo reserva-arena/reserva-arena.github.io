@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260909084847"/>
-<meta name="app-build-perfis" content="admin,laboratorista"/>
-<meta name="app-build-mensagem" content="Laboratorista agora pode excluir agendamentos dos dois labs de ciências (antes só podia editar). Ao editar ou excluir um agendamento de outro professor, tanto o professor quanto o Admin recebem notificação automática."/>
+<meta name="app-build" content="20260909085117"/>
+<meta name="app-build-perfis" content="admin,coordenador,ti,laboratorista"/>
+<meta name="app-build-mensagem" content="Maker também ganhou o botão de excluir (igual o Laboratorista). E agora o Admin é avisado de TODA edição de agendamento, mesmo quando é o próprio professor editando a reserva dele — antes só avisava quando era outra pessoa editando."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -1126,7 +1126,7 @@ return`<div style="background:${c.surface};border:1.5px solid ${c.border};border
    </div>
    <p style="font-size:13px;color:${c.textMid}">${r.professor} · ${r.turma||"—"}</p>
    ${r.conteudo?`<p style="font-size:12px;color:${c.textMuted};margin-top:3px">📝 ${r.conteudo}</p>`:""}
-   <div style="margin-top:10px"><button onclick="abrirEdicao('${r.id}')" style="padding:7px 16px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.textMid};font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">✏️ Editar / Mover de sala</button></div>
+   <div style="margin-top:10px;display:flex;gap:8px"><button onclick="abrirEdicao('${r.id}')" style="padding:7px 16px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.textMid};font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">✏️ Editar / Mover de sala</button><button onclick="makerExcluir('${r.id}')" style="padding:7px 12px;border-radius:8px;border:1.5px solid #fecaca;background:transparent;color:#dc2626;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🗑️ Excluir</button></div>
  </div>`;
 };
 const todosOrdenados=[..._makerGlobal].sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
@@ -4086,13 +4086,15 @@ if(a.reservaAutomatica&&a.espaco===r.espaco&&a.data===r.data&&a.professorId===r.
 Object.keys(siblingsMap).forEach(aid=>b.delete(doc(db,"reservas",aid)));
 await b.commit();
 const dataFmt=r.data.split("-").reverse().join("/");
-if(r.professorId&&r.professorId!==_usuario?.uid)gravarNotif(r.professorId,"🗑️ Agendamento excluído pelo Laboratorista",`${r.espaco} — ${dataFmt} às ${r.horario}`,"info");
+const rotulo=_usuario?.perfil==="maker"?"Maker":"Laboratorista";
+if(r.professorId&&r.professorId!==_usuario?.uid)gravarNotif(r.professorId,`🗑️ Agendamento excluído pelo ${rotulo}`,`${r.espaco} — ${dataFmt} às ${r.horario}`,"info");
 _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
-gravarNotif(u.uid,"🗑️ Laboratorista excluiu agendamento",`${_usuario?.nome||"Laboratorista"} excluiu "${r.espaco}" — ${dataFmt} às ${r.horario} (${r.professor})`,"info")
+gravarNotif(u.uid,`🗑️ ${_usuario?.nome||rotulo} excluiu agendamento`,`${r.espaco} de ${r.professor} — ${dataFmt} às ${r.horario}${r.professorId===_usuario?.uid?" (o próprio "+rotulo.toLowerCase()+")":""}`,"info")
 );
 re();
 }catch(e){alert("Erro ao excluir: "+e.message);}
 };
+window.makerExcluir=window.labExcluir;
 window.abrirEdicao=id=>{
 const r=buscarReservaGlobal(id);
 if(!r)return;
@@ -4169,16 +4171,18 @@ if(conflitoLabED){render("ed-erro",alertHTML("error",`O laboratorista já está 
 const novoSt=isUrgente(e.data,e.horario||"07:10")?"pendente":"confirmado";
 try{
 await updateDoc(doc(db,"reservas",e._id),{espaco:e.espaco,data:e.data,horario:e.horario,horarioFim:e.horarioFim||e.horario,turma:e.turma,conteudo:e.conteudo,laboratorista:e.laboratorista||"",quantidade:eo?.tipo==="equipamento"?Number(e.quantidade):null,status:novoSt,editadoEm:Timestamp.now()});
-// Quando quem edita não é o próprio professor que criou (ex: Laboratorista/Maker/Admin
-// ajustando o agendamento de outra pessoa), avisa o professor dono e os admins.
-if(e.professorId&&_usuario?.uid!==e.professorId){
 const dataFmt=e.data.split("-").reverse().join("/");
-const rotuloEditor=_usuario?.perfil==="laboratorista"?"pelo Laboratorista":_usuario?.perfil==="maker"?"pelo Maker":"pelo Admin";
+const naoEhDono=e.professorId&&_usuario?.uid!==e.professorId;
+// O professor só é avisado quando NÃO foi ele mesmo quem editou (Laboratorista/Maker/
+// Coordenador/Admin ajustando o agendamento de outra pessoa).
+if(naoEhDono){
+const rotuloEditor=_usuario?.perfil==="laboratorista"?"pelo Laboratorista":_usuario?.perfil==="maker"?"pelo Maker":_usuario?.perfil==="admin"?"pelo Admin":isCoordenador(_usuario?.perfil)?"pelo Coordenador":"";
 gravarNotif(e.professorId,`✏️ Agendamento editado ${rotuloEditor}`,`${e.espaco} — ${dataFmt} às ${e.horario}`,"info");
-_usuarios.filter(u=>u.perfil==="admin").forEach(u=>
-gravarNotif(u.uid,`✏️ ${_usuario?.nome||"Alguém"} editou agendamento`,`${e.espaco} de ${e.professor||"—"} — ${dataFmt} às ${e.horario}`,"info")
-);
 }
+// O Admin é avisado de TODA edição, mesmo quando o próprio professor edita a reserva dele.
+_usuarios.filter(u=>u.perfil==="admin").forEach(u=>
+gravarNotif(u.uid,`✏️ ${_usuario?.nome||"Alguém"} editou agendamento`,`${e.espaco} de ${e.professor||"—"} — ${dataFmt} às ${e.horario}${naoEhDono?"":" (o próprio professor)"}`,"info")
+);
 fecharEdicao();
 }catch{render("ed-erro",alertHTML("error","Erro ao salvar."));}
 };
