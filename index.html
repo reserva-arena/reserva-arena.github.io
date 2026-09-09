@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260909085117"/>
+<meta name="app-build" content="20260909085339"/>
 <meta name="app-build-perfis" content="admin,coordenador,ti,laboratorista"/>
-<meta name="app-build-mensagem" content="Maker também ganhou o botão de excluir (igual o Laboratorista). E agora o Admin é avisado de TODA edição de agendamento, mesmo quando é o próprio professor editando a reserva dele — antes só avisava quando era outra pessoa editando."/>
+<meta name="app-build-mensagem" content="Correção importante: a exclusão feita pela tela de Administração (aExcluir) nunca tinha notificação nenhuma — nem pro professor, nem pros outros admins. Agora avisa o professor dono e todos os admins, igual as outras telas já faziam."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -4742,6 +4742,11 @@ if(a.reservaAutomatica&&a.espaco===r.espaco&&a.data===r.data&&a.professorId===r.
 });
 Object.keys(siblingsMap).forEach(aid=>b.delete(doc(db,"reservas",aid)));
 await b.commit();
+const dataFmt=r.data.split("-").reverse().join("/");
+if(r.professorId&&r.professorId!==_usuario?.uid)gravarNotif(r.professorId,"🗑️ Agendamento excluído pelo Admin",`${r.espaco} — ${dataFmt} às ${r.horario}`,"info");
+_usuarios.filter(u=>u.perfil==="admin").forEach(u=>
+gravarNotif(u.uid,`🗑️ ${_usuario?.nome||"Admin"} excluiu agendamento`,`${r.espaco} de ${r.professor} — ${dataFmt} às ${r.horario}`,"info")
+);
 };
 
 // ════════════════════════════════════════════════════════════════════════════
