@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260909082802"/>
-<meta name="app-build-perfis" content="admin,coordenador,ti,laboratorista"/>
-<meta name="app-build-mensagem" content="Na edição de agendamento, o campo 'Laboratorista?' agora avisa em tempo real (antes de salvar) se ele já está escalado no outro lab de ciências nesse horário, e desabilita a opção 'Sim' nesse caso — igual já funcionava na criação de um agendamento novo."/>
+<meta name="app-build" content="20260909083143"/>
+<meta name="app-build-perfis" content="admin,coordenador,ti,marketing,laboratorista"/>
+<meta name="app-build-mensagem" content="Relatório em PDF agora traz uma coluna 'Observação' com o que o professor escreveu no agendamento — o conteúdo da aula, e no relatório de Marketing também o texto de publicação (foto/vídeo), quando houver."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -3963,8 +3963,8 @@ docs=docs.filter(x=>{const eo=ESPACOS.find(e=>e.nome===x.espaco);return eo&&(eo.
 if(r.espacosRestritos)docs=docs.filter(x=>r.espacosRestritos.includes(x.espaco));
 if(r.espaco)docs=docs.filter(x=>x.espaco===r.espaco);
 corpoTitulo=`Espaço: ${r.espaco||(r.espacosRestritos?"Meus labs":"Todos os espaços")}`;
-colunas=["Data","Horário","Espaço","Turma","Professor","Status"];
-linhas=docs.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:(a.horario||"").localeCompare(b.horario||"")).map(x=>[dataBR(x.data),x.horarioFim&&x.horarioFim!==x.horario?`${x.horario} - ${x.horarioFim}`:x.horario||"—",x.espaco||"—",x.turmaInicio||x.turma||"—",x.professor||"—",statusLabel(resolverStatus(x))]);
+colunas=["Data","Horário","Espaço","Turma","Professor","Status","Observação"];
+linhas=docs.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:(a.horario||"").localeCompare(b.horario||"")).map(x=>[dataBR(x.data),x.horarioFim&&x.horarioFim!==x.horario?`${x.horario} - ${x.horarioFim}`:x.horario||"—",x.espaco||"—",x.turmaInicio||x.turma||"—",x.professor||"—",statusLabel(resolverStatus(x)),x.conteudo||"—"]);
 }else if(r.tipo==="equipamento"){
 // Igual ao critério que a própria tela do T.I. usa: equipamento avulso (Tablets/Computadores/AV)
 // OU qualquer reserva de sala que tenha pedido Som/Mic/Projetor junto (aí a aprovação fica
@@ -3972,7 +3972,7 @@ linhas=docs.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:(a.horario||"").localeC
 docs=docs.filter(x=>{const eo=ESPACOS.find(e=>e.nome===x.espaco);return(eo&&(eo.tipo==="equipamento"||eo.tipo==="audiovisual"))||x.statusEquip!==undefined;});
 if(r.equip)docs=docs.filter(x=>x.espaco===r.equip||(r.equip==="Som, Microfone e Projetor"&&x.statusEquip!==undefined));
 corpoTitulo=`Equipamento: ${r.equip||"Todos os equipamentos"}`;
-colunas=["Data","Horário","Equipamento","Qtd","Vínculo","Professor","Status"];
+colunas=["Data","Horário","Equipamento","Qtd","Vínculo","Professor","Status","Observação"];
 linhas=docs.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:(a.horario||"").localeCompare(b.horario||"")).map(x=>{
 let qtd="1";
 if(x.quantidade)qtd=String(x.quantidade);
@@ -3983,14 +3983,17 @@ const eo=ESPACOS.find(e=>e.nome===x.espaco);
 const ehSalaComAV=eo&&(eo.tipo==="espaco"||eo.tipo==="laboratorio")&&x.statusEquip!==undefined;
 const nomeEquip=ehSalaComAV?"Som, Microfone e Projetor":x.espaco||"—";
 const vinculo=x.reservaAutomatica?`Vinculado (${x.localMontagem||"—"})`:ehSalaComAV?`Vinculado (${x.espaco})`:"Avulso";
-return[dataBR(x.data),x.horarioFim&&x.horarioFim!==x.horario?`${x.horario} - ${x.horarioFim}`:x.horario||"—",nomeEquip,qtd,vinculo,x.professor||"—",statusLabel(resolverStatus(x))];
+return[dataBR(x.data),x.horarioFim&&x.horarioFim!==x.horario?`${x.horario} - ${x.horarioFim}`:x.horario||"—",nomeEquip,qtd,vinculo,x.professor||"—",statusLabel(resolverStatus(x)),x.conteudo||"—"];
 });
 }else{
 docs=docs.filter(x=>!x.reservaAutomatica&&(x.precisaFoto||x.precisaVideo||x.espaco==="Equipe de Marketing"));
 if(r.objetivo)docs=docs.filter(x=>x.objetivoMidia===r.objetivo);
 corpoTitulo=`Marketing: ${r.objetivo==="social"?"Rede Social":r.objetivo==="pedagogico"?"Pedagógico":"Todos"}`;
-colunas=["Data","Horário","Local","Turma","Professor","Foto/Vídeo","Status"];
-linhas=docs.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:(a.horario||"").localeCompare(b.horario||"")).map(x=>[dataBR(x.data),x.horario||"—",x.espaco==="Equipe de Marketing"?(x.salaAtividade||"—"):x.espaco||"—",x.turmaInicio||x.turma||"—",x.professor||"—",[x.precisaFoto?"Foto":"",x.precisaVideo?"Vídeo":""].filter(Boolean).join(" + ")||"—",statusLabel(resolverStatus(x))]);
+colunas=["Data","Horário","Local","Turma","Professor","Foto/Vídeo","Status","Observação"];
+linhas=docs.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:(a.horario||"").localeCompare(b.horario||"")).map(x=>{
+const obs=[x.conteudo?`Aula: ${x.conteudo}`:"",x.descritivo?`Publicação: ${x.descritivo}`:""].filter(Boolean).join(" | ")||"—";
+return[dataBR(x.data),x.horario||"—",x.espaco==="Equipe de Marketing"?(x.salaAtividade||"—"):x.espaco||"—",x.turmaInicio||x.turma||"—",x.professor||"—",[x.precisaFoto?"Foto":"",x.precisaVideo?"Vídeo":""].filter(Boolean).join(" + ")||"—",statusLabel(resolverStatus(x)),obs];
+});
 }
 if(!linhas.length){r.gerando=false;render("rel-erro",alertHTML("warning","Nenhum agendamento encontrado nesse período com esse filtro."));renderRelatorioModal();return;}
 colunas=colunas.map(pdfTxt);
@@ -4019,7 +4022,7 @@ pdf.setFontSize(9.5);pdf.setFont(undefined,"bold");pdf.setTextColor(26,107,71);
 pdf.text(pdfTxt(`Atualizado em: ${carimbo}`),20,54.5);
 pdf.setFontSize(10.5);pdf.setTextColor(30,30,30);pdf.setFont(undefined,"bold");
 pdf.text(pdfTxt(`Total: ${linhas.length} agendamento${linhas.length!==1?"s":""} · ${totalConf} confirmado${totalConf!==1?"s":""} · ${totalPend} pendente${totalPend!==1?"s":""}`),14,66);
-pdf.autoTable({startY:72,head:[colunas],body:linhas,styles:{fontSize:8.5,cellPadding:3},headStyles:{fillColor:[26,107,71],textColor:255,fontStyle:"bold"},alternateRowStyles:{fillColor:[240,247,243]}});
+pdf.autoTable({startY:72,head:[colunas],body:linhas,styles:{fontSize:8,cellPadding:2.5},headStyles:{fillColor:[26,107,71],textColor:255,fontStyle:"bold"},alternateRowStyles:{fillColor:[240,247,243]},columnStyles:{[colunas.length-1]:{cellWidth:55}}});
 const nomeArq=`relatorio-reserva-arena-${r.tipo}-${r.de}-a-${r.ate}.pdf`;
 pdf.save(nomeArq);
 r.gerando=false;
