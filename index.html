@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260909102910"/>
-<meta name="app-build-perfis" content="admin,coordenador,ti,marketing,professor,laboratorista"/>
-<meta name="app-build-mensagem" content="Os nomes 'Tablets' e 'Computadores' não mostram mais o '(XX disp.)' junto do nome nas telas de agendamento e filtros — isso confundia com a quantidade que a pessoa está reservando. O identificador interno não mudou, então nada foi perdido nos agendamentos já existentes."/>
+<meta name="app-build" content="20260910072721"/>
+<meta name="app-build-perfis" content="admin,coordenador"/>
+<meta name="app-build-mensagem" content="Correção: ao agendar em nome de outra pessoa (Admin/Coordenador), a busca de nome só encontrava professores — coordenadores não apareciam na lista. Agora aparecem também."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -2590,7 +2590,7 @@ if(input&&!(window._coordProfNomes||[]).includes(input.value.trim()))input.value
 window.maProfInput=input=>{
 const norm=s=>(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
 const f=norm(input.value);
-const todosProf=(_usuarios||[]).filter(u=>u.perfil==="professor");
+const todosProf=(_usuarios||[]).filter(u=>u.perfil==="professor"||isCoordenador(u.perfil));
 const matches=f?todosProf.filter(u=>norm(u.nome).includes(f)):todosProf;
 const sugg=$("ma-prof-sugg");if(!sugg)return;
 if(!matches.length){
