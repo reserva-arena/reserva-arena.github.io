@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260910074638"/>
-<meta name="app-build-perfis" content=""/>
-<meta name="app-build-mensagem" content="Correção: reserva avulsa de Tablets/Computadores (direto, não como complemento de outra sala) confirmava sozinha sem passar pela aprovação do Admin."/>
+<meta name="app-build" content="20260910081019"/>
+<meta name="app-build-perfis" content="admin"/>
+<meta name="app-build-mensagem" content="Correção: Maker agora pode agendar qualquer espaço da escola ao criar um agendamento novo (antes só aparecia Maker 1/2). A tela de agendamentos dele continua mostrando só as próprias salas. Laboratorista continua restrito aos 2 labs."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -2728,7 +2728,10 @@ if(m.erro)html+=alertHTML("error",m.erro);
 
 // PASSO 1 — Seleção de espaço
 if(m.step===1){
-const gruposRestritosAgendar={maker:["Maker 1","Maker 2"],laboratorista:["Lab. de Ciências Anos Iniciais","Lab. de Ciências Anos Finais"]};
+// Maker pode agendar QUALQUER espaço da escola (só a tela "meus agendamentos" dele é que
+// fica restrita a Maker 1/2, isso aqui é sobre criar um agendamento novo). Laboratorista
+// continua restrito aos dois labs de ciências.
+const gruposRestritosAgendar={laboratorista:["Lab. de Ciências Anos Iniciais","Lab. de Ciências Anos Finais"]};
 const salasPermitidasAgendar=gruposRestritosAgendar[_usuario?.perfil]||null;
 const grupos=[
 {tipo:"espaco",   label:"🏛️ Espaços"},
