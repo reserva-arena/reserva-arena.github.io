@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260910082103"/>
-<meta name="app-build-perfis" content="maker"/>
-<meta name="app-build-mensagem" content="Agora você pode agendar qualquer espaço da escola (antes só aparecia Maker 1 e Maker 2). Sua tela de 'meus agendamentos' continua mostrando só as suas salas normalmente."/>
+<meta name="app-build" content="20260914073252"/>
+<meta name="app-build-perfis" content="admin"/>
+<meta name="app-build-mensagem" content="Correção de causa raiz: ao editar um agendamento de Tablets/Computadores/etc encurtando o horário, os documentos 'filhos' automáticos que sobravam fora do novo intervalo agora são apagados sozinhos — evita que horários fiquem 'ocupados' sem nenhuma reserva de verdade."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -4129,7 +4129,7 @@ window.makerExcluir=window.labExcluir;
 window.abrirEdicao=id=>{
 const r=buscarReservaGlobal(id);
 if(!r)return;
-_ED={...r,_id:id,verTodasSalas:false};
+_ED={...r,_id:id,verTodasSalas:false,_espacoOriginal:r.espaco,_dataOriginal:r.data,_horarioOriginal:r.horario,_horarioFimOriginal:r.horarioFim||r.horario};
 $("mod-ed").style.display="flex";renderED();
 };
 window.fecharEdicao=()=>{$("mod-ed").style.display="none";};
@@ -4201,7 +4201,30 @@ if(conflitoLabED){render("ed-erro",alertHTML("error",`O laboratorista já está 
 }
 const novoSt=isUrgente(e.data,e.horario||"07:10")?"pendente":"confirmado";
 try{
+// Guarda espaço/data ORIGINAIS antes de sobrescrever — os "filhos" (reservaAutomatica=true)
+// foram criados vinculados a esses valores antigos, não aos novos que a pessoa está salvando.
+const espacoOriginal=_ED._espacoOriginal||e.espaco;
+const dataOriginal=_ED._dataOriginal||e.data;
 await updateDoc(doc(db,"reservas",e._id),{espaco:e.espaco,data:e.data,horario:e.horario,horarioFim:e.horarioFim||e.horario,turma:e.turma,conteudo:e.conteudo,laboratorista:e.laboratorista||"",quantidade:eo?.tipo==="equipamento"?Number(e.quantidade):null,status:novoSt,editadoEm:Timestamp.now()});
+// Limpa os "filhos" automáticos que ficaram órfãos: se o horário foi encurtado (ou o
+// espaço/dia mudou), os documentos auto-gerados dos horários que saíram do novo intervalo
+// continuavam sobrando no banco pra sempre, bloqueando horários vazios pros outros.
+if(eo?.multiHorario){
+try{
+const snapOrfaos=await getDocs(query(collection(db,"reservas"),where("espaco","==",espacoOriginal),where("data","==",dataOriginal),where("professorId","==",e.professorId||""),where("reservaAutomatica","==",true)));
+const rangeAntigo=horariosRange(_ED._horarioOriginal||e.horario,_ED._horarioFimOriginal||e.horarioFim||e.horario);
+const novoRange=(e.espaco===espacoOriginal&&e.data===dataOriginal)?horariosRange(e.horario,e.horarioFim||e.horario):[];
+// Só apaga um "filho" se ele pertencia ao intervalo ANTIGO desta reserva específica E
+// não está mais no intervalo NOVO — nunca toca em filhos de uma reserva separada do
+// mesmo professor/espaço/dia (esses nunca estariam no intervalo antigo desta aqui).
+const orfaos=snapOrfaos.docs.filter(d=>{const h=d.data().horario;return rangeAntigo.includes(h)&&!novoRange.includes(h);});
+if(orfaos.length){
+const bLimpa=writeBatch(db);
+orfaos.forEach(d=>bLimpa.delete(doc(db,"reservas",d.id)));
+await bLimpa.commit();
+}
+}catch(eOrfao){console.warn("Limpeza de órfãos na edição falhou (não bloqueia o salvamento):",eOrfao);}
+}
 const dataFmt=e.data.split("-").reverse().join("/");
 const naoEhDono=e.professorId&&_usuario?.uid!==e.professorId;
 // O professor só é avisado quando NÃO foi ele mesmo quem editou (Laboratorista/Maker/
