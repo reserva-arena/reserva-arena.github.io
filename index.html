@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260914073252"/>
+<meta name="app-build" content="20260914075723"/>
 <meta name="app-build-perfis" content="admin"/>
-<meta name="app-build-mensagem" content="Correção de causa raiz: ao editar um agendamento de Tablets/Computadores/etc encurtando o horário, os documentos 'filhos' automáticos que sobravam fora do novo intervalo agora são apagados sozinhos — evita que horários fiquem 'ocupados' sem nenhuma reserva de verdade."/>
+<meta name="app-build-mensagem" content="Novo botão '🧹 Órfãos' no Painel Administrativo: escaneia todos os agendamentos, mostra os documentos 'filhos' que sobraram sem nenhuma reserva viva cobrindo o horário deles, e permite selecionar e excluir direto na tela — sem precisar mais de script no console."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -1885,6 +1885,7 @@ $("app").innerHTML=`
    ${modalAgendarHTML()}
    ${modalGerenciarHTML()}
    ${modalRelatorioHTML()}
+   ${modalOrfaosHTML()}
  </div>`;
 isAdmin?bindAdmin():bindProf();
 restaurarRelatorioSeAberto();
@@ -4061,6 +4062,89 @@ $("mod-rel").style.display="none";
 }catch(e){console.error(e);r.gerando=false;render("rel-erro",alertHTML("error","Erro ao gerar relatório: "+e.message));renderRelatorioModal();}
 };
 
+// ════════════════════════════════════════════════════════════════════════════
+// DOCUMENTOS ÓRFÃOS — documentos "filhos" (reservaAutomatica=true) que sobraram sem
+// nenhuma reserva "mãe" viva cobrindo o horário deles (ex: alguém encurtou o horário de
+// uma reserva de Tablets antes da correção que limpa isso automaticamente). Só Admin.
+// ════════════════════════════════════════════════════════════════════════════
+function modalOrfaosHTML(){const c=C();return`<div id="mod-orf" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);align-items:center;justify-content:center;z-index:1000;padding:1rem"><div id="mod-orf-inner" style="background:${c.surface};border-radius:16px;padding:28px;width:100%;max-width:640px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.3)"></div></div>`;}
+window.abrirOrfaos=async function(){
+if(_usuario?.perfil!=="admin"){alert("Só o Admin pode usar essa ferramenta.");return;}
+window._ORF={carregando:true,lista:[],selecionados:new Set(),excluindo:false};
+$("mod-orf").style.display="flex";renderOrfaosModal();
+try{
+const snap=await getDocs(collection(db,"reservas"));
+const todos=snap.docs.map(d=>({id:d.id,...d.data()}));
+const filhos=todos.filter(r=>r.reservaAutomatica===true);
+const orfaos=filhos.filter(filho=>{
+// Uma "mãe" válida é uma reserva viva (não recusada, não é ela mesma um filho) cujo
+// intervalo [horario,horarioFim] cobre o horário desse filho — comparando pelo mesmo
+// espaço direto (caso Tablets/Computadores avulso) OU via localMontagem (caso de
+// equipamento anexado a outra sala, ex: Tablets vinculado à Biblioteca).
+const candidatas=todos.filter(m=>!m.reservaAutomatica&&m.status!=="recusado"&&m.professorId===filho.professorId&&m.data===filho.data&&(m.espaco===filho.espaco||m.espaco===filho.localMontagem));
+return!candidatas.some(m=>{const rg=horariosRange(m.horario,m.horarioFim||m.horario);return rg.includes(filho.horario)||m.horario===filho.horario;});
+});
+window._ORF.carregando=false;
+window._ORF.lista=orfaos.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:0);
+renderOrfaosModal();
+}catch(e){window._ORF.carregando=false;window._ORF.erro=e.message;renderOrfaosModal();}
+};
+window.fecharOrfaos=function(){if(window._ORF?.excluindo)return;$("mod-orf").style.display="none";};
+window.orfaoToggle=function(id){
+const s=window._ORF.selecionados;
+if(s.has(id))s.delete(id);else s.add(id);
+renderOrfaosModal();
+};
+window.orfaoSelecionarTodos=function(){
+window._ORF.selecionados=new Set(window._ORF.lista.map(o=>o.id));
+renderOrfaosModal();
+};
+function renderOrfaosModal(){
+const c=C(),o=window._ORF;if(!o)return;
+let corpo="";
+if(o.carregando){
+corpo=`<div style="text-align:center;padding:40px 0"><p style="font-size:32px">⏳</p><p style="color:${c.textMuted};margin-top:8px">Escaneando todos os agendamentos...</p></div>`;
+}else if(o.erro){
+corpo=alertHTML("error","Erro ao escanear: "+o.erro);
+}else if(!o.lista.length){
+corpo=`<div style="text-align:center;padding:40px 0"><p style="font-size:32px">✅</p><p style="color:${c.textMuted};margin-top:8px">Nenhum documento órfão encontrado. Tudo limpo!</p></div>`;
+}else{
+corpo=`<p style="font-size:12.5px;color:${c.textMuted};margin-bottom:12px">Encontrados ${o.lista.length} documento(s) "filho" sem nenhuma reserva viva cobrindo o horário deles. Revise a lista e marque só o que reconhece como lixo antes de excluir.</p>
+<div style="display:flex;justify-content:flex-end;margin-bottom:8px"><button onclick="orfaoSelecionarTodos()" style="background:none;border:none;color:#1a6b47;font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline">Selecionar todos</button></div>
+${o.lista.map(r=>{
+const dataFmt=(r.data||"").split("-").reverse().join("/");
+const sel=o.selecionados.has(r.id);
+return`<label style="display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1.5px solid ${sel?"#dc2626":c.border};background:${sel?"#fef2f2":"transparent"};border-radius:10px;margin-bottom:6px;cursor:pointer">
+<input type="checkbox" ${sel?"checked":""} onchange="orfaoToggle('${r.id}')" style="margin-top:3px">
+<div style="flex:1;font-size:12.5px">
+<b>${nomeExibicao(r.espaco)||"—"}</b> · ${dataFmt} às ${r.horario}<br>
+<span style="color:${c.textMuted}">Professor: ${r.professor||"—"}${r.localMontagem&&r.localMontagem!==r.espaco?` · Vinculado a: ${r.localMontagem}`:""} · status: ${r.status||"—"}</span>
+</div>
+</label>`;
+}).join("")}`;
+}
+const html=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><h3 style="font-size:17px;font-weight:800;color:${c.navy}">🧹 Documentos Órfãos</h3><button onclick="fecharOrfaos()" style="background:none;border:none;font-size:20px;cursor:pointer;color:${c.textMuted}">✕</button></div>
+<div id="orf-status"></div>
+${corpo}
+${o.lista?.length?`<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px"><button onclick="fecharOrfaos()" style="${btn("ghost")}">Cancelar</button><button onclick="orfaosExcluirSelecionados()" ${o.excluindo||!o.selecionados.size?"disabled":""} style="${btn("danger",o.excluindo||!o.selecionados.size)}">${o.excluindo?"⏳ Excluindo...":`🗑️ Excluir selecionados (${o.selecionados.size})`}</button></div>`:""}`;
+render("mod-orf-inner",html);
+}
+window.orfaosExcluirSelecionados=async function(){
+const o=window._ORF;if(!o||!o.selecionados.size||o.excluindo)return;
+if(!confirm(`Confirma excluir ${o.selecionados.size} documento(s) órfão(s)? Essa ação não pode ser desfeita.`))return;
+o.excluindo=true;renderOrfaosModal();
+try{
+const b=writeBatch(db);
+o.selecionados.forEach(id=>b.delete(doc(db,"reservas",id)));
+await b.commit();
+o.lista=o.lista.filter(r=>!o.selecionados.has(r.id));
+o.selecionados=new Set();
+o.excluindo=false;
+render("orf-status",alertHTML("success","Excluído com sucesso."));
+renderOrfaosModal();
+}catch(e){o.excluindo=false;render("orf-status",alertHTML("error","Erro ao excluir: "+e.message));renderOrfaosModal();}
+};
+
 let _ED={};
 // Troca o equipamento vinculado automaticamente (Tablets ↔ Computadores) de uma reserva
 // principal (ex: Sala Multifuncional que trouxe 16 computadores junto). Atualiza a reserva
@@ -4307,7 +4391,7 @@ let html=`<div>
      <div style="display:flex;background:${c.surface};border-radius:10px;padding:3px;border:1px solid ${c.border};gap:2px">
        ${[{id:"calendario",l:"📅 Calendário"},{id:"agenda",l:"☰ Agenda"}].map(o=>`<button onclick="aSetModo('${o.id}')" style="padding:6px 14px;font-size:13px;border-radius:8px;border:1.5px solid ${_A.modoVisu===o.id?(_dark?'#1a6b47':c.navy):c.border};background:${_A.modoVisu===o.id?(_dark?'#1a6b47':c.navy):'transparent'};color:${_A.modoVisu===o.id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${o.l}</button>`).join("")}
      </div>
-     <button onclick="abrirGerenciarUsuarios()" style="${btn("ghost","","sm")}">👤 Usuários</button><button onclick="window.open('https://console.firebase.google.com/project/reserva-escolar-pcald5/firestore/usage/last-24h/reads','_blank')" style="${btn("ghost","","sm")}">📊 Métricas</button>
+     <button onclick="abrirGerenciarUsuarios()" style="${btn("ghost","","sm")}">👤 Usuários</button><button onclick="window.open('https://console.firebase.google.com/project/reserva-escolar-pcald5/firestore/usage/last-24h/reads','_blank')" style="${btn("ghost","","sm")}">📊 Métricas</button><button onclick="abrirOrfaos()" style="${btn("ghost","","sm")}">🧹 Órfãos</button>
    </div>
  </div>`;
 
