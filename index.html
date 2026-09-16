@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260914082020"/>
+<meta name="app-build" content="20260916080426"/>
 <meta name="app-build-perfis" content="admin"/>
-<meta name="app-build-mensagem" content="Correção de segurança: cancelar/excluir um agendamento de equipamento (Tablets/Computadores/etc) agora só apaga os documentos 'filhos' que pertencem àquela reserva específica — antes, se o mesmo professor tivesse duas reservas separadas do mesmo equipamento no mesmo dia, cancelar uma podia apagar por engano os filhos da outra."/>
+<meta name="app-build-mensagem" content="Novo botão '↩️ Aprovar' nos cards de reserva recusada — permite reverter uma recusa e aprovar depois, sem precisar excluir e recriar o agendamento. O professor recebe a notificação normal de aprovação quando isso acontece."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -4788,6 +4788,7 @@ return`<div class="row-hover" style="display:flex;align-items:center;gap:8px;pad
      ${((r.qtdTablets||0)>0||(r.qtdNotebooks||0)>0)?`<button onclick="trocarEquipamentoLigado('${r.id}')" title="Trocar Tablets ↔ Computadores" style="background:none;border:none;color:#0369a1;cursor:pointer;font-size:14px;padding:5px 6px;display:flex;align-items:center;font-family:inherit">🔁</button>`:""}
      ${podeAprovarEspaco?`<button onclick="aModerar('${r.id}','confirmado')" style="${btn("success","","sm")}">✓</button><button onclick="aModerar('${r.id}','recusado')" style="${btn("danger","","sm")}">✗</button>`:""}
      ${mostrarBotoes&&r.status==="confirmado"?`<button onclick="aModerar('${r.id}','recusado')" style="${btn("danger","","sm")}">✕</button>`:""}
+     ${mostrarBotoes&&r.status==="recusado"?`<button onclick="aModerar('${r.id}','confirmado')" title="Reverter recusa e aprovar" style="${btn("success","","sm")}">↩️ Aprovar</button>`:""}
      <button onclick="aExcluir('${r.id}')" title="Excluir agendamento" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:13px;padding:4px">🗑</button>
    </div>
  </div>`;
