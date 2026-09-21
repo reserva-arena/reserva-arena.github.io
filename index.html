@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260921070441"/>
-<meta name="app-build-perfis" content="laboratorista"/>
-<meta name="app-build-mensagem" content="Correção: ao editar um agendamento (ex: mover de sala), se alguém mais mexesse no sistema ao mesmo tempo, sua edição podia ser resetada antes de você conseguir salvar — a troca sumia e voltava pro valor antigo sem avisar. Agora sua edição fica protegida até você salvar de verdade."/>
+<meta name="app-build" content="20260921070734"/>
+<meta name="app-build-perfis" content="admin"/>
+<meta name="app-build-mensagem" content="Mesma proteção contra 'reset no meio da edição' (listener em tempo real) aplicada também nos modais de Órfãos e Gerenciar Usuários — os únicos dois que ainda estavam sem ela. Fluxo de Agendar não precisa dessa correção (não é um modal, não sofre desse problema)."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -1894,6 +1894,8 @@ $("app").innerHTML=`
 isAdmin?bindAdmin():bindProf();
 restaurarRelatorioSeAberto();
 restaurarEdicaoSeAberta();
+restaurarOrfaosSeAberto();
+restaurarGerenciarSeAberto();
 }
 window.doSignOut=()=>signOut(auth);
 window.toggleAdminVisu=()=>{};
@@ -4075,7 +4077,7 @@ $("mod-rel").style.display="none";
 function modalOrfaosHTML(){const c=C();return`<div id="mod-orf" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);align-items:center;justify-content:center;z-index:1000;padding:1rem"><div id="mod-orf-inner" style="background:${c.surface};border-radius:16px;padding:28px;width:100%;max-width:640px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.3)"></div></div>`;}
 window.abrirOrfaos=async function(){
 if(_usuario?.perfil!=="admin"){alert("Só o Admin pode usar essa ferramenta.");return;}
-window._ORF={carregando:true,lista:[],selecionados:new Set(),excluindo:false};
+window._ORF={carregando:true,lista:[],selecionados:new Set(),excluindo:false,aberto:true};
 $("mod-orf").style.display="flex";renderOrfaosModal();
 try{
 const snap=await getDocs(collection(db,"reservas"));
@@ -4094,7 +4096,10 @@ window._ORF.lista=orfaos.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:0);
 renderOrfaosModal();
 }catch(e){window._ORF.carregando=false;window._ORF.erro=e.message;renderOrfaosModal();}
 };
-window.fecharOrfaos=function(){if(window._ORF?.excluindo)return;$("mod-orf").style.display="none";};
+window.fecharOrfaos=function(){if(window._ORF?.excluindo)return;if(window._ORF)window._ORF.aberto=false;$("mod-orf").style.display="none";};
+function restaurarOrfaosSeAberto(){
+if(window._ORF?.aberto&&$("mod-orf")){$("mod-orf").style.display="flex";renderOrfaosModal();}
+}
 window.orfaoToggle=function(id){
 const s=window._ORF.selecionados;
 if(s.has(id))s.delete(id);else s.add(id);
@@ -5094,6 +5099,7 @@ if(resEl)resEl.innerHTML=html;
 
 window.abrirGerenciarUsuarios=()=>{
 if(!exigePermissao(['admin'])){alert('Acesso negado.');return;}
+window._GU_aberto=true;
 $("mod-gu").style.display="flex";
 iniciarUsuariosLive();
 setTimeout(()=>{
@@ -5103,7 +5109,23 @@ const f=document.getElementById("mod-gu-flash");if(f)f.innerHTML="";
 renderGuLista();
 },50);
 };
-window.fecharGerenciarUsuarios=()=>{$("mod-gu").style.display="none";pararUsuariosLive();};
+window.fecharGerenciarUsuarios=()=>{window._GU_aberto=false;$("mod-gu").style.display="none";pararUsuariosLive();};
+// Igual o resto: um re() no meio (listener em tempo real) recriaria esse modal do zero,
+// escondido — isso reabre preservando o que a pessoa já tinha digitado no formulário de
+// novo usuário, em vez de simplesmente apagar tudo sem avisar.
+function restaurarGerenciarSeAberto(){
+if(!window._GU_aberto||!$("mod-gu"))return;
+const nomeVal=document.getElementById("gu-nome")?.value||"";
+const emailVal=document.getElementById("gu-email")?.value||"";
+const senhaVal=document.getElementById("gu-senha")?.value||"";
+$("mod-gu").style.display="flex";
+iniciarUsuariosLive();
+renderGuLista();
+setTimeout(()=>{
+const n=document.getElementById("gu-nome");const e=document.getElementById("gu-email");const s=document.getElementById("gu-senha");
+if(n)n.value=nomeVal;if(e)e.value=emailVal;if(s)s.value=senhaVal;
+},50);
+}
 
 window.guCriarDireto=async()=>{
 if(!exigePermissao(['admin'])){alert('Acesso negado.');return;}
