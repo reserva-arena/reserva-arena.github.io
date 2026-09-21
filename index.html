@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260921070734"/>
-<meta name="app-build-perfis" content="admin"/>
-<meta name="app-build-mensagem" content="Mesma proteção contra 'reset no meio da edição' (listener em tempo real) aplicada também nos modais de Órfãos e Gerenciar Usuários — os únicos dois que ainda estavam sem ela. Fluxo de Agendar não precisa dessa correção (não é um modal, não sofre desse problema)."/>
+<meta name="app-build" content="20260921073457"/>
+<meta name="app-build-perfis" content="admin,laboratorista"/>
+<meta name="app-build-mensagem" content="Correção crítica: o modal de Editar Agendamento tinha um bug que impedia QUALQUER campo (espaço, data, horário, turma, conteúdo) de ser realmente salvo ao mudar — o clique em salvar rodava, mas sempre gravava os valores antigos. Agora os campos são salvos corretamente."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -4155,7 +4155,7 @@ renderOrfaosModal();
 }catch(e){o.excluindo=false;render("orf-status",alertHTML("error","Erro ao excluir: "+e.message));renderOrfaosModal();}
 };
 
-let _ED={};
+let _ED=window._ED={};
 // Troca o equipamento vinculado automaticamente (Tablets ↔ Computadores) de uma reserva
 // principal (ex: Sala Multifuncional que trouxe 16 computadores junto). Atualiza a reserva
 // principal E recria o documento auxiliar corretamente — sem isso, ficaria um fantasma.
@@ -4223,7 +4223,7 @@ window.makerExcluir=window.labExcluir;
 window.abrirEdicao=id=>{
 const r=buscarReservaGlobal(id);
 if(!r)return;
-_ED={...r,_id:id,verTodasSalas:false,_espacoOriginal:r.espaco,_dataOriginal:r.data,_horarioOriginal:r.horario,_horarioFimOriginal:r.horarioFim||r.horario,_aberto:true};
+_ED=window._ED={...r,_id:id,verTodasSalas:false,_espacoOriginal:r.espaco,_dataOriginal:r.data,_horarioOriginal:r.horario,_horarioFimOriginal:r.horarioFim||r.horario,_aberto:true};
 $("mod-ed").style.display="flex";renderED();
 };
 window.fecharEdicao=()=>{_ED._aberto=false;$("mod-ed").style.display="none";};
