@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260916080426"/>
-<meta name="app-build-perfis" content="admin"/>
-<meta name="app-build-mensagem" content="Novo botão '↩️ Aprovar' nos cards de reserva recusada — permite reverter uma recusa e aprovar depois, sem precisar excluir e recriar o agendamento. O professor recebe a notificação normal de aprovação quando isso acontece."/>
+<meta name="app-build" content="20260921070441"/>
+<meta name="app-build-perfis" content="laboratorista"/>
+<meta name="app-build-mensagem" content="Correção: ao editar um agendamento (ex: mover de sala), se alguém mais mexesse no sistema ao mesmo tempo, sua edição podia ser resetada antes de você conseguir salvar — a troca sumia e voltava pro valor antigo sem avisar. Agora sua edição fica protegida até você salvar de verdade."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -1242,6 +1242,7 @@ $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="
    ${modalRelatorioHTML()}
  </div>`;
 restaurarRelatorioSeAberto();
+restaurarEdicaoSeAberta();
 }
 
 // Casca simples reaproveitando o fluxo de "Agendar" do professor (renderProfessorView),
@@ -1367,6 +1368,7 @@ $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="
    ${modalRelatorioHTML()}
  </div>`;
 restaurarRelatorioSeAberto();
+restaurarEdicaoSeAberta();
 }
 window.mkAprovar=async(id)=>{
 if(!confirm("Aprovar esta solicitação de foto/vídeo?"))return;
@@ -1468,6 +1470,7 @@ $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="
    ${modalRelatorioHTML()}
  </div>`;
 restaurarRelatorioSeAberto();
+restaurarEdicaoSeAberta();
 }
 function tiCard(r,pend){
 const c=C(),h=fmtHoje();
@@ -1699,6 +1702,7 @@ $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="
    ${modalRelatorioHTML()}
  </div>`;
 restaurarRelatorioSeAberto();
+restaurarEdicaoSeAberta();
 }
 
 function coordCalendarioHTML(porData,c,h){
@@ -1889,6 +1893,7 @@ $("app").innerHTML=`
  </div>`;
 isAdmin?bindAdmin():bindProf();
 restaurarRelatorioSeAberto();
+restaurarEdicaoSeAberta();
 }
 window.doSignOut=()=>signOut(auth);
 window.toggleAdminVisu=()=>{};
@@ -4213,10 +4218,17 @@ window.makerExcluir=window.labExcluir;
 window.abrirEdicao=id=>{
 const r=buscarReservaGlobal(id);
 if(!r)return;
-_ED={...r,_id:id,verTodasSalas:false,_espacoOriginal:r.espaco,_dataOriginal:r.data,_horarioOriginal:r.horario,_horarioFimOriginal:r.horarioFim||r.horario};
+_ED={...r,_id:id,verTodasSalas:false,_espacoOriginal:r.espaco,_dataOriginal:r.data,_horarioOriginal:r.horario,_horarioFimOriginal:r.horarioFim||r.horario,_aberto:true};
 $("mod-ed").style.display="flex";renderED();
 };
-window.fecharEdicao=()=>{$("mod-ed").style.display="none";};
+window.fecharEdicao=()=>{_ED._aberto=false;$("mod-ed").style.display="none";};
+// Os listeners em tempo real (onSnapshot) chamam re(), que reconstrói a tela inteira — isso
+// recriaria o modal de edição escondido e com os dados originais do banco, jogando fora
+// qualquer troca que a pessoa já tivesse feito (ex: mudar o espaço) mas ainda não salvo.
+// Isso reabre o modal preservando o que já estava em _ED, sem buscar nada nova do banco.
+function restaurarEdicaoSeAberta(){
+if(_ED?._aberto&&$("mod-ed")){$("mod-ed").style.display="flex";renderED();}
+}
 function renderED(){
 const c=C(),e=_ED;
 const eo=ESPACOS.find(esp=>esp.nome===e.espaco);
