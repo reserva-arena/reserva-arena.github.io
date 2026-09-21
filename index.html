@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260921073457"/>
-<meta name="app-build-perfis" content="admin,laboratorista"/>
-<meta name="app-build-mensagem" content="Correção crítica: o modal de Editar Agendamento tinha um bug que impedia QUALQUER campo (espaço, data, horário, turma, conteúdo) de ser realmente salvo ao mudar — o clique em salvar rodava, mas sempre gravava os valores antigos. Agora os campos são salvos corretamente."/>
+<meta name="app-build" content="20260921114704"/>
+<meta name="app-build-perfis" content="admin"/>
+<meta name="app-build-mensagem" content="Correção importante: trocar o equipamento vinculado (🔁 Tablets ↔ Computadores) só limpava/recriava o horário de início da reserva — se ela cobrisse vários horários seguidos, o equipamento antigo ficava preso nos demais, ocupando vaga sem reserva de verdade. Agora limpa e recria em todos os horários. A detecção de Órfãos também foi reforçada pra pegar esse caso específico."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -4087,9 +4087,20 @@ const orfaos=filhos.filter(filho=>{
 // Uma "mãe" válida é uma reserva viva (não recusada, não é ela mesma um filho) cujo
 // intervalo [horario,horarioFim] cobre o horário desse filho — comparando pelo mesmo
 // espaço direto (caso Tablets/Computadores avulso) OU via localMontagem (caso de
-// equipamento anexado a outra sala, ex: Tablets vinculado à Biblioteca).
+// equipamento anexado a outra sala, ex: Tablets vinculado à Biblioteca). Além do
+// horário, também precisa que a mãe ainda peça ESSE tipo de equipamento de verdade —
+// senão pega o caso de alguém trocar Computadores↔Tablets e sobrar o tipo antigo.
 const candidatas=todos.filter(m=>!m.reservaAutomatica&&m.status!=="recusado"&&m.professorId===filho.professorId&&m.data===filho.data&&(m.espaco===filho.espaco||m.espaco===filho.localMontagem));
-return!candidatas.some(m=>{const rg=horariosRange(m.horario,m.horarioFim||m.horario);return rg.includes(filho.horario)||m.horario===filho.horario;});
+return!candidatas.some(m=>{
+const rg=horariosRange(m.horario,m.horarioFim||m.horario);
+const cobreHorario=rg.includes(filho.horario)||m.horario===filho.horario;
+if(!cobreHorario)return false;
+if(m.espaco===filho.localMontagem){
+if(filho.espaco==="Tablets (18 disp.)")return(m.qtdTablets||0)>0;
+if(filho.espaco==="Computadores (16 disp.)")return(m.qtdNotebooks||0)>0;
+}
+return true;
+});
 });
 window._ORF.carregando=false;
 window._ORF.lista=orfaos.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:0);
@@ -4178,19 +4189,26 @@ b.update(doc(db,"reservas",r.id),{
 qtdTablets:novoTipo.includes("Tablets")?novaQtd:0,
 qtdNotebooks:novoTipo.includes("Computadores")?novaQtd:0,
 });
-// Acha e apaga o(s) documento(s) auxiliar(es) antigo(s) desse mesmo vínculo
+// A reserva pode cobrir vários horários seguidos (ex: 07:10 até 11:10) — precisa limpar
+// e recriar o auxiliar em CADA horário do intervalo, não só no horário de início da
+// reserva (era exatamente esse o bug: só tratava o primeiro horário, deixando os demais
+// com o equipamento antigo "preso" lá, ocupando vaga sem reserva de verdade por trás).
+const rangeTroca=horariosRange(r.horario,r.horarioFim||r.horario);
 const snapAntigo=await getDocs(query(collection(db,"reservas"),
 where("professorId","==",r.professorId),where("data","==",r.data),
-where("horario","==",r.horario),where("espaco","==",tipoAtual)));
-snapAntigo.docs.forEach(d=>{if(d.data()?.reservaAutomatica)b.delete(d.ref);});
-// Cria o novo documento auxiliar no formato exato que o sistema usa
+where("espaco","==",tipoAtual),where("reservaAutomatica","==",true)));
+snapAntigo.docs.forEach(d=>{if(rangeTroca.includes(d.data()?.horario))b.delete(d.ref);});
+// Cria o novo documento auxiliar em cada horário do intervalo, no formato exato que o
+// sistema usa pra criar esses vínculos normalmente.
+rangeTroca.forEach(h=>{
 b.set(doc(collection(db,"reservas")),{
 professor:r.professor,professorId:r.professorId,professorEmail:r.professorEmail,
-turma:r.turma||"",espaco:novoTipo,data:r.data,horario:r.horario,horarioFim:r.horario,
+turma:r.turma||"",espaco:novoTipo,data:r.data,horario:h,horarioFim:h,
 conteudo:`Vinculado à ${r.espaco} — ${r.conteudo}`,
 quantidade:novaQtd,status:r.status,criadoEm:Timestamp.now(),
 precisaFoto:false,observacoes:`Agendado automaticamente via ${r.espaco}`,
 localMontagem:r.espaco,reservaAutomatica:true,paginas:"",laboratorista:"",
+});
 });
 await b.commit();
 alert(`Trocado com sucesso para ${novoTipo} (${novaQtd} unidades)!`);
