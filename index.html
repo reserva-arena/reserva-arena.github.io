@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260921114704"/>
+<meta name="app-build" content="20260921212417"/>
 <meta name="app-build-perfis" content="admin"/>
-<meta name="app-build-mensagem" content="Correção importante: trocar o equipamento vinculado (🔁 Tablets ↔ Computadores) só limpava/recriava o horário de início da reserva — se ela cobrisse vários horários seguidos, o equipamento antigo ficava preso nos demais, ocupando vaga sem reserva de verdade. Agora limpa e recria em todos os horários. A detecção de Órfãos também foi reforçada pra pegar esse caso específico."/>
+<meta name="app-build-mensagem" content="Notificações de novo agendamento/edição de Tablets/Computadores não mostram mais o '(XX disp.)' junto do nome — só o nome limpo, evitando confundir com a quantidade real reservada."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -3796,8 +3796,8 @@ batch.set(doc(collection(db,"notificacoes")),{
 userId:adm.id,
 titulo:coordBypassUrgFds?"⚡ Coordenador confirmou direto":"📅 Novo agendamento",
 corpo:coordBypassUrgFds
-?`${_usuario.nome} agendou ${espaco} para ${dataFmtNotif} às ${horFmtNotif}${equipTxtNotif} — ${dow===0||dow===6?"fim de semana":"menos de 24h"}, confirmado automaticamente por ser coordenador.`
-:`${_usuario.nome} agendou ${espaco} para ${dataFmtNotif} às ${horFmtNotif}${equipTxtNotif}`,
+?`${_usuario.nome} agendou ${nomeExibicao(espaco)} para ${dataFmtNotif} às ${horFmtNotif}${equipTxtNotif} — ${dow===0||dow===6?"fim de semana":"menos de 24h"}, confirmado automaticamente por ser coordenador.`
+:`${_usuario.nome} agendou ${nomeExibicao(espaco)} para ${dataFmtNotif} às ${horFmtNotif}${equipTxtNotif}`,
 lida:false,
 criadoEm:ts
 });
@@ -3863,13 +3863,13 @@ fetch("https://fcm.googleapis.com/fcm/send",{method:"POST",headers:{"Content-Typ
 const temAV=eoSalvar?.tipo==="audiovisual"||((_MA.bibAV===true)&&(_MA.bibMic>0||_MA.bibCaixa>0||_MA.bibProj>0));
 if(st==="pendente"&&temAV){
 _usuarios.filter(u=>u.perfil==="ti"&&u.ativo!==false).forEach(u=>{
-gravarNotif(u.id,"💻 Nova solicitação de equipamento",`${profNome} · ${espaco} · ${dataFmt} às ${horFmt}`,"ti");
+gravarNotif(u.id,"💻 Nova solicitação de equipamento",`${profNome} · ${nomeExibicao(espaco)} · ${dataFmt} às ${horFmt}`,"ti");
 });
 }
 
 // Admins: notificar todo novo agendamento
 const statusLabel=st==="pendente"?"⏳ Pendente":"✅ Confirmado";
-const msgAdmin=`📅 Novo agendamento — ${statusLabel}\n${profNome} · ${espaco} · ${dataFmt} às ${horFmt}`;
+const msgAdmin=`📅 Novo agendamento — ${statusLabel}\n${profNome} · ${nomeExibicao(espaco)} · ${dataFmt} às ${horFmt}`;
 _usuarios.filter(u=>u.perfil==="admin"&&u.fcmToken&&u.ativo!==false).forEach(u=>{
 fetch("https://fcm.googleapis.com/fcm/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:u.fcmToken,notification:{title:"📅 Reserva Arena",body:msgAdmin}})}).catch(()=>{});
 });
@@ -4350,13 +4350,13 @@ const naoEhDono=e.professorId&&_usuario?.uid!==e.professorId;
 // Coordenador/Admin ajustando o agendamento de outra pessoa).
 if(naoEhDono){
 const rotuloEditor=_usuario?.perfil==="laboratorista"?"pelo Laboratorista":_usuario?.perfil==="maker"?"pelo Maker":_usuario?.perfil==="admin"?"pelo Admin":isCoordenador(_usuario?.perfil)?"pelo Coordenador":"";
-gravarNotif(e.professorId,`✏️ Agendamento editado ${rotuloEditor}`,`${e.espaco} — ${dataFmt} às ${e.horario}`,"info");
+gravarNotif(e.professorId,`✏️ Agendamento editado ${rotuloEditor}`,`${nomeExibicao(e.espaco)} — ${dataFmt} às ${e.horario}`,"info");
 }
 // O Admin é avisado de TODA edição, mesmo quando o próprio professor edita a reserva dele.
 _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
-gravarNotif(u.id,`✏️ ${_usuario?.nome||"Alguém"} editou agendamento`,`${e.espaco} de ${e.professor||"—"} — ${dataFmt} às ${e.horario}${naoEhDono?"":" (o próprio professor)"}`,"info")
+gravarNotif(u.id,`✏️ ${_usuario?.nome||"Alguém"} editou agendamento`,`${nomeExibicao(e.espaco)} de ${e.professor||"—"} — ${dataFmt} às ${e.horario}${naoEhDono?"":" (o próprio professor)"}`,"info")
 );
-avisarMarketingSeEnvolvido(e,"✏️ Agendamento com foto/vídeo foi editado",`${e.espaco} de ${e.professor||"—"} — agora ${dataFmt} às ${e.horario}.`);
+avisarMarketingSeEnvolvido(e,"✏️ Agendamento com foto/vídeo foi editado",`${nomeExibicao(e.espaco)} de ${e.professor||"—"} — agora ${dataFmt} às ${e.horario}.`);
 fecharEdicao();
 }catch{render("ed-erro",alertHTML("error","Erro ao salvar."));}
 };
@@ -4733,7 +4733,7 @@ html+=`<div style="position:sticky;top:16px">
        return ranking.map(([espaco,total],i)=>`
          <div style="margin-bottom:10px">
            <div style="display:flex;justify-content:space-between;margin-bottom:3px">
-             <span style="font-size:11px;font-weight:700;color:${c.navy};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70%">${espaco}</span>
+             <span style="font-size:11px;font-weight:700;color:${c.navy};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70%">${nomeExibicao(espaco)}</span>
              <span style="font-size:11px;font-weight:800;color:${cores[i]}">${total}</span>
            </div>
            <div style="height:5px;background:${c.borderLight};border-radius:99px">
