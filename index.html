@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260921215004"/>
+<meta name="app-build" content="20260921212417"/>
 <meta name="app-build-perfis" content="admin"/>
-<meta name="app-build-mensagem" content="Última varredura: o prompt e o aviso de sucesso da troca de equipamento (🔁) também mostravam '(18 disp.)'/'(16 disp.)' — agora mostram só o nome limpo, igual todo o resto do sistema."/>
+<meta name="app-build-mensagem" content="Notificações de novo agendamento/edição de Tablets/Computadores não mostram mais o '(XX disp.)' junto do nome — só o nome limpo, evitando confundir com a quantidade real reservada."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -4179,7 +4179,7 @@ if(!temTablets&&!temNotebooks){alert("Essa reserva não tem Tablets nem Computad
 const tipoAtual=temNotebooks?"Computadores (16 disp.)":"Tablets (18 disp.)";
 const novoTipo=temNotebooks?"Tablets (18 disp.)":"Computadores (16 disp.)";
 const qtdAtual=temNotebooks?r.qtdNotebooks:r.qtdTablets;
-const novaQtdStr=prompt(`Trocar de ${nomeExibicao(tipoAtual)} para ${nomeExibicao(novoTipo)}.\n\nQuantas unidades? (atual: ${qtdAtual})`,qtdAtual);
+const novaQtdStr=prompt(`Trocar de ${tipoAtual} para ${novoTipo}.\n\nQuantas unidades? (atual: ${qtdAtual})`,qtdAtual);
 if(novaQtdStr===null)return;
 const novaQtd=Number(novaQtdStr);
 if(!novaQtd||novaQtd<=0){alert("Quantidade inválida.");return;}
@@ -4211,7 +4211,7 @@ localMontagem:r.espaco,reservaAutomatica:true,paginas:"",laboratorista:"",
 });
 });
 await b.commit();
-alert(`Trocado com sucesso para ${nomeExibicao(novoTipo)} (${novaQtd} unidades)!`);
+alert(`Trocado com sucesso para ${novoTipo} (${novaQtd} unidades)!`);
 }catch(e){console.error(e);alert("Erro ao trocar equipamento. Nada foi alterado.");}
 };
 window.labExcluir=async(id)=>{
