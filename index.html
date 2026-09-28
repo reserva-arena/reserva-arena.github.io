@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260921212417"/>
+<meta name="app-build" content="20260928163804"/>
 <meta name="app-build-perfis" content="admin"/>
-<meta name="app-build-mensagem" content="Notificações de novo agendamento/edição de Tablets/Computadores não mostram mais o '(XX disp.)' junto do nome — só o nome limpo, evitando confundir com a quantidade real reservada."/>
+<meta name="app-build-mensagem" content="Agendar Tablets, Computadores ou Som/Projetor não bloqueia mais o agendamento de um espaço no mesmo horário (e vice-versa)."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -3561,12 +3561,12 @@ if(existe){_MA.erro=`Horário ${rangeHors[i]} já reservado por ${existe.profess
 
 // 1b. Verificar se o próprio professor já tem algo marcado nesse horário, em outro espaço
 // (coordenador pode reservar mais de um espaço ao mesmo tempo — pula essa checagem pra esse perfil)
-if(!isCoordenador(_usuario?.perfil)){
+if(!isCoordenador(_usuario?.perfil)&&!eo?.equipAvulso){
 const snapConflitosProf=await Promise.all(rangeHors.map(h=>
 getDocs(query(collection(db,"reservas"),where("professorId","==",_usuario.uid),where("data","==",data),where("horario","==",h)))
 ));
 for(let i=0;i<rangeHors.length;i++){
-const existeProf=snapConflitosProf[i].docs.map(d=>d.data()).find(r=>r?.status!=="recusado"&&r.espaco!==espaco);
+const existeProf=snapConflitosProf[i].docs.map(d=>d.data()).find(r=>r?.status!=="recusado"&&r.espaco!==espaco&&!r.reservaAutomatica&&!ESPACOS.find(e=>e.nome===r.espaco)?.equipAvulso);
 if(existeProf){_MA.erro=`Você já tem "${existeProf.espaco}" agendado às ${rangeHors[i]} nesse mesmo dia.`;_MA.salvando=false;_MA.resumo=false;re();return;}
 }
 }
