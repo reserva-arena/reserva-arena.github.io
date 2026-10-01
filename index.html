@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20260928163804"/>
+<meta name="app-build" content="20261001104123"/>
 <meta name="app-build-perfis" content="admin"/>
-<meta name="app-build-mensagem" content="Agendar Tablets, Computadores ou Som/Projetor não bloqueia mais o agendamento de um espaço no mesmo horário (e vice-versa)."/>
+<meta name="app-build-mensagem" content="Relatório em PDF (Admin): agora dá pra escolher o segmento (Infantil, Fund. 1, Fund. 2, Extras) e exportar com ou sem a coluna de observação."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -3936,7 +3936,7 @@ const info=relatorioPerfilInfo(_usuario?.perfil);
 if(!info){alert("Seu perfil não tem acesso a relatórios.");return;}
 const h=fmtHoje();
 const ate30=(()=>{const d=new Date(h+"T12:00:00");d.setDate(d.getDate()+30);return d.toISOString().slice(0,10);})();
-window._REL={tipos:info.tipos,tipo:info.tipos[0],espaco:"",equip:"",objetivo:"",de:h,ate:ate30,gerando:false,aberto:true,espacosRestritos:info.espacosRestritos||null};
+window._REL={tipos:info.tipos,tipo:info.tipos[0],espaco:"",equip:"",objetivo:"",de:h,ate:ate30,gerando:false,aberto:true,espacosRestritos:info.espacosRestritos||null,comObs:true,segmento:""};
 $("mod-rel").style.display="flex";renderRelatorioModal();
 };
 window.fecharRelatorio=function(){if(window._REL?.gerando)return;if(window._REL)_REL.aberto=false;$("mod-rel").style.display="none";};
@@ -3958,6 +3958,10 @@ let html=`<div style="display:flex;justify-content:space-between;align-items:cen
  ${r.tipo==="espaco"?`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Espaço</label><br><select onchange="window._REL.espaco=this.value" style="${sel()};margin-top:5px"><option value="">🌐 Todos os espaços</option>${espacosNormais.map(e=>`<option value="${e.nome}" ${r.espaco===e.nome?"selected":""}>${tipoIcon(e.tipo,e.nome)} ${e.nome}</option>`).join("")}</select></div>`:""}
  ${r.tipo==="equipamento"?`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Equipamento</label><br><select onchange="window._REL.equip=this.value" style="${sel()};margin-top:5px"><option value="">🌐 Todos os equipamentos</option><option value="Tablets (18 disp.)" ${r.equip==="Tablets (18 disp.)"?"selected":""}>📱 Tablets</option><option value="Computadores (16 disp.)" ${r.equip==="Computadores (16 disp.)"?"selected":""}>💻 Computadores</option><option value="Som, Microfone e Projetor" ${r.equip==="Som, Microfone e Projetor"?"selected":""}>🎤 Som / Microfone / Projetor</option></select></div>`:""}
  ${r.tipo==="mkt"?`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Objetivo</label><br><select onchange="window._REL.objetivo=this.value" style="${sel()};margin-top:5px"><option value="">🌐 Todos</option><option value="social" ${r.objetivo==="social"?"selected":""}>📱 Rede Social</option><option value="pedagogico" ${r.objetivo==="pedagogico"?"selected":""}>📚 Pedagógico</option></select></div>`:""}
+ ${_usuario?.perfil==="admin"?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+   <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Segmento</label><br><select onchange="window._REL.segmento=this.value" style="${sel()};margin-top:5px"><option value="">🌐 Todos</option><option value="inf" ${r.segmento==="inf"?"selected":""}>👶 Infantil</option><option value="fund1" ${r.segmento==="fund1"?"selected":""}>📚 Fund. 1</option><option value="fund2" ${r.segmento==="fund2"?"selected":""}>🎓 Fund. 2</option><option value="extras" ${r.segmento==="extras"?"selected":""}>⭐ Extras</option></select></div>
+   <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Observação</label><br><select onchange="window._REL.comObs=this.value==='sim'" style="${sel()};margin-top:5px"><option value="sim" ${r.comObs?"selected":""}>📝 Com observação</option><option value="nao" ${!r.comObs?"selected":""}>🚫 Sem observação</option></select></div>
+ </div>`:""}
  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
    <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">De *</label><br><input id="rel-de" type="date" value="${r.de}" onchange="window._REL.de=this.value" style="${inp()};margin-top:5px"></div>
    <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Até *</label><br><input id="rel-ate" type="date" value="${r.ate}" onchange="window._REL.ate=this.value" style="${inp()};margin-top:5px"></div>
@@ -3979,6 +3983,9 @@ try{
 const pdfTxt=s=>{s=String(s==null?"":s).replace(/→/g," - ");return s.replace(/[^\x00-\xFF]/g,"").replace(/\s+/g," ").trim();};
 const snap=await getDocs(query(collection(db,"reservas"),where("data",">=",r.de),where("data","<=",r.ate)));
 let docs=snap.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.status!=="recusado");
+// Segmento (só admin escolhe): filtra pela turma do agendamento
+const SEG_LABEL={inf:"Infantil",fund1:"Fund. 1",fund2:"Fund. 2",extras:"Extras"};
+if(r.segmento){const turmasSeg=r.segmento==="extras"?TURMAS_EXTRAS:turmasDoSegmento(r.segmento);docs=docs.filter(x=>turmasSeg.includes(x.turma||x.turmaInicio));}
 const statusLabel=s=>s===null?"Acompanha a sala":s==="pendente"?"Pendente":(s==="confirmado"||s==="aprovado")?"Confirmado":s==="recusado"?"Recusado":(s||"—");
 // O campo que define "pendente/aprovado" muda conforme o tipo de relatório: pro espaço é
 // o status geral da reserva, pro equipamento é statusEquip, pro marketing é statusMarketing.
@@ -4034,6 +4041,9 @@ return[dataBR(x.data),x.horario||"—",x.espaco==="Equipe de Marketing"?(x.salaA
 });
 }
 if(!linhas.length){r.gerando=false;render("rel-erro",alertHTML("warning","Nenhum agendamento encontrado nesse período com esse filtro."));renderRelatorioModal();return;}
+if(r.segmento)corpoTitulo+=` · ${SEG_LABEL[r.segmento]}`;
+// Sem observação: remove a última coluna (Observação) de todos os tipos
+if(r.comObs===false){colunas=colunas.slice(0,-1);linhas=linhas.map(l=>l.slice(0,-1));}
 colunas=colunas.map(pdfTxt);
 linhas=linhas.map(linha=>linha.map(pdfTxt));
 const totalConf=docs.filter(x=>{const s=resolverStatus(x);return s==="confirmado"||s==="aprovado";}).length;
@@ -4060,7 +4070,7 @@ pdf.setFontSize(9.5);pdf.setFont(undefined,"bold");pdf.setTextColor(26,107,71);
 pdf.text(pdfTxt(`Atualizado em: ${carimbo}`),20,54.5);
 pdf.setFontSize(10.5);pdf.setTextColor(30,30,30);pdf.setFont(undefined,"bold");
 pdf.text(pdfTxt(`Total: ${linhas.length} agendamento${linhas.length!==1?"s":""} · ${totalConf} confirmado${totalConf!==1?"s":""} · ${totalPend} pendente${totalPend!==1?"s":""}`),14,66);
-pdf.autoTable({startY:72,head:[colunas],body:linhas,styles:{fontSize:8,cellPadding:2.5},headStyles:{fillColor:[26,107,71],textColor:255,fontStyle:"bold"},alternateRowStyles:{fillColor:[240,247,243]},columnStyles:{[colunas.length-1]:{cellWidth:55}}});
+pdf.autoTable({startY:72,head:[colunas],body:linhas,styles:{fontSize:8,cellPadding:2.5},headStyles:{fillColor:[26,107,71],textColor:255,fontStyle:"bold"},alternateRowStyles:{fillColor:[240,247,243]},columnStyles:r.comObs===false?{}:{[colunas.length-1]:{cellWidth:55}}});
 const nomeArq=`relatorio-reserva-arena-${r.tipo}-${r.de}-a-${r.ate}.pdf`;
 pdf.save(nomeArq);
 r.gerando=false;
