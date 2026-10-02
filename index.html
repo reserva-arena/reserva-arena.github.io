@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20261002131043"/>
+<meta name="app-build" content="20261002143656"/>
 <meta name="app-build-perfis" content="admin"/>
-<meta name="app-build-mensagem" content="Correção no agendamento: o horário de fim sugerido agora segue a grade atual (12:00→12:40, 12:40→13:30, 17:00→17:40), e a checagem de conflito volta a valer para 12:40 e 17:00."/>
+<meta name="app-build-mensagem" content="Novo no agendamento: 🕐 Horários livres. Ao escolher um espaço, aparece a semana com os horários livres. Toque num horário verde e em Continuar."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -2680,10 +2680,133 @@ const params=new URLSearchParams({action:"TEMPLATE",text:titulo,dates:`${dtStart
 return `https://calendar.google.com/calendar/render?${params.toString()}`;
 };
 
+// ════════════════════════════════════════════════════════════════════════════
+// HORÁRIOS LIVRES — Passo 2 do agendamento (espaços físicos e laboratórios)
+// Mostra a semana do espaço com os horários livres/ocupados. Tocar só MARCA o horário;
+// o professor avança no "Continuar" (nada é salvo antes da tela de revisão).
+// Dados: professor reaproveita _todas (carregado ao entrar em "Agendar": -7 a +60 dias),
+// sem leitura nova. Outros perfis (ou semanas fora dessa janela) buscam só a semana visível,
+// uma vez por sessão.
+// ════════════════════════════════════════════════════════════════════════════
+let _hlCache={},_hlCarregando=null,_hlErroSemana=null;
+function hlAtivoPara(eo){return!!eo&&(eo.tipo==="espaco"||eo.tipo==="laboratorio");}
+function hlModo(){try{return localStorage.getItem("ra_passo2_modo")==="calendario"?"calendario":"livres";}catch{return"livres";}}
+window.hlSetModo=v=>{try{localStorage.setItem("ra_passo2_modo",v);}catch{}re();};
+function hlSemanaBase(){
+const hj=fmtHoje();const[a,m,d]=hj.split("-").map(Number);const dow=new Date(a,m-1,d).getDay();
+const seg=getSegunda(hj);
+// Fim de semana, ou sexta depois do último horário → já abre na próxima semana
+const ag=new Date();const agoraHM=String(ag.getHours()).padStart(2,"0")+":"+String(ag.getMinutes()).padStart(2,"0");
+const semanaAcabou=dow===6||dow===0||(dow===5&&agoraHM>=HORARIOS[HORARIOS.length-1]);
+return semanaAcabou?addDias(seg,7):seg;
+}
+window.hlSetOffset=n=>{_MA.hlOffset=Math.max(0,(_MA.hlOffset||0)+n);re();};
+window.hlEscolher=(data,hor)=>{
+const s=_MA.hlSel;
+_MA.hlSel=(s&&s.espaco===_MA.espaco&&s.data===data&&s.horario===hor)?null:{espaco:_MA.espaco,data,horario:hor};
+re();
+};
+window.hlContinuar=()=>{
+const s=_MA.hlSel;if(!s||s.espaco!==_MA.espaco)return;
+_MA.data=s.data;_MA.step=3;_MA.blocos=[bVazio()];
+// Mesmo caminho de quando o professor toca no horário de início no Passo 3:
+// define o fim "só este", checa conflito do professor e consulta tablets.
+maSetHorarioMulti(0,"ini",s.horario);
+};
+window.hlTentarDeNovo=()=>{_hlErroSemana=null;re();};
+function hlFonte(ini,fim){
+const hj=fmtHoje();
+if(_usuario?.perfil==="professor"&&_todasCarregadas){
+const ch=_todasCarregadasChave||"";
+if(ch===_MA.espaco+"|0")return _todas; // já carregado só desse espaço (todas as datas)
+if(ch.startsWith("broad|")&&ini>=addDias(hj,-7)&&fim<=addDias(hj,60))return _todas;
+}
+if(_hlCache[ini])return _hlCache[ini];
+if(_hlCarregando!==ini&&_hlErroSemana!==ini){
+_hlCarregando=ini;
+getDocs(query(collection(db,"reservas"),where("data",">=",ini),where("data","<=",fim))).then(snap=>{
+_hlCache[ini]=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.data&&r.horario);
+}).catch(e=>{console.warn("hlFonte:",e);_hlErroSemana=ini;}).finally(()=>{_hlCarregando=null;re();});
+}
+return null;
+}
+// Horários ocupados do espaço no dia — mesma regra do Passo 3 (reserva de vários horários
+// ocupa todos; bloqueio fixo do Soninho na Sala de Dança). Reservas antigas da grade
+// anterior (12:50 / 13:40) contam na mesma posição da grade atual (12:40 / 13:30).
+function hlOcupados(docs,espaco,data){
+const n=h=>h==="12:50"?"12:40":h==="13:40"?"13:30":h;
+const s=new Set();
+docs.forEach(r=>{
+if(r.espaco!==espaco||r.data!==data||r.status==="recusado")return;
+const hi=n(r.horario),hf=r.horarioFim?n(r.horarioFim):hi;
+(hf!==hi?horariosRange(hi,hf):[hi]).forEach(h=>s.add(h));
+});
+if(espaco==="Sala de Dança")HORARIOS.forEach(h=>{const[hh,mm]=h.split(":").map(Number);const mi=hh*60+mm;if(mi>=11*60+45&&mi<13*60+45)s.add(h);});
+return s;
+}
+function hlToggleHTML(c,modo){
+const op=(id,l)=>`<button onclick="hlSetModo('${id}')" style="flex:1;padding:9px 6px;border-radius:8px;border:${modo===id?"1.5px solid "+c.border:"1.5px solid transparent"};background:${modo===id?c.surface:"transparent"};color:${modo===id?c.navy:c.textMuted};font-weight:${modo===id?800:600};font-size:13px;cursor:pointer;font-family:inherit">${l}</button>`;
+return`<div style="display:flex;gap:4px;background:${c.bg};padding:4px;border-radius:10px;margin-bottom:14px">${op("livres","🕐 Horários livres")}${op("calendario","📅 Calendário do mês")}</div>`;
+}
+function hlSemanaHTML(c,m){
+const off=m.hlOffset||0;
+const seg=addDias(hlSemanaBase(),off*7),sex=addDias(seg,4);
+const dm=s=>s.slice(8,10)+"/"+s.slice(5,7);
+const hj=fmtHoje();
+const ag=new Date();const agoraHM=String(ag.getHours()).padStart(2,"0")+":"+String(ag.getMinutes()).padStart(2,"0");
+const DIAS=["Segunda","Terça","Quarta","Quinta","Sexta"];
+const sel=(m.hlSel&&m.hlSel.espaco===m.espaco)?m.hlSel:null;
+const seta=(n,lbl,desab)=>`<button onclick="hlSetOffset(${n})" ${desab?"disabled":""} aria-label="${lbl}" style="background:${c.surface};border:1.5px solid ${c.border};border-radius:8px;width:36px;height:32px;cursor:${desab?"default":"pointer"};color:${c.navy};font-size:16px;font-weight:800;opacity:${desab?.35:1};font-family:inherit">${n<0?"‹":"›"}</button>`;
+let h=`<p style="font-size:13px;font-weight:700;color:${c.textMid};margin:0 0 10px">👆 Toque no horário que você quer</p>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px">${seta(-1,"Semana anterior",off===0)}<span style="font-size:13.5px;font-weight:800;color:${c.navy};text-align:center">Semana de ${dm(seg)} a ${dm(sex)}</span>${seta(1,"Próxima semana",false)}</div>`;
+const docs=hlFonte(seg,sex);
+if(!docs){
+if(_hlErroSemana===seg)h+=`<div style="text-align:center;padding:24px 10px;color:${c.red};font-size:13px">⚠️ Não foi possível carregar essa semana.<br><button onclick="hlTentarDeNovo()" style="${btn("ghost")};margin-top:10px">Tentar de novo</button></div>`;
+else h+=`<div style="text-align:center;padding:30px 10px;color:${c.textMuted};font-size:13px">⏳ Carregando horários...</div>`;
+return h;
+}
+for(let i=0;i<5;i++){
+const d=addDias(seg,i);
+let rot="",chips="";
+if(!isDiaLetivo(d))rot=`<span style="font-size:12px;color:${c.textMuted}">Sem aula</span>`;
+else if(d<hj)rot=`<span style="font-size:12px;color:${c.textMuted}">Já passou</span>`;
+else{
+const ocup=hlOcupados(docs,m.espaco,d);
+const horas=HORARIOS.filter(x=>d>hj||x>agoraHM);
+const livres=horas.filter(x=>!ocup.has(x)).length;
+rot=!horas.length?`<span style="font-size:12px;color:${c.textMuted}">Encerrado</span>`:livres?`<span style="font-size:12px;font-weight:700;color:${c.green}">${livres} livre${livres!==1?"s":""}</span>`:`<span style="font-size:12px;font-weight:700;color:${c.red}">Lotado</span>`;
+if(livres)chips=`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">${horas.map(x=>{
+if(ocup.has(x))return`<span title="Ocupado" style="font-family:'DM Mono',monospace;font-size:12.5px;padding:7px 8px;color:${c.textMuted};text-decoration:line-through;opacity:.6">${x}</span>`;
+const on=sel&&sel.data===d&&sel.horario===x;
+return`<button onclick="hlEscolher('${d}','${x}')" style="font-family:'DM Mono',monospace;font-size:12.5px;font-weight:800;padding:7px 9px;border-radius:8px;cursor:pointer;border:1.5px solid ${on?"#1a6b47":c.greenBorder};background:${on?"#1a6b47":c.greenBg};color:${on?"#fff":c.green}">${on?"✓ ":""}${x}</button>`;
+}).join("")}</div>`;
+}
+h+=`<div style="border-top:1px solid ${c.borderLight};padding:10px 0"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13.5px;font-weight:800;color:${c.navy}">${DIAS[i]} ${dm(d)}</span>${rot}</div>${chips}</div>`;
+}
+if(sel){
+const[a,mm,dd]=sel.data.split("-").map(Number);
+const nomeDia=["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"][new Date(a,mm-1,dd).getDay()];
+// Barra fixa embaixo: o "Continuar" fica sempre à vista, mesmo com a lista comprida no celular
+h+=`<div style="height:150px"></div>
+<div style="position:fixed;left:0;right:0;bottom:0;z-index:900;display:flex;justify-content:center;padding:0 10px calc(10px + env(safe-area-inset-bottom,0px))">
+ <div style="width:100%;max-width:560px;background:${c.surface};border:1.5px solid #1a6b47;border-radius:14px;padding:12px 14px;box-shadow:0 -6px 24px rgba(0,0,0,.18)">
+  <p style="font-size:11.5px;font-weight:700;color:${c.textMuted};margin:0">Você escolheu</p>
+  <p style="font-size:16px;font-weight:800;color:${c.navy};margin:2px 0 10px">${nomeDia} ${dm(sel.data)} às ${sel.horario}</p>
+  <button onclick="hlContinuar()" style="${btn("success")};width:100%;padding:12px;font-size:14px">Continuar →</button>
+  <p style="font-size:11px;color:${c.textMuted};margin:8px 0 0;text-align:center">Nada é agendado ainda. Você confere tudo antes de confirmar.</p>
+ </div>
+</div>`;
+}else{
+h+=`<div style="margin-top:6px;padding:12px;border-radius:10px;border:1.5px dashed ${c.border};text-align:center;font-size:12.5px;color:${c.textMuted}">Nenhum horário escolhido ainda</div>`;
+}
+return h;
+}
+
 // ─── RENDERIZAÇÃO DO PASSO 1 (escolha de espaço) ─────────────────────────
 function renderProfAgendar(){
 const c=C(),m=_MA;
-const titulos=["Selecione o espaço","Selecione a data","Preencha os detalhes"];
+const _hlNoPasso2=m.step===2&&hlAtivoPara(ESPACOS.find(e=>e.nome===m.espaco))&&hlModo()==="livres";
+const titulos=["Selecione o espaço",_hlNoPasso2?"Escolha o dia e o horário":"Selecione a data","Preencha os detalhes"];
 let html="";
 
 if(m.sucesso){
@@ -2776,9 +2899,16 @@ html+=`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;ba
 
      <button onclick="maBack()" style="margin-left:auto;background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:12px;font-family:inherit">Trocar</button>
    </div>`;
+// Espaços físicos/labs: escolha entre "Horários livres" (semana) e "Calendário do mês".
+// Demais (tablets, som, marketing): calendário como sempre.
+const modoPasso2=hlAtivoPara(eo)?hlModo():"calendario";
+if(hlAtivoPara(eo))html+=hlToggleHTML(c,modoPasso2);
+if(modoPasso2==="livres"){html+=hlSemanaHTML(c,m);}
+else{
 const porData={};
 _todas.filter(r=>r.espaco===m.espaco&&r.status!=="recusado").forEach(r=>{if(!porData[r.data])porData[r.data]=[];porData[r.data].push(r);});
 html+=calMensalHTML("pagin",m.calA,m.calM,porData,m.data);
+}
 window._calClick=(cid,data)=>{
 if(cid==="pagin"||cid==="ma"){
 if(!isDiaLetivo(data)){alert("Este dia não é letivo.");return;}
