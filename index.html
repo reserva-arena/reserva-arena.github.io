@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20261002124939"/>
+<meta name="app-build" content="20261002131043"/>
 <meta name="app-build-perfis" content="admin"/>
-<meta name="app-build-mensagem" content="Dashboard: ocupação e mapa de calor agora usam a grade atual (12:40 e 13:30). Reservas antigas de 12:50/13:40 continuam contando na mesma posição."/>
+<meta name="app-build-mensagem" content="Correção no agendamento: o horário de fim sugerido agora segue a grade atual (12:00→12:40, 12:40→13:30, 17:00→17:40), e a checagem de conflito volta a valer para 12:40 e 17:00."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -3394,10 +3394,12 @@ window.maSetHorario=(i,h)=>{_MA.blocos[i].horario=h;re();setTimeout(atualizarBot
 window.maSetHorarioMulti=(i,tipo,h)=>{
 if(tipo==="ini"){
 _MA.blocos[i].horario=h;
-// Setar fim para o próximo horário disponível
-const HORS=["07:10","08:00","09:10","10:00","11:10","12:00","12:50","13:40","14:30","15:20","16:10","17:00"];
-const idx=HORS.indexOf(h);
-_MA.blocos[i].horarioFim=idx>=0&&idx<HORS.length-1?HORS[idx+1]:h;
+// Setar fim = fim do próprio período ("só este"), usando a grade oficial.
+// HORARIOS_COM_FIM tem os mesmos índices de HORARIOS + "17:40" no final, então o
+// período das 17:00 termina às 17:40 (antes ficava fim=início e a lista de horários
+// saía vazia, pulando a checagem de conflito).
+const idx=HORARIOS.indexOf(h);
+_MA.blocos[i].horarioFim=idx>=0?HORARIOS_COM_FIM[idx+1]:h;
 } else {
 _MA.blocos[i].horarioFim=h;
 }
