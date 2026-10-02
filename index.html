@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20261002121221"/>
+<meta name="app-build" content="20261002123109"/>
 <meta name="app-build-perfis" content="admin"/>
-<meta name="app-build-mensagem" content="Nova aba 📊 Dashboard no painel (modo Agenda): visão geral por período e segmento, filas de aprovação, ocupação dos espaços e gráfico de agendamentos."/>
+<meta name="app-build-mensagem" content="Dashboard: nova sub-aba 🏛️ Espaços com ocupação por espaço, horário de pico, espaços pouco usados e mapa de calor dia × horário."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -4440,6 +4440,67 @@ _dashCarregando=null;re();
 window.setDashPeriodo=v=>{_A.dashPeriodo=v;_A.dashOffset=0;re();};
 window.setDashOffset=n=>{_A.dashOffset=n===0?0:(_A.dashOffset||0)+n;re();};
 window.setDashSeg=v=>{_A.dashSeg=v;re();};
+// ── Dashboard · aba Espaços (Fase 2): ranking de ocupação + mapa de calor dia × horário ──
+const DASH_HORS=["07:10","08:00","09:10","10:00","11:10","12:00","12:50","13:40","14:30","15:20","16:10","17:00"];
+window.setDashSub=v=>{_A.dashSub=v;re();};
+window.setDashEspaco=v=>{_A.dashEspaco=(_A.dashEspaco===v?"":v);re();};
+function dashEspacosHTML(c,x){
+const{I,validos,FIS,diasLet,card,rot,pill}=x;
+const sel=FIS.includes(_A.dashEspaco)?_A.dashEspaco:"";
+// Ocupação: cada combinação espaço+dia+horário conta uma vez (as reservas de vários
+// horários geram um documento por horário, então isso já conta a duração certa).
+const ocupados=new Set();
+validos.forEach(r=>{if(FIS.includes(r.espaco)&&isDiaLetivo(r.data)&&DASH_HORS.includes(r.horario))ocupados.add(r.espaco+"|"+r.data+"|"+r.horario);});
+const capEsp=12*diasLet;
+const porEsp={};FIS.forEach(n=>porEsp[n]=0);
+ocupados.forEach(k=>{porEsp[k.split("|")[0]]++;});
+const ranking=Object.entries(porEsp).map(([n,v])=>({n,v,pct:capEsp?v/capEsp*100:0})).sort((a,b)=>b.v-a.v||a.n.localeCompare(b.n));
+const fmtPct=p=>(Math.round(p*10)/10).toString().replace(".",",")+"%";
+// Mapa de calor: % de ocupação por dia da semana × horário (só dias letivos do período)
+const DIAS=["Seg","Ter","Qua","Qui","Sex"];
+const ocorr=[0,0,0,0,0];
+for(let d=I.ini;d<=I.fim;d=addDias(d,1)){if(!isDiaLetivo(d))continue;const[a,m,dd]=d.split("-").map(Number);const w=new Date(a,m-1,dd).getDay();if(w>=1&&w<=5)ocorr[w-1]++;}
+const grade=DASH_HORS.map(()=>[0,0,0,0,0]);
+ocupados.forEach(k=>{const[esp,data,hor]=k.split("|");if(sel&&esp!==sel)return;const[a,m,dd]=data.split("-").map(Number);const w=new Date(a,m-1,dd).getDay();const hi=DASH_HORS.indexOf(hor);if(w>=1&&w<=5&&hi>=0)grade[hi][w-1]++;});
+const nEsp=sel?1:FIS.length;
+const pctGrade=grade.map(l=>l.map((v,w)=>ocorr[w]?v/(ocorr[w]*nEsp)*100:null));
+const maxP=Math.max(1,...pctGrade.flat().filter(v=>v!=null));
+let pico=null;pctGrade.forEach((l,hi)=>l.forEach((p,w)=>{if(p!=null&&p>0&&(!pico||p>pico.p))pico={p,txt:DIAS[w]+" "+DASH_HORS[hi]};}));
+const poucos=ranking.filter(r=>r.pct<5);
+let h="";
+// ── Destaques ──
+h+=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:14px">
+ <div style="${card}"><p style="${rot}">🏆 Mais usado</p><p style="font-size:16px;font-weight:900;color:${c.navy};margin-top:6px;line-height:1.25">${ranking[0]&&ranking[0].v?ranking[0].n:"—"}</p><p style="font-size:10.5px;color:${c.textMuted};margin-top:4px">${ranking[0]&&ranking[0].v?ranking[0].v+" aulas · "+fmtPct(ranking[0].pct)+" de ocupação":"sem uso no período"}</p></div>
+ <div style="${card}"><p style="${rot}">🔥 Horário de pico${sel?" · "+sel:""}</p><p style="font-size:16px;font-weight:900;color:#ea580c;margin-top:6px">${pico?pico.txt:"—"}</p><p style="font-size:10.5px;color:${c.textMuted};margin-top:4px">${pico?fmtPct(pico.p)+" ocupado nesse horário":"sem uso no período"}</p></div>
+ <div style="${card}"><p style="${rot}">💤 Pouco usados</p><p style="font-size:28px;font-weight:900;color:${poucos.length?"#64748b":c.textMuted};line-height:1.2;margin-top:4px">${poucos.length}</p><p style="font-size:10.5px;color:${c.textMuted};margin-top:4px">espaço${poucos.length!==1?"s":""} abaixo de 5% de ocupação</p></div>
+</div>`;
+// ── Ranking ──
+const maxV=Math.max(1,...ranking.map(r=>r.v));
+h+=`<div style="${card};margin-bottom:14px">
+ <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px;flex-wrap:wrap"><p style="${rot}">Ocupação por espaço</p><span style="font-size:10.5px;color:${c.textMuted}">Toque num espaço pra ver o mapa de calor dele</span></div>
+ ${ranking.map(r=>{const ativo=sel===r.n;const pouco=r.pct<5;const cor=pouco?"#94a3b8":"#1a6b47";return`<div onclick="setDashEspaco(decodeURIComponent('${encodeURIComponent(r.n)}'))" style="padding:8px 10px;margin:0 -10px 2px;border-radius:10px;cursor:pointer;${ativo?"background:"+(_dark?"rgba(26,107,71,.25)":"#eaf6f0")+";box-shadow:inset 3px 0 0 #1a6b47":""}">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px">
+   <span style="font-size:12px;font-weight:700;color:${c.navy};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">${tipoIcon(ESPACOS.find(e=>e.nome===r.n)?.tipo,r.n)} ${r.n}${pouco?` <span style="font-size:9.5px;font-weight:800;color:#64748b;background:${c.bg};padding:1px 6px;border-radius:99px;margin-left:4px">pouco usado</span>`:""}</span>
+   <span style="font-size:11.5px;font-weight:800;color:${cor};white-space:nowrap">${r.v} · ${fmtPct(r.pct)}</span>
+  </div>
+  <div style="height:6px;background:${c.bg};border-radius:99px;overflow:hidden"><div style="height:100%;width:${Math.round(r.v/maxV*100)}%;background:${cor};border-radius:99px"></div></div>
+ </div>`;}).join("")}
+</div>`;
+// ── Mapa de calor ──
+const cel=p=>{if(p==null)return`<td style="padding:2px"><div style="height:30px;border-radius:7px;background:${c.bg};opacity:.4"></div></td>`;const t=p/maxP;const bg=p===0?c.bg:"rgba(26,107,71,"+(0.12+0.88*t).toFixed(2)+")";const cor=t>0.55?"#fff":c.textMid;return`<td style="padding:2px"><div title="${fmtPct(p)}" style="height:30px;border-radius:7px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:800;color:${cor}">${p===0?"":Math.round(p)+"%"}</div></td>`;};
+h+=`<div style="${card}">
+ <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px;flex-wrap:wrap">
+  <p style="${rot}">🗺️ Mapa de calor · ${sel||"todos os espaços"}</p>
+  ${sel?`<button onclick="setDashEspaco('${""}')" style="${pill(false)};padding:5px 12px;font-size:11px">✕ Ver todos</button>`:""}
+ </div>
+ <div style="overflow-x:auto"><table style="width:100%;border-collapse:separate;border-spacing:0;min-width:300px">
+  <thead><tr><th></th>${DIAS.map(d=>`<th style="font-size:10.5px;font-weight:800;color:${c.textMuted};padding:0 0 6px">${d}</th>`).join("")}</tr></thead>
+  <tbody>${DASH_HORS.map((hor,hi)=>`<tr><td style="font-family:'DM Mono',monospace;font-size:10.5px;font-weight:700;color:${c.textMuted};padding-right:6px;white-space:nowrap">${hor}</td>${pctGrade[hi].map(cel).join("")}</tr>`).join("")}</tbody>
+ </table></div>
+ <p style="font-size:10.5px;color:${c.textMuted};margin-top:10px;line-height:1.5">Cada quadrado mostra quanto ${sel?"esse espaço ficou":"os espaços ficaram"} ocupado${sel?"":"s"} naquele dia da semana e horário, no período. Quanto mais escuro, mais cheio.</p>
+</div>`;
+return h;
+}
 function dashboardAdminHTML(c,ctx){
 const I=dashIntervalo(),k=I.ini+"_"+I.fim,cache=_dashCache[k],hj=fmtHoje();
 if(!cache&&_dashCarregando!==k&&_dashErroChave!==k)setTimeout(()=>carregarDash(),0);
@@ -4463,9 +4524,12 @@ h+=`<div style="${card};margin-bottom:14px;display:flex;flex-direction:column;ga
  </div>
  <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"><span style="${rot};margin-right:4px">Segmento</span>${SEGS.map(s=>`<button onclick="setDashSeg('${s.id}')" style="${pill(seg===s.id,s.cor)}">${s.l}</button>`).join("")}</div>
 </div>`;
+// ── Sub-abas do dashboard ──
+const sub=_A.dashSub==="espacos"?"espacos":"geral";
+h+=`<div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">${[{id:"geral",l:"📊 Visão geral"},{id:"espacos",l:"🏛️ Espaços"}].map(t=>`<button onclick="setDashSub('${t.id}')" style="${pill(sub===t.id,c.navy)};padding:8px 16px;font-size:13px">${t.l}</button>`).join("")}</div>`;
 // ── Filas de aprovação (sempre "agora", independem do período) ──
 const filas=[{l:"Espaço",n:ctx.pend,ic:"🏛️",on:"aSetAba('reservas');_A.subAba='pendentes';re()"},{l:"T.I.",n:ctx.ti,ic:"💻",on:"aSetAba('ti')"},{l:"Marketing",n:ctx.mk,ic:"📸",on:"aSetAba('marketing')"},{l:"Tablets",n:ctx.tb,ic:"📱",on:"aSetAba('tablets')"}];
-h+=`<p style="${rot};margin:0 0 8px 2px">⏳ Aguardando aprovação agora</p>
+if(sub==="geral")h+=`<p style="${rot};margin:0 0 8px 2px">⏳ Aguardando aprovação agora</p>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:18px">
 ${filas.map(f=>`<div onclick="${f.on}" title="Abrir fila" style="${card};padding:12px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;${f.n>0?"border-color:#f59e0b;background:"+(_dark?c.surface:"#fffbeb"):""}">
  <span style="font-size:20px">${f.ic}</span>
@@ -4497,6 +4561,7 @@ const profsAtivos=new Set(ags.map(r=>r.professorId||r.professor)).size;
 const profsCad=(_usuarios||[]).filter(u=>(u.perfil||"professor")==="professor").length;
 const media=diasLet?Math.round(ags.length/diasLet*10)/10:0;
 const segInfo=SEGS.find(s=>s.id===seg);
+if(sub==="espacos"){h+=dashEspacosHTML(c,{I,validos,FIS,diasLet,card,rot,pill});const em2=cache.em;h+=`<p style="font-size:10.5px;color:${c.textMuted};margin:10px 2px 0">Dados carregados às ${String(em2.getHours()).padStart(2,"0")}:${String(em2.getMinutes()).padStart(2,"0")} · ${cache.lidos} leituras do banco · ${I.label}${seg?" · "+segInfo.l:""}</p>`;return h+`</div>`;}
 // ── Cards ──
 h+=`<p style="${rot};margin:0 0 8px 2px">📊 Visão geral · ${I.label}${seg?" · "+segInfo.l:""}</p>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:14px">
