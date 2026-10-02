@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20261002123109"/>
+<meta name="app-build" content="20261002124939"/>
 <meta name="app-build-perfis" content="admin"/>
-<meta name="app-build-mensagem" content="Dashboard: nova sub-aba 🏛️ Espaços com ocupação por espaço, horário de pico, espaços pouco usados e mapa de calor dia × horário."/>
+<meta name="app-build-mensagem" content="Dashboard: ocupação e mapa de calor agora usam a grade atual (12:40 e 13:30). Reservas antigas de 12:50/13:40 continuam contando na mesma posição."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -4441,7 +4441,10 @@ window.setDashPeriodo=v=>{_A.dashPeriodo=v;_A.dashOffset=0;re();};
 window.setDashOffset=n=>{_A.dashOffset=n===0?0:(_A.dashOffset||0)+n;re();};
 window.setDashSeg=v=>{_A.dashSeg=v;re();};
 // ── Dashboard · aba Espaços (Fase 2): ranking de ocupação + mapa de calor dia × horário ──
-const DASH_HORS=["07:10","08:00","09:10","10:00","11:10","12:00","12:50","13:40","14:30","15:20","16:10","17:00"];
+// Usa a grade oficial (HORARIOS). Reservas antigas, da grade anterior (12:50 e 13:40), são
+// contadas na mesma posição da grade atual (12:40 e 13:30) pra não sumirem do filtro "Ano".
+const DASH_HORS=HORARIOS;
+const dashNormHor=h=>h==="12:50"?"12:40":h==="13:40"?"13:30":h;
 window.setDashSub=v=>{_A.dashSub=v;re();};
 window.setDashEspaco=v=>{_A.dashEspaco=(_A.dashEspaco===v?"":v);re();};
 function dashEspacosHTML(c,x){
@@ -4450,7 +4453,7 @@ const sel=FIS.includes(_A.dashEspaco)?_A.dashEspaco:"";
 // Ocupação: cada combinação espaço+dia+horário conta uma vez (as reservas de vários
 // horários geram um documento por horário, então isso já conta a duração certa).
 const ocupados=new Set();
-validos.forEach(r=>{if(FIS.includes(r.espaco)&&isDiaLetivo(r.data)&&DASH_HORS.includes(r.horario))ocupados.add(r.espaco+"|"+r.data+"|"+r.horario);});
+validos.forEach(r=>{const hor=dashNormHor(r.horario);if(FIS.includes(r.espaco)&&isDiaLetivo(r.data)&&DASH_HORS.includes(hor))ocupados.add(r.espaco+"|"+r.data+"|"+hor);});
 const capEsp=12*diasLet;
 const porEsp={};FIS.forEach(n=>porEsp[n]=0);
 ocupados.forEach(k=>{porEsp[k.split("|")[0]]++;});
@@ -4554,7 +4557,7 @@ const pendPer=ags.filter(r=>r.status==="pendente").length;
 const recusados=docs.filter(r=>!r.reservaAutomatica&&r.status==="recusado").length;
 const FIS=ESPACOS.filter(e=>e.tipo==="espaco"||e.tipo==="laboratorio").map(e=>e.nome);
 let diasLet=0;for(let d=I.ini;d<=I.fim;d=addDias(d,1))if(isDiaLetivo(d))diasLet++;
-const slots=new Set(validos.filter(r=>FIS.includes(r.espaco)&&isDiaLetivo(r.data)).map(r=>r.espaco+"|"+r.data+"|"+r.horario)).size;
+const slots=new Set(validos.filter(r=>FIS.includes(r.espaco)&&isDiaLetivo(r.data)&&DASH_HORS.includes(dashNormHor(r.horario))).map(r=>r.espaco+"|"+r.data+"|"+dashNormHor(r.horario))).size;
 const cap=FIS.length*12*diasLet;
 const ocup=cap?Math.round(slots/cap*1000)/10:0;
 const profsAtivos=new Set(ags.map(r=>r.professorId||r.professor)).size;
