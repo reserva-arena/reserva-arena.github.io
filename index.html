@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20261002114058"/>
-<meta name="app-build-perfis" content="admin,coordenador"/>
-<meta name="app-build-mensagem" content="Correção: agendar a Equipe de Marketing não bloqueia mais o agendamento de um espaço no mesmo dia e horário (e vice-versa)."/>
+<meta name="app-build" content="20261002121221"/>
+<meta name="app-build-perfis" content="admin"/>
+<meta name="app-build-mensagem" content="Nova aba 📊 Dashboard no painel (modo Agenda): visão geral por período e segmento, filas de aprovação, ocupação dos espaços e gráfico de agendamentos."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -4410,6 +4410,155 @@ const mesFim=`${anoAtual}-${String(hojeD.getMonth()+1).padStart(2,"0")}-31`;
 return{ini:mesIni,fim:mesFim,fonte:_todas};
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// DASHBOARD DO ADMIN (Fase 1: filtro global + Visão geral)
+// Os dados do período vêm de UMA busca pontual (getDocs, sem tempo real), feita só quando o
+// admin abre a aba / troca de período, e ficam guardados por período na sessão — trocar de
+// aba, segmento ou voltar a um período já visto não relê o banco. 🔄 força recarregar.
+// ════════════════════════════════════════════════════════════════════════════
+let _dashCache={},_dashCarregando=null,_dashErroChave=null,_dashErro="";
+function dashIntervalo(){
+const p=_A.dashPeriodo||"mes",off=_A.dashOffset||0,hj=fmtHoje();
+const dm=s=>s.slice(8,10)+"/"+s.slice(5,7);
+if(p==="semana"){const ini=addDias(getSegunda(hj),off*7);return{p,ini,fim:addDias(ini,6),label:dm(ini)+" a "+dm(addDias(ini,4))};}
+if(p==="ano"){const a=new Date().getFullYear()+off;return{p,ini:a+"-01-01",fim:a+"-12-31",label:String(a)};}
+const d=new Date();d.setDate(1);d.setMonth(d.getMonth()+off);
+const a=d.getFullYear(),m=d.getMonth(),mm=String(m+1).padStart(2,"0");
+return{p,ini:a+"-"+mm+"-01",fim:a+"-"+mm+"-"+String(new Date(a,m+1,0).getDate()).padStart(2,"0"),label:MESES[m]+" "+a};
+}
+window.carregarDash=async function carregarDash(forcar){
+const{ini,fim}=dashIntervalo();const k=ini+"_"+fim;
+if(_dashCarregando===k)return;
+if(_dashCache[k]&&!forcar)return;
+_dashCarregando=k;_dashErro="";_dashErroChave=null;re();
+try{
+const snap=await getDocs(query(collection(db,"reservas"),where("data",">=",ini),where("data","<=",fim)));
+_dashCache[k]={docs:snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.data&&r.horario),em:new Date(),lidos:snap.size};
+}catch(e){console.warn("carregarDash:",e);_dashErro=e.message||"erro desconhecido";_dashErroChave=k;}
+_dashCarregando=null;re();
+};
+window.setDashPeriodo=v=>{_A.dashPeriodo=v;_A.dashOffset=0;re();};
+window.setDashOffset=n=>{_A.dashOffset=n===0?0:(_A.dashOffset||0)+n;re();};
+window.setDashSeg=v=>{_A.dashSeg=v;re();};
+function dashboardAdminHTML(c,ctx){
+const I=dashIntervalo(),k=I.ini+"_"+I.fim,cache=_dashCache[k],hj=fmtHoje();
+if(!cache&&_dashCarregando!==k&&_dashErroChave!==k)setTimeout(()=>carregarDash(),0);
+const seg=_A.dashSeg||"";
+const SEGS=[{id:"",l:"Todos"},{id:"inf",l:"👶 Infantil",cor:"#db2777"},{id:"fund1",l:"📚 Fund. 1",cor:"#0369a1"},{id:"fund2",l:"🎓 Fund. 2",cor:"#7c3aed"},{id:"extras",l:"⭐ Extras",cor:"#ea580c"}];
+const pill=(ativo,cor)=>"padding:7px 14px;border-radius:99px;border:1.5px solid "+(ativo?(cor||"#1a6b47"):c.border)+";background:"+(ativo?(cor||"#1a6b47"):c.surface)+";color:"+(ativo?"#fff":c.text)+";font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;white-space:nowrap";
+const card="background:"+c.surface+";border:1px solid "+c.border+";border-radius:16px;padding:16px";
+const rot="font-size:10.5px;font-weight:800;color:"+c.textMuted+";text-transform:uppercase;letter-spacing:.04em";
+let h=`<div class="fade-in">`;
+// ── Barra de filtros global ──
+h+=`<div style="${card};margin-bottom:14px;display:flex;flex-direction:column;gap:12px">
+ <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+  <div style="display:flex;gap:3px;background:${c.bg};padding:3px;border-radius:99px">${[{id:"semana",l:"Semana"},{id:"mes",l:"Mês"},{id:"ano",l:"Ano"}].map(p=>`<button onclick="setDashPeriodo('${p.id}')" style="${pill(I.p===p.id)}">${p.l}</button>`).join("")}</div>
+  <div style="display:flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap">
+   <button onclick="setDashOffset(-1)" title="Período anterior" style="${pill(false)};padding:6px 12px">‹</button>
+   <span style="font-size:14px;font-weight:800;color:${c.navy};min-width:120px;text-align:center">${I.label}</span>
+   <button onclick="setDashOffset(1)" title="Próximo período" style="${pill(false)};padding:6px 12px">›</button>
+   ${(_A.dashOffset||0)!==0?`<button onclick="setDashOffset(0)" style="${pill(false)};padding:6px 12px">Atual</button>`:""}
+   <button onclick="carregarDash(true)" title="Recarregar dados do período" style="${pill(false)};padding:6px 12px">🔄</button>
+  </div>
+ </div>
+ <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"><span style="${rot};margin-right:4px">Segmento</span>${SEGS.map(s=>`<button onclick="setDashSeg('${s.id}')" style="${pill(seg===s.id,s.cor)}">${s.l}</button>`).join("")}</div>
+</div>`;
+// ── Filas de aprovação (sempre "agora", independem do período) ──
+const filas=[{l:"Espaço",n:ctx.pend,ic:"🏛️",on:"aSetAba('reservas');_A.subAba='pendentes';re()"},{l:"T.I.",n:ctx.ti,ic:"💻",on:"aSetAba('ti')"},{l:"Marketing",n:ctx.mk,ic:"📸",on:"aSetAba('marketing')"},{l:"Tablets",n:ctx.tb,ic:"📱",on:"aSetAba('tablets')"}];
+h+=`<p style="${rot};margin:0 0 8px 2px">⏳ Aguardando aprovação agora</p>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:18px">
+${filas.map(f=>`<div onclick="${f.on}" title="Abrir fila" style="${card};padding:12px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;${f.n>0?"border-color:#f59e0b;background:"+(_dark?c.surface:"#fffbeb"):""}">
+ <span style="font-size:20px">${f.ic}</span>
+ <div><p style="font-size:22px;font-weight:900;line-height:1;color:${f.n>0?"#d97706":c.textMuted}">${f.n}</p><p style="font-size:11px;font-weight:700;color:${c.textMid};margin-top:2px">${f.l}</p></div>
+</div>`).join("")}
+</div>`;
+// ── Sem dados ainda ──
+if(!cache){
+if(_dashErroChave===k)h+=`<div style="${card};text-align:center;color:#b91c1c">⚠️ Erro ao carregar: ${_dashErro}<br><button onclick="carregarDash(true)" style="${pill(true)};margin-top:10px">Tentar de novo</button></div>`;
+else h+=`<div style="${card};text-align:center;color:${c.textMuted};padding:40px">⏳ Carregando dados de ${I.label}...</div>`;
+return h+`</div>`;
+}
+// ── Cálculos (tudo em memória, sobre a busca do período) ──
+const turmasSeg=seg?(seg==="extras"?TURMAS_EXTRAS:turmasDoSegmento(seg)):null;
+const noSeg=r=>!turmasSeg||turmasSeg.includes(r.turma||r.turmaInicio);
+const docs=cache.docs.filter(r=>r.data>=I.ini&&r.data<=I.fim&&noSeg(r));
+const validos=docs.filter(r=>r.status!=="recusado");
+const ags=validos.filter(r=>!r.reservaAutomatica);
+const realizados=ags.filter(r=>r.data<=hj).length;
+const futuros=ags.length-realizados;
+const pendPer=ags.filter(r=>r.status==="pendente").length;
+const recusados=docs.filter(r=>!r.reservaAutomatica&&r.status==="recusado").length;
+const FIS=ESPACOS.filter(e=>e.tipo==="espaco"||e.tipo==="laboratorio").map(e=>e.nome);
+let diasLet=0;for(let d=I.ini;d<=I.fim;d=addDias(d,1))if(isDiaLetivo(d))diasLet++;
+const slots=new Set(validos.filter(r=>FIS.includes(r.espaco)&&isDiaLetivo(r.data)).map(r=>r.espaco+"|"+r.data+"|"+r.horario)).size;
+const cap=FIS.length*12*diasLet;
+const ocup=cap?Math.round(slots/cap*1000)/10:0;
+const profsAtivos=new Set(ags.map(r=>r.professorId||r.professor)).size;
+const profsCad=(_usuarios||[]).filter(u=>(u.perfil||"professor")==="professor").length;
+const media=diasLet?Math.round(ags.length/diasLet*10)/10:0;
+const segInfo=SEGS.find(s=>s.id===seg);
+// ── Cards ──
+h+=`<p style="${rot};margin:0 0 8px 2px">📊 Visão geral · ${I.label}${seg?" · "+segInfo.l:""}</p>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:14px">
+ <div style="background:linear-gradient(135deg,#1a6b47,#0f4c2b);border-radius:16px;padding:16px;color:#fff;grid-column:span 2;min-width:0">
+  <p style="font-size:10.5px;font-weight:800;opacity:.8;text-transform:uppercase;letter-spacing:.04em">Agendamentos</p>
+  <p style="font-size:40px;font-weight:900;line-height:1.1;margin-top:4px">${ags.length}</p>
+  <div style="display:flex;gap:14px;margin-top:8px;font-size:12px;font-weight:700;flex-wrap:wrap"><span>✅ ${realizados} realizado${realizados!==1?"s":""}</span><span style="opacity:.8">🗓️ ${futuros} por vir</span></div>
+ </div>
+ <div style="${card}">
+  <p style="${rot}">Ocupação dos espaços</p>
+  <p style="font-size:28px;font-weight:900;color:#0369a1;line-height:1.2;margin-top:4px">${String(ocup).replace(".",",")}%</p>
+  <div style="height:6px;background:${c.bg};border-radius:99px;margin-top:6px;overflow:hidden"><div style="height:100%;width:${Math.min(100,ocup)}%;background:#0369a1;border-radius:99px"></div></div>
+  <p style="font-size:10.5px;color:${c.textMuted};margin-top:6px">${slots} de ${cap} aulas possíveis</p>
+ </div>
+ <div style="${card}">
+  <p style="${rot}">Professores ativos</p>
+  <p style="font-size:28px;font-weight:900;color:#7c3aed;line-height:1.2;margin-top:4px">${profsAtivos}</p>
+  <p style="font-size:10.5px;color:${c.textMuted};margin-top:6px">${seg?"agendaram nesse segmento":"de "+profsCad+" professores cadastrados"}</p>
+ </div>
+ <div style="${card}">
+  <p style="${rot}">Média por dia letivo</p>
+  <p style="font-size:28px;font-weight:900;color:#1a6b47;line-height:1.2;margin-top:4px">${String(media).replace(".",",")}</p>
+  <p style="font-size:10.5px;color:${c.textMuted};margin-top:6px">${diasLet} dia${diasLet!==1?"s":""} letivo${diasLet!==1?"s":""} no período</p>
+ </div>
+ <div style="${card}">
+  <p style="${rot}">Pendentes no período</p>
+  <p style="font-size:28px;font-weight:900;color:${pendPer?"#d97706":c.textMuted};line-height:1.2;margin-top:4px">${pendPer}</p>
+  <p style="font-size:10.5px;color:${c.textMuted};margin-top:6px">aguardando alguma aprovação</p>
+ </div>
+ <div style="${card}">
+  <p style="${rot}">Recusados</p>
+  <p style="font-size:28px;font-weight:900;color:${recusados?"#dc2626":c.textMuted};line-height:1.2;margin-top:4px">${recusados}</p>
+  <p style="font-size:10.5px;color:${c.textMuted};margin-top:6px">no período</p>
+ </div>
+</div>`;
+// ── Gráfico de barras: por dia (semana/mês) ou por mês (ano) ──
+let barras=[];
+if(I.p==="ano"){
+const ano=I.ini.slice(0,4);
+for(let m=1;m<=12;m++){const mm=String(m).padStart(2,"0");const n=ags.filter(r=>r.data.slice(0,7)===ano+"-"+mm).length;barras.push({l:MESES[m-1].slice(0,3),n,fut:(ano+"-"+mm)>hj.slice(0,7)});}
+}else{
+for(let d=I.ini;d<=I.fim;d=addDias(d,1)){if(!isDiaLetivo(d))continue;barras.push({l:d.slice(8,10),n:ags.filter(r=>r.data===d).length,fut:d>hj,hoje:d===hj});}
+}
+const maxB=Math.max(1,...barras.map(b=>b.n));
+h+=`<div style="${card};margin-bottom:10px">
+ <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:6px">
+  <p style="${rot}">Agendamentos por ${I.p==="ano"?"mês":"dia letivo"}</p>
+  <div style="display:flex;gap:10px;font-size:10.5px;color:${c.textMuted};font-weight:700"><span><span style="display:inline-block;width:9px;height:9px;border-radius:3px;background:#1a6b47;margin-right:4px"></span>Realizado</span><span><span style="display:inline-block;width:9px;height:9px;border-radius:3px;background:#86c5a4;margin-right:4px"></span>Por vir</span></div>
+ </div>
+ ${barras.length?`<div style="display:flex;align-items:flex-end;gap:${barras.length>15?3:6}px;height:150px">
+ ${barras.map(b=>`<div title="${b.l}: ${b.n}" style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:3px">
+  <span style="font-size:${barras.length>15?8.5:10.5}px;font-weight:800;color:${c.textMid}">${b.n||""}</span>
+  <div style="width:100%;max-width:38px;height:${Math.max(b.n?4:2,Math.round(b.n/maxB*110))}px;background:${b.n?(b.fut?"#86c5a4":"#1a6b47"):c.border};border-radius:6px 6px 2px 2px;${b.hoje?"box-shadow:0 0 0 2px #f59e0b":""}"></div>
+  <span style="font-size:${barras.length>15?8.5:10.5}px;font-weight:${b.hoje?900:600};color:${b.hoje?"#d97706":c.textMuted}">${b.l}</span>
+ </div>`).join("")}
+ </div>`:`<p style="font-size:12px;color:${c.textMuted};text-align:center;padding:20px">Nenhum dia letivo nesse período.</p>`}
+</div>`;
+const em=cache.em;
+h+=`<p style="font-size:10.5px;color:${c.textMuted};margin:6px 2px 0;line-height:1.5">Dados carregados às ${String(em.getHours()).padStart(2,"0")}:${String(em.getMinutes()).padStart(2,"0")} · ${cache.lidos} leituras do banco · não atualiza sozinho, use 🔄. Ocupação considera ${FIS.length} espaços × 12 horários por dia letivo. Cancelamentos não aparecem porque agendamentos cancelados são apagados.</p>`;
+return h+`</div>`;
+}
+
 function renderAdminView(){
 const c=C(),h=fmtHoje();
 if(!_A.mesCal){const d=new Date();_A.mesCal={a:d.getFullYear(),m:d.getMonth()};}
@@ -4565,7 +4714,7 @@ const aguardandoAreas=filtradas.filter(r=>r.status==="pendente"&&!precisaAdmin(r
 const conf=filtradas.filter(r=>r.status!=="pendente"&&(_A.historico||r.data>=h)&&(!_A.fData||r.data===_A.fData)&&(!_A.fDataAte||r.data<=_A.fDataAte));
 
 html+=`<div style="display:flex;gap:4px;margin-bottom:16px;background:${c.surface};border-radius:10px;padding:4px;border:1px solid ${c.border};width:fit-content;flex-wrap:wrap">
-     ${[{id:"reservas",l:"📋 Reservas",p:0},{id:"espacos",l:"🏛️ Por Espaço",p:0},{id:"marketing",l:`📸 Marketing${mkPendCount?" · "+mkPendCount:""}`,p:mkPendCount},{id:"ti",l:`💻 T.I.${tiPendCount?" · "+tiPendCount:""}`,p:tiPendCount},{id:"tablets",l:`📱 Tablets/Notebooks${tbPendCount?" · "+tbPendCount:""}`,p:tbPendCount}].map(t=>`<button onclick="aSetAba('${t.id}')" style="padding:6px 13px;font-size:12px;white-space:nowrap;border-radius:8px;border:1.5px solid ${_A.aba===t.id?(_dark?'#1a6b47':c.navy):(t.p?'#dc2626':c.border)};background:${_A.aba===t.id?(_dark?'#1a6b47':c.navy):'transparent'};color:${_A.aba===t.id?'#fff':(t.p?'#dc2626':c.text)};font-weight:700;cursor:pointer;font-family:inherit${t.p&&_A.aba!==t.id?';animation:pulse 1.4s ease-in-out infinite':''}">${t.l}</button>`).join("")}
+     ${[{id:"reservas",l:"📋 Reservas",p:0},{id:"espacos",l:"🏛️ Por Espaço",p:0},{id:"marketing",l:`📸 Marketing${mkPendCount?" · "+mkPendCount:""}`,p:mkPendCount},{id:"ti",l:`💻 T.I.${tiPendCount?" · "+tiPendCount:""}`,p:tiPendCount},{id:"tablets",l:`📱 Tablets/Notebooks${tbPendCount?" · "+tbPendCount:""}`,p:tbPendCount},{id:"dashboard",l:"📊 Dashboard",p:0}].map(t=>`<button onclick="aSetAba('${t.id}')" style="padding:6px 13px;font-size:12px;white-space:nowrap;border-radius:8px;border:1.5px solid ${_A.aba===t.id?(_dark?'#1a6b47':c.navy):(t.p?'#dc2626':c.border)};background:${_A.aba===t.id?(_dark?'#1a6b47':c.navy):'transparent'};color:${_A.aba===t.id?'#fff':(t.p?'#dc2626':c.text)};font-weight:700;cursor:pointer;font-family:inherit${t.p&&_A.aba!==t.id?';animation:pulse 1.4s ease-in-out infinite':''}">${t.l}</button>`).join("")}
    </div>`;
 
 if(_A.aba==="reservas"){
@@ -4640,6 +4789,8 @@ html+=`<div style="margin-bottom:16px;background:${c.surface};border:1px solid $
 });
 if(!Object.keys(porEspaco).length)html+=`<div style="text-align:center;padding:40px;color:${c.textMuted}"><p style="font-size:32px">🏛️</p><p>Nenhum agendamento.</p></div>`;
 }
+
+if(_A.aba==="dashboard"){html+=dashboardAdminHTML(c,{pend:_todas.filter(r=>r.status==="pendente"&&!r.reservaAutomatica&&precisaAdmin(r)).length,ti:tiPendCount,mk:mkPendCount,tb:tbPendCount});}
 
 if(_A.aba==="marketing"){html+="<div id='mk-adm-inline'></div>";setTimeout(()=>{const el=document.getElementById("mk-adm-inline");if(el){const mkPVenc=_mktGlobal.filter(r=>r.statusMarketing==="pendente"&&r.status!=="recusado"&&r.data<fmtHoje()).sort((a,b)=>a.data>b.data?1:-1);const mkP=_mktGlobal.filter(r=>r.statusMarketing==="pendente"&&r.status!=="recusado"&&r.data>=fmtHoje()).sort((a,b)=>a.data>b.data?1:-1);const mkA=_mktGlobal.filter(r=>r.statusMarketing==="aprovado"&&r.status!=="recusado"&&r.data>=fmtHoje()).sort((a,b)=>a.data>b.data?1:-1);const mkReal=_mktGlobal.filter(r=>r.statusMarketing==="aprovado"&&r.status!=="recusado"&&r.data<fmtHoje()).sort((a,b)=>a.data<b.data?1:-1);let h2="";const mkPendCardFn=(r,venc)=>`<div style='background:#fff;border:1.5px solid ${venc?"#fecaca":"#ddd6fe"};border-left:4px solid ${venc?"#dc2626":"#7c3aed"};border-radius:10px;padding:12px 14px;margin-bottom:8px'><div style='display:flex;gap:10px;align-items:center'><span style='font-family:monospace;font-weight:800;color:${venc?"#dc2626":"#7c3aed"}'>${r.horario}</span><span style='font-weight:700'>${r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco}</span><span style='font-size:12px;color:#607060'>${r.professor} · ${r.data.split("-").reverse().join("/")}</span></div><div style='display:flex;gap:8px;margin-top:10px'><button onclick='mkAprovar("${r.id}")' style='flex:1;padding:8px;border-radius:8px;border:none;background:#1a6b47;color:#fff;font-weight:700;cursor:pointer'>✅ Aprovar</button><button onclick='mkRecusar("${r.id}")' style='flex:1;padding:8px;border-radius:8px;border:none;background:#dc2626;color:#fff;font-weight:700;cursor:pointer'>❌ Recusar</button></div></div>`;if(mkPVenc.length)h2+=`<p style='font-size:12px;font-weight:800;color:#dc2626;text-transform:uppercase;margin:0 0 10px'>⚠️ Vencidos — nunca aprovados (${mkPVenc.length})</p>`+mkPVenc.map(r=>mkPendCardFn(r,true)).join("")+`<div style='height:16px'></div>`;if(mkP.length)h2+=`<p style='font-size:12px;font-weight:800;color:#7c3aed;text-transform:uppercase;margin:0 0 10px'>⏳ Aguardando aprovação (${mkP.length})</p>`+mkP.map(r=>mkPendCardFn(r,false)).join("");const mkCardFn=r=>`<div style='background:#fff;border:1.5px solid #a7f3d0;border-left:4px solid #1a6b47;border-radius:10px;padding:12px 14px;margin-bottom:8px'><span style='font-family:monospace;font-weight:800;color:#1a6b47'>${r.horario}</span> <span style='font-weight:700'>${r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco}</span> <span style='font-size:12px;color:#607060'>${r.professor}</span></div>`;if(mkA.length)h2+=`<p style='font-size:12px;font-weight:800;color:#1a6b47;text-transform:uppercase;margin:14px 0 10px'>✅ Aprovados (${mkA.length})</p>`+agruparPorDiaHTML(mkA,mkCardFn,fmtHoje());if(mkReal.length)h2+=`<p style='font-size:12px;font-weight:800;color:#94a3b8;text-transform:uppercase;margin:14px 0 10px'>📁 Realizados (${mkReal.length})</p>`+mkReal.map(r=>`<div style='background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:10px 14px;margin-bottom:6px'><span style='font-family:monospace;font-weight:700;color:#64748b'>${r.horario}</span> <span style='font-weight:700;color:#475569'>${r.espaco==="Equipe de Marketing"?(r.salaAtividade||r.espaco):r.espaco}</span> <span style='font-size:12px;color:#94a3b8'>${r.professor} · ${r.data.split("-").reverse().join("/")}</span></div>`).join("");if(!h2)h2=`<div style='text-align:center;padding:40px;color:#607060'><p style='font-size:32px'>📸</p><p>Nenhuma solicitação.</p></div>`;el.innerHTML=h2;}},0);}
 if(_A.aba==="ti"){html+="<div id='ti-adm-inline'></div>";setTimeout(()=>{const el=document.getElementById("ti-adm-inline");if(el){const tiPVenc=_tiGlobal.filter(r=>r.statusEquip==="pendente"&&r.data<fmtHoje()).sort((a,b)=>a.data>b.data?1:-1);const tiP=_tiGlobal.filter(r=>r.statusEquip==="pendente"&&r.data>=fmtHoje()).sort((a,b)=>a.data>b.data?1:-1);const tiC=_tiGlobal.filter(r=>r.statusEquip==="aprovado"&&r.data>=fmtHoje()).sort((a,b)=>a.data>b.data?1:-1);const tiReal=_tiGlobal.filter(r=>r.statusEquip==="aprovado"&&r.data<fmtHoje()).sort((a,b)=>a.data<b.data?1:-1);const tiPendCardFn=(r,venc)=>`<div style='background:#fff;border:1.5px solid ${venc?"#fecaca":"#fed7aa"};border-left:4px solid ${venc?"#dc2626":"#f97316"};border-radius:10px;padding:12px 14px;margin-bottom:8px'><div style='display:flex;gap:10px;align-items:center;flex-wrap:wrap'><span style='font-family:monospace;font-weight:800;color:${venc?"#dc2626":"#c2410c"}'>${r.horario}</span><span style='font-weight:700'>${nomeExibicao(r.espaco)}</span><span style='font-size:12px;color:#607060'>${r.professor} · ${r.data.split("-").reverse().join("/")}</span></div>${r.local?`<p style='font-size:11px;color:#0369a1;font-weight:700;margin:4px 0 0'>📍 ${r.local}${r.localDevolucao&&r.localDevolucao!==r.local?" → "+r.localDevolucao:""}</p>`:""}<div style='display:flex;gap:8px;margin-top:10px'><button onclick='tiAprovar("${r.id}")' style='flex:1;padding:8px;border-radius:8px;border:none;background:#1a6b47;color:#fff;font-weight:700;cursor:pointer'>✅ Aprovar</button><button onclick='tiRecusar("${r.id}")' style='flex:1;padding:8px;border-radius:8px;border:none;background:#dc2626;color:#fff;font-weight:700;cursor:pointer'>❌ Recusar</button></div></div>`;let h2="";if(tiPVenc.length)h2+=`<p style='font-size:12px;font-weight:800;color:#dc2626;text-transform:uppercase;margin:0 0 10px'>⚠️ Vencidos — nunca aprovados (${tiPVenc.length})</p>`+tiPVenc.map(r=>tiPendCardFn(r,true)).join("")+`<div style='height:16px'></div>`;if(tiP.length)h2+=`<p style='font-size:12px;font-weight:800;color:#c2410c;text-transform:uppercase;margin:0 0 10px'>⏳ Aguardando aprovação (${tiP.length})</p>`+tiP.map(r=>tiPendCardFn(r,false)).join("");const tiCardFn=r=>`<div style='background:#fff;border:1.5px solid #a7f3d0;border-left:4px solid #1a6b47;border-radius:10px;padding:12px 14px;margin-bottom:8px'><span style='font-family:monospace;font-weight:800;color:#1a6b47'>${r.horario}</span> <span style='font-weight:700'>${nomeExibicao(r.espaco)}</span> <span style='font-size:12px;color:#607060'>${r.professor}</span>${r.local?` <span style='font-size:11px;color:#0369a1;font-weight:700'>📍 ${r.local}${r.localDevolucao&&r.localDevolucao!==r.local?" → "+r.localDevolucao:""}</span>`:""}</div>`;if(tiC.length)h2+=`<p style='font-size:12px;font-weight:800;color:#1a6b47;text-transform:uppercase;margin:14px 0 10px'>✅ Confirmados (${tiC.length})</p>`+agruparPorDiaHTML(tiC,tiCardFn,fmtHoje());if(tiReal.length)h2+=`<p style='font-size:12px;font-weight:800;color:#94a3b8;text-transform:uppercase;margin:14px 0 10px'>📁 Realizados (${tiReal.length})</p>`+tiReal.map(r=>`<div style='background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:10px 14px;margin-bottom:6px'><span style='font-family:monospace;font-weight:700;color:#64748b'>${r.horario}</span> <span style='font-weight:700;color:#475569'>${nomeExibicao(r.espaco)}</span> <span style='font-size:12px;color:#94a3b8'>${r.professor} · ${r.data.split("-").reverse().join("/")}</span></div>`).join("");if(!h2)h2=`<div style='text-align:center;padding:40px;color:#607060'><p style='font-size:32px'>🔊</p><p>Nenhum agendamento.</p></div>`;el.innerHTML=h2;}},0);}
