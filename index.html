@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20261001104123"/>
-<meta name="app-build-perfis" content="admin"/>
-<meta name="app-build-mensagem" content="Relatório em PDF (Admin): agora dá pra escolher o segmento (Infantil, Fund. 1, Fund. 2, Extras) e exportar com ou sem a coluna de observação."/>
+<meta name="app-build" content="20261002114058"/>
+<meta name="app-build-perfis" content="admin,coordenador"/>
+<meta name="app-build-mensagem" content="Correção: agendar a Equipe de Marketing não bloqueia mais o agendamento de um espaço no mesmo dia e horário (e vice-versa)."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -3404,7 +3404,7 @@ _MA.blocos[i].horarioFim=h;
 // Verificar conflito em tempo real após selecionar horário
 _MA.avisoConflito="";
 const eo=ESPACOS.find(e=>e.nome===_MA.espaco);
-if(!eo?.equipAvulso&&_MA.blocos[i].horario){
+if(!eo?.equipAvulso&&eo?.tipo!=="marketing"&&_MA.blocos[i].horario){
 const range=horariosRange(_MA.blocos[i].horario,_MA.blocos[i].horarioFim||_MA.blocos[i].horario);
 const conflitos=_todas.filter(r=>
 r.professorId===_usuario?.uid&&
@@ -3413,6 +3413,7 @@ r.status!=="recusado"&&
 !r.reservaAutomatica&&
 r.espaco!==_MA.espaco&&
 !ESPACOS.find(e=>e.nome===r.espaco)?.equipAvulso&&
+ESPACOS.find(e=>e.nome===r.espaco)?.tipo!=="marketing"&&
 range.includes(r.horario)
 );
 if(conflitos.length>0){
@@ -3561,12 +3562,12 @@ if(existe){_MA.erro=`Horário ${rangeHors[i]} já reservado por ${existe.profess
 
 // 1b. Verificar se o próprio professor já tem algo marcado nesse horário, em outro espaço
 // (coordenador pode reservar mais de um espaço ao mesmo tempo — pula essa checagem pra esse perfil)
-if(!isCoordenador(_usuario?.perfil)&&!eo?.equipAvulso){
+if(!isCoordenador(_usuario?.perfil)&&!eo?.equipAvulso&&eo?.tipo!=="marketing"){
 const snapConflitosProf=await Promise.all(rangeHors.map(h=>
 getDocs(query(collection(db,"reservas"),where("professorId","==",_usuario.uid),where("data","==",data),where("horario","==",h)))
 ));
 for(let i=0;i<rangeHors.length;i++){
-const existeProf=snapConflitosProf[i].docs.map(d=>d.data()).find(r=>r?.status!=="recusado"&&r.espaco!==espaco&&!r.reservaAutomatica&&!ESPACOS.find(e=>e.nome===r.espaco)?.equipAvulso);
+const existeProf=snapConflitosProf[i].docs.map(d=>d.data()).find(r=>r?.status!=="recusado"&&r.espaco!==espaco&&!r.reservaAutomatica&&!ESPACOS.find(e=>e.nome===r.espaco)?.equipAvulso&&ESPACOS.find(e=>e.nome===r.espaco)?.tipo!=="marketing");
 if(existeProf){_MA.erro=`Você já tem "${existeProf.espaco}" agendado às ${rangeHors[i]} nesse mesmo dia.`;_MA.salvando=false;_MA.resumo=false;re();return;}
 }
 }
@@ -3589,7 +3590,7 @@ if(conflitoLab){_MA.erro=`O laboratorista já está escalado às ${rangeHors[i]}
 // (equipamentos avulsos não bloqueiam — professor pode ter sala + tablets no mesmo horário)
 // Coordenador pula essa checagem também — pode reservar mais de um espaço ao mesmo tempo.
 const isEquipAvulsoSalvar=eo?.equipAvulso;
-if(!isEquipAvulsoSalvar&&!isCoordenador(_usuario?.perfil)){
+if(!isEquipAvulsoSalvar&&eo?.tipo!=="marketing"&&!isCoordenador(_usuario?.perfil)){
 const snapProfConflitos=await Promise.all(rangeHors.map(h=>
 getDocs(query(collection(db,"reservas"),
 where("professorId","==",_usuario.uid),
@@ -3602,7 +3603,8 @@ for(let i=0;i<rangeHors.length;i++){
 const conflito=snapProfConflitos[i].docs.map(d=>d.data()).find(r=>
 r?.status!=="recusado"&&
 r?.espaco!==espaco&&
-!ESPACOS.find(e=>e.nome===r?.espaco)?.equipAvulso
+!ESPACOS.find(e=>e.nome===r?.espaco)?.equipAvulso&&
+ESPACOS.find(e=>e.nome===r?.espaco)?.tipo!=="marketing"
 );
 if(conflito){
 _MA.erro=`Você já tem o <strong>${conflito.espaco}</strong> reservado às <strong>${rangeHors[i]}</strong>. Confirme se este é o horário correto.`;
