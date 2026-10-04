@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20261003221018"/>
+<meta name="app-build" content="20261003222303"/>
 <meta name="app-build-perfis" content="admin"/>
-<meta name="app-build-mensagem" content="O mapa de calor do Dashboard (aba Espaços) virou um gráfico de linhas — uma linha por dia da semana, mostrando a ocupação ao longo dos horários. Mais fácil de comparar os dias e ver a tendência."/>
+<meta name="app-build-mensagem" content="O filtro de Espaço no topo do painel agora lista as salas em ordem alfabética (antes seguia a ordem bruta do cadastro)."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -4837,7 +4837,7 @@ if(urgentes.length)html+=`<div style="background:linear-gradient(135deg,#f97316,
 // ── FILTROS ──
 html+=`<div style="background:${c.surface};border-radius:12px;border:1px solid ${c.border};padding:8px 12px;margin-bottom:16px">
    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-     <select id="adm-sel-espaco" style="${sel()};font-size:12px;padding:5px 8px;flex:1;min-width:100px"><option value="">🏛️ Espaço</option>${ESPACOS.map(e=>`<option value="${e.nome}" ${_A.fEspaco===e.nome?"selected":""}>${nomeExibicao(e.nome)}</option>`).join("")}</select>
+     <select id="adm-sel-espaco" style="${sel()};font-size:12px;padding:5px 8px;flex:1;min-width:100px"><option value="">🏛️ Espaço</option>${[...ESPACOS].sort((a,b)=>a.nome.localeCompare(b.nome,"pt-BR")).map(e=>`<option value="${e.nome}" ${_A.fEspaco===e.nome?"selected":""}>${nomeExibicao(e.nome)}</option>`).join("")}</select>
      <div style="position:relative;flex:1;min-width:100px">
        <input id="adm-sel-prof" type="text" autocomplete="off" placeholder="👤 Professor" value="${_A.fProf||""}" style="${sel()};font-size:12px;padding:5px 8px;width:100%">
        <div id="adm-prof-sugg" style="display:none;position:absolute;top:100%;left:0;right:0;background:${c.surface};border:1.5px solid ${c.border};border-radius:8px;margin-top:4px;max-height:220px;overflow-y:auto;z-index:50;box-shadow:0 4px 14px rgba(0,0,0,.15)"></div>
