@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20261003212400"/>
+<meta name="app-build" content="20261003213512"/>
 <meta name="app-build-perfis" content="admin,marketing"/>
-<meta name="app-build-mensagem" content="Pedidos de Foto/Vídeo para Rede Social agora exigem um texto de publicação com no mínimo 25 caracteres (com contador em tempo real). E o texto de publicação já aparece direto na aba 'Todos agendamentos', sem precisar abrir cada reserva."/>
+<meta name="app-build-mensagem" content="HOTFIX: corrigido um bug que travava os botões 'Todos agendamentos' e 'Ver histórico' na tela do Marketing quando o Admin acessava essa visão sem antes passar pela tela do T.I."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -991,10 +991,10 @@ catch{render("login-erro",alertHTML("error","Erro ao enviar. Verifique o e-mail.
 // ════════════════════════════════════════════════════════════════════════════
 // FOTÓGRAFO
 // ════════════════════════════════════════════════════════════════════════════
-window.mkSetAba=(v)=>{if(!window._MK)window._MK={aba:"hoje",historico:false};_MK.aba=v;re();};
+window.mkSetAba=(v)=>{if(!window._MK)window._MK={aba:"hoje",historico:false,feedExp:false};_MK.aba=v;re();};
 function renderMarketingInline(){
 const c=C(),h=fmtHoje();
-if(!window._MK)window._MK={aba:"hoje",historico:false};
+if(!window._MK)window._MK={aba:"hoje",historico:false,feedExp:false};
 const mkCard=(r,pend)=>{
 const[a,m2,d]=r.data.split("-");const isH=r.data===h;
 const dias=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
@@ -1051,7 +1051,7 @@ const todos=_todas.filter(r=>(_MK.historico||r.data>=h)&&r.status!=="recusado"&&
 const pd={};todos.forEach(r=>{if(!pd[r.data])pd[r.data]=[];pd[r.data].push(r);});
 if(!todos.length)corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">📅</p><p style="margin-top:12px">Nenhum agendamento.</p></div>`;
 // Feed compacto: 5 primeiros, expandível
-const limTI=_TI.feedExp?todos.length:5;
+const limTI=_MK.feedExp?todos.length:5;
 const todosFeed=todos.slice(0,limTI);
 Object.entries(pd).filter(([d])=>todosFeed.some(r=>r.data===d)).forEach(([data,rs])=>{const[a2,m2,d2]=data.split("-");const isH=data===h;corpo+=`<div style="margin-bottom:14px"><div style="background:${isH?"#1a6b47":"#64748b"};color:#fff;border-radius:7px;padding:3px 12px;font-size:11.5px;font-weight:700;display:inline-block;margin-bottom:8px">${isH?"📌 Hoje":`${d2}/${m2}/${a2}`}</div>`;rs.forEach(r=>{corpo+=`<div style="padding:10px 14px;border-radius:10px;margin-bottom:6px;background:${c.surface};border:1px solid ${c.border}"><div style="display:flex;gap:10px"><div style="min-width:72px"><p style="font-size:12px;font-family:'DM Mono',monospace;font-weight:800;color:${c.green}">${r.horario}${r.horarioFim&&r.horarioFim!==r.horario?" → "+r.horarioFim:""}</p></div><div style="flex:1"><p style="font-weight:700;font-size:13px;color:${c.navy}">${nomeExibicao(r.espaco)}</p><p style="font-size:12px;color:${c.textMid}">${r.professor} · ${r.turmaInicio||r.turma||"—"}</p><p style="font-size:12px;color:${c.textMuted}">${r.conteudo||""}</p></div></div>${r.descritivo?`<div style="margin-top:7px;padding:7px 9px;background:#fef9c3;border-radius:6px;border:1px solid #fde68a"><p style="font-size:10.5px;font-weight:700;color:#854d0e;margin-bottom:1px">📝 Publicação:</p><p style="font-size:11.5px;color:#713f12">${r.descritivo}</p></div>`:""}</div>`;});corpo+=`</div>`;});
 }
@@ -1268,7 +1268,7 @@ $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="
 
 function renderMarketing(){
 const c=C(),h=fmtHoje();
-if(!window._MK)window._MK={aba:"pendentes",historico:false};
+if(!window._MK)window._MK={aba:"pendentes",historico:false,feedExp:false};
 const mkCard=(r,pend)=>{
 const[a,m2,d]=r.data.split("-");const isH=r.data===h;
 const dias=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
@@ -1353,7 +1353,7 @@ corpo+=`<div style="margin-bottom:14px"><div style="background:${isH?"#1a6b47":"
 rs.forEach(r=>{corpo+=`<div style="padding:10px 14px;border-radius:10px;margin-bottom:6px;background:${c.surface};border:1px solid ${c.border}"><div style="display:flex;gap:10px"><div style="min-width:72px"><p style="font-size:12px;font-family:'DM Mono',monospace;font-weight:800;color:${c.green}">${r.horario}${r.horarioFim&&r.horarioFim!==r.horario?" → "+r.horarioFim:""}</p></div><div style="flex:1"><p style="font-weight:700;font-size:13px;color:${c.navy}">${nomeExibicao(r.espaco)}</p><p style="font-size:12px;color:${c.textMid}">${r.professor} · ${r.turmaInicio||r.turma||"—"}</p><p style="font-size:12px;color:${c.textMuted}">${r.conteudo||""}</p></div></div>${r.descritivo?`<div style="margin-top:7px;padding:7px 9px;background:#fef9c3;border-radius:6px;border:1px solid #fde68a"><p style="font-size:10.5px;font-weight:700;color:#854d0e;margin-bottom:1px">📝 Publicação:</p><p style="font-size:11.5px;color:#713f12">${r.descritivo}</p></div>`:""}</div>`;});
 corpo+=`</div>`;
 });
-if(todos.length>5)corpo+=`<button onclick="window._TI.feedExp=!window._TI.feedExp;re()" style="width:100%;padding:8px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.textMuted};font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">${_TI.feedExp?'▲ Ver menos':'▼ Ver mais ('+todos.length+' no total)'}</button>`;
+if(todos.length>5)corpo+=`<button onclick="window._MK.feedExp=!window._MK.feedExp;re()" style="width:100%;padding:8px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.textMuted};font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">${_MK.feedExp?'▲ Ver menos':'▼ Ver mais ('+todos.length+' no total)'}</button>`;
 }
 $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="no">
    <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#0d2b1a,#1a6b47)"};padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100">
