@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20261003213512"/>
+<meta name="app-build" content="20261003215141"/>
 <meta name="app-build-perfis" content="admin,marketing"/>
-<meta name="app-build-mensagem" content="HOTFIX: corrigido um bug que travava os botões 'Todos agendamentos' e 'Ver histórico' na tela do Marketing quando o Admin acessava essa visão sem antes passar pela tela do T.I."/>
+<meta name="app-build-mensagem" content="A aba 'Todos agendamentos' do Marketing agora mostra só o que envolve foto/vídeo/Rede Social — antes misturava com reservas de toda a escola."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -1047,7 +1047,7 @@ const pdProx={};proximosList.forEach(r=>{if(!pdProx[r.data])pdProx[r.data]=[];pd
 Object.entries(pdProx).forEach(([data,rs])=>{const[a2,m2,d2]=data.split("-");corpo+=`<div style="margin-bottom:16px"><p style="font-size:12px;font-weight:800;color:${c.textMuted};text-transform:uppercase;margin-bottom:8px">${d2}/${m2}/${a2}</p>${rs.map(r=>mkCard(r,r.statusMarketing==="pendente")).join("")}</div>`;});
 }
 } else {
-const todos=_todas.filter(r=>(_MK.historico||r.data>=h)&&r.status!=="recusado"&&!r.reservaAutomatica).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
+const todos=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&(_MK.historico||r.data>=h)&&r.status!=="recusado"&&!r.reservaAutomatica).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
 const pd={};todos.forEach(r=>{if(!pd[r.data])pd[r.data]=[];pd[r.data].push(r);});
 if(!todos.length)corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">📅</p><p style="margin-top:12px">Nenhum agendamento.</p></div>`;
 // Feed compacto: 5 primeiros, expandível
@@ -1327,7 +1327,7 @@ const hojeList=minhas.filter(r=>r.data===h);
 const pendentes=minhas.filter(r=>r.statusMarketing==="pendente"&&r.data>=h);
 const mkPVenc=minhas.filter(r=>r.statusMarketing==="pendente"&&r.data<h);
 const proximosList=minhas.filter(r=>r.data>h);
-const todos=_todas.filter(r=>(_MK.historico||r.data>=h)&&r.status!=="recusado"&&!r.reservaAutomatica).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
+const todos=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&(_MK.historico||r.data>=h)&&r.status!=="recusado"&&!r.reservaAutomatica).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
 const btnAba=(id,l)=>`<button onclick="window._MK.aba='${id}';re()" style="padding:7px 16px;font-size:12.5px;border-radius:8px;border:1.5px solid ${_MK.aba===id?'#7c3aed':c.border};background:${_MK.aba===id?'#7c3aed':'transparent'};color:${_MK.aba===id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">${l}</button>`;
 let corpo="";
 if(_MK.aba==="hoje"){
