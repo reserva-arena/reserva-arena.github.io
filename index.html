@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20261002145043"/>
-<meta name="app-build-perfis" content="admin,professor,coordenador"/>
-<meta name="app-build-mensagem" content="Novo jeito de agendar! Depois de escolher o espaço, você vê os horários livres dos próximos dias. Toque no horário verde e em Continuar. Prefere o calendário? Ele continua lá, ao lado."/>
+<meta name="app-build" content="20261003212400"/>
+<meta name="app-build-perfis" content="admin,marketing"/>
+<meta name="app-build-mensagem" content="Pedidos de Foto/Vídeo para Rede Social agora exigem um texto de publicação com no mínimo 25 caracteres (com contador em tempo real). E o texto de publicação já aparece direto na aba 'Todos agendamentos', sem precisar abrir cada reserva."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -288,6 +288,9 @@ const HORARIOS_COMPLETO = [
 // ── HORÁRIOS (COMPATIBILIDADE) ──
 // Apenas as horas válidas de aula (sem intervalos) — usado pra "horário de início"
 const HORARIOS = HORARIOS_COMPLETO.filter(h => h.tipo === "aula").map(h => h.hora);
+// Mínimo de caracteres exigido no texto de publicação (Rede Social) — pedido da equipe de
+// Marketing, que recebia respostas vazias tipo "depois eu envio".
+const MIN_CARACTERES_PUBLICACAO = 25;
 // Aula + marcador de fim do último período — usado só pra calcular "horário de fim"
 // (17:40 nunca aparece como opção de início, só como fim válido do período das 17:00)
 const HORARIOS_COM_FIM = HORARIOS_COMPLETO.filter(h => h.tipo === "aula" || h.tipo === "fim").map(h => h.hora);
@@ -1050,7 +1053,7 @@ if(!todos.length)corpo+=`<div style="text-align:center;padding:48px;color:${c.te
 // Feed compacto: 5 primeiros, expandível
 const limTI=_TI.feedExp?todos.length:5;
 const todosFeed=todos.slice(0,limTI);
-Object.entries(pd).filter(([d])=>todosFeed.some(r=>r.data===d)).forEach(([data,rs])=>{const[a2,m2,d2]=data.split("-");const isH=data===h;corpo+=`<div style="margin-bottom:14px"><div style="background:${isH?"#1a6b47":"#64748b"};color:#fff;border-radius:7px;padding:3px 12px;font-size:11.5px;font-weight:700;display:inline-block;margin-bottom:8px">${isH?"📌 Hoje":`${d2}/${m2}/${a2}`}</div>`;rs.forEach(r=>{corpo+=`<div style="display:flex;gap:10px;padding:10px 14px;border-radius:10px;margin-bottom:6px;background:${c.surface};border:1px solid ${c.border}"><div style="min-width:72px"><p style="font-size:12px;font-family:'DM Mono',monospace;font-weight:800;color:${c.green}">${r.horario}${r.horarioFim&&r.horarioFim!==r.horario?" → "+r.horarioFim:""}</p></div><div style="flex:1"><p style="font-weight:700;font-size:13px;color:${c.navy}">${nomeExibicao(r.espaco)}</p><p style="font-size:12px;color:${c.textMid}">${r.professor} · ${r.turmaInicio||r.turma||"—"}</p><p style="font-size:12px;color:${c.textMuted}">${r.conteudo||""}</p></div></div>`;});corpo+=`</div>`;});
+Object.entries(pd).filter(([d])=>todosFeed.some(r=>r.data===d)).forEach(([data,rs])=>{const[a2,m2,d2]=data.split("-");const isH=data===h;corpo+=`<div style="margin-bottom:14px"><div style="background:${isH?"#1a6b47":"#64748b"};color:#fff;border-radius:7px;padding:3px 12px;font-size:11.5px;font-weight:700;display:inline-block;margin-bottom:8px">${isH?"📌 Hoje":`${d2}/${m2}/${a2}`}</div>`;rs.forEach(r=>{corpo+=`<div style="padding:10px 14px;border-radius:10px;margin-bottom:6px;background:${c.surface};border:1px solid ${c.border}"><div style="display:flex;gap:10px"><div style="min-width:72px"><p style="font-size:12px;font-family:'DM Mono',monospace;font-weight:800;color:${c.green}">${r.horario}${r.horarioFim&&r.horarioFim!==r.horario?" → "+r.horarioFim:""}</p></div><div style="flex:1"><p style="font-weight:700;font-size:13px;color:${c.navy}">${nomeExibicao(r.espaco)}</p><p style="font-size:12px;color:${c.textMid}">${r.professor} · ${r.turmaInicio||r.turma||"—"}</p><p style="font-size:12px;color:${c.textMuted}">${r.conteudo||""}</p></div></div>${r.descritivo?`<div style="margin-top:7px;padding:7px 9px;background:#fef9c3;border-radius:6px;border:1px solid #fde68a"><p style="font-size:10.5px;font-weight:700;color:#854d0e;margin-bottom:1px">📝 Publicação:</p><p style="font-size:11.5px;color:#713f12">${r.descritivo}</p></div>`:""}</div>`;});corpo+=`</div>`;});
 }
 return`<div style="padding:4px 0">
    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
@@ -1347,7 +1350,7 @@ if(!todos.length)corpo+=`<div style="text-align:center;padding:48px;color:${c.te
 Object.entries(pd).forEach(([data,rs])=>{
 const[a2,m2,d2]=data.split("-");const isH=data===h;
 corpo+=`<div style="margin-bottom:14px"><div style="background:${isH?"#1a6b47":"#64748b"};color:#fff;border-radius:7px;padding:3px 12px;font-size:11.5px;font-weight:700;display:inline-block;margin-bottom:8px">${isH?"📌 Hoje":`${d2}/${m2}/${a2}`}</div>`;
-rs.forEach(r=>{corpo+=`<div style="display:flex;gap:10px;padding:10px 14px;border-radius:10px;margin-bottom:6px;background:${c.surface};border:1px solid ${c.border}"><div style="min-width:72px"><p style="font-size:12px;font-family:'DM Mono',monospace;font-weight:800;color:${c.green}">${r.horario}${r.horarioFim&&r.horarioFim!==r.horario?" → "+r.horarioFim:""}</p></div><div style="flex:1"><p style="font-weight:700;font-size:13px;color:${c.navy}">${nomeExibicao(r.espaco)}</p><p style="font-size:12px;color:${c.textMid}">${r.professor} · ${r.turmaInicio||r.turma||"—"}</p><p style="font-size:12px;color:${c.textMuted}">${r.conteudo||""}</p></div></div>`;});
+rs.forEach(r=>{corpo+=`<div style="padding:10px 14px;border-radius:10px;margin-bottom:6px;background:${c.surface};border:1px solid ${c.border}"><div style="display:flex;gap:10px"><div style="min-width:72px"><p style="font-size:12px;font-family:'DM Mono',monospace;font-weight:800;color:${c.green}">${r.horario}${r.horarioFim&&r.horarioFim!==r.horario?" → "+r.horarioFim:""}</p></div><div style="flex:1"><p style="font-weight:700;font-size:13px;color:${c.navy}">${nomeExibicao(r.espaco)}</p><p style="font-size:12px;color:${c.textMid}">${r.professor} · ${r.turmaInicio||r.turma||"—"}</p><p style="font-size:12px;color:${c.textMuted}">${r.conteudo||""}</p></div></div>${r.descritivo?`<div style="margin-top:7px;padding:7px 9px;background:#fef9c3;border-radius:6px;border:1px solid #fde68a"><p style="font-size:10.5px;font-weight:700;color:#854d0e;margin-bottom:1px">📝 Publicação:</p><p style="font-size:11.5px;color:#713f12">${r.descritivo}</p></div>`:""}</div>`;});
 corpo+=`</div>`;
 });
 if(todos.length>5)corpo+=`<button onclick="window._TI.feedExp=!window._TI.feedExp;re()" style="width:100%;padding:8px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.textMuted};font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">${_TI.feedExp?'▲ Ver menos':'▼ Ver mais ('+todos.length+' no total)'}</button>`;
@@ -3028,7 +3031,8 @@ const isAvulso=eo?.equipAvulso;
 const bValMulti=b=>{
 if(!b.horario||!b.horarioFim)return false;
 // Se o objetivo da foto/vídeo é publicação em Rede Social, o texto da publicação é obrigatório
-if(b.objetivoMidia==="social"&&!(b.descritivo&&b.descritivo.trim()))return false;
+// e precisa ter um mínimo de caracteres — pra evitar respostas vazias tipo "depois eu envio".
+if(b.objetivoMidia==="social"&&!(b.descritivo&&b.descritivo.trim().length>=MIN_CARACTERES_PUBLICACAO))return false;
 // Marketing: precisa de sala e pelo menos foto ou vídeo
 if(eo?.tipo==="marketing")return !!(b.salaAtividade&&b.conteudo&&(b.precisaFoto||b.precisaVideo));
 // Equipamentos avulsos: precisam de local início, conteúdo e término (quando exigido pelo *)
@@ -3342,7 +3346,7 @@ html+=`<div style="background:${c.surface};border-radius:10px;padding:12px 14px;
      <option value="pedagogico" ${b.objetivoMidia==="pedagogico"?"selected":""}>📚 Projeto Pedagógico</option>
    </select>
    ${b.objetivoMidia==="pedagogico"&&b.horario&&b.horarioFim&&b.horario!==b.horarioFim?`<div style="background:#fef9c3;border:1.5px solid #fde68a;border-radius:8px;padding:10px 12px;margin-bottom:6px"><p style="font-size:12px;color:#713f12;line-height:1.5">⚠️ <strong>Projeto Pedagógico com várias turmas:</strong> crie uma reserva separada pra cada turma/horário, em vez de agrupar tudo num período só. É diferente do caso de Rede Social — ali a equipe de Marketing só precisa passar em um horário pra tirar uma foto, mas no Pedagógico ela precisa acompanhar <strong>todas</strong> as turmas, então cada uma precisa aparecer como um pedido separado pra ela.</p></div>`:""}
-   ${b.objetivoMidia==="social"?`<label style="font-size:11px;font-weight:700;color:#854d0e;display:block;margin-bottom:3px">📝 Texto para a publicação *</label><textarea onchange="maSetBlocoRe(${i},'descritivo',this.value)" rows="3" placeholder="Descreva o contexto para publicação... (obrigatório)" style="${inp()};resize:none">${b.descritivo||""}</textarea>`:""}`:""}`:""}
+   ${b.objetivoMidia==="social"?(()=>{const nAtual=(b.descritivo||"").trim().length,okMin=nAtual>=MIN_CARACTERES_PUBLICACAO;return`<label style="font-size:11px;font-weight:700;color:#854d0e;display:block;margin-bottom:3px">📝 Texto para a publicação *</label><textarea onchange="maSetBlocoRe(${i},'descritivo',this.value)" oninput="const n=this.value.trim().length,el=document.getElementById('desc-contador-${i}');if(el){el.textContent=n+'/${MIN_CARACTERES_PUBLICACAO} caracteres mínimos';el.style.color=n>=${MIN_CARACTERES_PUBLICACAO}?'#15803d':'#b91c1c';}" rows="3" placeholder="Descreva o contexto da publicação com detalhes (mínimo ${MIN_CARACTERES_PUBLICACAO} caracteres) — não vale só 'depois eu envio' 🙂" style="${inp()};resize:none">${b.descritivo||""}</textarea><p id="desc-contador-${i}" style="font-size:11px;font-weight:700;margin-top:3px;color:${okMin?"#15803d":"#b91c1c"}">${nAtual}/${MIN_CARACTERES_PUBLICACAO} caracteres mínimos</p>`;})():""}`:""}`:""}
  </div>`;
 } // fim if(b.horario&&b.horarioFim) mídia
 if(!isEquip&&!isAvulso&&eo?.tipo!=="audiovisual"&&eo?.tipo!=="marketing"){
