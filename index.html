@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20261003215141"/>
-<meta name="app-build-perfis" content="admin,marketing"/>
-<meta name="app-build-mensagem" content="A aba 'Todos agendamentos' do Marketing agora mostra só o que envolve foto/vídeo/Rede Social — antes misturava com reservas de toda a escola."/>
+<meta name="app-build" content="20261003221018"/>
+<meta name="app-build-perfis" content="admin"/>
+<meta name="app-build-mensagem" content="O mapa de calor do Dashboard (aba Espaços) virou um gráfico de linhas — uma linha por dia da semana, mostrando a ocupação ao longo dos horários. Mais fácil de comparar os dias e ver a tendência."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -4642,18 +4642,33 @@ h+=`<div style="${card};margin-bottom:14px">
   <div style="height:6px;background:${c.bg};border-radius:99px;overflow:hidden"><div style="height:100%;width:${Math.round(r.v/maxV*100)}%;background:${cor};border-radius:99px"></div></div>
  </div>`;}).join("")}
 </div>`;
-// ── Mapa de calor ──
-const cel=p=>{if(p==null)return`<td style="padding:2px"><div style="height:30px;border-radius:7px;background:${c.bg};opacity:.4"></div></td>`;const t=p/maxP;const bg=p===0?c.bg:"rgba(26,107,71,"+(0.12+0.88*t).toFixed(2)+")";const cor=t>0.55?"#fff":c.textMid;return`<td style="padding:2px"><div title="${fmtPct(p)}" style="height:30px;border-radius:7px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:800;color:${cor}">${p===0?"":Math.round(p)+"%"}</div></td>`;};
+// ── Gráfico de linhas (ocupação por horário, uma linha por dia da semana) ──
+// Substituiu o mapa de calor em grade (feedback: muito "quadriculado", difícil de ler a
+// tendência) por um gráfico de linhas simples — mesma informação, mais fácil de comparar
+// os dias entre si e ver o pico do dia de relance.
+const CORES_DIAS=["#2a78d6","#eb6834","#1baf7a","#eda100","#e87ba4"];
+const padL=34,padR=10,padT=14,padB=28,larguraSvg=700,alturaSvg=240;
+const areaW=larguraSvg-padL-padR,areaH=alturaSvg-padT-padB;
+const xPos=hi=>padL+(DASH_HORS.length>1?hi/(DASH_HORS.length-1)*areaW:areaW/2);
+const yPos=p=>padT+areaH-(maxP?p/maxP*areaH:0);
+const linhasSvg=DIAS.map((_,w)=>{
+const pts=DASH_HORS.map((_,hi)=>pctGrade[hi][w]).map((p,hi)=>p==null?null:[xPos(hi),yPos(p)]);
+const path=pts.map((pt,i)=>pt?(i===0||pts[i-1]===null?"M":"L")+pt[0].toFixed(1)+","+pt[1].toFixed(1):"").join(" ");
+const cor=CORES_DIAS[w];
+const dots=pts.map(pt=>pt?`<circle cx="${pt[0].toFixed(1)}" cy="${pt[1].toFixed(1)}" r="3" fill="${cor}"/>`:"").join("");
+return`<path d="${path}" fill="none" stroke="${cor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>${dots}`;
+}).join("");
+const gridYSvg=[0,25,50,75,100].filter(v=>v<=maxP*1.05||v===0).map(v=>{const y=yPos(v);return`<line x1="${padL}" y1="${y.toFixed(1)}" x2="${larguraSvg-padR}" y2="${y.toFixed(1)}" stroke="${c.border}" stroke-width="1"/><text x="${padL-6}" y="${(y+3).toFixed(1)}" font-size="9.5" fill="${c.textMuted}" text-anchor="end">${v}%</text>`;}).join("");
+const eixoXSvg=DASH_HORS.map((hor,hi)=>`<text x="${xPos(hi).toFixed(1)}" y="${alturaSvg-8}" font-size="9" fill="${c.textMuted}" text-anchor="middle">${hor}</text>`).join("");
+const legendaSvg=DIAS.map((d,w)=>`<span style="display:inline-flex;align-items:center;gap:4px;margin-right:12px"><span style="width:9px;height:9px;border-radius:2px;background:${CORES_DIAS[w]};display:inline-block"></span><span style="font-size:11px;color:${c.textMid};font-weight:700">${d}</span></span>`).join("");
 h+=`<div style="${card}">
  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px;flex-wrap:wrap">
-  <p style="${rot}">🗺️ Mapa de calor · ${sel||"todos os espaços"}</p>
+  <p style="${rot}">📈 Ocupação por horário · ${sel||"todos os espaços"}</p>
   ${sel?`<button onclick="setDashEspaco('${""}')" style="${pill(false)};padding:5px 12px;font-size:11px">✕ Ver todos</button>`:""}
  </div>
- <div style="overflow-x:auto"><table style="width:100%;border-collapse:separate;border-spacing:0;min-width:300px">
-  <thead><tr><th></th>${DIAS.map(d=>`<th style="font-size:10.5px;font-weight:800;color:${c.textMuted};padding:0 0 6px">${d}</th>`).join("")}</tr></thead>
-  <tbody>${DASH_HORS.map((hor,hi)=>`<tr><td style="font-family:'DM Mono',monospace;font-size:10.5px;font-weight:700;color:${c.textMuted};padding-right:6px;white-space:nowrap">${hor}</td>${pctGrade[hi].map(cel).join("")}</tr>`).join("")}</tbody>
- </table></div>
- <p style="font-size:10.5px;color:${c.textMuted};margin-top:10px;line-height:1.5">Cada quadrado mostra quanto ${sel?"esse espaço ficou":"os espaços ficaram"} ocupado${sel?"":"s"} naquele dia da semana e horário, no período. Quanto mais escuro, mais cheio.</p>
+ <div style="margin-bottom:8px">${legendaSvg}</div>
+ <div style="overflow-x:auto"><svg viewBox="0 0 ${larguraSvg} ${alturaSvg}" style="width:100%;min-width:480px;height:${alturaSvg}px">${gridYSvg}${linhasSvg}${eixoXSvg}</svg></div>
+ <p style="font-size:10.5px;color:${c.textMuted};margin-top:10px;line-height:1.5">Cada linha mostra quanto ${sel?"esse espaço ficou":"os espaços ficaram"} ocupado${sel?"":"s"} naquele dia da semana, ao longo dos horários do dia, no período.</p>
 </div>`;
 return h;
 }
