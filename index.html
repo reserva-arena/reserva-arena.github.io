@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20261005074258"/>
-<meta name="app-build-perfis" content="admin,coordenador"/>
-<meta name="app-build-mensagem" content="Agora, nos agendamentos com vários horários, todas as turmas aparecem em sequência (uma por horário), e não só a primeira — em todas as telas e também no PDF do Relatório. O filtro de Turma do Coordenador também passou a encontrar a reserva por qualquer turma do bloco."/>
+<meta name="app-build" content="20261005103800"/>
+<meta name="app-build-perfis" content="admin,marketing"/>
+<meta name="app-build-mensagem" content="Novidades do Marketing: as abas Próximos dias e Todos agendamentos deram lugar a Aprovados e Reprovados, com histórico completo (até das sessões que já passaram) e o motivo das recusas. E pedidos de foto/vídeo para Rede Social agora exigem um texto de publicação de verdade: mínimo de 8 palavras, sem 'envio depois'."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -288,9 +288,42 @@ const HORARIOS_COMPLETO = [
 // ── HORÁRIOS (COMPATIBILIDADE) ──
 // Apenas as horas válidas de aula (sem intervalos) — usado pra "horário de início"
 const HORARIOS = HORARIOS_COMPLETO.filter(h => h.tipo === "aula").map(h => h.hora);
-// Mínimo de caracteres exigido no texto de publicação (Rede Social) — pedido da equipe de
-// Marketing, que recebia respostas vazias tipo "depois eu envio".
-const MIN_CARACTERES_PUBLICACAO = 25;
+// ── Texto de publicação (Rede Social) ─────────────────────────────────────────────────────
+// Pedido da equipe de Marketing: pedidos de foto/vídeo pra Rede Social vinham com texto de
+// enrolação ("depois eu envio", "Será enviado posteriormente.") e o texto de verdade nunca
+// chegava. Um mínimo de caracteres não resolve (esses exemplos passam fácil), então: mínimo de
+// palavras + detecção de "deixo pra depois" em texto curto. Texto longo que cite "depois" no
+// meio (ex: "depois da apresentação, os alunos...") passa normal.
+const MIN_PALAVRAS_PUBLICACAO = 8;
+const PADROES_ADIAMENTO_PUBLICACAO = [
+/\b(vou|irei|iremos|vamos)\s+(te\s+|lhe\s+|lhes\s+)?(enviar|mandar|informar|postar)\b/,
+/\b(enviarei|mandarei|informarei|enviaremos|mandaremos|informaremos)\b/,
+/\b(eu|te|lhe|lhes)\s+(envio|mando|informo|passo)\b/,
+/\b(envio|mando|informo|passo)\s+(o\s+texto\s+|a\s+legenda\s+|tudo\s+|isso\s+)?(depois|posteriormente|mais\s+tarde|em\s+breve)\b/,
+/\b(sera|serao|ficara|ficarao)\s+(enviad[oa]s?|informad[oa]s?|passad[oa]s?|definid[oa]s?|combinad[oa]s?|divulgad[oa]s?)\b/,
+/\benviad[oa]s?\s+(depois|posteriormente|mais\s+tarde|em\s+breve)\b/,
+/\b(a\s+definir|a\s+combinar|a\s+confirmar|a\s+informar|nao\s+sei|ainda\s+nao\s+(tenho|sei|foi|defin\w*)|sem\s+texto|tbd)\b/,
+/\bn\/a\b/,
+];
+function avaliarTextoPublicacao(txt){
+const t=(txt||"").trim();
+const palavras=t?t.split(/\s+/).filter(Boolean).length:0;
+const n=t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+if(palavras<15&&PADROES_ADIAMENTO_PUBLICACAO.some(re=>re.test(n)))return{ok:false,palavras,motivo:"adia"};
+if(palavras<MIN_PALAVRAS_PUBLICACAO)return{ok:false,palavras,motivo:"curto"};
+return{ok:true,palavras,motivo:""};
+}
+function msgTextoPublicacao(av){
+if(av.motivo==="adia")return'O Marketing precisa do texto agora — não vale "envio depois". Conte o que vai acontecer, quem participa e o destaque.';
+if(av.palavras===0)return`Escreva o texto da publicação — mínimo de ${MIN_PALAVRAS_PUBLICACAO} palavras.`;
+if(av.motivo==="curto")return`${av.palavras}/${MIN_PALAVRAS_PUBLICACAO} palavras — escreva um pouco mais sobre o que vai acontecer.`;
+return`✓ ${av.palavras} palavras — texto ok`;
+}
+window.pubTextoInput=(el,i)=>{const av=avaliarTextoPublicacao(el.value);const p=document.getElementById("desc-contador-"+i);if(p){p.textContent=msgTextoPublicacao(av);p.style.color=av.ok?"#15803d":"#b91c1c";}};
+function campoTextoPublicacaoHTML(b,i){
+const av=avaliarTextoPublicacao(b.descritivo);
+return`<label style="font-size:11px;font-weight:700;color:#854d0e;display:block;margin-bottom:3px">📝 Texto para a publicação *</label><div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:11px;color:#713f12;line-height:1.5"><p style="font-weight:700;margin-bottom:2px">💡 Escreva como se fosse a legenda da publicação. Conte:</p><p>• o que vai acontecer &nbsp; • quem participa &nbsp; • qual o destaque</p><p style="margin-top:3px;font-style:italic">Exemplo: "Os alunos do 4º ano construíram carrinhos com materiais recicláveis na aula de Maker, aprendendo sobre movimento e reaproveitamento."</p></div><textarea onchange="maSetBlocoRe(${i},'descritivo',this.value)" oninput="pubTextoInput(this,${i})" rows="4" placeholder="Escreva aqui o texto da publicação..." style="${inp()};resize:none">${b.descritivo||""}</textarea><p id="desc-contador-${i}" style="font-size:11px;font-weight:700;margin-top:3px;color:${av.ok?"#15803d":"#b91c1c"}">${msgTextoPublicacao(av)}</p>`;
+}
 // Aula + marcador de fim do último período — usado só pra calcular "horário de fim"
 // (17:40 nunca aparece como opção de início, só como fim válido do período das 17:00)
 const HORARIOS_COM_FIM = HORARIOS_COMPLETO.filter(h => h.tipo === "aula" || h.tipo === "fim").map(h => h.hora);
@@ -1015,16 +1048,45 @@ catch{render("login-erro",alertHTML("error","Erro ao enviar. Verifique o e-mail.
 // FOTÓGRAFO
 // ════════════════════════════════════════════════════════════════════════════
 window.mkSetAba=(v)=>{if(!window._MK)window._MK={aba:"hoje",historico:false,feedExp:false};_MK.aba=v;re();};
+// Abas "Aprovados" e "Reprovados" do Marketing. Usam _mktGlobal (todos os pedidos de foto/vídeo,
+// sem limite de data) e não _todas (que só tem "de hoje pra frente") — assim dá pra consultar
+// depois da sessão já ter acontecido, por exemplo o texto da publicação.
+function mkAbaHistoricoHTML(aba,c,h,mkCard){
+if(!window._MK)window._MK={aba:"hoje",historico:false,feedExp:false};
+const base=_mktGlobal.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&r.status!=="recusado"&&!r.reservaAutomatica);
+const asc=(a,b)=>a.data>b.data?1:a.data<b.data?-1:(a.horario||"")>(b.horario||"")?1:-1;
+const desc=(a,b)=>asc(b,a);
+const vazio=(emoji,txt)=>`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">${emoji}</p><p style="margin-top:12px">${txt}</p></div>`;
+const titulo=(txt,cor)=>`<p style="font-size:12px;font-weight:800;color:${cor||c.textMuted};text-transform:uppercase;margin:4px 0 10px">${txt}</p>`;
+const maisBtn=(campo,restante)=>`<button onclick="window._MK.${campo}=(window._MK.${campo}||15)+15;re()" style="width:100%;padding:8px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.textMuted};font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:12px">▼ Ver mais (${restante} restantes)</button>`;
+if(aba==="aprovados"){
+const aprov=base.filter(r=>r.statusMarketing==="aprovado");
+const proximas=aprov.filter(r=>r.data>=h).sort(asc);
+const passadas=aprov.filter(r=>r.data<h).sort(desc);
+if(!proximas.length&&!passadas.length)return vazio("✅","Nenhuma solicitação aprovada ainda.");
+let html="";
+if(proximas.length)html+=titulo(`📅 Próximas · ${proximas.length}`,"#1a6b47")+proximas.map(r=>mkCard(r,false)).join("");
+if(passadas.length){
+const lim=_MK.aprovLim||15;
+html+=`<div style="margin-top:14px">`+titulo(`📁 Já realizadas · ${passadas.length}`)+passadas.slice(0,lim).map(r=>mkCard(r,false,"leitura")).join("")+(passadas.length>lim?maisBtn("aprovLim",passadas.length-lim):"")+`</div>`;
+}
+return html;
+}
+const rec=base.filter(r=>r.statusMarketing==="recusado").sort(desc);
+if(!rec.length)return vazio("🎉","Nenhuma solicitação recusada.");
+const lim=_MK.reprovLim||15;
+return titulo(`❌ Recusadas · ${rec.length}`,"#b91c1c")+rec.slice(0,lim).map(r=>mkCard(r,false,"recusada")).join("")+(rec.length>lim?maisBtn("reprovLim",rec.length-lim):"");
+}
 function renderMarketingInline(){
 const c=C(),h=fmtHoje();
 if(!window._MK)window._MK={aba:"hoje",historico:false,feedExp:false};
-const mkCard=(r,pend)=>{
+const mkCard=(r,pend,modo)=>{
 const[a,m2,d]=r.data.split("-");const isH=r.data===h;
 const dias=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
 const dow=dias[new Date(r.data+"T12:00:00").getDay()];
 const midiaTags=(r.precisaFoto?`<span style="background:#f5f3ff;color:#7c3aed;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #ddd6fe">📸 Foto</span>`:"")+(r.precisaVideo?`<span style="background:#eff6ff;color:#1d4ed8;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #bfdbfe">🎬 Vídeo</span>`:"")+(r.bibMic>0?`<span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #bae6fd">🎤 ${r.bibMic} mic</span>`:"")+(r.bibCaixa>0?`<span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #bae6fd">🔊 ${r.bibCaixa} cx</span>`:"")+(r.bibProj>0?`<span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #bae6fd">📽️ ${r.bibProj} proj</span>`:"")+(r.recorrente?`<span style="background:#eff6ff;color:#1d4ed8;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #bfdbfe">🔁</span>`:"");
 const objTag=r.objetivoMidia?`<span style="background:#fef9c3;color:#854d0e;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #fde68a">${r.objetivoMidia==="social"?"📱 Rede Social":"📚 Pedagógico"}</span>`:"";
-return`<div style="background:${c.surface};border-radius:12px;border:1.5px solid ${pend?"#ddd6fe":"#a7f3d0"};padding:14px 18px;margin-bottom:10px;border-left:4px solid ${pend?"#7c3aed":"#1a6b47"}">
+return`<div style="background:${c.surface};border-radius:12px;border:1.5px solid ${pend?"#ddd6fe":"#a7f3d0"};padding:14px 18px;margin-bottom:10px;border-left:4px solid ${modo==="recusada"?"#dc2626":pend?"#7c3aed":"#1a6b47"}">
      <div style="display:flex;gap:14px;align-items:flex-start">
        <div style="text-align:center;min-width:52px;background:${pend?"#f5f3ff":"#e2f4ea"};border-radius:8px;padding:6px 8px">
          <p style="font-size:11px;font-weight:700;color:${pend?"#7c3aed":"#1a6b47"};text-transform:uppercase">${dow}</p>
@@ -1043,7 +1105,7 @@ return`<div style="background:${c.surface};border-radius:12px;border:1.5px solid
          ${r.descritivo?`<div style="margin-top:6px;padding:8px 10px;background:#fef9c3;border-radius:6px;border:1px solid #fde68a"><p style="font-size:11px;font-weight:700;color:#854d0e;margin-bottom:2px">📝 Publicação:</p><p style="font-size:12px;color:#713f12">${r.descritivo}</p></div>`:""}
        </div>
      </div>
-     ${pend?`<div style="display:flex;gap:8px;margin-top:12px">
+     ${modo==="recusada"?`<div style="margin-top:10px;padding:8px 10px;background:#fef2f2;border-radius:6px;border:1px solid #fecaca"><p style="font-size:11px;font-weight:700;color:#b91c1c;margin-bottom:2px">❌ Recusada pelo Marketing</p><p style="font-size:12px;color:#7f1d1d">${r.fotografoObs?"Motivo: "+r.fotografoObs:"Sem motivo informado."}</p></div>`:modo==="leitura"?"":pend?`<div style="display:flex;gap:8px;margin-top:12px">
        <button onclick="mkAprovar('${r.id}')" style="flex:1;padding:9px;border-radius:8px;border:none;background:#1a6b47;color:#fff;font-weight:700;font-size:13px;cursor:pointer">✅ Aprovar</button>
        <button onclick="mkRecusar('${r.id}')" style="flex:1;padding:9px;border-radius:8px;border:none;background:#dc2626;color:#fff;font-weight:700;font-size:13px;cursor:pointer">❌ Recusar</button>
      </div>`:`<div style="margin-top:10px"><button onclick="mkRecusar('${r.id}')" style="padding:7px 18px;border-radius:8px;border:1.5px solid #fca5a5;background:#fff;color:#dc2626;font-weight:700;font-size:12px;cursor:pointer">❌ Cancelar aprovação</button></div>`}
@@ -1053,7 +1115,6 @@ const minhas=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe
 const hojeList=minhas.filter(r=>r.data===h);
 const pendentes=minhas.filter(r=>r.statusMarketing==="pendente"&&r.data>=h);
 const mkPVenc=minhas.filter(r=>r.statusMarketing==="pendente"&&r.data<h);
-const proximosList=minhas.filter(r=>r.data>h);
 const btnAba=(id,l)=>`<button onclick="mkSetAba('${id}')" style="padding:7px 16px;font-size:12.5px;border-radius:8px;border:1.5px solid ${_MK.aba===id?'#7c3aed':c.border};background:${_MK.aba===id?'#7c3aed':'transparent'};color:${_MK.aba===id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">${l}</button>`;
 let corpo="";
 if(_MK.aba==="hoje"){
@@ -1063,27 +1124,15 @@ else corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p
 if(mkPVenc.length)corpo+=`<div style="margin-bottom:16px"><p style="font-size:12px;font-weight:800;color:#dc2626;text-transform:uppercase;margin-bottom:10px">⚠️ Vencidos — nunca aprovados (${mkPVenc.length})</p>${mkPVenc.map(r=>mkCard(r,true)).join("")}</div>`;
 if(pendentes.length)corpo+=pendentes.map(r=>mkCard(r,true)).join("");
 if(!pendentes.length&&!mkPVenc.length)corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">🎉</p><p style="margin-top:12px">Nenhum pendente.</p></div>`;
-} else if(_MK.aba==="proximos"){
-if(!proximosList.length)corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">📅</p><p style="margin-top:12px">Nada agendado pros próximos dias.</p></div>`;
-else{
-const pdProx={};proximosList.forEach(r=>{if(!pdProx[r.data])pdProx[r.data]=[];pdProx[r.data].push(r);});
-Object.entries(pdProx).forEach(([data,rs])=>{const[a2,m2,d2]=data.split("-");corpo+=`<div style="margin-bottom:16px"><p style="font-size:12px;font-weight:800;color:${c.textMuted};text-transform:uppercase;margin-bottom:8px">${d2}/${m2}/${a2}</p>${rs.map(r=>mkCard(r,r.statusMarketing==="pendente")).join("")}</div>`;});
-}
-} else {
-const todos=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&(_MK.historico||r.data>=h)&&r.status!=="recusado"&&!r.reservaAutomatica).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
-const pd={};todos.forEach(r=>{if(!pd[r.data])pd[r.data]=[];pd[r.data].push(r);});
-if(!todos.length)corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">📅</p><p style="margin-top:12px">Nenhum agendamento.</p></div>`;
-// Feed compacto: 5 primeiros, expandível
-const limTI=_MK.feedExp?todos.length:5;
-const todosFeed=todos.slice(0,limTI);
-Object.entries(pd).filter(([d])=>todosFeed.some(r=>r.data===d)).forEach(([data,rs])=>{const[a2,m2,d2]=data.split("-");const isH=data===h;corpo+=`<div style="margin-bottom:14px"><div style="background:${isH?"#1a6b47":"#64748b"};color:#fff;border-radius:7px;padding:3px 12px;font-size:11.5px;font-weight:700;display:inline-block;margin-bottom:8px">${isH?"📌 Hoje":`${d2}/${m2}/${a2}`}</div>`;rs.forEach(r=>{corpo+=`<div style="padding:10px 14px;border-radius:10px;margin-bottom:6px;background:${c.surface};border:1px solid ${c.border}"><div style="display:flex;gap:10px"><div style="min-width:72px"><p style="font-size:12px;font-family:'DM Mono',monospace;font-weight:800;color:${c.green}">${r.horario}${r.horarioFim&&r.horarioFim!==r.horario?" → "+r.horarioFim:""}</p></div><div style="flex:1"><p style="font-weight:700;font-size:13px;color:${c.navy}">${nomeExibicao(r.espaco)}</p><p style="font-size:12px;color:${c.textMid}">${r.professor} · ${turmasEmSequencia(r)||"—"}</p><p style="font-size:12px;color:${c.textMuted}">${r.conteudo||""}</p></div></div>${r.descritivo?`<div style="margin-top:7px;padding:7px 9px;background:#fef9c3;border-radius:6px;border:1px solid #fde68a"><p style="font-size:10.5px;font-weight:700;color:#854d0e;margin-bottom:1px">📝 Publicação:</p><p style="font-size:11.5px;color:#713f12">${r.descritivo}</p></div>`:""}</div>`;});corpo+=`</div>`;});
+} else if(_MK.aba==="aprovados"||_MK.aba==="reprovados"){
+corpo+=mkAbaHistoricoHTML(_MK.aba,c,h,mkCard);
 }
 return`<div style="padding:4px 0">
    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-     <div style="display:flex;gap:6px;flex-wrap:wrap">${btnAba("hoje",`📅 Hoje · ${hojeList.length}`)}${btnAba("pendentes",`⏳ Pendentes${pendentes.length?` · ${pendentes.length}`:""}`)}${btnAba("proximos","🔜 Próximos dias")}${btnAba("todos","📅 Todos agendamentos")}</div>
+     <div style="display:flex;gap:6px;flex-wrap:wrap">${btnAba("hoje",`📅 Hoje · ${hojeList.length}`)}${btnAba("pendentes",`⏳ Pendentes${pendentes.length?` · ${pendentes.length}`:""}`)}${btnAba("aprovados","✅ Aprovados")}${btnAba("reprovados","❌ Reprovados")}</div>
      <button onclick="window._MK.historico=!window._MK.historico;if(window._MK.historico)carregarTodas();else{mesclarTodasAdmin();}re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_MK.historico?c.navy:'transparent'};color:${_MK.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_MK.historico?"Ocultar hist.":"Ver histórico"}</button>
    </div>
-   ${pendentes.length&&_MK.aba==="todos"?`<div style="background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="mkSetAba('pendentes')"><p style="font-size:13px;font-weight:700;color:#7c3aed">⏳ ${pendentes.length} solicitaç${pendentes.length===1?"ão":"ões"} aguardando aprovação — Ver agora →</p></div>`:""}
+   ${pendentes.length&&(_MK.aba==="aprovados"||_MK.aba==="reprovados")?`<div style="background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="mkSetAba('pendentes')"><p style="font-size:13px;font-weight:700;color:#7c3aed">⏳ ${pendentes.length} solicitaç${pendentes.length===1?"ão":"ões"} aguardando aprovação — Ver agora →</p></div>`:""}
    ${corpo}
  </div>`;
 }
@@ -1292,7 +1341,7 @@ $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="
 function renderMarketing(){
 const c=C(),h=fmtHoje();
 if(!window._MK)window._MK={aba:"pendentes",historico:false,feedExp:false};
-const mkCard=(r,pend)=>{
+const mkCard=(r,pend,modo)=>{
 const[a,m2,d]=r.data.split("-");const isH=r.data===h;
 const dias=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
 const dow=dias[new Date(r.data+"T12:00:00").getDay()];
@@ -1305,7 +1354,7 @@ const grupoHorarios=[r.horario,..._todas.filter(a=>a.reservaAutomatica&&a.espaco
 const temVarios=grupoHorarios.length>1;
 if(!window._MK.sel)window._MK.sel={};
 if(!_MK.sel[r.id])_MK.sel[r.id]={horario:(pend?(grupoHorarios[0]||r.horario):(r.fotografoHorario||r.horario)),obs:pend?"":(r.fotografoObs||"")};
-return`<div style="background:${c.surface};border-radius:12px;border:1.5px solid ${pend?"#ddd6fe":"#a7f3d0"};padding:14px 18px;margin-bottom:10px;border-left:4px solid ${pend?"#7c3aed":"#1a6b47"}">
+return`<div style="background:${c.surface};border-radius:12px;border:1.5px solid ${pend?"#ddd6fe":"#a7f3d0"};padding:14px 18px;margin-bottom:10px;border-left:4px solid ${modo==="recusada"?"#dc2626":pend?"#7c3aed":"#1a6b47"}">
      <div style="display:flex;gap:14px;align-items:flex-start">
        <div style="text-align:center;min-width:52px;background:${pend?"#f5f3ff":"#e2f4ea"};border-radius:8px;padding:6px 8px">
          <p style="font-size:11px;font-weight:700;color:${pend?"#7c3aed":"#1a6b47"};text-transform:uppercase">${dow}</p>
@@ -1338,7 +1387,7 @@ return`<div style="background:${c.surface};border-radius:12px;border:1.5px solid
        <label style="font-size:11px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Observação (opcional)</label><br>
        <textarea rows="2" placeholder="Ex: vou chegar com uns minutos de atraso, ou motivo da recusa..." oninput="window._MK.sel['${r.id}']=window._MK.sel['${r.id}']||{horario:'${r.horario}'};window._MK.sel['${r.id}'].obs=this.value" style="width:100%;margin-top:4px;padding:8px 10px;border-radius:8px;border:1.5px solid ${c.border};background:${c.surface};color:${c.text};font-size:12.5px;font-family:inherit;resize:vertical;box-sizing:border-box">${_MK.sel[r.id]?.obs||""}</textarea>
      </div>`:""}
-     ${pend?`<div style="display:flex;gap:8px;margin-top:12px">
+     ${modo==="recusada"?`<div style="margin-top:10px;padding:8px 10px;background:#fef2f2;border-radius:6px;border:1px solid #fecaca"><p style="font-size:11px;font-weight:700;color:#b91c1c;margin-bottom:2px">❌ Recusada pelo Marketing</p><p style="font-size:12px;color:#7f1d1d">${r.fotografoObs?"Motivo: "+r.fotografoObs:"Sem motivo informado."}</p></div>`:modo==="leitura"?"":pend?`<div style="display:flex;gap:8px;margin-top:12px">
        <button onclick="mkAprovar('${r.id}')" style="flex:1;padding:9px;border-radius:8px;border:none;background:#1a6b47;color:#fff;font-weight:700;font-size:13px;cursor:pointer">✅ Aprovar</button>
        <button onclick="mkRecusar('${r.id}')" style="flex:1;padding:9px;border-radius:8px;border:none;background:#dc2626;color:#fff;font-weight:700;font-size:13px;cursor:pointer">❌ Recusar</button>
      </div>`:`<div style="margin-top:10px"><button onclick="mkRecusar('${r.id}')" style="padding:7px 18px;border-radius:8px;border:1.5px solid #fca5a5;background:#fff;color:#dc2626;font-weight:700;font-size:12px;cursor:pointer">❌ Cancelar aprovação</button></div>`}
@@ -1349,8 +1398,6 @@ const minhas=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe
 const hojeList=minhas.filter(r=>r.data===h);
 const pendentes=minhas.filter(r=>r.statusMarketing==="pendente"&&r.data>=h);
 const mkPVenc=minhas.filter(r=>r.statusMarketing==="pendente"&&r.data<h);
-const proximosList=minhas.filter(r=>r.data>h);
-const todos=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&(_MK.historico||r.data>=h)&&r.status!=="recusado"&&!r.reservaAutomatica).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
 const btnAba=(id,l)=>`<button onclick="window._MK.aba='${id}';re()" style="padding:7px 16px;font-size:12.5px;border-radius:8px;border:1.5px solid ${_MK.aba===id?'#7c3aed':c.border};background:${_MK.aba===id?'#7c3aed':'transparent'};color:${_MK.aba===id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">${l}</button>`;
 let corpo="";
 if(_MK.aba==="hoje"){
@@ -1360,23 +1407,8 @@ else corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p
 if(mkPVenc.length)corpo+=`<div style="margin-bottom:16px"><p style="font-size:12px;font-weight:800;color:#dc2626;text-transform:uppercase;margin-bottom:10px">⚠️ Vencidos — nunca aprovados (${mkPVenc.length})</p>${mkPVenc.map(r=>mkCard(r,true)).join("")}</div>`;
 if(pendentes.length)corpo+=pendentes.map(r=>mkCard(r,true)).join("");
 if(!pendentes.length&&!mkPVenc.length)corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">🎉</p><p style="margin-top:12px;font-size:14px">Nenhum pendente.</p></div>`;
-} else if(_MK.aba==="proximos"){
-if(!proximosList.length)corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">📅</p><p style="margin-top:12px;font-size:14px">Nada agendado pros próximos dias.</p></div>`;
-else{
-const pdProx={};proximosList.forEach(r=>{if(!pdProx[r.data])pdProx[r.data]=[];pdProx[r.data].push(r);});
-Object.entries(pdProx).forEach(([data,rs])=>{const[a2,m2,d2]=data.split("-");corpo+=`<div style="margin-bottom:16px"><p style="font-size:12px;font-weight:800;color:${c.textMuted};text-transform:uppercase;margin-bottom:8px">${d2}/${m2}/${a2}</p>${rs.map(r=>mkCard(r,r.statusMarketing==="pendente")).join("")}</div>`;});
-}
-} else {
-// Agrupar por data
-const pd={};todos.forEach(r=>{if(!pd[r.data])pd[r.data]=[];pd[r.data].push(r);});
-if(!todos.length)corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">📅</p><p style="margin-top:12px">Nenhum agendamento.</p></div>`;
-Object.entries(pd).forEach(([data,rs])=>{
-const[a2,m2,d2]=data.split("-");const isH=data===h;
-corpo+=`<div style="margin-bottom:14px"><div style="background:${isH?"#1a6b47":"#64748b"};color:#fff;border-radius:7px;padding:3px 12px;font-size:11.5px;font-weight:700;display:inline-block;margin-bottom:8px">${isH?"📌 Hoje":`${d2}/${m2}/${a2}`}</div>`;
-rs.forEach(r=>{corpo+=`<div style="padding:10px 14px;border-radius:10px;margin-bottom:6px;background:${c.surface};border:1px solid ${c.border}"><div style="display:flex;gap:10px"><div style="min-width:72px"><p style="font-size:12px;font-family:'DM Mono',monospace;font-weight:800;color:${c.green}">${r.horario}${r.horarioFim&&r.horarioFim!==r.horario?" → "+r.horarioFim:""}</p></div><div style="flex:1"><p style="font-weight:700;font-size:13px;color:${c.navy}">${nomeExibicao(r.espaco)}</p><p style="font-size:12px;color:${c.textMid}">${r.professor} · ${turmasEmSequencia(r)||"—"}</p><p style="font-size:12px;color:${c.textMuted}">${r.conteudo||""}</p></div></div>${r.descritivo?`<div style="margin-top:7px;padding:7px 9px;background:#fef9c3;border-radius:6px;border:1px solid #fde68a"><p style="font-size:10.5px;font-weight:700;color:#854d0e;margin-bottom:1px">📝 Publicação:</p><p style="font-size:11.5px;color:#713f12">${r.descritivo}</p></div>`:""}</div>`;});
-corpo+=`</div>`;
-});
-if(todos.length>5)corpo+=`<button onclick="window._MK.feedExp=!window._MK.feedExp;re()" style="width:100%;padding:8px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.textMuted};font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">${_MK.feedExp?'▲ Ver menos':'▼ Ver mais ('+todos.length+' no total)'}</button>`;
+} else if(_MK.aba==="aprovados"||_MK.aba==="reprovados"){
+corpo+=mkAbaHistoricoHTML(_MK.aba,c,h,mkCard);
 }
 $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="no">
    <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#0d2b1a,#1a6b47)"};padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100">
@@ -1385,10 +1417,10 @@ $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="
    </header>
    <div class="desktop-zoom" style="max-width:1000px;margin:0 auto;padding:16px 14px">
      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-       <div style="display:flex;gap:6px;flex-wrap:wrap">${btnAba("hoje",`📅 Hoje · ${hojeList.length}`)}${btnAba("pendentes",`⏳ Pendentes${pendentes.length?` · ${pendentes.length}`:""}`)}${btnAba("proximos","🔜 Próximos dias")}${btnAba("todos","📅 Todos agendamentos")}</div>
+       <div style="display:flex;gap:6px;flex-wrap:wrap">${btnAba("hoje",`📅 Hoje · ${hojeList.length}`)}${btnAba("pendentes",`⏳ Pendentes${pendentes.length?` · ${pendentes.length}`:""}`)}${btnAba("aprovados","✅ Aprovados")}${btnAba("reprovados","❌ Reprovados")}</div>
        <button onclick="window._MK.historico=!window._MK.historico;if(window._MK.historico)carregarTodas();else{mesclarTodasAdmin();}re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_MK.historico?c.navy:'transparent'};color:${_MK.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_MK.historico?"Ocultar hist.":"Ver histórico"}</button>
      </div>
-     ${pendentes.length&&_MK.aba==="todos"?`<div style="background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="mkSetAba('pendentes')"><p style="font-size:13px;font-weight:700;color:#7c3aed">⏳ ${pendentes.length} solicitaç${pendentes.length===1?"ão":"ões"} aguardando sua aprovação — Ver agora →</p></div>`:""}
+     ${pendentes.length&&(_MK.aba==="aprovados"||_MK.aba==="reprovados")?`<div style="background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="mkSetAba('pendentes')"><p style="font-size:13px;font-weight:700;color:#7c3aed">⏳ ${pendentes.length} solicitaç${pendentes.length===1?"ão":"ões"} aguardando sua aprovação — Ver agora →</p></div>`:""}
      ${corpo}
    </div>
    ${modalRelatorioHTML()}
@@ -3054,8 +3086,8 @@ const isAvulso=eo?.equipAvulso;
 const bValMulti=b=>{
 if(!b.horario||!b.horarioFim)return false;
 // Se o objetivo da foto/vídeo é publicação em Rede Social, o texto da publicação é obrigatório
-// e precisa ter um mínimo de caracteres — pra evitar respostas vazias tipo "depois eu envio".
-if(b.objetivoMidia==="social"&&!(b.descritivo&&b.descritivo.trim().length>=MIN_CARACTERES_PUBLICACAO))return false;
+// e precisa ser um texto de verdade (mínimo de palavras, sem "envio depois") — ver avaliarTextoPublicacao.
+if(b.objetivoMidia==="social"&&!avaliarTextoPublicacao(b.descritivo).ok)return false;
 // Marketing: precisa de sala e pelo menos foto ou vídeo
 if(eo?.tipo==="marketing")return !!(b.salaAtividade&&b.conteudo&&(b.precisaFoto||b.precisaVideo));
 // Equipamentos avulsos: precisam de local início, conteúdo e término (quando exigido pelo *)
@@ -3369,7 +3401,7 @@ html+=`<div style="background:${c.surface};border-radius:10px;padding:12px 14px;
      <option value="pedagogico" ${b.objetivoMidia==="pedagogico"?"selected":""}>📚 Projeto Pedagógico</option>
    </select>
    ${b.objetivoMidia==="pedagogico"&&b.horario&&b.horarioFim&&b.horario!==b.horarioFim?`<div style="background:#fef9c3;border:1.5px solid #fde68a;border-radius:8px;padding:10px 12px;margin-bottom:6px"><p style="font-size:12px;color:#713f12;line-height:1.5">⚠️ <strong>Projeto Pedagógico com várias turmas:</strong> crie uma reserva separada pra cada turma/horário, em vez de agrupar tudo num período só. É diferente do caso de Rede Social — ali a equipe de Marketing só precisa passar em um horário pra tirar uma foto, mas no Pedagógico ela precisa acompanhar <strong>todas</strong> as turmas, então cada uma precisa aparecer como um pedido separado pra ela.</p></div>`:""}
-   ${b.objetivoMidia==="social"?(()=>{const nAtual=(b.descritivo||"").trim().length,okMin=nAtual>=MIN_CARACTERES_PUBLICACAO;return`<label style="font-size:11px;font-weight:700;color:#854d0e;display:block;margin-bottom:3px">📝 Texto para a publicação *</label><textarea onchange="maSetBlocoRe(${i},'descritivo',this.value)" oninput="const n=this.value.trim().length,el=document.getElementById('desc-contador-${i}');if(el){el.textContent=n+'/${MIN_CARACTERES_PUBLICACAO} caracteres mínimos';el.style.color=n>=${MIN_CARACTERES_PUBLICACAO}?'#15803d':'#b91c1c';}" rows="3" placeholder="Descreva o contexto da publicação com detalhes (mínimo ${MIN_CARACTERES_PUBLICACAO} caracteres) — não vale só 'depois eu envio' 🙂" style="${inp()};resize:none">${b.descritivo||""}</textarea><p id="desc-contador-${i}" style="font-size:11px;font-weight:700;margin-top:3px;color:${okMin?"#15803d":"#b91c1c"}">${nAtual}/${MIN_CARACTERES_PUBLICACAO} caracteres mínimos</p>`;})():""}`:""}`:""}
+   ${b.objetivoMidia==="social"?campoTextoPublicacaoHTML(b,i):""}`:""}`:""}
  </div>`;
 } // fim if(b.horario&&b.horarioFim) mídia
 if(!isEquip&&!isAvulso&&eo?.tipo!=="audiovisual"&&eo?.tipo!=="marketing"){
@@ -5828,6 +5860,7 @@ _todas=[];_todasCarregadas=false;_todasCarregadasChave=null;
 const ehAdmin=perfil==="admin";
 const ehMaker=perfil==="maker";
 const ehLab=perfil==="laboratorista";
+const ehMkt=perfil==="marketing"||perfil==="fotografo";
 // _todas (mês em foco + pendentes globais): usado por Admin, T.I., Marketing, Coordenador —
 // Maker e Laboratorista têm telas próprias isoladas (só a sala deles) e não navegam pelo
 // calendário geral, então não precisam desses dois listeners.
@@ -5852,12 +5885,16 @@ assinarMesAdmin(hojeD0.getFullYear(),hojeD0.getMonth());
 // Filas de aprovação de T.I./Marketing/Tablets (dentro do Painel Admin): só o Admin usa
 // essas abas — T.I./Marketing/Coordenador têm suas próprias telas de login que não
 // dependem desses listeners.
+// Histórico do Marketing (pendente + aprovado + recusado, sem limite de data): alimenta a fila
+// do Admin e as abas Aprovados/Reprovados do Marketing, que precisam enxergar sessões passadas.
+if(ehAdmin||ehMkt){
+_unsubMkt=onSnapshot(query(collection(db,"reservas"),where("statusMarketing","in",["pendente","aprovado","recusado"])),snap=>{
+_mktGlobal=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario&&!r.reservaAutomatica);re();
+});
+}
 if(ehAdmin){
 _unsubTI=onSnapshot(query(collection(db,"reservas"),where("statusEquip","in",["pendente","aprovado"])),snap=>{
 _tiGlobal=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario&&!r.reservaAutomatica);re();
-});
-_unsubMkt=onSnapshot(query(collection(db,"reservas"),where("statusMarketing","in",["pendente","aprovado"])),snap=>{
-_mktGlobal=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario&&!r.reservaAutomatica);re();
 });
 _unsubTbTablets=onSnapshot(query(collection(db,"reservas"),where("qtdTablets",">",0)),snap=>{
 _tbGlobalTablets=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario&&!r.reservaAutomatica&&(r.status==="pendente"||r.status==="confirmado"));mesclarTbGlobal();re();
