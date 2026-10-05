@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20261005073123"/>
-<meta name="app-build-perfis" content="admin,maker,laboratorista"/>
-<meta name="app-build-mensagem" content="Agora, nos agendamentos com vários horários, o cartão mostra todas as turmas em sequência (uma por horário, na ordem do dia), e não só a primeira."/>
+<meta name="app-build" content="20261005074258"/>
+<meta name="app-build-perfis" content="admin,coordenador"/>
+<meta name="app-build-mensagem" content="Agora, nos agendamentos com vários horários, todas as turmas aparecem em sequência (uma por horário), e não só a primeira — em todas as telas e também no PDF do Relatório. O filtro de Turma do Coordenador também passou a encontrar a reserva por qualquer turma do bloco."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -544,12 +544,12 @@ if(((r.projetor||0)+(r.bibProj||0))>0)p.push(`${(r.projetor||0)+(r.bibProj||0)} 
 return p.length?" · "+p.join(", "):"";
 }
 function nomeProf(n){if(!n)return"";const p=n.trim().split(" ").filter(Boolean);return p.length===1?p[0]:p[0]+" "+p[p.length-1][0].toUpperCase()+".";}
-// Turmas de um agendamento em sequência (uma por horário, na ordem do dia) — pra quem organiza
-// a sala (Maker/Laboratorista) ver quem vem em cada período, e não só a primeira turma.
+// Turmas de um agendamento, uma por horário, na ordem do dia — pra quem organiza a sala ou
+// confere o bloco ver quem vem em cada período, e não só a primeira turma.
 // Usa "turmasPorHorario" (gravado na reserva principal desde sempre); em reservas sem esse
-// campo cai pra turmaInicio/turmaFim. Uma turma por horário, exatamente como o professor
-// lançou — se repetiu a mesma turma em horários seguidos, aparece repetida (não junta).
-function turmasEmSequencia(r){
+// campo cai pra turmaInicio/turmaFim. Exatamente como o professor lançou: se repetiu a mesma
+// turma em horários seguidos, aparece repetida (não junta).
+function turmasListaDe(r){
 const tph=r&&r.turmasPorHorario;
 let lista=[];
 if(tph&&typeof tph==="object"){
@@ -563,8 +563,10 @@ if(r&&r.turmaFim&&r.turmaFim!==ini)lista.push(r.turmaFim);
 // O modal de edição só altera "turma" (que corresponde à primeira): se mudou depois da
 // criação, vale a turma editada no lugar da primeira da sequência.
 if(r&&r.turma&&lista.length&&lista[0]!==r.turma)lista[0]=r.turma;
-return lista.join(", ");
+return lista;
 }
+// Mesma lista, em texto, pra exibir nas telas (ex: "4°A, 4°B, 5°A").
+function turmasEmSequencia(r){return turmasListaDe(r).join(", ");}
 function extraInfo(r){
 if(!r)return"";
 const eo=ESPACOS.find(e=>e.nome===r.espaco);
@@ -890,13 +892,13 @@ let html="";
 // Card de cada reserva — sempre mostra tudo
 const pubCard=(r,compact=false)=>{
 const range=r.horarioFim&&r.horarioFim!==r.horario?`→${r.horarioFim}`:"";
-const turma=(r.turmaInicio||r.turma||"")+(r.turmaFim&&r.turmaFim!==(r.turmaInicio||r.turma)?` → ${r.turmaFim}`:"");
+const turma=turmasEmSequencia(r);
 const prof=nomeProf(r.professor);
 if(compact){
 return`<div style="background:${c.greenBg};border-radius:6px;padding:4px 6px;border-left:3px solid #1a6b47;margin-bottom:4px">
        <p style="font-size:9px;font-weight:800;font-family:'DM Mono',monospace;color:${c.green}">${r.horario}${range}</p>
        <p style="font-size:9px;font-weight:700;color:${c.navy};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${tipoIcon(ESPACOS.find(e=>e.nome===r.espaco)?.tipo,r.espaco)} ${espacoCurto(r.espaco)}</p>
-       <p style="font-size:8px;color:${c.textMid};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${turma} · ${prof}</p>
+       <p style="font-size:8px;color:${c.textMid}">${turma} · ${prof}</p>
      </div>`;
 }
 return`<div style="display:flex;gap:10px;padding:10px 12px;border-radius:8px;background:${c.surface};border:1px solid ${c.border};border-left:4px solid #1a6b47;margin-bottom:6px">
@@ -1036,7 +1038,7 @@ return`<div style="background:${c.surface};border-radius:12px;border:1.5px solid
            ${isH?`<span style="background:#1a6b47;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">📌 Hoje</span>`:""}
          </div>
          <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px">${midiaTags}${objTag}</div>
-         <p style="font-size:12px;color:${c.textMid};margin-bottom:2px">👤 ${r.professor} · ${r.turmaInicio||r.turma||"—"}</p>
+         <p style="font-size:12px;color:${c.textMid};margin-bottom:2px">👤 ${r.professor} · ${turmasEmSequencia(r)||"—"}</p>
          <p style="font-size:12px;color:${c.textMuted}">${r.conteudo}</p>
          ${r.descritivo?`<div style="margin-top:6px;padding:8px 10px;background:#fef9c3;border-radius:6px;border:1px solid #fde68a"><p style="font-size:11px;font-weight:700;color:#854d0e;margin-bottom:2px">📝 Publicação:</p><p style="font-size:12px;color:#713f12">${r.descritivo}</p></div>`:""}
        </div>
@@ -1074,7 +1076,7 @@ if(!todos.length)corpo+=`<div style="text-align:center;padding:48px;color:${c.te
 // Feed compacto: 5 primeiros, expandível
 const limTI=_MK.feedExp?todos.length:5;
 const todosFeed=todos.slice(0,limTI);
-Object.entries(pd).filter(([d])=>todosFeed.some(r=>r.data===d)).forEach(([data,rs])=>{const[a2,m2,d2]=data.split("-");const isH=data===h;corpo+=`<div style="margin-bottom:14px"><div style="background:${isH?"#1a6b47":"#64748b"};color:#fff;border-radius:7px;padding:3px 12px;font-size:11.5px;font-weight:700;display:inline-block;margin-bottom:8px">${isH?"📌 Hoje":`${d2}/${m2}/${a2}`}</div>`;rs.forEach(r=>{corpo+=`<div style="padding:10px 14px;border-radius:10px;margin-bottom:6px;background:${c.surface};border:1px solid ${c.border}"><div style="display:flex;gap:10px"><div style="min-width:72px"><p style="font-size:12px;font-family:'DM Mono',monospace;font-weight:800;color:${c.green}">${r.horario}${r.horarioFim&&r.horarioFim!==r.horario?" → "+r.horarioFim:""}</p></div><div style="flex:1"><p style="font-weight:700;font-size:13px;color:${c.navy}">${nomeExibicao(r.espaco)}</p><p style="font-size:12px;color:${c.textMid}">${r.professor} · ${r.turmaInicio||r.turma||"—"}</p><p style="font-size:12px;color:${c.textMuted}">${r.conteudo||""}</p></div></div>${r.descritivo?`<div style="margin-top:7px;padding:7px 9px;background:#fef9c3;border-radius:6px;border:1px solid #fde68a"><p style="font-size:10.5px;font-weight:700;color:#854d0e;margin-bottom:1px">📝 Publicação:</p><p style="font-size:11.5px;color:#713f12">${r.descritivo}</p></div>`:""}</div>`;});corpo+=`</div>`;});
+Object.entries(pd).filter(([d])=>todosFeed.some(r=>r.data===d)).forEach(([data,rs])=>{const[a2,m2,d2]=data.split("-");const isH=data===h;corpo+=`<div style="margin-bottom:14px"><div style="background:${isH?"#1a6b47":"#64748b"};color:#fff;border-radius:7px;padding:3px 12px;font-size:11.5px;font-weight:700;display:inline-block;margin-bottom:8px">${isH?"📌 Hoje":`${d2}/${m2}/${a2}`}</div>`;rs.forEach(r=>{corpo+=`<div style="padding:10px 14px;border-radius:10px;margin-bottom:6px;background:${c.surface};border:1px solid ${c.border}"><div style="display:flex;gap:10px"><div style="min-width:72px"><p style="font-size:12px;font-family:'DM Mono',monospace;font-weight:800;color:${c.green}">${r.horario}${r.horarioFim&&r.horarioFim!==r.horario?" → "+r.horarioFim:""}</p></div><div style="flex:1"><p style="font-weight:700;font-size:13px;color:${c.navy}">${nomeExibicao(r.espaco)}</p><p style="font-size:12px;color:${c.textMid}">${r.professor} · ${turmasEmSequencia(r)||"—"}</p><p style="font-size:12px;color:${c.textMuted}">${r.conteudo||""}</p></div></div>${r.descritivo?`<div style="margin-top:7px;padding:7px 9px;background:#fef9c3;border-radius:6px;border:1px solid #fde68a"><p style="font-size:10.5px;font-weight:700;color:#854d0e;margin-bottom:1px">📝 Publicação:</p><p style="font-size:11.5px;color:#713f12">${r.descritivo}</p></div>`:""}</div>`;});corpo+=`</div>`;});
 }
 return`<div style="padding:4px 0">
    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
@@ -1109,7 +1111,7 @@ else if(isUrg)badge="<span style='background:#fff7ed;color:#ea580c;font-size:10p
 itens+="<div style='display:flex;align-items:center;gap:10px;padding:8px 10px;background:"+bg+";border:1px solid "+borda+";border-radius:8px;margin-bottom:6px'>"+
 "<div style='flex:1;min-width:0'>"+
 "<p style='font-size:12px;font-weight:700;color:"+c.navy+";white-space:nowrap;overflow:hidden;text-overflow:ellipsis'>"+r.horario+" &middot; "+r.espaco+"</p>"+
-"<p style='font-size:11px;color:"+c.textMuted+";white-space:nowrap;overflow:hidden;text-overflow:ellipsis'>"+r.professor+" &middot; "+(r.turmaInicio||r.turma||"—")+" &middot; "+df+"</p>"+
+"<p style='font-size:11px;color:"+c.textMuted+">"+r.professor+" &middot; "+(turmasEmSequencia(r)||"—")+" &middot; "+df+"</p>"+
 "</div>"+badge+"</div>";
 });
 feedTIHtml="<div style='background:"+c.surface+";border:1px solid "+c.border+";border-radius:12px;padding:12px 16px;margin-bottom:16px'>"+
@@ -1127,7 +1129,7 @@ if(!minhas.length)corpo+=`<div style="text-align:center;padding:48px;color:${c.t
 const todos=_todas.filter(r=>(_TI.historico||r.data>=h)&&r.status!=="recusado"&&!r.reservaAutomatica).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
 const pd={};todos.forEach(r=>{if(!pd[r.data])pd[r.data]=[];pd[r.data].push(r);});
 if(!todos.length)corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">📅</p><p style="margin-top:12px">Nenhum agendamento.</p></div>`;
-Object.entries(pd).forEach(([data,rs])=>{const[a2,m2,d2]=data.split("-");const isH=data===h;corpo+=`<div style="margin-bottom:14px"><div style="background:${isH?"#1a6b47":"#64748b"};color:#fff;border-radius:7px;padding:3px 12px;font-size:11.5px;font-weight:700;display:inline-block;margin-bottom:8px">${isH?"📌 Hoje":`${d2}/${m2}/${a2}`}</div>`;rs.forEach(r=>{corpo+=`<div style="display:flex;gap:10px;padding:10px 14px;border-radius:10px;margin-bottom:6px;background:${c.surface};border:1px solid ${c.border}"><div style="min-width:72px"><p style="font-size:12px;font-family:'DM Mono',monospace;font-weight:800;color:${c.green}">${r.horario}${r.horarioFim&&r.horarioFim!==r.horario?" → "+r.horarioFim:""}</p></div><div style="flex:1"><p style="font-weight:700;font-size:13px;color:${c.navy}">${nomeExibicao(r.espaco)}</p><p style="font-size:12px;color:${c.textMid}">${r.professor} · ${r.turmaInicio||r.turma||"—"}</p><p style="font-size:12px;color:${c.textMuted}">${r.conteudo||""}</p></div></div>`;});corpo+=`</div>`;});
+Object.entries(pd).forEach(([data,rs])=>{const[a2,m2,d2]=data.split("-");const isH=data===h;corpo+=`<div style="margin-bottom:14px"><div style="background:${isH?"#1a6b47":"#64748b"};color:#fff;border-radius:7px;padding:3px 12px;font-size:11.5px;font-weight:700;display:inline-block;margin-bottom:8px">${isH?"📌 Hoje":`${d2}/${m2}/${a2}`}</div>`;rs.forEach(r=>{corpo+=`<div style="display:flex;gap:10px;padding:10px 14px;border-radius:10px;margin-bottom:6px;background:${c.surface};border:1px solid ${c.border}"><div style="min-width:72px"><p style="font-size:12px;font-family:'DM Mono',monospace;font-weight:800;color:${c.green}">${r.horario}${r.horarioFim&&r.horarioFim!==r.horario?" → "+r.horarioFim:""}</p></div><div style="flex:1"><p style="font-weight:700;font-size:13px;color:${c.navy}">${nomeExibicao(r.espaco)}</p><p style="font-size:12px;color:${c.textMid}">${r.professor} · ${turmasEmSequencia(r)||"—"}</p><p style="font-size:12px;color:${c.textMuted}">${r.conteudo||""}</p></div></div>`;});corpo+=`</div>`;});
 }
 return`<div style="padding:4px 0">
    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
@@ -1318,7 +1320,7 @@ return`<div style="background:${c.surface};border-radius:12px;border:1.5px solid
            ${!pend&&r.fotografoHorario?`<span style="background:#e2f4ea;color:#1a6b47;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">📍 Vai às ${r.fotografoHorario}</span>`:""}
          </div>
          <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px">${midiaTags}${objTag}</div>
-         <p style="font-size:12px;color:${c.textMid};margin-bottom:2px">👤 ${r.professor} · ${r.turmaInicio||r.turma||"—"}</p>
+         <p style="font-size:12px;color:${c.textMid};margin-bottom:2px">👤 ${r.professor} · ${turmasEmSequencia(r)||"—"}</p>
          <p style="font-size:12px;color:${c.textMuted}">${r.conteudo}</p>
          ${r.descritivo?`<div style="margin-top:6px;padding:8px 10px;background:#fef9c3;border-radius:6px;border:1px solid #fde68a"><p style="font-size:11px;font-weight:700;color:#854d0e;margin-bottom:2px">📝 Publicação:</p><p style="font-size:12px;color:#713f12">${r.descritivo}</p></div>`:""}
        </div>
@@ -1371,7 +1373,7 @@ if(!todos.length)corpo+=`<div style="text-align:center;padding:48px;color:${c.te
 Object.entries(pd).forEach(([data,rs])=>{
 const[a2,m2,d2]=data.split("-");const isH=data===h;
 corpo+=`<div style="margin-bottom:14px"><div style="background:${isH?"#1a6b47":"#64748b"};color:#fff;border-radius:7px;padding:3px 12px;font-size:11.5px;font-weight:700;display:inline-block;margin-bottom:8px">${isH?"📌 Hoje":`${d2}/${m2}/${a2}`}</div>`;
-rs.forEach(r=>{corpo+=`<div style="padding:10px 14px;border-radius:10px;margin-bottom:6px;background:${c.surface};border:1px solid ${c.border}"><div style="display:flex;gap:10px"><div style="min-width:72px"><p style="font-size:12px;font-family:'DM Mono',monospace;font-weight:800;color:${c.green}">${r.horario}${r.horarioFim&&r.horarioFim!==r.horario?" → "+r.horarioFim:""}</p></div><div style="flex:1"><p style="font-weight:700;font-size:13px;color:${c.navy}">${nomeExibicao(r.espaco)}</p><p style="font-size:12px;color:${c.textMid}">${r.professor} · ${r.turmaInicio||r.turma||"—"}</p><p style="font-size:12px;color:${c.textMuted}">${r.conteudo||""}</p></div></div>${r.descritivo?`<div style="margin-top:7px;padding:7px 9px;background:#fef9c3;border-radius:6px;border:1px solid #fde68a"><p style="font-size:10.5px;font-weight:700;color:#854d0e;margin-bottom:1px">📝 Publicação:</p><p style="font-size:11.5px;color:#713f12">${r.descritivo}</p></div>`:""}</div>`;});
+rs.forEach(r=>{corpo+=`<div style="padding:10px 14px;border-radius:10px;margin-bottom:6px;background:${c.surface};border:1px solid ${c.border}"><div style="display:flex;gap:10px"><div style="min-width:72px"><p style="font-size:12px;font-family:'DM Mono',monospace;font-weight:800;color:${c.green}">${r.horario}${r.horarioFim&&r.horarioFim!==r.horario?" → "+r.horarioFim:""}</p></div><div style="flex:1"><p style="font-weight:700;font-size:13px;color:${c.navy}">${nomeExibicao(r.espaco)}</p><p style="font-size:12px;color:${c.textMid}">${r.professor} · ${turmasEmSequencia(r)||"—"}</p><p style="font-size:12px;color:${c.textMuted}">${r.conteudo||""}</p></div></div>${r.descritivo?`<div style="margin-top:7px;padding:7px 9px;background:#fef9c3;border-radius:6px;border:1px solid #fde68a"><p style="font-size:10.5px;font-weight:700;color:#854d0e;margin-bottom:1px">📝 Publicação:</p><p style="font-size:11.5px;color:#713f12">${r.descritivo}</p></div>`:""}</div>`;});
 corpo+=`</div>`;
 });
 if(todos.length>5)corpo+=`<button onclick="window._MK.feedExp=!window._MK.feedExp;re()" style="width:100%;padding:8px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.textMuted};font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">${_MK.feedExp?'▲ Ver menos':'▼ Ver mais ('+todos.length+' no total)'}</button>`;
@@ -1474,7 +1476,7 @@ if(!todos.length)corpo+=`<div style="text-align:center;padding:48px;color:${c.te
 Object.entries(pd).forEach(([data,rs])=>{
 const[a2,m2,d2]=data.split("-");const isH=data===h;
 corpo+=`<div style="margin-bottom:14px"><div style="background:${isH?"#1a6b47":"#64748b"};color:#fff;border-radius:7px;padding:3px 12px;font-size:11.5px;font-weight:700;display:inline-block;margin-bottom:8px">${isH?"📌 Hoje":`${d2}/${m2}/${a2}`}</div>`;
-rs.forEach(r=>{corpo+=`<div style="display:flex;gap:10px;padding:10px 14px;border-radius:10px;margin-bottom:6px;background:${c.surface};border:1px solid ${c.border}"><div style="min-width:72px"><p style="font-size:12px;font-family:'DM Mono',monospace;font-weight:800;color:${c.green}">${r.horario}${r.horarioFim&&r.horarioFim!==r.horario?" → "+r.horarioFim:""}</p></div><div style="flex:1"><p style="font-weight:700;font-size:13px;color:${c.navy}">${nomeExibicao(r.espaco)}</p><p style="font-size:12px;color:${c.textMid}">${r.professor} · ${r.turmaInicio||r.turma||"—"}</p><p style="font-size:12px;color:${c.textMuted}">${r.conteudo||""}</p></div></div>`;});
+rs.forEach(r=>{corpo+=`<div style="display:flex;gap:10px;padding:10px 14px;border-radius:10px;margin-bottom:6px;background:${c.surface};border:1px solid ${c.border}"><div style="min-width:72px"><p style="font-size:12px;font-family:'DM Mono',monospace;font-weight:800;color:${c.green}">${r.horario}${r.horarioFim&&r.horarioFim!==r.horario?" → "+r.horarioFim:""}</p></div><div style="flex:1"><p style="font-weight:700;font-size:13px;color:${c.navy}">${nomeExibicao(r.espaco)}</p><p style="font-size:12px;color:${c.textMid}">${r.professor} · ${turmasEmSequencia(r)||"—"}</p><p style="font-size:12px;color:${c.textMuted}">${r.conteudo||""}</p></div></div>`;});
 corpo+=`</div>`;
 });
 }
@@ -1516,7 +1518,7 @@ return`<div style="background:${c.surface};border-radius:12px;border:1.5px solid
          ${isH?`<span style="background:#1a6b47;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">📌 Hoje</span>`:""}
          ${pend?`<span style="background:#fff7ed;color:#c2410c;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #fed7aa">⏳ Pendente</span>`:r.statusEquip==="recusado"?`<span style="background:#fef2f2;color:#dc2626;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #fecaca">❌ Equip. recusado</span>`:`<span style="background:#e2f4ea;color:#1a6b47;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #a7f3d0">✅ Confirmado</span>`}
        </div>
-       <p style="font-size:12px;color:${c.textMid};margin-bottom:2px">👤 ${r.professor} · ${r.turmaInicio||r.turma||"—"}</p>
+       <p style="font-size:12px;color:${c.textMid};margin-bottom:2px">👤 ${r.professor} · ${turmasEmSequencia(r)||"—"}</p>
        <p style="font-size:12px;color:${c.textMuted}">${r.conteudo}</p>
        ${r.local?`<p style="font-size:11px;color:#0369a1;margin-top:3px;font-weight:700">📍 ${r.local}${r.localDevolucao&&r.localDevolucao!==r.local?" → "+r.localDevolucao:""}</p>`:""}
        ${(r.microfones>0||r.caixasom>0||r.projetor>0||r.bibMic>0||r.bibCaixa>0||r.bibProj>0)?`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px">${(r.microfones||r.bibMic)>0?`<span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #bae6fd">🎤 ${(r.microfones||0)+(r.bibMic||0)} microfone(s)</span>`:""} ${(r.caixasom||r.bibCaixa)>0?`<span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #bae6fd">🔊 ${(r.caixasom||0)+(r.bibCaixa||0)} caixa(s)</span>`:""} ${(r.projetor||r.bibProj)>0?`<span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #bae6fd">📽️ ${(r.projetor||0)+(r.bibProj||0)} projetor(es)</span>`:""}</div>`:""}
@@ -1641,7 +1643,7 @@ let fonte=_todas.filter(r=>!r.reservaAutomatica);
 
 if(!_CO.historico)fonte=fonte.filter(r=>r.data>=h);
 if(_CO.fProf)fonte=fonte.filter(r=>r.professor===_CO.fProf||r.professorId===_CO.fProf);
-if(_CO.fTurma)fonte=fonte.filter(r=>(r.turmaInicio||r.turma||"")=== _CO.fTurma);
+if(_CO.fTurma)fonte=fonte.filter(r=>turmasListaDe(r).includes(_CO.fTurma));
 if(_CO.fEspaco)fonte=fonte.filter(r=>r.espaco===_CO.fEspaco);
 fonte=fonte.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
 
@@ -1821,7 +1823,7 @@ return`<div style="background:${evento?"#fdf4e3":c.surface};border-radius:10px;b
          ${isPend?`<span style="background:${c.amberBg};color:${c.amber};font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;border:1px solid ${c.amberBorder}">⏳ Pendente</span>`:isRec?`<span style="background:#fef2f2;color:#dc2626;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;border:1px solid #fecaca">❌ Recusado</span>`:`<span style="background:${c.greenBg};color:${c.green};font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;border:1px solid ${c.greenBorder}">✅ Confirmado</span>`}
          ${editadoCoord}
        </div>
-       <p style="font-size:12px;color:${c.textMid};margin-bottom:2px">👤 ${r.professor} · ${r.turmaInicio||r.turma||"—"}</p>
+       <p style="font-size:12px;color:${c.textMid};margin-bottom:2px">👤 ${r.professor} · ${turmasEmSequencia(r)||"—"}</p>
        <p style="font-size:12px;color:${c.textMuted}">${r.conteudo||""}</p>
      </div>
      <div style="display:flex;gap:6px;flex-shrink:0">
@@ -2092,7 +2094,7 @@ html+=`<div style="background:${isMeu?"rgba(187,235,210,.5)":c.bg};border-radius
              ${isMeu&&isPend?`<span style="font-size:12px;color:${c.amber}">⏳</span>`:""}
            </div>
            <p style="font-size:14px;color:${c.navy};font-weight:700;margin-top:3px">${espacoCurto(r.espaco)}</p>
-           <p style="font-size:13px;color:${c.textMuted}">${(r.turmaInicio||r.turma)}·${nomeProf(r.professor)}</p>
+           <p style="font-size:13px;color:${c.textMuted}">${turmasEmSequencia(r)}·${nomeProf(r.professor)}</p>
            ${r.laboratorista?`<p style="font-size:12px;font-weight:700;color:#0f4c2b">🔬 ${r.laboratorista==="Sim"?"c/ lab.":"s/ lab."}</p>`:""}
            ${equipBadgesCompacto(r)?`<p style="font-size:12px;font-weight:700;color:#0369a1">${equipBadgesCompacto(r)}</p>`:""}
          </div>`;
@@ -2122,7 +2124,7 @@ html+=`<div style="background:${isMeu?"rgba(187,235,210,.65)":c.surface};border-
              ${isMeu&&isPend?`<span style="font-size:9px;color:${c.amber}">⏳</span>`:""}
            </div>
            <p style="font-size:9px;color:${c.navy};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700">${espacoCurto(r.espaco)}</p>
-           <p style="font-size:9px;color:${c.textMuted}">${(r.turmaInicio||r.turma)}·${nomeProf(r.professor)}</p>
+           <p style="font-size:9px;color:${c.textMuted}">${turmasEmSequencia(r)}·${nomeProf(r.professor)}</p>
            ${r.laboratorista?`<p style="font-size:9px;font-weight:700;color:#0f4c2b">🔬 ${r.laboratorista==="Sim"?"c/ lab.":"s/ lab."}</p>`:""}
            ${equipBadgesCompacto(r)?`<p style="font-size:9px;font-weight:700;color:#0369a1">${equipBadgesCompacto(r)}</p>`:""}
          </div>`;
@@ -2244,8 +2246,8 @@ const bg=isMeu?(isPend?"rgba(255,237,213,.85)":"rgba(187,235,210,.6)"):c.surface
 const bl=isMeu?(isPend?"#f97316":"#1a6b47"):"#e2e8f0";
 const ex=extraInfo(r);
 const range=r.horarioFim&&r.horarioFim!==r.horario?` → ${r.horarioFim}`:"";
-const turmaLabel=r.turmaInicio||(r.turma||"");
-const turmaFimLabel=r.turmaFim&&r.turmaFim!==r.turmaInicio?` → ${r.turmaFim}`:"";
+const turmaLabel=turmasEmSequencia(r);
+const turmaFimLabel="";
 const isSel=_P.selecionados?.has(r.id);
 const selClick=_P.modoSelecao&&isMeu&&r.data>=h&&r.status!=='recusado';
 const evento=r.eventoEspecial||"";
@@ -2259,7 +2261,7 @@ return`<div class="row-hover" ${selClick?`onclick="toggleSelProf('${r.id}')"`:''
        ${(forcarData||(r.data&&r.data<fmtHoje()))?`<span style="font-size:11px;color:${c.textMuted};font-weight:600;white-space:nowrap">${r.data.split("-").reverse().join("/")}</span>`:""}
        ${range?`<span style="font-size:11px;font-weight:700;color:${c.blueMid};background:${c.greenBg};padding:1px 7px;border-radius:10px;white-space:nowrap">${r.horario}${range}</span>`:""}
        <span style="font-size:11px;color:${c.textMuted}">·</span>
-       <span style="font-size:12px;color:${c.textMid};white-space:nowrap">${turmaLabel}${turmaFimLabel}</span>
+       <span style="font-size:12px;color:${c.textMid}">${turmaLabel}${turmaFimLabel}</span>
        ${ex?`<span style="font-size:11px;background:#e2f4ea;color:#0f4c2b;border:1px solid #86efac;border-radius:6px;padding:1px 6px;font-weight:700;white-space:nowrap">${ex}</span>`:""}
        <span style="font-size:11px;color:${isMeu?c.green:c.textMuted};background:${c.bg};padding:1px 8px;border-radius:10px;border:1px solid ${c.borderLight};font-weight:${isMeu?700:400};white-space:nowrap">${isMeu?"👤 eu":r.professor?.split(" ")[0]||""}</span>
        ${r.statusMarketing==="aprovado"&&r.fotografoHorario?`<span style="font-size:11px;font-weight:700;background:#e2f4ea;color:#166534;border:1px solid #a7f3d0;border-radius:10px;padding:1px 8px;white-space:nowrap">📸 Marketing vai às ${r.fotografoHorario}</span>`:""}
@@ -4185,7 +4187,7 @@ if(r.espacosRestritos)docs=docs.filter(x=>r.espacosRestritos.includes(x.espaco))
 if(r.espaco)docs=docs.filter(x=>x.espaco===r.espaco);
 corpoTitulo=`Espaço: ${r.espaco||(r.espacosRestritos?"Meus labs":"Todos os espaços")}`;
 colunas=["Data","Horário","Espaço","Turma","Professor","Status","Observação"];
-linhas=docs.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:(a.horario||"").localeCompare(b.horario||"")).map(x=>[dataBR(x.data),x.horarioFim&&x.horarioFim!==x.horario?`${x.horario} - ${x.horarioFim}`:x.horario||"—",x.espaco||"—",x.turmaInicio||x.turma||"—",x.professor||"—",statusLabel(resolverStatus(x)),x.conteudo||"—"]);
+linhas=docs.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:(a.horario||"").localeCompare(b.horario||"")).map(x=>[dataBR(x.data),x.horarioFim&&x.horarioFim!==x.horario?`${x.horario} - ${x.horarioFim}`:x.horario||"—",x.espaco||"—",turmasEmSequencia(x)||"—",x.professor||"—",statusLabel(resolverStatus(x)),x.conteudo||"—"]);
 }else if(r.tipo==="equipamento"){
 // Igual ao critério que a própria tela do T.I. usa: equipamento avulso (Tablets/Computadores/AV)
 // OU qualquer reserva de sala que tenha pedido Som/Mic/Projetor junto (aí a aprovação fica
@@ -4213,7 +4215,7 @@ corpoTitulo=`Marketing: ${r.objetivo==="social"?"Rede Social":r.objetivo==="peda
 colunas=["Data","Horário","Local","Turma","Professor","Foto/Vídeo","Status","Observação"];
 linhas=docs.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:(a.horario||"").localeCompare(b.horario||"")).map(x=>{
 const obs=[x.conteudo?`Aula: ${x.conteudo}`:"",x.descritivo?`Publicação: ${x.descritivo}`:""].filter(Boolean).join(" | ")||"—";
-return[dataBR(x.data),x.horario||"—",x.espaco==="Equipe de Marketing"?(x.salaAtividade||"—"):nomeExibicao(x.espaco)||"—",x.turmaInicio||x.turma||"—",x.professor||"—",[x.precisaFoto?"Foto":"",x.precisaVideo?"Vídeo":""].filter(Boolean).join(" + ")||"—",statusLabel(resolverStatus(x)),obs];
+return[dataBR(x.data),x.horario||"—",x.espaco==="Equipe de Marketing"?(x.salaAtividade||"—"):nomeExibicao(x.espaco)||"—",turmasEmSequencia(x)||"—",x.professor||"—",[x.precisaFoto?"Foto":"",x.precisaVideo?"Vídeo":""].filter(Boolean).join(" + ")||"—",statusLabel(resolverStatus(x)),obs];
 });
 }
 if(!linhas.length){r.gerando=false;render("rel-erro",alertHTML("warning","Nenhum agendamento encontrado nesse período com esse filtro."));renderRelatorioModal();return;}
@@ -5204,7 +5206,7 @@ const urg=isUrgente(r.data,r.horario);
 const bc=r.status==="confirmado"?"#1a6b47":r.status==="pendente"?"#d97706":"#dc2626";
 const[a2,m2,d2]=r.data.split("-");
 const range=r.horarioFim&&r.horarioFim!==r.horario?` → ${r.horarioFim}`:"";
-const turmaLabel=(r.turmaInicio||r.turma||"")+(r.turmaFim&&r.turmaFim!==(r.turmaInicio||r.turma)?` → ${r.turmaFim}`:"");
+const turmaLabel=turmasEmSequencia(r);
 const podeAprovarEspaco=mostrarBotoes&&r.status==="pendente"&&precisaAdmin(r);
 const eoR=ESPACOS.find(e=>e.nome===r.espaco);
 const precisaTagTI=r.statusEquip==="pendente"||(r.statusEquip===undefined&&eoR?.tipo==="audiovisual"&&r.status==="pendente");
@@ -5217,7 +5219,7 @@ return`<div class="row-hover" style="display:flex;align-items:center;gap:8px;pad
        <span style="font-size:11px;color:${c.textMuted}">·</span>
        <span style="font-size:12.5px;color:${c.textMid};font-weight:600;white-space:nowrap">${r.professor}</span>
        <span style="font-size:11px;color:${c.textMuted}">·</span>
-       <span style="font-size:12px;color:${c.textMuted};white-space:nowrap">${turmaLabel}</span>
+       <span style="font-size:12px;color:${c.textMuted}">${turmaLabel}</span>
      </div>
      <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
        ${badge(r.status)}
@@ -5296,7 +5298,7 @@ else if(!rs.length)html+=`<p style="font-size:12px;color:#607060">🎉 Dia livre
 else rs.slice(0,6).forEach(r=>{
 const urg=isUrgente(r.data,r.horario);
 const range=r.horarioFim&&r.horarioFim!==r.horario?` → ${r.horarioFim}`:"";
-html+=`<div style="display:flex;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid #e2f0eb"><span style="font-size:11px;font-family:'DM Mono',monospace;font-weight:800;color:${urg?"#c2410c":"#40b07a"};min-width:80px">${r.horario}${range}</span><div><p style="font-size:12px;font-weight:700;color:#132318">${nomeExibicao(r.espaco)}</p><p style="font-size:11px;color:#607060">${r.professor?.split(" ")[0]||""} · ${r.turmaInicio||r.turma}</p>${r.laboratorista?`<p style="font-size:10px;color:#0f4c2b;font-weight:700">🔬 ${r.laboratorista==="Sim"?"c/ lab.":"s/ lab."}</p>`:""}${equipBadgesCompacto(r)?`<p style="font-size:10px;color:#0369a1;font-weight:700">${equipBadgesCompacto(r)}</p>`:""}</div></div>`;
+html+=`<div style="display:flex;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid #e2f0eb"><span style="font-size:11px;font-family:'DM Mono',monospace;font-weight:800;color:${urg?"#c2410c":"#40b07a"};min-width:80px">${r.horario}${range}</span><div><p style="font-size:12px;font-weight:700;color:#132318">${nomeExibicao(r.espaco)}</p><p style="font-size:11px;color:#607060">${r.professor?.split(" ")[0]||""} · ${turmasEmSequencia(r)}</p>${r.laboratorista?`<p style="font-size:10px;color:#0f4c2b;font-weight:700">🔬 ${r.laboratorista==="Sim"?"c/ lab.":"s/ lab."}</p>`:""}${equipBadgesCompacto(r)?`<p style="font-size:10px;color:#0369a1;font-weight:700">${equipBadgesCompacto(r)}</p>`:""}</div></div>`;
 });
 if(rs.length>6)html+=`<p style="font-size:10px;color:#607060;margin-top:6px">+${rs.length-6} mais</p>`;
 tip.innerHTML=html;
