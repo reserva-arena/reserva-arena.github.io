@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20261003222303"/>
-<meta name="app-build-perfis" content="admin"/>
-<meta name="app-build-mensagem" content="O filtro de Espaço no topo do painel agora lista as salas em ordem alfabética (antes seguia a ordem bruta do cadastro)."/>
+<meta name="app-build" content="20261005073123"/>
+<meta name="app-build-perfis" content="admin,maker,laboratorista"/>
+<meta name="app-build-mensagem" content="Agora, nos agendamentos com vários horários, o cartão mostra todas as turmas em sequência (uma por horário, na ordem do dia), e não só a primeira."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -544,6 +544,27 @@ if(((r.projetor||0)+(r.bibProj||0))>0)p.push(`${(r.projetor||0)+(r.bibProj||0)} 
 return p.length?" · "+p.join(", "):"";
 }
 function nomeProf(n){if(!n)return"";const p=n.trim().split(" ").filter(Boolean);return p.length===1?p[0]:p[0]+" "+p[p.length-1][0].toUpperCase()+".";}
+// Turmas de um agendamento em sequência (uma por horário, na ordem do dia) — pra quem organiza
+// a sala (Maker/Laboratorista) ver quem vem em cada período, e não só a primeira turma.
+// Usa "turmasPorHorario" (gravado na reserva principal desde sempre); em reservas sem esse
+// campo cai pra turmaInicio/turmaFim. Uma turma por horário, exatamente como o professor
+// lançou — se repetiu a mesma turma em horários seguidos, aparece repetida (não junta).
+function turmasEmSequencia(r){
+const tph=r&&r.turmasPorHorario;
+let lista=[];
+if(tph&&typeof tph==="object"){
+Object.keys(tph).sort().forEach(h=>{const t=tph[h];if(t)lista.push(t);});
+}
+if(!lista.length){
+const ini=(r&&(r.turmaInicio||r.turma))||"";
+if(ini)lista.push(ini);
+if(r&&r.turmaFim&&r.turmaFim!==ini)lista.push(r.turmaFim);
+}
+// O modal de edição só altera "turma" (que corresponde à primeira): se mudou depois da
+// criação, vale a turma editada no lugar da primeira da sequência.
+if(r&&r.turma&&lista.length&&lista[0]!==r.turma)lista[0]=r.turma;
+return lista.join(", ");
+}
 function extraInfo(r){
 if(!r)return"";
 const eo=ESPACOS.find(e=>e.nome===r.espaco);
@@ -1132,7 +1153,7 @@ return`<div style="background:${c.surface};border:1.5px solid ${c.border};border
      <span style="background:${corSala(r.espaco)};color:#fff;font-size:11px;font-weight:800;padding:2px 9px;border-radius:20px">${nomeExibicao(r.espaco)}</span>
      ${statusBadge}
    </div>
-   <p style="font-size:13px;color:${c.textMid}">${r.professor} · ${r.turma||"—"}</p>
+   <p style="font-size:13px;color:${c.textMid}">${r.professor} · ${turmasEmSequencia(r)||"—"}</p>
    ${r.conteudo?`<p style="font-size:12px;color:${c.textMuted};margin-top:3px">📝 ${r.conteudo}</p>`:""}
    <div style="margin-top:10px;display:flex;gap:8px"><button onclick="abrirEdicao('${r.id}')" style="padding:7px 16px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.textMid};font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">✏️ Editar / Mover de sala</button><button onclick="makerExcluir('${r.id}')" style="padding:7px 12px;border-radius:8px;border:1.5px solid #fecaca;background:transparent;color:#dc2626;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🗑️ Excluir</button></div>
  </div>`;
@@ -1205,7 +1226,7 @@ return`<div style="background:${c.surface};border:1.5px solid ${c.border};border
      <span style="background:${corSala(r.espaco)};color:#fff;font-size:11px;font-weight:800;padding:2px 9px;border-radius:20px">${nomeExibicao(r.espaco)}</span>
      ${statusBadge}
    </div>
-   <p style="font-size:13px;color:${c.textMid}">${r.professor} · ${r.turma||"—"}</p>
+   <p style="font-size:13px;color:${c.textMid}">${r.professor} · ${turmasEmSequencia(r)||"—"}</p>
    ${r.conteudo?`<p style="font-size:12px;color:${c.textMuted};margin-top:3px">📝 ${r.conteudo}</p>`:""}
    <div style="margin-top:10px;display:flex;gap:8px"><button onclick="abrirEdicao('${r.id}')" style="padding:7px 16px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.textMid};font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">✏️ Editar / Mover de sala</button><button onclick="labExcluir('${r.id}')" style="padding:7px 12px;border-radius:8px;border:1.5px solid #fecaca;background:transparent;color:#dc2626;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🗑️ Excluir</button></div>
  </div>`;
