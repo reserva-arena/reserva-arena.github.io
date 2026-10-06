@@ -3,13 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20261006102657"/>
-<meta name="app-build-perfis" content="admin,coordenador"/>
-<meta name="app-build-mensagem" content="Novidades para Coordenadores:
-
-📊 Uso dos espaços (antes chamada Métricas): aba no topo, ao lado da Agenda. Mostra quantos agendamentos, quanto dos espaços está ocupado e quantos professores usam. Escolha semana, mês ou ano, filtre pelo seu Segmento e abra Espaços para ver sala por sala.
-
-📄 Relatório (botão no topo): gera um PDF dos agendamentos de salas e laboratórios. Escolha o período, o espaço, o Segmento (Infantil, Fund. 1, Fund. 2 ou Extras) e se quer as observações."/>
+<meta name="app-build" content="20261006120349"/>
+<meta name="app-build-perfis" content="admin"/>
+<meta name="app-build-mensagem" content="Agendamento de Computadores e Tablets: agora dá para escolher a Sala Multifuncional como sala de início e de término, no grupo Espaços, que fica no topo da lista."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -369,6 +365,10 @@ const TURMAS_INFANTIL_VESP = TURMAS_EDUCACAO_INFANTIL.filter(t=>t.includes("Vesp
 const TURMAS_FUND1 = (()=>{const t=[];for(let a=1;a<=5;a++)["A","B","C","D","E"].forEach(l=>t.push(`${a}º${l}`));return t;})();
 const TURMAS_FUND2 = (()=>{const t=[];for(let a=6;a<=9;a++)["A","B","C","D","E","F","G","H"].forEach(l=>t.push(`${a}º${l}`));return t;})();
 const TURMAS_EXTRAS = ["Extra Música","Olimpíadas Matemática","Olimpíadas Ciências","Planejamento Maker","Coordenação Infantil","Coordenação Fund1","Coordenação Fund2","Ensino Médio"];
+// Espaços (que não são turmas) aceitos como "sala de início/término" no agendamento avulso de
+// Tablets/Computadores. Ex: o professor agendou a Sala Multifuncional mas não pediu os computadores;
+// quem agenda os computadores depois precisa poder dizer que eles vão pra lá, e ali só havia turmas.
+const LOCAIS_EQUIP_ESPACOS = ["Sala Multifuncional"];
 const TURMAS_INTEGRAL = ["Integral 3-4 anos","Integral 5 anos"];
 const TURMAS_INTEGRAL_FUND1 = ["1º ano Integral","2º e 3º Integral","4º e 5º Integral"];
 const TURMAS = [...TURMAS_EDUCACAO_INFANTIL, ...TURMAS_FUND1, ...TURMAS_FUND2, ...TURMAS_EXTRAS, ...TURMAS_INTEGRAL, ...TURMAS_INTEGRAL_FUND1];
@@ -3214,7 +3214,8 @@ html+=`<div>
 if(isEquip&&eo?.equipAvulso&&b.horario&&b.horarioFim){
 const selTurmaEquip=(campo,val)=>`
      <select onchange="maSetBlocoRe(${i},'${campo}',this.value)" style="${sel()};margin-top:5px">
-       <option value="">Selecione a turma...</option>
+       <option value="">Selecione a turma ou o espaço...</option>
+       <optgroup label="Espaços">${LOCAIS_EQUIP_ESPACOS.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup>
        <optgroup label="Ed. Infantil">${TURMAS_EDUCACAO_INFANTIL.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup>
        <optgroup label="Fund. 1">${TURMAS_FUND1.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup>
        <optgroup label="Fund. 2">${TURMAS_FUND2.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup><optgroup label="Aulas Extras">${TURMAS_EXTRAS.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup><optgroup label="Integral Infantil">${TURMAS_INTEGRAL.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup><optgroup label="Integral Fund. 1">${TURMAS_INTEGRAL_FUND1.map(t=>`<option ${val===t?"selected":""}>${t}</option>`).join("")}</optgroup>
@@ -3222,7 +3223,7 @@ const selTurmaEquip=(campo,val)=>`
 const mesmaT=b.horario===b.horarioFim;
 html+=`<div style="background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:10px;padding:14px;display:grid;gap:12px">
      <p style="font-size:13px;font-weight:800;color:#0369a1">🎒 Trajeto dos equipamentos</p>
-     <p style="font-size:11px;color:${c.textMuted}">Informe a turma onde os equipamentos serão entregues e recolhidos.</p>
+     <p style="font-size:11px;color:${c.textMuted}">Informe a turma (ou o espaço, como a Sala Multifuncional) onde os equipamentos serão entregues e recolhidos.</p>
      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
        <div>
          <label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">🏫 Sala de início *</label>
