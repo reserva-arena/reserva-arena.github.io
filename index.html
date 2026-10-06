@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20261006084929"/>
+<meta name="app-build" content="20261006102657"/>
 <meta name="app-build-perfis" content="admin,coordenador"/>
-<meta name="app-build-mensagem" content="Novidade para Coordenadores: agora você consulta os números do colégio direto no app.
+<meta name="app-build-mensagem" content="Novidades para Coordenadores:
 
-📊 Métricas (aba no topo da tela): mostra como os espaços são usados, por semana, mês ou ano. Use o filtro Segmento para ver só o seu e a aba Espaços para detalhar sala por sala.
+📊 Uso dos espaços (antes chamada Métricas): aba no topo, ao lado da Agenda. Mostra quantos agendamentos, quanto dos espaços está ocupado e quantos professores usam. Escolha semana, mês ou ano, filtre pelo seu Segmento e abra Espaços para ver sala por sala.
 
-📄 Relatório (botão no topo): gera o PDF dos agendamentos por período e espaço. Agora também dá para filtrar por Segmento."/>
+📄 Relatório (botão no topo): gera um PDF dos agendamentos de salas e laboratórios. Escolha o período, o espaço, o Segmento (Infantil, Fund. 1, Fund. 2 ou Extras) e se quer as observações."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -1778,13 +1778,13 @@ restaurarEdicaoSeAberta();
 function coordAbasHTML(c){
 const m=_CO.vista==="metricas";
 const aba=(ativo,label,v)=>`<button onclick="coordSetVista('${v}')" style="flex:1;padding:9px 12px;border-radius:99px;border:1.5px solid ${ativo?c.navy:c.border};background:${ativo?c.navy:c.surface};color:${ativo?"#fff":c.text};font-weight:800;font-size:13px;cursor:pointer;font-family:inherit">${label}</button>`;
-return`<div style="display:flex;gap:8px;margin-bottom:14px">${aba(!m,"📋 Agenda","lista")}${aba(m,"📊 Métricas","metricas")}</div>`;
+return`<div style="display:flex;gap:8px;margin-bottom:14px">${aba(!m,"📋 Agenda","lista")}${aba(m,"📊 Uso dos espaços","metricas")}</div>`;
 }
 function coordMetricasHTML(c){
 let corpo;
 try{corpo=dashboardAdminHTML(c,{pend:0,ti:0,mk:0,tb:0,semFilas:true});}
-catch(e){console.error("Métricas (coordenador):",e);corpo=`<div style="background:${c.surface};border:1px solid ${c.border};border-radius:16px;padding:24px;text-align:center;color:#b91c1c">⚠️ Não foi possível montar as métricas agora. Volte para a Agenda e tente de novo.</div>`;}
-return`<p style="font-size:12px;color:${c.textMuted};margin:0 0 12px;line-height:1.5">Consulta de uso dos espaços. Escolha o período (semana, mês ou ano), use o filtro <strong>Segmento</strong> para ver só o seu e a aba <strong>Espaços</strong> para detalhar sala por sala.</p>${corpo}`;
+catch(e){console.error("Métricas (coordenador):",e);corpo=`<div style="background:${c.surface};border:1px solid ${c.border};border-radius:16px;padding:24px;text-align:center;color:#b91c1c">⚠️ Não foi possível carregar o uso dos espaços agora. Volte para a Agenda e tente de novo.</div>`;}
+return`<p style="font-size:15px;font-weight:800;color:${c.navy};margin:0 0 2px">📊 Uso dos espaços</p><p style="font-size:12px;color:${c.textMuted};margin:0 0 12px;line-height:1.5">Veja como a escola está usando os espaços: quantos agendamentos, quanto das aulas possíveis está ocupado e quantos professores usam. Escolha o período (semana, mês ou ano), use <strong>Segmento</strong> para ver só o seu e abra a aba <strong>Espaços</strong> para ver sala por sala.</p>${corpo}`;
 }
 window.coordSetVista=v=>{
 if(!window._CO)window._CO={fProf:"",fTurma:"",fEspaco:"",historico:false,avisoOculto:false,modoVisu:"agenda",mesCal:null,diaSel:null};
