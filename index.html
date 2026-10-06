@@ -3,9 +3,13 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20261005103800"/>
-<meta name="app-build-perfis" content="admin,marketing"/>
-<meta name="app-build-mensagem" content="Novidades do Marketing: as abas Próximos dias e Todos agendamentos deram lugar a Aprovados e Reprovados, com histórico completo (até das sessões que já passaram) e o motivo das recusas. E pedidos de foto/vídeo para Rede Social agora exigem um texto de publicação de verdade: mínimo de 8 palavras, sem 'envio depois'."/>
+<meta name="app-build" content="20261006084929"/>
+<meta name="app-build-perfis" content="admin,coordenador"/>
+<meta name="app-build-mensagem" content="Novidade para Coordenadores: agora você consulta os números do colégio direto no app.
+
+📊 Métricas (aba no topo da tela): mostra como os espaços são usados, por semana, mês ou ano. Use o filtro Segmento para ver só o seu e a aba Espaços para detalhar sala por sala.
+
+📄 Relatório (botão no topo): gera o PDF dos agendamentos por período e espaço. Agora também dá para filtrar por Segmento."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -1667,6 +1671,7 @@ function renderCoord(){
 const c=C(),h=fmtHoje();
 if(!window._CO)window._CO={fProf:"",fTurma:"",fEspaco:"",historico:false,avisoOculto:false,modoVisu:"agenda",mesCal:null,diaSel:null};
 if(!_CO.mesCal){const d=new Date();_CO.mesCal={a:d.getFullYear(),m:d.getMonth()};}
+const emMetricas=_CO.vista==="metricas";
 const TODAS_TURMAS=[...TURMAS_EDUCACAO_INFANTIL,...TURMAS_INTEGRAL,...TURMAS_FUND1,...TURMAS_INTEGRAL_FUND1,...TURMAS_FUND2,...TURMAS_EXTRAS];
 
 // Coordenador enxerga todas as reservas (perfil único, sem segmento) — os filtros abaixo
@@ -1708,7 +1713,7 @@ $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="
    <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#0d2b1a,#1a6b47)"};padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(13,43,26,.25)">
      <div style="display:flex;align-items:center;gap:8px">${logoHTML(36)}<p style="font-size:13px;font-weight:800;color:#fff">${labelCoord(_usuario?.perfil)}</p></div>
      <div style="display:flex;align-items:center;gap:6px">
-       <button onclick="pSetModoProf('agendar')" style="background:#fff;color:#0d2b1a;border:none;border-radius:20px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:800;display:flex;align-items:center;gap:5px;font-family:inherit">📅 Agendar</button>
+       <button onclick="window._CO&&(_CO.vista='lista');pSetModoProf('agendar')" style="background:#fff;color:#0d2b1a;border:none;border-radius:20px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:800;display:flex;align-items:center;gap:5px;font-family:inherit">📅 Agendar</button>
        ${botaoRelatorioHTML()}
        ${avatarHTML(_usuario?.nome,28,"green")}
        <button id="sino-btn" onclick="abrirPainelNotif()" style="display:flex;position:relative;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:30px;height:30px;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;font-family:inherit">🔔<span id="sino-badge" style="display:${_notifNaoLidas>0?"flex":"none"};position:absolute;top:-4px;right:-4px;background:#dc2626;color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:99px;align-items:center;justify-content:center;padding:0 3px;font-family:inherit">${_notifNaoLidas>9?"9+":_notifNaoLidas}</span></button>
@@ -1716,7 +1721,9 @@ $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="
        <button onclick="doSignOut()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">Sair</button>
      </div>
    </header>
-   <div style="max-width:800px;margin:0 auto;padding:16px 14px">
+   <div style="max-width:${emMetricas?1000:800}px;margin:0 auto;padding:16px 14px">
+     ${coordAbasHTML(c)}
+     ${emMetricas?coordMetricasHTML(c):`
      ${!_CO.avisoOculto?`<div style="background:#fdf4e3;border:1.5px solid #eab308;border-radius:10px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:flex-start;gap:10px">
        <span style="font-size:18px;flex-shrink:0">⭐</span>
        <div style="flex:1">
@@ -1756,12 +1763,34 @@ $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="
          <div id="mod-prof-itens-co" style="overflow-y:auto;padding:8px 0;flex:1"></div>
        </div>
      </div>
+`}
    </div>
    ${modalRelatorioHTML()}
  </div>`;
 restaurarRelatorioSeAberto();
 restaurarEdicaoSeAberta();
 }
+
+// ── Coordenador: aba Métricas (dashboard) ─────────────────────────────────────────────────
+// O Coordenador passa a consultar o mesmo painel de métricas do Admin (uso dos espaços por
+// período, segmento, dia e horário). É só consulta. As "filas de aprovação" do Admin ficam
+// escondidas (semFilas), porque levam a telas que o Coordenador não tem.
+function coordAbasHTML(c){
+const m=_CO.vista==="metricas";
+const aba=(ativo,label,v)=>`<button onclick="coordSetVista('${v}')" style="flex:1;padding:9px 12px;border-radius:99px;border:1.5px solid ${ativo?c.navy:c.border};background:${ativo?c.navy:c.surface};color:${ativo?"#fff":c.text};font-weight:800;font-size:13px;cursor:pointer;font-family:inherit">${label}</button>`;
+return`<div style="display:flex;gap:8px;margin-bottom:14px">${aba(!m,"📋 Agenda","lista")}${aba(m,"📊 Métricas","metricas")}</div>`;
+}
+function coordMetricasHTML(c){
+let corpo;
+try{corpo=dashboardAdminHTML(c,{pend:0,ti:0,mk:0,tb:0,semFilas:true});}
+catch(e){console.error("Métricas (coordenador):",e);corpo=`<div style="background:${c.surface};border:1px solid ${c.border};border-radius:16px;padding:24px;text-align:center;color:#b91c1c">⚠️ Não foi possível montar as métricas agora. Volte para a Agenda e tente de novo.</div>`;}
+return`<p style="font-size:12px;color:${c.textMuted};margin:0 0 12px;line-height:1.5">Consulta de uso dos espaços. Escolha o período (semana, mês ou ano), use o filtro <strong>Segmento</strong> para ver só o seu e a aba <strong>Espaços</strong> para detalhar sala por sala.</p>${corpo}`;
+}
+window.coordSetVista=v=>{
+if(!window._CO)window._CO={fProf:"",fTurma:"",fEspaco:"",historico:false,avisoOculto:false,modoVisu:"agenda",mesCal:null,diaSel:null};
+_CO.vista=v==="metricas"?"metricas":"lista";
+window.scrollTo(0,0);re();
+};
 
 function coordCalendarioHTML(porData,c,h){
 const{a:ano,m:mes}=_CO.mesCal;
@@ -4168,7 +4197,7 @@ let html=`<div style="display:flex;justify-content:space-between;align-items:cen
  ${r.tipo==="espaco"?`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Espaço</label><br><select onchange="window._REL.espaco=this.value" style="${sel()};margin-top:5px"><option value="">🌐 Todos os espaços</option>${espacosNormais.map(e=>`<option value="${e.nome}" ${r.espaco===e.nome?"selected":""}>${tipoIcon(e.tipo,e.nome)} ${e.nome}</option>`).join("")}</select></div>`:""}
  ${r.tipo==="equipamento"?`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Equipamento</label><br><select onchange="window._REL.equip=this.value" style="${sel()};margin-top:5px"><option value="">🌐 Todos os equipamentos</option><option value="Tablets (18 disp.)" ${r.equip==="Tablets (18 disp.)"?"selected":""}>📱 Tablets</option><option value="Computadores (16 disp.)" ${r.equip==="Computadores (16 disp.)"?"selected":""}>💻 Computadores</option><option value="Som, Microfone e Projetor" ${r.equip==="Som, Microfone e Projetor"?"selected":""}>🎤 Som / Microfone / Projetor</option></select></div>`:""}
  ${r.tipo==="mkt"?`<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Objetivo</label><br><select onchange="window._REL.objetivo=this.value" style="${sel()};margin-top:5px"><option value="">🌐 Todos</option><option value="social" ${r.objetivo==="social"?"selected":""}>📱 Rede Social</option><option value="pedagogico" ${r.objetivo==="pedagogico"?"selected":""}>📚 Pedagógico</option></select></div>`:""}
- ${_usuario?.perfil==="admin"?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+ ${(_usuario?.perfil==="admin"||isCoordenador(_usuario?.perfil))?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
    <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Segmento</label><br><select onchange="window._REL.segmento=this.value" style="${sel()};margin-top:5px"><option value="">🌐 Todos</option><option value="inf" ${r.segmento==="inf"?"selected":""}>👶 Infantil</option><option value="fund1" ${r.segmento==="fund1"?"selected":""}>📚 Fund. 1</option><option value="fund2" ${r.segmento==="fund2"?"selected":""}>🎓 Fund. 2</option><option value="extras" ${r.segmento==="extras"?"selected":""}>⭐ Extras</option></select></div>
    <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Observação</label><br><select onchange="window._REL.comObs=this.value==='sim'" style="${sel()};margin-top:5px"><option value="sim" ${r.comObs?"selected":""}>📝 Com observação</option><option value="nao" ${!r.comObs?"selected":""}>🚫 Sem observação</option></select></div>
  </div>`:""}
@@ -4193,7 +4222,7 @@ try{
 const pdfTxt=s=>{s=String(s==null?"":s).replace(/→/g," - ");return s.replace(/[^\x00-\xFF]/g,"").replace(/\s+/g," ").trim();};
 const snap=await getDocs(query(collection(db,"reservas"),where("data",">=",r.de),where("data","<=",r.ate)));
 let docs=snap.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.status!=="recusado");
-// Segmento (só admin escolhe): filtra pela turma do agendamento
+// Segmento (admin e coordenadores escolhem): filtra pela turma do agendamento
 const SEG_LABEL={inf:"Infantil",fund1:"Fund. 1",fund2:"Fund. 2",extras:"Extras"};
 if(r.segmento){const turmasSeg=r.segmento==="extras"?TURMAS_EXTRAS:turmasDoSegmento(r.segmento);docs=docs.filter(x=>turmasSeg.includes(x.turma||x.turmaInicio));}
 const statusLabel=s=>s===null?"Acompanha a sala":s==="pendente"?"Pendente":(s==="confirmado"||s==="aprovado")?"Confirmado":s==="recusado"?"Recusado":(s||"—");
@@ -4755,7 +4784,7 @@ const sub=_A.dashSub==="espacos"?"espacos":"geral";
 h+=`<div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">${[{id:"geral",l:"📊 Visão geral"},{id:"espacos",l:"🏛️ Espaços"}].map(t=>`<button onclick="setDashSub('${t.id}')" style="${pill(sub===t.id,c.navy)};padding:8px 16px;font-size:13px">${t.l}</button>`).join("")}</div>`;
 // ── Filas de aprovação (sempre "agora", independem do período) ──
 const filas=[{l:"Espaço",n:ctx.pend,ic:"🏛️",on:"aSetAba('reservas');_A.subAba='pendentes';re()"},{l:"T.I.",n:ctx.ti,ic:"💻",on:"aSetAba('ti')"},{l:"Marketing",n:ctx.mk,ic:"📸",on:"aSetAba('marketing')"},{l:"Tablets",n:ctx.tb,ic:"📱",on:"aSetAba('tablets')"}];
-if(sub==="geral")h+=`<p style="${rot};margin:0 0 8px 2px">⏳ Aguardando aprovação agora</p>
+if(sub==="geral"&&!ctx.semFilas)h+=`<p style="${rot};margin:0 0 8px 2px">⏳ Aguardando aprovação agora</p>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:18px">
 ${filas.map(f=>`<div onclick="${f.on}" title="Abrir fila" style="${card};padding:12px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;${f.n>0?"border-color:#f59e0b;background:"+(_dark?c.surface:"#fffbeb"):""}">
  <span style="font-size:20px">${f.ic}</span>
