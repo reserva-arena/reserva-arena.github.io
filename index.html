@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20261006122243"/>
+<meta name="app-build" content="20261012110000"/>
 <meta name="app-build-perfis" content="admin"/>
-<meta name="app-build-mensagem" content="O aviso de acesso ampliado da tela do Coordenador agora some sozinho depois de 10 segundos (o X continua fechando na hora)."/>
+<meta name="app-build-mensagem" content="Gerenciar usuários: agora dá para ver contas inativas, buscar por nome ou e-mail e juntar duas contas da mesma pessoa (botão 🔗 Juntar), com opção de desfazer."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -82,7 +82,7 @@ gtag('config', 'G-80RD7HXHBT');
 <script type="module">
 import{initializeApp,getApps}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,onAuthStateChanged,sendPasswordResetEmail,updatePassword,confirmPasswordReset,verifyPasswordResetCode}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import{getFirestore,collection,addDoc,onSnapshot,doc,updateDoc,query,where,orderBy,getDocs,Timestamp,setDoc,getDoc,deleteDoc,writeBatch}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import{getFirestore,collection,addDoc,onSnapshot,doc,updateDoc,query,where,orderBy,getDocs,Timestamp,setDoc,getDoc,deleteDoc,writeBatch,arrayUnion,getCountFromServer}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import{getMessaging,getToken,onMessage}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
 
 const firebaseConfig = {
@@ -1967,7 +1967,7 @@ re();
 
 function renderSemAcesso(){
 const c=C();
-$("app").innerHTML=`<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:${c.bg};padding:1rem"><div style="text-align:center;max-width:380px"><div style="width:72px;height:72px;border-radius:18px;background:${c.redBg};display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 20px">🔒</div><h2 style="font-size:20px;font-weight:800;color:${c.navy};margin-bottom:8px">Acesso não autorizado</h2><p style="font-size:13.5px;color:${c.textMid};margin-bottom:20px">A conta <strong>${_usuario?.email}</strong> não foi habilitada.</p><div style="background:${c.surface};border:1.5px solid ${c.border};border-radius:10px;padding:16px;margin-bottom:20px;text-align:left"><p style="font-size:12px;font-weight:700;color:${c.navy};margin-bottom:10px">📞 Entre em contato com:</p><p style="font-size:12px;color:${c.text};margin-bottom:6px">🔧 <strong>T.E.</strong> Luciano: <a href="https://wa.me/5562984979797" style="color:${c.blue};text-decoration:none;font-weight:700">(62) 98497-9797</a></p><p style="font-size:12px;color:${c.text}">🔧 <strong>T.E.</strong> Maria Angélica: <a href="https://wa.me/5562985520072" style="color:${c.blue};text-decoration:none;font-weight:700">(62) 98552-0072</a></p></div><button onclick="signOut(auth)" style="${btn("navy")}">Sair</button></div></div>`;
+$("app").innerHTML=`<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:${c.bg};padding:1rem"><div style="text-align:center;max-width:380px"><div style="width:72px;height:72px;border-radius:18px;background:${c.redBg};display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 20px">🔒</div><h2 style="font-size:20px;font-weight:800;color:${c.navy};margin-bottom:8px">Acesso não autorizado</h2>${_usuario?.juntadoCom?`<p style="font-size:13.5px;color:${c.textMid};margin-bottom:20px">Seu cadastro foi unificado. A partir de agora, entre com <strong>${GU_ESC(_usuario.juntadoComEmail||"o outro e-mail")}</strong>: suas reservas estão lá.</p>`:`<p style="font-size:13.5px;color:${c.textMid};margin-bottom:20px">A conta <strong>${_usuario?.email}</strong> não foi habilitada.</p>`}<div style="background:${c.surface};border:1.5px solid ${c.border};border-radius:10px;padding:16px;margin-bottom:20px;text-align:left"><p style="font-size:12px;font-weight:700;color:${c.navy};margin-bottom:10px">📞 Entre em contato com:</p><p style="font-size:12px;color:${c.text};margin-bottom:6px">🔧 <strong>T.E.</strong> Luciano: <a href="https://wa.me/5562984979797" style="color:${c.blue};text-decoration:none;font-weight:700">(62) 98497-9797</a></p><p style="font-size:12px;color:${c.text}">🔧 <strong>T.E.</strong> Maria Angélica: <a href="https://wa.me/5562985520072" style="color:${c.blue};text-decoration:none;font-weight:700">(62) 98552-0072</a></p></div><button onclick="signOut(auth)" style="${btn("navy")}">Sair</button></div></div>`;
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -5681,20 +5681,227 @@ if(flash)flash.innerHTML=`<div style="background:#fef2f2;border:1px solid #fca5a
 if(btn2)btn2.textContent="+ Cadastrar";
 };
 
+// ════════════════════════════════════════════════════════════════════════════
+// ORGANIZAR CONTAS (Gerenciar usuários): ver inativos, buscar, juntar contas
+// Juntar = as reservas e notificações da conta que SAI passam para a que FICA;
+// a que sai é só desativada (nada é apagado). Cada reserva movida guarda
+// "juntadoDe" com o uid de origem, e é isso que permite desfazer.
+// ════════════════════════════════════════════════════════════════════════════
+let _usuariosTodos=[];          // inclui inativos — só para Gerenciar usuários
+let _guMostrarInativos=false;
+let _guJ=null;                  // estado do modal de juntar
+const GU_ESC=s=>String(s??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+const GU_NORM=s=>String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9 ]/g," ").split(/\s+/).filter(t=>t&&!["de","da","do","das","dos","e"].includes(t));
+const GU_PESO_PERFIL={admin:9,coordenador:6,coord_inf:6,coord_fund1:6,coord_fund2:6,coord_ti:5,ti:4,marketing:3,fotografo:3,maker:3,laboratorista:3,professor:1,sem_acesso:0};
+function guRotuloPerfil(p){return p==="admin"?"⭐ Admin":p==="fotografo"||p==="marketing"?"📸 Marketing":p==="ti"?"💻 T.I.":p==="maker"?"🔨 Maker":p==="laboratorista"?"🔬 Laboratorista":p==="coord_inf"?"👶 Coord. Inf.":p==="coord_fund1"?"📚 Coord. Fund.1":p==="coord_fund2"?"🎓 Coord. Fund.2":p==="coord_ti"?"🖥️ Coord. T.I.":p==="coordenador"?"🧭 Coordenador":p==="sem_acesso"?"🔒 Sem acesso":"👨‍🏫 Professor";}
+function guUsuario(uid){return _usuariosTodos.find(u=>u.id===uid)||_usuarios.find(u=>u.id===uid);}
+async function guContarReservas(uid){
+try{const s=await getCountFromServer(query(collection(db,"reservas"),where("professorId","==",uid)));return s.data().count;}
+catch{const s=await getDocs(query(collection(db,"reservas"),where("professorId","==",uid)));return s.size;}
+}
+window.guToggleInativos=()=>{_guMostrarInativos=!_guMostrarInativos;renderGuLista();};
+// Busca sem redesenhar a lista (não perde o foco do campo)
+window.guFiltrar=v=>{
+const termo=GU_NORM(v).join(" ");
+document.querySelectorAll("#mod-gu-lista [data-busca]").forEach(el=>{
+el.style.display=!termo||el.getAttribute("data-busca").includes(termo)?"":"none";
+});
+};
+function guTextoBusca(u){return GU_ESC(GU_NORM((u.nome||"")+" "+(u.email||"")).join(" "));}
+
+// Candidatos para juntar com "a": mesmo primeiro nome ou nomes em comum primeiro
+function guCandidatos(a){
+const ta=GU_NORM(a.nome);
+return _usuariosTodos.filter(u=>u.id!==a.id&&!u.juntadoCom).map(u=>{
+const tu=GU_NORM(u.nome);let s=0;
+if(ta[0]&&tu[0]&&ta[0]===tu[0])s+=3;
+s+=tu.filter(t=>ta.includes(t)).length;
+const la=String(a.email||"").split("@")[0].toLowerCase(),lu=String(u.email||"").split("@")[0].toLowerCase();
+if(la&&la===lu)s+=5;
+return{u,s};
+}).sort((x,y)=>y.s-x.s||(x.u.nome||"").localeCompare(y.u.nome||"","pt-BR")).map(x=>x.u);
+}
+
+window.guAbrirJuntar=uid=>{
+if(!exigePermissao(['admin'])){alert('Acesso negado.');return;}
+const a=guUsuario(uid);if(!a)return;
+const cands=guCandidatos(a);
+_guJ={a:uid,b:cands[0]?.id||"",fica:"",contagem:{},salvando:false};
+let m=document.getElementById("mod-gu-juntar");
+if(!m){m=document.createElement("div");m.id="mod-gu-juntar";m.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:2100;padding:1rem";document.body.appendChild(m);}
+m.style.display="flex";
+guRenderJuntar();
+};
+window.guFecharJuntar=()=>{if(_guJ?.salvando)return;const m=document.getElementById("mod-gu-juntar");if(m)m.style.display="none";_guJ=null;};
+window.guJuntarEscolherB=uid=>{_guJ.b=uid;_guJ.fica="";_guJ.escolhidoManual=false;guRenderJuntar();};
+window.guJuntarEscolherFica=uid=>{_guJ.fica=uid;_guJ.escolhidoManual=true;guRenderJuntar(true);};
+
+function guRenderJuntar(manterCampos){
+const m=document.getElementById("mod-gu-juntar");if(!m||!_guJ)return;
+const a=guUsuario(_guJ.a),b=guUsuario(_guJ.b);
+const nomeDigitado=manterCampos?document.getElementById("gu-j-nome")?.value:null;
+const perfilEscolhido=manterCampos?document.getElementById("gu-j-perfil")?.value:null;
+const nomeResMarcado=manterCampos&&document.getElementById("gu-j-nomeres")?document.getElementById("gu-j-nomeres").checked:true;
+const cands=guCandidatos(a);
+// conta que fica: ativa > mais reservas > perfil mais alto
+if(b&&!_guJ.fica){
+const ca=_guJ.contagem[a.id],cb=_guJ.contagem[b.id];
+const pa=(a.ativo!==false?1000000:0)+(ca||0)*10+(GU_PESO_PERFIL[a.perfil]||0);
+const pb=(b.ativo!==false?1000000:0)+(cb||0)*10+(GU_PESO_PERFIL[b.perfil]||0);
+_guJ.fica=pb>pa?b.id:a.id;
+}
+const fica=guUsuario(_guJ.fica),sai=fica&&b?(fica.id===a.id?b:a):null;
+const card=(u)=>{
+const n=_guJ.contagem[u.id];
+const marcado=fica&&fica.id===u.id;
+return`<label style="flex:1;min-width:220px;display:block;border:2px solid ${marcado?"#1a6b47":"#e2e8e4"};background:${marcado?"#f0faf4":"#fff"};border-radius:12px;padding:12px 14px;cursor:pointer">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><input type="radio" name="gu-j-fica" ${marcado?"checked":""} onchange="guJuntarEscolherFica('${u.id}')" style="accent-color:#1a6b47;width:16px;height:16px;margin:0">
+<span style="font-size:11px;font-weight:800;color:${marcado?"#1a6b47":"#94a3b8"};text-transform:uppercase">${marcado?"✅ Esta fica":"Esta sai"}</span></div>
+<p style="font-size:14px;font-weight:800;color:#132318;margin-bottom:2px">${GU_ESC(u.nome)}</p>
+<p style="font-size:12px;color:#607060;word-break:break-all;margin-bottom:6px">${GU_ESC(u.email)}</p>
+<p style="font-size:11.5px;color:#374151;line-height:1.6">${guRotuloPerfil(u.perfil)} · ${u.ativo!==false?'<span style="color:#0f4c2b;font-weight:700">● Ativa</span>':'<span style="color:#b91c1c;font-weight:700">○ Inativa</span>'}<br>📅 ${n===undefined?"contando reservas…":"<strong>"+n+"</strong> reserva(s)"}</p>
+</label>`;
+};
+let h=`<div style="background:#fff;border-radius:16px;width:100%;max-width:640px;max-height:92vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.3);font-family:inherit">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid #c7dfd4"><p style="font-size:15px;font-weight:800;color:#132318">🔗 Juntar contas da mesma pessoa</p><button onclick="guFecharJuntar()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#607060">✕</button></div>
+<div style="padding:18px 22px">
+<p style="font-size:12.5px;color:#607060;margin-bottom:14px;line-height:1.5">As reservas e notificações da conta que <strong>sai</strong> passam para a que <strong>fica</strong>. A que sai é desativada (não é apagada) e o e-mail dela deixa de entrar. Dá para desfazer depois.</p>
+<label style="font-size:11px;font-weight:700;color:#607060;text-transform:uppercase">Juntar <span style="color:#132318">${GU_ESC(a.nome)}</span> com:</label>
+<select id="gu-j-b" onchange="guJuntarEscolherB(this.value)" style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid #c7dfd4;font-size:13px;margin:5px 0 14px;box-sizing:border-box;cursor:pointer">
+${cands.length?"":'<option value="">Nenhuma outra conta</option>'}
+${cands.map(u=>`<option value="${u.id}" ${u.id===_guJ.b?"selected":""}>${GU_ESC(u.nome)} · ${GU_ESC(u.email)} · ${guRotuloPerfil(u.perfil).replace(/^\S+ /,"")}${u.ativo===false?" · inativa":""}</option>`).join("")}
+</select>`;
+if(b){
+h+=`<p style="font-size:11px;font-weight:700;color:#607060;text-transform:uppercase;margin-bottom:6px">Qual conta fica? (o e-mail dela continua entrando)</p>
+<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">${card(a)}${card(b)}</div>`;
+const nomeSug=nomeDigitado??((GU_NORM(b.nome).length>GU_NORM(a.nome).length?b.nome:a.nome)||fica.nome);
+const perfis=[...new Set([a.perfil,b.perfil])];
+const perfilSug=perfilEscolhido&&perfis.includes(perfilEscolhido)?perfilEscolhido:(a.perfil==="admin"||b.perfil==="admin")?"admin":fica.perfil;
+h+=`<div style="display:flex;gap:10px;flex-wrap:wrap">
+<div style="flex:2;min-width:220px"><label style="font-size:11px;font-weight:700;color:#607060;text-transform:uppercase">Nome que fica</label>
+<input id="gu-j-nome" value="${GU_ESC(nomeSug)}" style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid #c7dfd4;font-size:13.5px;margin:5px 0 4px;box-sizing:border-box"></div>
+<div style="flex:1;min-width:160px"><label style="font-size:11px;font-weight:700;color:#607060;text-transform:uppercase">Perfil que fica</label>
+<select id="gu-j-perfil" style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid #c7dfd4;font-size:13px;margin:5px 0 4px;box-sizing:border-box">${perfis.map(p=>`<option value="${p}" ${p===perfilSug?"selected":""}>${guRotuloPerfil(p)}</option>`).join("")}</select></div></div>`;
+if(perfis.length>1)h+=`<p style="font-size:11.5px;color:#92400e;background:#fffbeb;border-radius:6px;padding:6px 10px;margin:4px 0 8px">⚠️ As contas têm perfis diferentes. Confira o perfil que fica${perfilSug==="admin"&&!perfilEscolhido?" (Admin foi mantido para ninguém perder o painel)":""}.</p>`;
+h+=`<label style="display:flex;gap:8px;align-items:center;font-size:12.5px;color:#374151;margin:8px 0 12px;cursor:pointer"> <input id="gu-j-nomeres" type="checkbox" ${nomeResMarcado?"checked":""} style="accent-color:#1a6b47;width:16px;height:16px;margin:0">Atualizar o nome também nas reservas dessa pessoa</label>`;
+const nSai=_guJ.contagem[sai.id];
+h+=`<div style="background:#f0faf4;border:1px solid #c7dfd4;border-radius:10px;padding:10px 14px;font-size:12.5px;color:#132318;line-height:1.55;margin-bottom:12px">
+<strong>Resumo:</strong> ${nSai===undefined?"as reservas":"<strong>"+nSai+"</strong> reserva(s)"} de <strong>${GU_ESC(sai.email)}</strong> passam para <strong>${GU_ESC(fica.email)}</strong>, que continua entrando. <strong>${GU_ESC(sai.email)}</strong> fica desativada.</div>`;
+if(sai.id===_usuario?.uid)h+=`<p style="font-size:12px;color:#b91c1c;background:#fef2f2;border-radius:6px;padding:8px 10px;margin-bottom:10px">Você está usando a conta que sairia. Marque esta conta para ficar, ou entre com a outra conta para fazer a junção.</p>`;
+}
+h+=`<div id="gu-j-msg" style="font-size:12.5px;margin-bottom:10px"></div>
+<div style="display:flex;gap:10px;justify-content:flex-end"><button onclick="guFecharJuntar()" style="padding:9px 18px;border-radius:8px;border:1.5px solid #c7dfd4;background:#fff;color:#607060;cursor:pointer;font-weight:700;font-size:13px">Cancelar</button>
+<button id="gu-j-btn" onclick="guExecutarJuntar()" ${!b||sai?.id===_usuario?.uid?"disabled":""} style="padding:9px 18px;border-radius:8px;border:none;background:${!b||sai?.id===_usuario?.uid?"#9ca3af":"linear-gradient(135deg,#0d2b1a,#1a6b47)"};color:#fff;cursor:pointer;font-weight:700;font-size:13px">🔗 Juntar contas</button></div>
+</div></div>`;
+m.innerHTML=h;
+// conta reservas das duas (uma vez cada)
+[a,b].filter(Boolean).forEach(u=>{
+if(_guJ.contagem[u.id]!==undefined||_guJ["contando_"+u.id])return;
+_guJ["contando_"+u.id]=true;
+guContarReservas(u.id).then(n=>{if(!_guJ)return;_guJ.contagem[u.id]=n;
+// reavalia quem fica só se o admin ainda não escolheu
+if(!_guJ.escolhidoManual)_guJ.fica="";
+guRenderJuntar(true);}).catch(()=>{});
+});
+}
+
+async function guGravarEmLotes(ops,aoProgredir){
+for(let i=0;i<ops.length;i+=400){
+const b=writeBatch(db);
+ops.slice(i,i+400).forEach(([ref,dados])=>b.update(ref,dados));
+await b.commit();
+aoProgredir&&aoProgredir(Math.min(i+400,ops.length),ops.length);
+}
+}
+
+window.guExecutarJuntar=async()=>{
+if(!exigePermissao(['admin'])||!_guJ||_guJ.salvando)return;
+const a=guUsuario(_guJ.a),b=guUsuario(_guJ.b);if(!a||!b)return;
+const fica=guUsuario(_guJ.fica),sai=fica.id===a.id?b:a;
+if(sai.id===_usuario.uid){alert("Você está usando a conta que sairia. Marque a sua conta para ficar.");return;}
+const nomeFinal=(document.getElementById("gu-j-nome")?.value||"").trim();
+const perfilFinal=document.getElementById("gu-j-perfil")?.value||fica.perfil;
+const atualizarNome=!!document.getElementById("gu-j-nomeres")?.checked;
+if(!nomeFinal){alert("Preencha o nome que fica.");return;}
+if(!confirm(`Juntar as contas?\n\nFICA: ${fica.email}\nSAI: ${sai.email}\n\nAs reservas de ${sai.email} passam para ${fica.email}. A conta ${sai.email} será desativada (nada é apagado).`))return;
+const msg=document.getElementById("gu-j-msg"),btn=document.getElementById("gu-j-btn");
+const info=(t,cor)=>{if(msg){msg.innerHTML=t;msg.style.color=cor||"#132318";}};
+_guJ.salvando=true;if(btn){btn.disabled=true;btn.textContent="Juntando…";}
+try{
+info("Buscando reservas…");
+const resSai=await getDocs(query(collection(db,"reservas"),where("professorId","==",sai.id)));
+const resFica=atualizarNome?await getDocs(query(collection(db,"reservas"),where("professorId","==",fica.id))):{docs:[]};
+const ops=[];
+resSai.docs.forEach(d=>{const x={professorId:fica.id,juntadoDe:sai.id};if(atualizarNome)x.professor=nomeFinal;if(fica.email)x.professorEmail=fica.email;ops.push([d.ref,x]);});
+resFica.docs.forEach(d=>{if(d.data().professor!==nomeFinal)ops.push([d.ref,{professor:nomeFinal}]);});
+await guGravarEmLotes(ops,(f,t)=>info(`Movendo reservas… ${f}/${t}`));
+let avisoNotif="";
+try{
+const nSai=await getDocs(query(collection(db,"notificacoes"),where("userId","==",sai.id)));
+await guGravarEmLotes(nSai.docs.map(d=>[d.ref,{userId:fica.id,juntadoDe:sai.id}]));
+}catch(e){avisoNotif=" (as notificações antigas do sino não puderam ser movidas — não afeta as reservas)";console.warn("notificacoes:",e);}
+// usuários por último: se algo falhar antes, é só tentar de novo
+const dadosFica={nome:nomeFinal,perfil:perfilFinal,ativo:true,juntadoDeHist:arrayUnion(sai.id)};
+if(!fica.fcmToken&&sai.fcmToken)dadosFica.fcmToken=sai.fcmToken;
+await updateDoc(doc(db,"usuarios",fica.id),dadosFica);
+await updateDoc(doc(db,"usuarios",sai.id),{
+ativo:false,juntadoCom:fica.id,juntadoComEmail:fica.email||"",juntadoEm:Timestamp.now(),juntadoPor:_usuario.uid,
+antesDeJuntar:{ativo:sai.ativo!==false,nome:sai.nome||"",perfil:sai.perfil||"professor",ficaNome:fica.nome||"",ficaPerfil:fica.perfil||"professor",ficaAtivo:fica.ativo!==false,nomeNasReservas:atualizarNome}
+});
+_guJ.salvando=false;
+info(`✅ Pronto! ${resSai.size} reserva(s) passaram para ${GU_ESC(fica.email)}.${avisoNotif}`,"#0f4c2b");
+if(btn){btn.textContent="✅ Juntadas";}
+setTimeout(()=>{guFecharJuntar();renderGuLista();},1600);
+}catch(e){
+_guJ.salvando=false;
+info("❌ Não foi possível terminar: "+GU_ESC(e.message)+"<br>Nada foi perdido. Pode tentar de novo: o que já foi movido não se repete.","#b91c1c");
+if(btn){btn.disabled=false;btn.textContent="🔗 Tentar de novo";}
+}
+};
+
+window.guDesfazerJuntar=async uid=>{
+if(!exigePermissao(['admin']))return;
+const sai=guUsuario(uid);if(!sai?.juntadoCom)return;
+const fica=guUsuario(sai.juntadoCom);
+if(!fica){alert("A conta em que esta foi juntada não existe mais.");return;}
+if(fica.juntadoCom){alert(`A conta ${fica.email} também foi juntada em outra depois. Desfaça aquela junção primeiro.`);return;}
+const ant=sai.antesDeJuntar||{};
+if(!confirm(`Desfazer a junção?\n\n${sai.email} volta a ter as próprias reservas e ${ant.ativo===false?"continua inativa":"volta a entrar"}.\n${fica.email} volta ao nome "${ant.ficaNome||fica.nome}" e ao perfil de antes.\n\nReservas criadas depois da junção continuam com ${fica.email}.`))return;
+try{
+const res=await getDocs(query(collection(db,"reservas"),where("professorId","==",fica.id),where("juntadoDe","==",sai.id)));
+const ops=res.docs.map(d=>[d.ref,{professorId:sai.id,juntadoDe:null,professor:ant.nome||sai.nome,professorEmail:sai.email||""}]);
+if(ant.nomeNasReservas&&ant.ficaNome){
+const resFica=await getDocs(query(collection(db,"reservas"),where("professorId","==",fica.id)));
+resFica.docs.forEach(d=>{if(d.data().juntadoDe!==sai.id)ops.push([d.ref,{professor:ant.ficaNome}]);});
+}
+await guGravarEmLotes(ops);
+try{const n=await getDocs(query(collection(db,"notificacoes"),where("userId","==",fica.id),where("juntadoDe","==",sai.id)));
+await guGravarEmLotes(n.docs.map(d=>[d.ref,{userId:sai.id,juntadoDe:null}]));}catch(e){console.warn(e);}
+await updateDoc(doc(db,"usuarios",fica.id),{nome:ant.ficaNome||fica.nome,perfil:ant.ficaPerfil||fica.perfil,ativo:ant.ficaAtivo!==false});
+await updateDoc(doc(db,"usuarios",sai.id),{ativo:ant.ativo!==false,juntadoCom:null,juntadoComEmail:null,antesDeJuntar:null,juntadoDesfeitoEm:Timestamp.now()});
+alert(`✅ Junção desfeita: ${res.size} reserva(s) voltaram para ${sai.email}.`);
+renderGuLista();
+}catch(e){alert("Não foi possível desfazer: "+e.message+"\nNada foi perdido; pode tentar de novo.");}
+};
+
 let _guOrdem="nome";
 window.guSetOrdem=(v)=>{_guOrdem=v;renderGuLista();};
 
 function renderGuLista(){
 const lista=document.getElementById("mod-gu-lista");if(!lista)return;
-const profs=_usuarios.filter(u=>u.perfil!=="admin");
-const admins=_usuarios.filter(u=>u.perfil==="admin");
+const baseGu=_guMostrarInativos?_usuariosTodos:_usuarios;
+const nInativos=_usuariosTodos.filter(u=>u.ativo===false).length;
+const profs=baseGu.filter(u=>u.perfil!=="admin");
+const admins=baseGu.filter(u=>u.perfil==="admin");
 const acessoTs=u=>{if(!u.ultimoAcesso)return 0;return(u.ultimoAcesso?.toDate?u.ultimoAcesso.toDate():new Date(u.ultimoAcesso)).getTime();};
 if(_guOrdem==="acesso")profs.sort((a,b)=>acessoTs(b)-acessoTs(a));
 else profs.sort((a,b)=>(a.nome||"").localeCompare(b.nome||"",'pt-BR'));
 let h='<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px"><p style="font-size:12px;font-weight:800;color:#132318;text-transform:uppercase">Professores ('+profs.length+')</p>'
 +'<div style="display:flex;gap:6px;align-items:center"><span style="font-size:11px;color:#607060;font-weight:700">Ordenar:</span>'
 +'<button onclick="guSetOrdem(\'nome\')" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid '+(_guOrdem==="nome"?"#1a6b47":"#c7dfd4")+';background:'+(_guOrdem==="nome"?"#1a6b47":"#fff")+';color:'+(_guOrdem==="nome"?"#fff":"#607060")+';cursor:pointer;font-weight:700">A-Z</button>'
-+'<button onclick="guSetOrdem(\'acesso\')" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid '+(_guOrdem==="acesso"?"#1a6b47":"#c7dfd4")+';background:'+(_guOrdem==="acesso"?"#1a6b47":"#fff")+';color:'+(_guOrdem==="acesso"?"#fff":"#607060")+';cursor:pointer;font-weight:700">🕐 Último acesso</button></div></div>';
++'<button onclick="guSetOrdem(\'acesso\')" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid '+(_guOrdem==="acesso"?"#1a6b47":"#c7dfd4")+';background:'+(_guOrdem==="acesso"?"#1a6b47":"#fff")+';color:'+(_guOrdem==="acesso"?"#fff":"#607060")+';cursor:pointer;font-weight:700">🕐 Último acesso</button>'
++'<button onclick="guToggleInativos()" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid '+(_guMostrarInativos?"#b45309":"#c7dfd4")+';background:'+(_guMostrarInativos?"#fffbeb":"#fff")+';color:'+(_guMostrarInativos?"#92400e":"#607060")+';cursor:pointer;font-weight:700">'+(_guMostrarInativos?'🙈 Esconder inativos':'👁 Mostrar inativos ('+nInativos+')')+'</button></div></div>'
++'<input id="gu-busca" type="search" placeholder="🔍 Buscar por nome ou e-mail" oninput="guFiltrar(this.value)" style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid #c7dfd4;font-size:13px;outline:none;box-sizing:border-box;margin-bottom:10px">';
 if(!profs.length)h+='<p style="font-size:13px;color:#607060;text-align:center;padding:20px">Nenhum professor cadastrado.</p>';
 else{
 h+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:#f8faf8">';
@@ -5702,11 +5909,11 @@ h+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collap
     ['Nome','E-mail','Perfil','Status','Último acesso','Ações'].forEach(t=>{h+='<th style="padding:8px 12px;text-align:left;color:#607060;font-weight:700;border-bottom:2px solid #c7dfd4;font-size:11px;text-transform:uppercase">'+t+'</th>';});
 h+='</tr></thead><tbody>';
 profs.forEach((u,i)=>{
-h+='<tr style="background:'+(i%2===0?'#fff':'#f8faf8')+'">';
+h+='<tr data-busca="'+guTextoBusca(u)+'" style="background:'+(u.ativo===false?'#fafafa':i%2===0?'#fff':'#f8faf8')+';'+(u.ativo===false?'opacity:.85':'')+'">';
 h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb;color:#132318;font-weight:600">'+u.nome+'</td>';
 h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb;color:#607060;font-size:12px">'+u.email+'</td>';
 h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:#e0e7ff;color:#3730a3">'+(u.perfil==="fotografo"||u.perfil==="marketing"?"📸 Marketing":u.perfil==="ti"?"💻 T.I.":u.perfil==="maker"?"🔨 Maker":u.perfil==="laboratorista"?"🔬 Laboratorista":u.perfil==="coord_inf"?"👶 Coord. Inf.":u.perfil==="coord_fund1"?"📚 Coord. Fund.1":u.perfil==="coord_fund2"?"🎓 Coord. Fund.2":u.perfil==="coord_ti"?"🖥️ Coord. T.I.":u.perfil==="coordenador"?"🧭 Coordenador":"👨‍🏫 Professor")+'</span></td>';
-h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:'+(u.ativo!==false?'#e2f4ea':'#fef2f2')+';color:'+(u.ativo!==false?'#0f4c2b':'#7f1d1d')+'">'+(u.ativo!==false?'● Ativo':'○ Inativo')+'</span></td>';
+h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:'+(u.ativo!==false?'#e2f4ea':'#fef2f2')+';color:'+(u.ativo!==false?'#0f4c2b':'#7f1d1d')+'">'+(u.ativo!==false?'● Ativo':'○ Inativo')+'</span>'+(u.juntadoCom?'<br><span style="font-size:10.5px;color:#607060">🔗 juntada em '+GU_ESC(u.juntadoComEmail||'')+'</span>':'')+'</td>';
       h+=(()=>{
         if(!u.ultimoAcesso)return'<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb;color:#94a3b8;font-size:12px">—</td>';
         const ts=u.ultimoAcesso?.toDate?u.ultimoAcesso.toDate():new Date(u.ultimoAcesso);
@@ -5721,14 +5928,19 @@ h+='<td style="padding:9px 12px;border-bottom:1px solid #e2f0eb"><div style="dis
 h+='<button data-uid="'+u.id+'" data-ativo="'+(u.ativo!==false?'1':'0')+'" data-nome="'+u.nome+'" class="gu-toggle-btn" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid '+(u.ativo!==false?'#fed7aa':'#6ee7a0')+';background:'+(u.ativo!==false?'#fff7ed':'#e2f4ea')+';color:'+(u.ativo!==false?'#7c2d12':'#0f4c2b')+';cursor:pointer;font-weight:700">'+(u.ativo!==false?'🔒 Desativar':'🔓 Ativar')+'</button>';
 h+='<button data-email="'+u.email+'" class="gu-senha-btn" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid #c7dfd4;background:#fff;color:#607060;cursor:pointer;font-weight:700">🔑 Senha</button>';
 h+='<button data-email="'+u.email+'" class="gu-reset123-btn" title="Reseta a senha para 123456 via GitHub (não depende de e-mail)" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid #ddd6fe;background:#f5f3ff;color:#5b21b6;cursor:pointer;font-weight:700">🔄 Reset 123456</button>';
-h+='<button data-uid="'+u.id+'" data-nome="'+u.nome.replace(/"/g,'&quot;')+'" data-email="'+u.email.replace(/"/g,'&quot;')+'" data-perfil="'+u.perfil+'" class="gu-editar-btn" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid #bfdbfe;background:#eff6ff;color:#1e40af;cursor:pointer;font-weight:700">✏️ Editar</button>';
+h+='<button data-uid="'+u.id+'" data-nome="'+(u.nome||'').replace(/"/g,'&quot;')+'" data-email="'+(u.email||'').replace(/"/g,'&quot;')+'" data-perfil="'+u.perfil+'" class="gu-editar-btn" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid #bfdbfe;background:#eff6ff;color:#1e40af;cursor:pointer;font-weight:700">✏️ Editar</button>';
+h+=u.juntadoCom
+?'<button onclick="guDesfazerJuntar(\''+u.id+'\')" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid #fecaca;background:#fff;color:#b91c1c;cursor:pointer;font-weight:700">↩️ Desfazer junção</button>'
+:'<button onclick="guAbrirJuntar(\''+u.id+'\')" title="Juntar com outra conta da mesma pessoa" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid #c7dfd4;background:#f0faf4;color:#0f4c2b;cursor:pointer;font-weight:700">🔗 Juntar</button>';
 h+='</div></td></tr>';
 });
 h+='</tbody></table></div>';
 }
 if(admins.length){
 h+='<div style="margin-top:16px;background:#f5f3ff;border-radius:10px;padding:14px 16px"><p style="font-size:11px;font-weight:700;color:#6d28d9;text-transform:uppercase;margin-bottom:8px">Administradores</p>';
-admins.forEach(u=>{h+='<div style="display:flex;align-items:center;gap:10px;padding:4px 0"><span style="font-size:13px;font-weight:600;color:#132318">'+u.nome+'</span><span style="font-size:12px;color:#607060">'+u.email+'</span></div>';});
+admins.forEach(u=>{h+='<div data-busca="'+guTextoBusca(u)+'" style="display:flex;align-items:center;gap:10px;padding:4px 0;flex-wrap:wrap"><span style="font-size:13px;font-weight:600;color:#132318">'+u.nome+'</span><span style="font-size:12px;color:#607060">'+u.email+'</span>'+(u.ativo===false?'<span style="font-size:11px;color:#b91c1c;font-weight:700">○ Inativo</span>':'')
++'<span style="margin-left:auto;display:flex;gap:5px"><button data-uid="'+u.id+'" data-nome="'+(u.nome||'').replace(/"/g,'&quot;')+'" data-email="'+(u.email||'').replace(/"/g,'&quot;')+'" data-perfil="'+u.perfil+'" class="gu-editar-btn" style="font-size:11px;padding:3px 9px;border-radius:6px;border:1.5px solid #bfdbfe;background:#eff6ff;color:#1e40af;cursor:pointer;font-weight:700">✏️ Editar</button>'
++(u.juntadoCom?'<button onclick="guDesfazerJuntar(\''+u.id+'\')" style="font-size:11px;padding:3px 9px;border-radius:6px;border:1.5px solid #fecaca;background:#fff;color:#b91c1c;cursor:pointer;font-weight:700">↩️ Desfazer junção</button>':'<button onclick="guAbrirJuntar(\''+u.id+'\')" style="font-size:11px;padding:3px 9px;border-radius:6px;border:1.5px solid #c7dfd4;background:#f0faf4;color:#0f4c2b;cursor:pointer;font-weight:700">🔗 Juntar</button>')+'</span></div>';});
 h+='</div>';
 }
 // Modal de edição inline
@@ -5742,6 +5954,7 @@ h+='<input id="gu-edit-email" type="email" style="width:100%;padding:9px 12px;bo
 h+='<p id="gu-edit-aviso" style="font-size:11px;color:#92400e;background:#fffbeb;border-radius:6px;padding:6px 10px;margin-bottom:14px">⚠️ Alterar o e-mail não muda o login do Firebase. O usuário continuará entrando com o e-mail antigo até fazer novo cadastro.</p>';
 h+='<label style="font-size:11px;font-weight:700;color:#607060;text-transform:uppercase">Perfil</label>';
 h+='<select id="gu-edit-perfil" style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid #c7dfd4;font-size:13.5px;outline:none;box-sizing:border-box;margin:5px 0 14px;cursor:pointer">';
+h+='<option value="admin">⭐ Admin</option>';
 h+='<option value="professor">👨‍🏫 Professor</option>';
 h+='<option value="coord_inf">👶 Coord. Infantil</option>';
 h+='<option value="coord_fund1">📚 Coord. Fund. 1</option>';
@@ -5754,6 +5967,7 @@ h+='<option value="maker">🔨 Maker (Maker 1 + 2)</option>';
 h+='<option value="laboratorista">🔬 Laboratorista (Labs Iniciais + Finais)</option>';
 h+='<option value="sem_acesso">🔒 Sem acesso</option>';
 h+='</select>';
+h+='<label style="display:flex;gap:8px;align-items:center;font-size:12.5px;color:#374151;margin:-4px 0 12px;cursor:pointer"><input id="gu-edit-nomeres" type="checkbox" checked style="accent-color:#1a6b47;width:16px;height:16px;margin:0">Se o nome mudar, atualizar também nas reservas dessa pessoa</label>';
 h+='<div id="gu-edit-flash" style="margin-bottom:10px"></div>';
 h+='<div style="display:flex;gap:10px;justify-content:flex-end">';
 h+='<button id="gu-edit-cancelar" style="padding:8px 18px;border-radius:8px;border:1.5px solid #c7dfd4;background:#fff;color:#607060;cursor:pointer;font-weight:700;font-size:13px">Cancelar</button>';
@@ -5811,8 +6025,16 @@ if(!nome||!email){flash.innerHTML='<p style="color:#7f1d1d;font-size:12px">Preen
 if(!_editUID){return;}
 const btn=document.getElementById('gu-edit-salvar');
 btn.disabled=true;btn.textContent='Salvando...';
+const nomeAntes=(guUsuario(_editUID)||{}).nome;
+const atualizarRes=!!document.getElementById('gu-edit-nomeres')?.checked&&nomeAntes!==nome;
 updateDoc(doc(db,'usuarios',_editUID),{nome,email,perfil})
-.then(()=>{
+.then(async()=>{
+if(atualizarRes){
+btn.textContent='Atualizando reservas...';
+try{const rs=await getDocs(query(collection(db,'reservas'),where('professorId','==',_editUID)));
+await guGravarEmLotes(rs.docs.filter(d=>d.data().professor!==nome).map(d=>[d.ref,{professor:nome}]));}
+catch(e){flash.innerHTML='<p style="color:#92400e;font-size:12px">Nome salvo, mas não deu para atualizar as reservas: '+e.message+'</p>';btn.disabled=false;btn.textContent='💾 Salvar';return;}
+}
 flash.innerHTML='<p style="color:#0f4c2b;font-size:12px">✅ Salvo com sucesso!</p>';
 btn.disabled=false;btn.textContent='💾 Salvar';
 setTimeout(()=>{document.getElementById('mod-gu-edit').style.display='none';renderGuLista();},900);
@@ -5989,14 +6211,16 @@ _minhas=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>!r.reservaAutomatica
 // conectada. Tempo real só liga especificamente enquanto a tela "Gerenciar
 // Usuários" está aberta — ver iniciarUsuariosLive()/pararUsuariosLive().
 getDocs(collection(db,"usuarios")).then(snap=>{
-_usuarios=snap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>u.ativo!==false);
+_usuariosTodos=snap.docs.map(d=>({id:d.id,...d.data()}));
+_usuarios=_usuariosTodos.filter(u=>u.ativo!==false);
 re();
 }).catch(e=>console.error("Erro ao carregar usuarios:",e));
 }
 function iniciarUsuariosLive(){
 if(_unsub3)return;
 _unsub3=onSnapshot(collection(db,"usuarios"),snap=>{
-_usuarios=snap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>u.ativo!==false);
+_usuariosTodos=snap.docs.map(d=>({id:d.id,...d.data()}));
+_usuarios=_usuariosTodos.filter(u=>u.ativo!==false);
 if(document.getElementById("mod-gu-lista"))renderGuLista();
 re();
 });
