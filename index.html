@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20261019080000"/>
-<meta name="app-build-perfis" content="admin,ti,marketing"/>
-<meta name="app-build-mensagem" content="Nova aba ⏰ Vencidos: pedidos cujo horário já passou e que nunca foram aprovados nem recusados. Eles saem de Pendentes."/>
+<meta name="app-build" content="20261019083000"/>
+<meta name="app-build-perfis" content="admin,marketing"/>
+<meta name="app-build-mensagem" content="Agendamentos do espaço Equipe de Marketing agora dependem só do Marketing (mesmo com menos de 24h): não entram mais nos Pendentes do admin, e a aprovação do Marketing já confirma."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -434,7 +434,11 @@ return false;
 function isFds(data){
 try{const[a,m,d]=data.split("-").map(Number);const dow=new Date(a,m-1,d).getDay();return dow===0||dow===6;}catch{return false;}
 }
+// Agendamento do espaço "Equipe de Marketing" só depende do Marketing, mesmo com menos
+// de 24h ou no fim de semana: nunca entra nos Pendentes/Urgentes do Admin.
+function soMarketing(r){return r?.espaco==="Equipe de Marketing";}
 function precisaAdmin(r){
+if(soMarketing(r))return false;
 if(isUrgente(r.data,r.horario)||isFds(r.data))return true;
 // Reserva pendente sem urgência/fim de semana, mas que NUNCA teve componente de T.I. nem de
 // Marketing associado (ex: bloqueio de espaço criado direto pelo Admin, sem equipamento/mídia) —
@@ -460,6 +464,11 @@ async function tentarConfirmarAuto(rAtual){
 try{
 if(!rAtual)return"pendente";
 if(rAtual.status!=="pendente")return rAtual.status;
+// "Equipe de Marketing": o pedido inteiro é do Marketing — recusou, o agendamento fica recusado
+if(soMarketing(rAtual)&&rAtual.statusMarketing==="recusado"){
+await updateDoc(doc(db,"reservas",rAtual.id),{status:"recusado"});
+return"recusado";
+}
 if(precisaAdmin(rAtual))return"pendente";
 const equipOk=rAtual.statusEquip===undefined||rAtual.statusEquip==null||rAtual.statusEquip!=="pendente";
 const midiaOk=rAtual.statusMarketing===undefined||rAtual.statusMarketing==null||rAtual.statusMarketing!=="pendente";
@@ -4940,7 +4949,15 @@ h+=`<p style="font-size:10.5px;color:${c.textMuted};margin:6px 2px 0;line-height
 return h+`</div>`;
 }
 
+// Pedidos do "Equipe de Marketing" que o Marketing já respondeu mas ficaram parados
+// como pendentes esperando o Admin (regra antiga): resolve uma vez, como o Marketing decidiu.
+const _soMktCorrigidos=new Set();
+function corrigirSoMarketingParados(){
+_todas.filter(r=>soMarketing(r)&&r.status==="pendente"&&!r.reservaAutomatica&&(r.statusMarketing==="aprovado"||r.statusMarketing==="recusado")&&!_soMktCorrigidos.has(r.id))
+.forEach(r=>{_soMktCorrigidos.add(r.id);tentarConfirmarAuto(r).catch(e=>console.warn("corrigir Equipe de Marketing:",e));});
+}
 function renderAdminView(){
+if(exigePermissao(['admin']))corrigirSoMarketingParados();
 const c=C(),h=fmtHoje();
 if(!_A.mesCal){const d=new Date();_A.mesCal={a:d.getFullYear(),m:d.getMonth()};}
 carregarMetricaUso();
@@ -4951,7 +4968,7 @@ if(_A.fProf&&r.professor!==_A.fProf)return false;
 if(_A.fStatus&&r.status!==_A.fStatus)return false;
 return true;
 });
-const urgentes=_todas.filter(r=>r.status==="pendente"&&!r.reservaAutomatica&&isUrgente(r.data,r.horario));
+const urgentes=_todas.filter(r=>r.status==="pendente"&&!r.reservaAutomatica&&!soMarketing(r)&&isUrgente(r.data,r.horario));
 const pend=_todas.filter(r=>r.status==="pendente"&&!r.reservaAutomatica&&precisaAdmin(r)).length;
 const hoje_rs=_todas.filter(r=>r.data===h&&r.status!=="recusado"&&!r.reservaAutomatica).length;
 // Contadores de pendentes por área, usados nas abas Marketing/T.I./Tablets — mesma lógica dos filtros internos de cada aba
@@ -5044,8 +5061,8 @@ html+=`<div style="min-height:90px;border-right:1px solid ${c.borderLight};borde
 const ds=`${ano}-${String(mes+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
 const isPast=ds<h,isH=ds===h,isSel=ds===_A.diaSel;
 const rsdia=porData[ds]||[];
-const urg=rsdia.filter(r=>isUrgente(r.data,r.horario));
-const pend=rsdia.filter(r=>r.status==="pendente"&&!isUrgente(r.data,r.horario));
+const urg=rsdia.filter(r=>!soMarketing(r)&&isUrgente(r.data,r.horario));
+const pend=rsdia.filter(r=>r.status==="pendente"&&!soMarketing(r)&&!isUrgente(r.data,r.horario));
 const conf=rsdia.filter(r=>r.status==="confirmado");
 const dow=new Date(Date.UTC(ano,mes,d)).getUTCDay();
 if(calMobile&&(dow===0||dow===6))return;
@@ -5089,9 +5106,9 @@ html+=`<div class="fade-in" style="margin-top:14px;background:${c.surface};borde
 
 // ── AGENDA ──
 if(_A.modoVisu==="agenda"){
-const urg=filtradas.filter(r=>r.status==="pendente"&&isUrgente(r.data,r.horario)&&(!_A.fData||r.data===_A.fData));
+const urg=filtradas.filter(r=>r.status==="pendente"&&!soMarketing(r)&&isUrgente(r.data,r.horario)&&(!_A.fData||r.data===_A.fData));
 const pend=filtradas.filter(r=>r.status==="pendente"&&!isUrgente(r.data,r.horario)&&precisaAdmin(r)&&(!_A.fData||r.data===_A.fData));
-const aguardandoAreas=filtradas.filter(r=>r.status==="pendente"&&!precisaAdmin(r)&&(!_A.fData||r.data===_A.fData));
+const aguardandoAreas=filtradas.filter(r=>r.status==="pendente"&&!soMarketing(r)&&!precisaAdmin(r)&&(!_A.fData||r.data===_A.fData));
 const conf=filtradas.filter(r=>r.status!=="pendente"&&(_A.historico||r.data>=h)&&(!_A.fData||r.data===_A.fData)&&(!_A.fDataAte||r.data<=_A.fDataAte));
 
 html+=`<div style="display:flex;gap:4px;margin-bottom:16px;background:${c.surface};border-radius:10px;padding:4px;border:1px solid ${c.border};width:fit-content;flex-wrap:wrap">
