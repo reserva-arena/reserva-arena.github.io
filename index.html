@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20261012115500"/>
-<meta name="app-build-perfis" content="admin"/>
-<meta name="app-build-mensagem" content="Gerenciar usuários: a tabela agora cabe na tela sem rolar para os lados, e há o botão 🗑️ Excluir inativas sem uso (só contas inativas, sem reservas e que não foram juntadas; baixa uma cópia antes)."/>
+<meta name="app-build" content="20261019080000"/>
+<meta name="app-build-perfis" content="admin,ti,marketing"/>
+<meta name="app-build-mensagem" content="Nova aba ⏰ Vencidos: pedidos cujo horário já passou e que nunca foram aprovados nem recusados. Eles saem de Pendentes."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -1081,6 +1081,31 @@ if(!rec.length)return vazio("🎉","Nenhuma solicitação recusada.");
 const lim=_MK.reprovLim||15;
 return titulo(`❌ Recusadas · ${rec.length}`,"#b91c1c")+rec.slice(0,lim).map(r=>mkCard(r,false,"recusada")).join("")+(rec.length>lim?maisBtn("reprovLim",rec.length-lim):"");
 }
+// ── Vencidos: pedidos cujo horário já passou e que ninguém aprovou nem recusou ──
+// "Já passou" = data anterior a hoje, ou hoje com o horário de término já passado.
+function jaPassouHorario(r){
+const h=fmtHoje();
+if(!r||!r.data)return false;
+if(r.data<h)return true;
+if(r.data>h)return false;
+const fim=String(r.horarioFim||r.horario||"").slice(0,5);
+if(!fim)return false;
+const n=new Date(),agora=String(n.getHours()).padStart(2,"0")+":"+String(n.getMinutes()).padStart(2,"0");
+return fim<agora;
+}
+const _ordemRecente=(a,b)=>a.data<b.data?1:a.data>b.data?-1:(a.horario<b.horario?1:-1);
+function mkVencidos(){
+return _mktGlobal.filter(r=>r.statusMarketing==="pendente"&&r.status!=="recusado"&&!r.reservaAutomatica&&(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&jaPassouHorario(r)).sort(_ordemRecente);
+}
+function tiVencidos(){
+return _tiGlobal.filter(r=>r.statusEquip==="pendente"&&r.status!=="recusado"&&!r.reservaAutomatica&&jaPassouHorario(r)).sort(_ordemRecente);
+}
+function rotuloVencidos(n){return `⏰ Vencidos${n?` <span style="background:#dc2626;color:#fff;border-radius:10px;padding:0 7px;margin-left:2px;font-size:11.5px">${n}</span>`:""}`;}
+function avisoVencidosHTML(c,quem){
+return `<div style="background:#fef2f2;border:1.5px solid #fecaca;border-radius:10px;padding:10px 14px;margin-bottom:14px"><p style="font-size:13px;font-weight:800;color:#b91c1c;margin-bottom:2px">⏰ Vencidos: nunca aprovados nem recusados</p><p style="font-size:12px;color:#7f1d1d;line-height:1.45">O horário destes pedidos já passou e ${quem} não respondeu. <strong>Aprove</strong> se o atendimento aconteceu, ou <strong>recuse</strong> para tirar da lista. Eles não aparecem mais em Pendentes.</p></div>`;
+}
+function semVencidosHTML(c){return `<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">🎉</p><p style="margin-top:12px;font-size:14px">Nenhum pedido vencido sem resposta.</p></div>`;}
+
 function renderMarketingInline(){
 const c=C(),h=fmtHoje();
 if(!window._MK)window._MK={aba:"hoje",historico:false,feedExp:false};
@@ -1117,23 +1142,24 @@ return`<div style="background:${c.surface};border-radius:12px;border:1.5px solid
 };
 const minhas=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&(_MK.historico||r.data>=h)&&r.status!=="recusado"&&!r.reservaAutomatica).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
 const hojeList=minhas.filter(r=>r.data===h);
-const pendentes=minhas.filter(r=>r.statusMarketing==="pendente"&&r.data>=h);
-const mkPVenc=minhas.filter(r=>r.statusMarketing==="pendente"&&r.data<h);
+const pendentes=minhas.filter(r=>r.statusMarketing==="pendente"&&r.data>=h&&!jaPassouHorario(r));
+const mkPVenc=mkVencidos();
 const btnAba=(id,l)=>`<button onclick="mkSetAba('${id}')" style="padding:7px 16px;font-size:12.5px;border-radius:8px;border:1.5px solid ${_MK.aba===id?'#7c3aed':c.border};background:${_MK.aba===id?'#7c3aed':'transparent'};color:${_MK.aba===id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">${l}</button>`;
 let corpo="";
 if(_MK.aba==="hoje"){
 if(hojeList.length)corpo+=hojeList.map(r=>mkCard(r,r.statusMarketing==="pendente")).join("");
 else corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">📸</p><p style="margin-top:12px">Nenhuma solicitação hoje.</p></div>`;
 } else if(_MK.aba==="pendentes"){
-if(mkPVenc.length)corpo+=`<div style="margin-bottom:16px"><p style="font-size:12px;font-weight:800;color:#dc2626;text-transform:uppercase;margin-bottom:10px">⚠️ Vencidos — nunca aprovados (${mkPVenc.length})</p>${mkPVenc.map(r=>mkCard(r,true)).join("")}</div>`;
 if(pendentes.length)corpo+=pendentes.map(r=>mkCard(r,true)).join("");
-if(!pendentes.length&&!mkPVenc.length)corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">🎉</p><p style="margin-top:12px">Nenhum pendente.</p></div>`;
+if(!pendentes.length)corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">🎉</p><p style="margin-top:12px">Nenhum pendente.</p></div>`;
+} else if(_MK.aba==="vencidos"){
+corpo+=mkPVenc.length?avisoVencidosHTML(c,"o Marketing")+mkPVenc.map(r=>mkCard(r,true)).join(""):semVencidosHTML(c);
 } else if(_MK.aba==="aprovados"||_MK.aba==="reprovados"){
 corpo+=mkAbaHistoricoHTML(_MK.aba,c,h,mkCard);
 }
 return`<div style="padding:4px 0">
    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-     <div style="display:flex;gap:6px;flex-wrap:wrap">${btnAba("hoje",`📅 Hoje · ${hojeList.length}`)}${btnAba("pendentes",`⏳ Pendentes${pendentes.length?` · ${pendentes.length}`:""}`)}${btnAba("aprovados","✅ Aprovados")}${btnAba("reprovados","❌ Reprovados")}</div>
+     <div style="display:flex;gap:6px;flex-wrap:wrap">${btnAba("hoje",`📅 Hoje · ${hojeList.length}`)}${btnAba("pendentes",`⏳ Pendentes${pendentes.length?` · ${pendentes.length}`:""}`)}${btnAba("vencidos",rotuloVencidos(mkPVenc.length))}${btnAba("aprovados","✅ Aprovados")}${btnAba("reprovados","❌ Reprovados")}</div>
      <button onclick="window._MK.historico=!window._MK.historico;if(window._MK.historico)carregarTodas();else{mesclarTodasAdmin();}re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_MK.historico?c.navy:'transparent'};color:${_MK.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_MK.historico?"Ocultar hist.":"Ver histórico"}</button>
    </div>
    ${pendentes.length&&(_MK.aba==="aprovados"||_MK.aba==="reprovados")?`<div style="background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="mkSetAba('pendentes')"><p style="font-size:13px;font-weight:700;color:#7c3aed">⏳ ${pendentes.length} solicitaç${pendentes.length===1?"ão":"ões"} aguardando aprovação — Ver agora →</p></div>`:""}
@@ -1147,7 +1173,8 @@ if(!window._TI)window._TI={aba:"minhas",historico:false,feedExp:false};
 const btnAba=(id,l)=>`<button onclick="tiSetAba('${id}')" style="padding:7px 16px;font-size:12.5px;border-radius:8px;border:1.5px solid ${_TI.aba===id?'#0369a1':c.border};background:${_TI.aba===id?'#0369a1':'transparent'};color:${_TI.aba===id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${l}</button>`;
 window.tiSetAba=(v)=>{_TI.aba=v;re();};
 const minhas=_todas.filter(r=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);return(eo?.tipo==="audiovisual"||r.statusEquip!==undefined)&&!r.reservaAutomatica&&(_TI.historico||r.data>=h);}).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
-const pendentes=minhas.filter(r=>r.statusEquip==="pendente"||(!r.statusEquip&&(r.status==="pendente")));
+const pendentes=minhas.filter(r=>(r.statusEquip==="pendente"||(!r.statusEquip&&(r.status==="pendente")))&&!jaPassouHorario(r));
+const tiPVenc=tiVencidos();
 const proxTI=minhas.filter(r=>r.data>=h).slice(0,2);
 let feedTIHtml="";
 if(proxTI.length){
@@ -1174,7 +1201,9 @@ itens+"</div>";
 const limite7=(()=>{const dd=new Date(h+"T12:00:00");dd.setDate(dd.getDate()+7);return dd.toISOString().slice(0,10);})();
 const confirmados=minhas.filter(r=>(r.statusEquip==="aprovado"||(r.status==="confirmado"&&!r.statusEquip))&&(_TI.historico||r.data<=limite7));
 let corpo="";
-if(_TI.aba==="minhas"){
+if(_TI.aba==="vencidos"){
+corpo+=tiPVenc.length?avisoVencidosHTML(c,"a T.I.")+tiPVenc.map(r=>tiCard(r,true)).join(""):semVencidosHTML(c);
+} else if(_TI.aba==="minhas"){
 if(pendentes.length)corpo+=`<div style="margin-bottom:20px"><div style="margin-bottom:10px"><span style="background:#ea580c;color:#fff;font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px">⏳ PENDENTES — ${pendentes.length}</span></div>${pendentes.map(r=>tiCard(r,true)).join("")}</div>`;
 if(confirmados.length)corpo+=`<div><p style="font-size:12px;font-weight:800;color:${c.green};text-transform:uppercase;margin-bottom:10px">✅ Confirmados (${confirmados.length})</p>${confirmados.map(r=>tiCard(r,false)).join("")}</div>`;
 if(!minhas.length)corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">🔊</p><p style="margin-top:12px">Nenhum agendamento de Som, Microfone e Projetor.</p></div>`;
@@ -1186,7 +1215,7 @@ Object.entries(pd).forEach(([data,rs])=>{const[a2,m2,d2]=data.split("-");const i
 }
 return`<div style="padding:4px 0">
    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-     <div style="display:flex;gap:6px">${btnAba("minhas","🔊 Minhas solicitações")}${btnAba("todos","📅 Todos agendamentos")}</div>
+     <div style="display:flex;gap:6px">${btnAba("minhas","🔊 Minhas solicitações")}${btnAba("vencidos",rotuloVencidos(tiPVenc.length))}${btnAba("todos","📅 Todos agendamentos")}</div>
      <button onclick="window._TI.historico=!window._TI.historico;if(window._TI.historico)carregarTodas();else{mesclarTodasAdmin();}re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_TI.historico?c.navy:'transparent'};color:${_TI.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_TI.historico?"Ocultar hist.":"Ver histórico"}</button>
    </div>
    ${pendentes.length&&_TI.aba==="todos"?`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="tiSetAba('minhas')"><p style="font-size:13px;font-weight:700;color:#c2410c">⏳ ${pendentes.length} agendamento${pendentes.length===1?"":"s"} aguardando aprovação — Ver agora →</p></div>`:""}
@@ -1400,17 +1429,18 @@ return`<div style="background:${c.surface};border-radius:12px;border:1.5px solid
 // Filtro por aba
 const minhas=_todas.filter(r=>(r.precisaFoto||r.precisaVideo||r.espaco==="Equipe de Marketing")&&(_MK.historico||r.data>=h)&&r.status!=="recusado"&&!r.reservaAutomatica).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
 const hojeList=minhas.filter(r=>r.data===h);
-const pendentes=minhas.filter(r=>r.statusMarketing==="pendente"&&r.data>=h);
-const mkPVenc=minhas.filter(r=>r.statusMarketing==="pendente"&&r.data<h);
+const pendentes=minhas.filter(r=>r.statusMarketing==="pendente"&&r.data>=h&&!jaPassouHorario(r));
+const mkPVenc=mkVencidos();
 const btnAba=(id,l)=>`<button onclick="window._MK.aba='${id}';re()" style="padding:7px 16px;font-size:12.5px;border-radius:8px;border:1.5px solid ${_MK.aba===id?'#7c3aed':c.border};background:${_MK.aba===id?'#7c3aed':'transparent'};color:${_MK.aba===id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">${l}</button>`;
 let corpo="";
 if(_MK.aba==="hoje"){
 if(hojeList.length)corpo+=hojeList.map(r=>mkCard(r,r.statusMarketing==="pendente")).join("");
 else corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">📸</p><p style="margin-top:12px;font-size:14px">Nenhuma solicitação hoje.</p></div>`;
 } else if(_MK.aba==="pendentes"){
-if(mkPVenc.length)corpo+=`<div style="margin-bottom:16px"><p style="font-size:12px;font-weight:800;color:#dc2626;text-transform:uppercase;margin-bottom:10px">⚠️ Vencidos — nunca aprovados (${mkPVenc.length})</p>${mkPVenc.map(r=>mkCard(r,true)).join("")}</div>`;
 if(pendentes.length)corpo+=pendentes.map(r=>mkCard(r,true)).join("");
-if(!pendentes.length&&!mkPVenc.length)corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">🎉</p><p style="margin-top:12px;font-size:14px">Nenhum pendente.</p></div>`;
+if(!pendentes.length)corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">🎉</p><p style="margin-top:12px;font-size:14px">Nenhum pendente.</p></div>`;
+} else if(_MK.aba==="vencidos"){
+corpo+=mkPVenc.length?avisoVencidosHTML(c,"o Marketing")+mkPVenc.map(r=>mkCard(r,true)).join(""):semVencidosHTML(c);
 } else if(_MK.aba==="aprovados"||_MK.aba==="reprovados"){
 corpo+=mkAbaHistoricoHTML(_MK.aba,c,h,mkCard);
 }
@@ -1421,7 +1451,7 @@ $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="
    </header>
    <div class="desktop-zoom" style="max-width:1000px;margin:0 auto;padding:16px 14px">
      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-       <div style="display:flex;gap:6px;flex-wrap:wrap">${btnAba("hoje",`📅 Hoje · ${hojeList.length}`)}${btnAba("pendentes",`⏳ Pendentes${pendentes.length?` · ${pendentes.length}`:""}`)}${btnAba("aprovados","✅ Aprovados")}${btnAba("reprovados","❌ Reprovados")}</div>
+       <div style="display:flex;gap:6px;flex-wrap:wrap">${btnAba("hoje",`📅 Hoje · ${hojeList.length}`)}${btnAba("pendentes",`⏳ Pendentes${pendentes.length?` · ${pendentes.length}`:""}`)}${btnAba("vencidos",rotuloVencidos(mkPVenc.length))}${btnAba("aprovados","✅ Aprovados")}${btnAba("reprovados","❌ Reprovados")}</div>
        <button onclick="window._MK.historico=!window._MK.historico;if(window._MK.historico)carregarTodas();else{mesclarTodasAdmin();}re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_MK.historico?c.navy:'transparent'};color:${_MK.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_MK.historico?"Ocultar hist.":"Ver histórico"}</button>
      </div>
      ${pendentes.length&&(_MK.aba==="aprovados"||_MK.aba==="reprovados")?`<div style="background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="mkSetAba('pendentes')"><p style="font-size:13px;font-weight:700;color:#7c3aed">⏳ ${pendentes.length} solicitaç${pendentes.length===1?"ão":"ões"} aguardando sua aprovação — Ver agora →</p></div>`:""}
@@ -1497,12 +1527,15 @@ const c=C(),h=fmtHoje();
 if(!window._TI)window._TI={aba:"minhas",historico:false};
 const btnAba=(id,l)=>`<button onclick="window._TI.aba='${id}';re()" style="padding:7px 16px;font-size:12.5px;border-radius:8px;border:1.5px solid ${_TI.aba===id?'#0369a1':c.border};background:${_TI.aba===id?'#0369a1':'transparent'};color:${_TI.aba===id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit">${l}</button>`;
 const minhas=_todas.filter(r=>{const eo=ESPACOS.find(e=>e.nome===r.espaco);return (eo?.tipo==="audiovisual"||r.statusEquip!==undefined)&&(_TI.historico||r.data>=h)&&!r.reservaAutomatica;}).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
-const pendentes=minhas.filter(r=>r.statusEquip==="pendente"||(r.statusEquip===undefined&&r.status==="pendente"));
+const pendentes=minhas.filter(r=>(r.statusEquip==="pendente"||(r.statusEquip===undefined&&r.status==="pendente"))&&!jaPassouHorario(r));
+const tiPVenc=tiVencidos();
 const limite7=(()=>{const dd=new Date(h+"T12:00:00");dd.setDate(dd.getDate()+7);return dd.toISOString().slice(0,10);})();
 const confirmados=minhas.filter(r=>!(r.statusEquip==="pendente"||(r.statusEquip===undefined&&r.status==="pendente"))&&(_TI.historico||r.data<=limite7));
 const todos=_todas.filter(r=>(_TI.historico||r.data>=h)&&r.status!=="recusado"&&!r.reservaAutomatica).sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
 let corpo="";
-if(_TI.aba==="minhas"){
+if(_TI.aba==="vencidos"){
+corpo+=tiPVenc.length?avisoVencidosHTML(c,"a T.I.")+tiPVenc.map(r=>tiCard(r,true)).join(""):semVencidosHTML(c);
+} else if(_TI.aba==="minhas"){
 if(pendentes.length)corpo+=`<div style="margin-bottom:20px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="background:#ea580c;color:#fff;font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px">⏳ PENDENTES — ${pendentes.length}</span></div>${pendentes.map(r=>tiCard(r,true)).join("")}</div>`;
 if(confirmados.length)corpo+=`<div><p style="font-size:12px;font-weight:800;color:${c.green};text-transform:uppercase;margin-bottom:10px">✅ Confirmados (${confirmados.length})</p>${confirmados.map(r=>tiCard(r,false)).join("")}</div>`;
 if(!minhas.length)corpo+=`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">🔊</p><p style="margin-top:12px;font-size:14px">Nenhum agendamento de Som, Microfone e Projetor.</p></div>`;
@@ -1523,7 +1556,7 @@ $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="
    </header>
    <div class="desktop-zoom" style="max-width:1000px;margin:0 auto;padding:16px 14px">
      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-       <div style="display:flex;gap:6px">${btnAba("minhas","🔊 Minhas solicitações")}${btnAba("todos","📅 Todos agendamentos")}</div>
+       <div style="display:flex;gap:6px">${btnAba("minhas","🔊 Minhas solicitações")}${btnAba("vencidos",rotuloVencidos(tiPVenc.length))}${btnAba("todos","📅 Todos agendamentos")}</div>
        <button onclick="window._TI.historico=!window._TI.historico;if(window._TI.historico)carregarTodas();else{mesclarTodasAdmin();}re()" style="font-size:11px;padding:5px 12px;border-radius:20px;border:1.5px solid ${c.border};background:${_TI.historico?c.navy:'transparent'};color:${_TI.historico?'#fff':c.textMid};cursor:pointer;font-weight:700">🕐 ${_TI.historico?"Ocultar hist.":"Ver histórico"}</button>
      </div>
      ${pendentes.length&&_TI.aba==="todos"?`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:10px 14px;margin-bottom:14px;cursor:pointer" onclick="tiSetAba('minhas')"><p style="font-size:13px;font-weight:700;color:#c2410c">⏳ ${pendentes.length} agendamento${pendentes.length===1?"":"s"} aguardando aprovação — Ver agora →</p></div>`:""}
@@ -6264,6 +6297,7 @@ const ehAdmin=perfil==="admin";
 const ehMaker=perfil==="maker";
 const ehLab=perfil==="laboratorista";
 const ehMkt=perfil==="marketing"||perfil==="fotografo";
+const ehTi=perfil==="ti"||perfil==="coord_ti";
 // _todas (mês em foco + pendentes globais): usado por Admin, T.I., Marketing, Coordenador —
 // Maker e Laboratorista têm telas próprias isoladas (só a sala deles) e não navegam pelo
 // calendário geral, então não precisam desses dois listeners.
@@ -6293,6 +6327,12 @@ assinarMesAdmin(hojeD0.getFullYear(),hojeD0.getMonth());
 if(ehAdmin||ehMkt){
 _unsubMkt=onSnapshot(query(collection(db,"reservas"),where("statusMarketing","in",["pendente","aprovado","recusado"])),snap=>{
 _mktGlobal=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario&&!r.reservaAutomatica);re();
+});
+}
+// T.I. também precisa do histórico de equipamento, para a aba "Vencidos"
+if(ehTi&&!ehAdmin){
+_unsubTI=onSnapshot(query(collection(db,"reservas"),where("statusEquip","in",["pendente","aprovado"])),snap=>{
+_tiGlobal=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario&&!r.reservaAutomatica);re();
 });
 }
 if(ehAdmin){
