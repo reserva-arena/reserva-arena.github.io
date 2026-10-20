@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20261019083000"/>
-<meta name="app-build-perfis" content="admin,marketing"/>
-<meta name="app-build-mensagem" content="Agendamentos do espaço Equipe de Marketing agora dependem só do Marketing (mesmo com menos de 24h): não entram mais nos Pendentes do admin, e a aprovação do Marketing já confirma."/>
+<meta name="app-build" content="20261020090000"/>
+<meta name="app-build-perfis" content="admin,marketing,coordenador,coord_inf,coord_fund1,coord_fund2"/>
+<meta name="app-build-mensagem" content="Coordenação: ao editar um agendamento agora dá para trocar o professor que agendou (os dois professores e o admin são avisados). Equipe de Marketing: agendamentos agora dependem só do Marketing, mesmo com menos de 24h."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -1986,25 +1986,103 @@ avisarMarketingSeEnvolvido(r,"🗑️ Agendamento com foto/vídeo foi excluído"
 re();
 }catch(e){alert("Erro ao excluir: "+e.message);}
 };
-window.coordEditar=async(id)=>{
-const r=_todas.find(r=>r.id===id);
+// ── Coordenador: editar descrição e trocar o professor de um agendamento ──
+let _CE=null;
+window.coordEditar=id=>{
+const r=buscarReservaGlobal(id)||_todas.find(x=>x.id===id);
 if(!r)return;
-const novoConteudo=prompt("Editar descrição da aula:",r.conteudo||"");
-if(novoConteudo===null)return;
+_CE={id,r,conteudo:r.conteudo||"",novoProf:null,salvando:false};
+let m=document.getElementById("mod-coord-ed");
+if(!m){m=document.createElement("div");m.id="mod-coord-ed";m.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:2100;padding:1rem";document.body.appendChild(m);}
+m.style.display="flex";coordEdRender();
+};
+window.coordEdFechar=()=>{if(_CE?.salvando)return;const m=document.getElementById("mod-coord-ed");if(m)m.style.display="none";_CE=null;};
+function coordEdRender(){
+const m=document.getElementById("mod-coord-ed");if(!m||!_CE)return;
+const c=C(),r=_CE.r;
+const ta=document.getElementById("ce-conteudo");if(ta)_CE.conteudo=ta.value;
+const e={...r,_id:r.id,novoProf:_CE.novoProf};
+const esc=v=>String(v??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+const novo=_CE.novoProf;
+const conflito=novo?edConflitoProf(e,novo.uid):null;
+m.innerHTML=`<div style="background:${c.surface};border-radius:16px;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.3);padding:24px;font-family:inherit">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><h3 style="font-size:17px;font-weight:800;color:${c.navy}">✏️ Editar agendamento</h3><button onclick="coordEdFechar()" style="background:none;border:none;font-size:22px;cursor:pointer;color:${c.textMuted}">✕</button></div>
+<p style="font-size:12.5px;color:${c.textMuted};margin-bottom:16px">${esc(nomeExibicao(r.espaco))} · ${r.data.split("-").reverse().join("/")} · ${esc(r.horario)}${r.horarioFim&&r.horarioFim!==r.horario?" → "+esc(r.horarioFim):""}</p>
+<div style="display:grid;gap:14px">
+<div style="background:${c.bg};border-radius:10px;padding:12px 14px;border:1.5px solid ${novo?"#f59e0b":c.border}">
+<label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">👤 Professor</label>
+<div style="position:relative;margin-top:5px">
+<input id="ce-prof" type="text" autocomplete="off" value="${esc(novo?novo.nome:(r.professor||""))}" placeholder="Digite o nome do professor" oninput="coordEdProfFiltrar(this)" onfocus="coordEdProfFiltrar(this)" onblur="coordEdProfBlur()" style="${inp()}">
+<div id="ce-prof-sugg" style="display:none;position:absolute;top:100%;left:0;right:0;background:${c.surface};border:1.5px solid ${c.border};border-radius:8px;margin-top:4px;max-height:220px;overflow-y:auto;z-index:20;box-shadow:0 4px 14px rgba(0,0,0,.12)"></div>
+</div>
+${novo?`<p style="font-size:12px;color:#92400e;margin-top:8px;line-height:1.45">🔁 Será transferido de <strong>${esc(r.professor||"—")}</strong> para <strong>${esc(novo.nome)}</strong>. Os dois serão avisados. <button type="button" onclick="_CE.novoProf=null;coordEdRender()" style="background:none;border:none;color:${c.blueMid};font-weight:700;cursor:pointer;padding:0;font-size:12px">Desfazer troca</button></p>`:`<p style="font-size:11px;color:${c.textMuted};margin-top:6px">Para passar este agendamento para outro professor, escolha o nome aqui.</p>`}
+${conflito?`<p style="font-size:11.5px;color:#c2410c;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:7px 10px;margin-top:8px">⚠️ ${esc(novo.nome)} já tem outro agendamento nesse dia e horário: ${esc(nomeExibicao(conflito.espaco))} às ${esc(conflito.horario)}. Dá para salvar assim mesmo.</p>`:""}
+</div>
+<div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Descrição da aula</label><textarea id="ce-conteudo" rows="3" style="${inp()};resize:vertical;line-height:1.6;margin-top:5px">${esc(_CE.conteudo)}</textarea></div>
+<div id="ce-msg" style="font-size:12.5px"></div>
+<div style="display:flex;gap:10px;justify-content:flex-end"><button onclick="coordEdFechar()" style="${btn("ghost")}">Cancelar</button><button id="ce-salvar" onclick="coordEdSalvar()" style="${btn("success")}">Salvar ✓</button></div>
+</div></div>`;
+}
+window.coordEdProfFiltrar=input=>{
+const norm=v=>(v||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+const partes=norm(input.value).split(/\s+/).filter(Boolean);
+const lista=(_usuarios||[]).filter(u=>u.ativo!==false&&u.nome).sort((a,b)=>a.nome.localeCompare(b.nome,"pt-BR"));
+const matches=partes.length?lista.filter(u=>partes.every(t=>norm(u.nome).includes(t))):lista;
+const sugg=$("ce-prof-sugg");if(!sugg)return;
+sugg.innerHTML=matches.length?matches.slice(0,40).map(u=>`<div class="ce-prof-item" data-uid="${u.id}" style="padding:9px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid ${C().border}">${u.nome}${u.id===_CE.r.professorId?' <span style="font-size:11px;color:#607060">(atual)</span>':""}</div>`).join(""):`<div style="padding:9px 12px;font-size:12.5px;color:${C().textMuted}">Nenhum professor encontrado.</div>`;
+sugg.style.display="block";
+sugg.querySelectorAll(".ce-prof-item").forEach(el=>el.addEventListener("mousedown",ev=>{
+ev.preventDefault();
+const u=(_usuarios||[]).find(x=>x.id===el.getAttribute("data-uid"));
+if(u)_CE.novoProf=u.id===_CE.r.professorId?null:{uid:u.id,nome:u.nome,email:u.email||""};
+sugg.style.display="none";coordEdRender();
+}));
+};
+window.coordEdProfBlur=()=>{setTimeout(()=>{
+const sugg=$("ce-prof-sugg");if(sugg)sugg.style.display="none";
+const input=$("ce-prof");if(input&&_CE)input.value=_CE.novoProf?.nome||_CE.r.professor||"";
+},150);};
+window.coordEdSalvar=async()=>{
+if(!_CE||_CE.salvando)return;
+if(!isCoordenador(_usuario?.perfil)){alert("Só coordenadores podem fazer isso.");return;}
+const r=_CE.r,novo=_CE.novoProf&&_CE.novoProf.uid!==r.professorId?_CE.novoProf:null;
+const conteudo=(document.getElementById("ce-conteudo")?.value??_CE.conteudo);
+const mudouTexto=conteudo!==(r.conteudo||"");
+if(!novo&&!mudouTexto){coordEdFechar();return;}
+const btnS=document.getElementById("ce-salvar"),msg=document.getElementById("ce-msg");
+_CE.salvando=true;if(btnS){btnS.disabled=true;btnS.textContent="Salvando…";}
 try{
-await updateDoc(doc(db,"reservas",id),{
-conteudo:novoConteudo,
-editadoPorCoord:true,
-editadoPorCoordNome:_usuario?.nome||"Coordenador",
-editadoPorCoordEm:new Date().toISOString()
-});
+const dados={editadoPorCoord:true,editadoPorCoordNome:_usuario?.nome||"Coordenador",editadoPorCoordEm:new Date().toISOString()};
+if(mudouTexto)dados.conteudo=conteudo;
+if(novo)Object.assign(dados,{professorId:novo.uid,professor:novo.nome,professorEmail:novo.email||"",transferidoDe:r.professorId||"",transferidoDeNome:r.professor||"",transferidoPor:_usuario?.uid||"",transferidoEm:Timestamp.now()});
+await updateDoc(doc(db,"reservas",r.id),dados);
+const eo=ESPACOS.find(x=>x.nome===r.espaco);
+if(novo&&eo?.multiHorario){
+try{
+const sf=await getDocs(query(collection(db,"reservas"),where("espaco","==",r.espaco),where("data","==",r.data),where("professorId","==",r.professorId||""),where("reservaAutomatica","==",true)));
+const faixa=horariosRange(r.horario,r.horarioFim||r.horario);
+const filhos=sf.docs.filter(d=>faixa.includes(d.data().horario));
+if(filhos.length){const bF=writeBatch(db);filhos.forEach(d=>bF.update(d.ref,{professorId:novo.uid,professor:novo.nome,professorEmail:novo.email||""}));await bF.commit();}
+}catch(eF){console.warn("Transferir horários seguidos falhou:",eF);}
+}
 const dataFmt=r.data.split("-").reverse().join("/");
-await gravarNotif(r.professorId,"✏️ Agendamento editado pelo coordenador",`${nomeExibicao(r.espaco)} — ${dataFmt} às ${r.horario}`,"info");
+const quem=_usuario?.nome||"Coordenador";
+if(novo){
+gravarNotif(r.professorId,"🔁 Agendamento transferido",`${nomeExibicao(r.espaco)} — ${dataFmt} às ${r.horario} foi passado para ${novo.nome} por ${quem}.`,"info");
+gravarNotif(novo.uid,"📅 Agendamento transferido para você",`${nomeExibicao(r.espaco)} — ${dataFmt} às ${r.horario}. Transferido de ${r.professor||"—"} por ${quem}.`,"info");
+}else{
+gravarNotif(r.professorId,"✏️ Agendamento editado pelo coordenador",`${nomeExibicao(r.espaco)} — ${dataFmt} às ${r.horario}`,"info");
+}
 _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
-gravarNotif(u.id,"✏️ Coordenador editou agendamento",`${_usuario?.nome||"Coordenador"} editou "${nomeExibicao(r.espaco)}" de ${r.professor} — ${dataFmt} às ${r.horario}`,"info")
+gravarNotif(u.id,novo?`🔁 ${quem} transferiu agendamento`:"✏️ Coordenador editou agendamento",novo?`${nomeExibicao(r.espaco)} — ${dataFmt} às ${r.horario}: de ${r.professor||"—"} para ${novo.nome}`:`${quem} editou "${nomeExibicao(r.espaco)}" de ${r.professor} — ${dataFmt} às ${r.horario}`,"info")
 );
-re();
-}catch(e){alert("Erro ao editar: "+e.message);}
+avisarMarketingSeEnvolvido(r,novo?"🔁 Agendamento com foto/vídeo mudou de professor":"✏️ Agendamento com foto/vídeo foi editado",`${nomeExibicao(r.espaco)} — ${dataFmt} às ${r.horario}${novo?": agora de "+novo.nome:""}.`);
+_CE.salvando=false;coordEdFechar();re();
+}catch(e){
+_CE.salvando=false;
+if(msg){msg.style.color="#b91c1c";msg.textContent="Não foi possível salvar: "+e.message;}
+if(btnS){btnS.disabled=false;btnS.textContent="Salvar ✓";}
+}
 };
 
 function renderSemAcesso(){
@@ -4571,6 +4649,54 @@ window.fecharEdicao=()=>{_ED._aberto=false;$("mod-ed").style.display="none";};
 function restaurarEdicaoSeAberta(){
 if(_ED?._aberto&&$("mod-ed")){$("mod-ed").style.display="flex";renderED();}
 }
+// ── Trocar o professor do agendamento (só Coordenador) ──
+function edConflitoProf(e,uid){
+if(!uid||!e.data||!e.horario)return null;
+// aula única (início = fim) devolve faixa vazia em horariosRange: nesse caso vale o próprio horário
+const faixa=x=>{const f=horariosRange(x.horario,x.horarioFim||x.horario);return f.length?f:[x.horario];};
+const meu=faixa(e);
+return [..._todas,...(_minhas||[])].find(r=>r.id!==e._id&&r.professorId===uid&&r.data===e.data&&r.status!=="recusado"&&
+faixa(r).some(h=>meu.includes(h)))||null;
+}
+function edCampoProfessorHTML(c,e){
+const novo=e.novoProf&&e.novoProf.uid!==e.professorId?e.novoProf:null;
+const conflito=novo?edConflitoProf(e,novo.uid):null;
+const esc=v=>String(v??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+return `<div style="background:${c.bg};border-radius:10px;padding:12px 14px;border:1.5px solid ${novo?"#f59e0b":c.border}">
+<label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">👤 Professor</label>
+<div style="position:relative;margin-top:5px">
+<input id="ed-prof" type="text" autocomplete="off" value="${esc(novo?novo.nome:(e.professor||""))}" placeholder="Digite o nome do professor" oninput="edProfFiltrar(this)" onfocus="edProfFiltrar(this)" onblur="edProfBlur()" style="${inp()}">
+<div id="ed-prof-sugg" style="display:none;position:absolute;top:100%;left:0;right:0;background:${c.surface};border:1.5px solid ${c.border};border-radius:8px;margin-top:4px;max-height:220px;overflow-y:auto;z-index:20;box-shadow:0 4px 14px rgba(0,0,0,.12)"></div>
+</div>
+${novo?`<p style="font-size:12px;color:#92400e;margin-top:8px;line-height:1.45">🔁 Será transferido de <strong>${esc(e.professor||"—")}</strong> para <strong>${esc(novo.nome)}</strong>. Os dois serão avisados. <button type="button" onclick="edProfDesfazer()" style="background:none;border:none;color:${c.blueMid};font-weight:700;cursor:pointer;padding:0;font-size:12px">Desfazer troca</button></p>`
+:`<p style="font-size:11px;color:${c.textMuted};margin-top:6px">Como coordenador, você pode passar este agendamento para outro professor.</p>`}
+${conflito?`<p style="font-size:11.5px;color:#c2410c;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:7px 10px;margin-top:8px">⚠️ ${esc(novo.nome)} já tem outro agendamento nesse dia e horário: ${esc(nomeExibicao(conflito.espaco))} às ${esc(conflito.horario)}. Dá para salvar assim mesmo.</p>`:""}
+</div>`;
+}
+window.edProfFiltrar=input=>{
+const norm=v=>(v||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+const f=norm(input.value);
+const lista=(_usuarios||[]).filter(u=>u.ativo!==false&&u.nome).sort((a,b)=>a.nome.localeCompare(b.nome,"pt-BR"));
+const partes=f.split(/\s+/).filter(Boolean);
+const matches=partes.length?lista.filter(u=>partes.every(t=>norm(u.nome).includes(t))):lista;
+const sugg=$("ed-prof-sugg");if(!sugg)return;
+sugg.innerHTML=matches.length?matches.slice(0,40).map(u=>`<div class="ed-prof-item" data-uid="${u.id}" style="padding:9px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid ${C().border}">${u.nome}${u.id===_ED.professorId?' <span style="font-size:11px;color:#607060">(atual)</span>':""}</div>`).join("")
+:`<div style="padding:9px 12px;font-size:12.5px;color:${C().textMuted}">Nenhum professor encontrado.</div>`;
+sugg.style.display="block";
+sugg.querySelectorAll(".ed-prof-item").forEach(el=>el.addEventListener("mousedown",ev=>{
+ev.preventDefault();
+const u=(_usuarios||[]).find(x=>x.id===el.getAttribute("data-uid"));
+if(u)_ED.novoProf=u.id===_ED.professorId?null:{uid:u.id,nome:u.nome,email:u.email||""};
+sugg.style.display="none";renderED();
+}));
+};
+window.edProfBlur=()=>{setTimeout(()=>{
+const sugg=$("ed-prof-sugg");if(sugg)sugg.style.display="none";
+// digitou e saiu sem escolher da lista: volta ao nome escolhido (nunca grava nome sem cadastro)
+const input=$("ed-prof");if(input)input.value=_ED.novoProf?.nome||_ED.professor||"";
+},150);};
+window.edProfDesfazer=()=>{_ED.novoProf=null;renderED();};
+
 function renderED(){
 const c=C(),e=_ED;
 const eo=ESPACOS.find(esp=>esp.nome===e.espaco);
@@ -4584,6 +4710,7 @@ const espacosMostrados=(salasPermitidas&&!_ED.verTodasSalas)?ESPACOS.filter(esp=
 let html=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px"><h3 style="font-size:17px;font-weight:800;color:${c.navy}">✏️ Editar Agendamento</h3><button onclick="fecharEdicao()" style="background:none;border:none;font-size:20px;cursor:pointer;color:${c.textMuted}">✕</button></div>
  <div id="ed-erro"></div>
  <div style="display:grid;gap:16px">
+   ${isCoordenador(_usuario?.perfil)?edCampoProfessorHTML(c,e):""}
    <div><label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">Espaço *</label><br><select onchange="_ED.espaco=this.value;renderED()" style="${sel()};margin-top:5px">${espacosMostrados.map(esp=>`<option value="${esp.nome}" ${_ED.espaco===esp.nome?"selected":""}>${tipoIcon(esp.tipo,esp.nome)} ${nomeExibicao(esp.nome)}</option>`).join("")}</select>
    ${salasPermitidas?(_ED.verTodasSalas?`<button onclick="_ED.verTodasSalas=false;renderED()" style="background:none;border:none;color:${c.blueMid};font-size:12px;font-weight:700;cursor:pointer;padding:6px 0">↩️ Voltar pras minhas salas</button>`:`<button onclick="_ED.verTodasSalas=true;renderED()" style="background:none;border:none;color:${c.blueMid};font-size:12px;font-weight:700;cursor:pointer;padding:6px 0">👁️ Ver outras salas</button><p style="font-size:10.5px;color:${c.textMuted};margin-top:2px">Só é possível salvar movendo entre suas próprias salas.</p>`):""}
    </div>
@@ -4638,12 +4765,13 @@ if(conflitoLabED){render("ed-erro",alertHTML("error",`O laboratorista já está 
 }
 }
 const novoSt=isUrgente(e.data,e.horario||"07:10")?"pendente":"confirmado";
+const trocaProf=isCoordenador(_usuario?.perfil)&&e.novoProf&&e.novoProf.uid&&e.novoProf.uid!==e.professorId?e.novoProf:null;
 try{
 // Guarda espaço/data ORIGINAIS antes de sobrescrever — os "filhos" (reservaAutomatica=true)
 // foram criados vinculados a esses valores antigos, não aos novos que a pessoa está salvando.
 const espacoOriginal=_ED._espacoOriginal||e.espaco;
 const dataOriginal=_ED._dataOriginal||e.data;
-await updateDoc(doc(db,"reservas",e._id),{espaco:e.espaco,data:e.data,horario:e.horario,horarioFim:e.horarioFim||e.horario,turma:e.turma,conteudo:e.conteudo,laboratorista:e.laboratorista||"",quantidade:eo?.tipo==="equipamento"?Number(e.quantidade):null,status:novoSt,editadoEm:Timestamp.now()});
+await updateDoc(doc(db,"reservas",e._id),{...(trocaProf?{professorId:trocaProf.uid,professor:trocaProf.nome,professorEmail:trocaProf.email||"",transferidoDe:e.professorId||"",transferidoDeNome:e.professor||"",transferidoPor:_usuario?.uid||"",transferidoEm:Timestamp.now()}:{}),espaco:e.espaco,data:e.data,horario:e.horario,horarioFim:e.horarioFim||e.horario,turma:e.turma,conteudo:e.conteudo,laboratorista:e.laboratorista||"",quantidade:eo?.tipo==="equipamento"?Number(e.quantidade):null,status:novoSt,editadoEm:Timestamp.now()});
 // Limpa os "filhos" automáticos que ficaram órfãos: se o horário foi encurtado (ou o
 // espaço/dia mudou), os documentos auto-gerados dos horários que saíram do novo intervalo
 // continuavam sobrando no banco pra sempre, bloqueando horários vazios pros outros.
@@ -4663,8 +4791,20 @@ await bLimpa.commit();
 }
 }catch(eOrfao){console.warn("Limpeza de órfãos na edição falhou (não bloqueia o salvamento):",eOrfao);}
 }
+if(trocaProf&&eo?.multiHorario){
+try{
+const snapFilhos=await getDocs(query(collection(db,"reservas"),where("espaco","==",e.espaco),where("data","==",e.data),where("professorId","==",e.professorId||""),where("reservaAutomatica","==",true)));
+const faixa=horariosRange(e.horario,e.horarioFim||e.horario);
+const filhos=snapFilhos.docs.filter(d=>faixa.includes(d.data().horario));
+if(filhos.length){const bF=writeBatch(db);filhos.forEach(d=>bF.update(d.ref,{professorId:trocaProf.uid,professor:trocaProf.nome,professorEmail:trocaProf.email||""}));await bF.commit();}
+}catch(eF){console.warn("Transferir horários seguidos falhou:",eF);}
+}
 const dataFmt=e.data.split("-").reverse().join("/");
-const naoEhDono=e.professorId&&_usuario?.uid!==e.professorId;
+if(trocaProf){
+gravarNotif(e.professorId,"🔁 Agendamento transferido",`${nomeExibicao(e.espaco)} — ${dataFmt} às ${e.horario} foi passado para ${trocaProf.nome} por ${_usuario?.nome||"um coordenador"}.`,"info");
+gravarNotif(trocaProf.uid,"📅 Agendamento transferido para você",`${nomeExibicao(e.espaco)} — ${dataFmt} às ${e.horario}. Transferido de ${e.professor||"—"} por ${_usuario?.nome||"um coordenador"}.`,"info");
+}
+const naoEhDono=!trocaProf&&e.professorId&&_usuario?.uid!==e.professorId;
 // O professor só é avisado quando NÃO foi ele mesmo quem editou (Laboratorista/Maker/
 // Coordenador/Admin ajustando o agendamento de outra pessoa).
 if(naoEhDono){
@@ -4673,7 +4813,7 @@ gravarNotif(e.professorId,`✏️ Agendamento editado ${rotuloEditor}`,`${nomeEx
 }
 // O Admin é avisado de TODA edição, mesmo quando o próprio professor edita a reserva dele.
 _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
-gravarNotif(u.id,`✏️ ${_usuario?.nome||"Alguém"} editou agendamento`,`${nomeExibicao(e.espaco)} de ${e.professor||"—"} — ${dataFmt} às ${e.horario}${naoEhDono?"":" (o próprio professor)"}`,"info")
+gravarNotif(u.id,trocaProf?`🔁 ${_usuario?.nome||"Coordenador"} transferiu agendamento`:`✏️ ${_usuario?.nome||"Alguém"} editou agendamento`,trocaProf?`${nomeExibicao(e.espaco)} — ${dataFmt} às ${e.horario}: de ${e.professor||"—"} para ${trocaProf.nome}`:`${nomeExibicao(e.espaco)} de ${e.professor||"—"} — ${dataFmt} às ${e.horario}${naoEhDono?"":" (o próprio professor)"}`,"info")
 );
 avisarMarketingSeEnvolvido(e,"✏️ Agendamento com foto/vídeo foi editado",`${nomeExibicao(e.espaco)} de ${e.professor||"—"} — agora ${dataFmt} às ${e.horario}.`);
 fecharEdicao();
