@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <meta name="app-build" content="20261022090000"/>
 <meta name="app-build-perfis" content="todos"/>
-<meta name="app-build-mensagem" content="Ao agendar, passe o mouse ou toque num horário riscado para ver qual professor já agendou."/>
+<meta name="app-build-mensagem" content="Ao agendar, toque num horário riscado (ocupado) para ver quem já agendou."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -3048,7 +3048,7 @@ const off=m.hlOffset||0;
 const diasPag=hlProximosDias((off+1)*5).slice(off*5,off*5+5);
 const temMais=hlProximosDias((off+1)*5+1).length>(off+1)*5;
 const seta=(n,lbl,desab)=>`<button onclick="hlSetOffset(${n})" ${desab?"disabled":""} aria-label="${lbl}" style="background:${c.surface};border:1.5px solid ${c.border};border-radius:8px;width:36px;height:32px;cursor:${desab?"default":"pointer"};color:${c.navy};font-size:16px;font-weight:800;opacity:${desab?.35:1};font-family:inherit">${n<0?"‹":"›"}</button>`;
-let h=`<p style="font-size:13px;font-weight:700;color:${c.textMid};margin:0 0 10px">👆 Toque no horário que você quer</p>
+let h=`<p style="font-size:13px;font-weight:700;color:${c.textMid};margin:0 0 10px">👆 Toque no horário que você quer<span style="display:block;font-size:12px;font-weight:600;color:${c.textMuted};margin-top:2px">Horário riscado já está ocupado. Toque nele para ver quem agendou.</span></p>
 <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px">${seta(-1,"Dias anteriores",off===0)}<span style="font-size:13.5px;font-weight:800;color:${c.navy};text-align:center">${diasPag.length?(off===0?"Próximos dias de aula":"De "+hlDm(diasPag[0])+" a "+hlDm(diasPag[diasPag.length-1])):"Fim do semestre"}</span>${seta(1,"Próximos dias",!temMais)}</div>`;
 if(!diasPag.length)return h+`<div style="text-align:center;padding:24px 10px;color:${c.textMuted};font-size:13px">Não há mais dias de aula neste semestre.</div>`;
 const ini=diasPag[0],fim=diasPag[diasPag.length-1];
@@ -3062,7 +3062,7 @@ const d=m.hlDiaCal;
 if(!d||d<fmtHoje())return`<p style="font-size:13px;font-weight:700;color:${c.textMid};margin:14px 0 0;text-align:center">👆 Toque num dia para ver os horários livres</p>`+hlRodapeHTML(c,m,false);
 const docs=hlFonte(d,d);
 let h=`<div style="margin-top:14px;background:${c.surface};border:1px solid ${c.border};border-radius:14px;padding:6px 14px 10px">`;
-h+=docs?`<p style="font-size:12.5px;font-weight:700;color:${c.textMid};margin:8px 0 0">👆 Toque no horário que você quer</p>`+hlDiaHTML(c,m,d,docs,false):hlCarregandoHTML(c,d,d);
+h+=docs?`<p style="font-size:12.5px;font-weight:700;color:${c.textMid};margin:8px 0 0">👆 Toque no horário que você quer<span style="display:block;font-size:12px;font-weight:600;color:${c.textMuted};margin-top:2px">Horário riscado já está ocupado. Toque nele para ver quem agendou.</span></p>`+hlDiaHTML(c,m,d,docs,false):hlCarregandoHTML(c,d,d);
 return h+`</div>`+hlRodapeHTML(c,m,false);
 }
 
