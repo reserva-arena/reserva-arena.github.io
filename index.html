@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20261020090000"/>
-<meta name="app-build-perfis" content="admin,marketing,coordenador,coord_inf,coord_fund1,coord_fund2"/>
-<meta name="app-build-mensagem" content="Coordenação: ao editar um agendamento agora dá para trocar o professor que agendou (os dois professores e o admin são avisados). Equipe de Marketing: agendamentos agora dependem só do Marketing, mesmo com menos de 24h."/>
+<meta name="app-build" content="20261022090000"/>
+<meta name="app-build-perfis" content="todos"/>
+<meta name="app-build-mensagem" content="Ao agendar, passe o mouse ou toque num horário riscado para ver qual professor já agendou."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -2975,15 +2975,27 @@ return null;
 // anterior (12:50 / 13:40) contam na mesma posição da grade atual (12:40 / 13:30).
 function hlOcupados(docs,espaco,data){
 const n=h=>h==="12:50"?"12:40":h==="13:40"?"13:30":h;
-const s=new Set();
+// Devolve Map(horário → {professor, turma}) — quem ocupa cada horário (mostrado ao passar o mouse/tocar)
+const s=new Map();
 docs.forEach(r=>{
 if(r.espaco!==espaco||r.data!==data||r.status==="recusado")return;
 const hi=n(r.horario),hf=r.horarioFim?n(r.horarioFim):hi;
-(hf!==hi?horariosRange(hi,hf):[hi]).forEach(h=>s.add(h));
+const quem={professor:r.professor||"",turma:r.turma||r.turmaInicio||"",pendente:r.status==="pendente"};
+(hf!==hi?horariosRange(hi,hf):[hi]).forEach(h=>{if(!s.has(h)||(r.professor&&!s.get(h).professor))s.set(h,quem);});
 });
-if(espaco==="Sala de Dança")HORARIOS.forEach(h=>{const[hh,mm]=h.split(":").map(Number);const mi=hh*60+mm;if(mi>=11*60+45&&mi<13*60+45)s.add(h);});
+if(espaco==="Sala de Dança")HORARIOS.forEach(h=>{const[hh,mm]=h.split(":").map(Number);const mi=hh*60+mm;if(mi>=11*60+45&&mi<13*60+45)s.set(h,{professor:"🌙 Soninho (bloqueio fixo)",turma:""});});
 return s;
 }
+const hlEsc=v=>String(v??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+function hlQuemTexto(q){
+if(!q||!q.professor)return"Ocupado";
+return"Ocupado por "+q.professor+(q.turma?" ("+q.turma+")":"")+(q.pendente?" · aguardando aprovação":"");
+}
+window.hlVerQuem=(data,hor)=>{
+const i=_MA.hlInfo;
+_MA.hlInfo=(i&&i.espaco===_MA.espaco&&i.data===data&&i.horario===hor)?null:{espaco:_MA.espaco,data,horario:hor};
+re();
+};
 function hlToggleHTML(c,modo){
 const op=(id,l)=>`<button onclick="hlSetModo('${id}')" style="flex:1;padding:9px 6px;border-radius:8px;border:${modo===id?"1.5px solid "+c.border:"1.5px solid transparent"};background:${modo===id?c.surface:"transparent"};color:${modo===id?c.navy:c.textMuted};font-weight:${modo===id?800:600};font-size:13px;cursor:pointer;font-family:inherit">${l}</button>`;
 return`<div style="display:flex;gap:4px;background:${c.bg};padding:4px;border-radius:10px;margin-bottom:14px">${op("livres","🕐 Horários livres")}${op("calendario","📅 Calendário do mês")}</div>`;
@@ -3005,11 +3017,14 @@ const horas=HORARIOS.filter(x=>d>hj||x>agoraHM);
 const livres=horas.filter(x=>!ocup.has(x)).length;
 const rot=!horas.length?`<span style="font-size:12px;color:${c.textMuted}">Encerrado por hoje</span>`:livres?`<span style="font-size:12px;font-weight:700;color:${c.green}">${livres} livre${livres!==1?"s":""}</span>`:`<span style="font-size:12px;font-weight:700;color:${c.red}">Lotado</span>`;
 let chips="";
+const info=m.hlInfo&&m.hlInfo.espaco===m.espaco&&m.hlInfo.data===d?m.hlInfo:null;
 if(livres)chips=`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">${horas.map(x=>{
-if(ocup.has(x))return`<span title="Ocupado" style="font-family:'DM Mono',monospace;font-size:12.5px;padding:7px 8px;color:${c.textMuted};text-decoration:line-through;opacity:.6">${x}</span>`;
+if(ocup.has(x)){const q=ocup.get(x),tx=hlQuemTexto(q),ab=info&&info.data===d&&info.horario===x;
+return`<button type="button" onclick="hlVerQuem('${d}','${x}')" title="${hlEsc(tx)}" style="font-family:'DM Mono',monospace;font-size:12.5px;padding:7px 8px;color:${c.textMuted};text-decoration:line-through;opacity:${ab?1:.6};background:${ab?c.bg:"transparent"};border:1px ${ab?"solid "+c.border:"dashed transparent"};border-radius:8px;cursor:help">${x}</button>`;}
 const on=sel&&sel.data===d&&sel.horario===x;
 return`<button onclick="hlEscolher('${d}','${x}')" style="font-family:'DM Mono',monospace;font-size:12.5px;font-weight:800;padding:7px 9px;border-radius:8px;cursor:pointer;border:1.5px solid ${on?"#1a6b47":c.greenBorder};background:${on?"#1a6b47":c.greenBg};color:${on?"#fff":c.green}">${on?"✓ ":""}${x}</button>`;
 }).join("")}</div>`;
+if(info&&ocup.has(info.horario))chips+=`<div style="margin-top:6px;padding:7px 10px;border-radius:8px;background:${c.bg};border:1px solid ${c.border};font-size:12.5px;color:${c.navy}">🔒 <b>${info.horario}</b> · ${hlEsc(hlQuemTexto(ocup.get(info.horario)))}</div>`;
 return`<div style="${comBorda?"border-top:1px solid "+c.borderLight+";":""}padding:10px 0"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13.5px;font-weight:800;color:${c.navy}">${hlNomeDia(d)} ${hlDm(d)}${d===hj?` <span style="font-size:11px;font-weight:700;color:${c.textMuted}">· hoje</span>`:""}</span>${rot}</div>${chips}</div>`;
 }
 // Barra fixa "Você escolheu ... Continuar" (ou o aviso de que nada foi escolhido)
