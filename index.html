@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20261023093000"/>
+<meta name="app-build" content="20261023120000"/>
 <meta name="app-build-perfis" content="todos"/>
-<meta name="app-build-mensagem" content="Ao agendar tablets, computadores ou som e microfones separados, a Biblioteca agora aparece como sala de início e de término."/>
+<meta name="app-build-mensagem" content="Maker 1 e Maker 2: agendamento ou edição com menos de 24h agora depende da aprovação do coordenador Maker, que acompanha tudo dessas salas pelo sino."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -437,8 +437,33 @@ try{const[a,m,d]=data.split("-").map(Number);const dow=new Date(a,m-1,d).getDay(
 // Agendamento do espaço "Equipe de Marketing" só depende do Marketing, mesmo com menos
 // de 24h ou no fim de semana: nunca entra nos Pendentes/Urgentes do Admin.
 function soMarketing(r){return r?.espaco==="Equipe de Marketing";}
+// ── Maker 1 e Maker 2: acompanhados pelo coordenador Maker (Frederico Muniz) ──
+// Agendamento ou edição com menos de 24h (ou no fim de semana) fica pendente até ELE aprovar
+// (a sala e os materiais precisam ser preparados). O perfil Maker agenda direto. Ele recebe no
+// sino tudo o que acontece nas duas salas: agendamento, edição, cancelamento e exclusão.
+const ESPACOS_MAKER=["Maker 1","Maker 2"];
+const EMAIL_RESP_MAKER="frederico.muniz@";
+function ehEspacoMaker(r){return ESPACOS_MAKER.includes(r?.espaco);}
+function ehRespMaker(u){return String(u?.email||"").toLowerCase().startsWith(EMAIL_RESP_MAKER);}
+function respMakerUsuarios(){
+const lista=typeof _usuarios!=="undefined"&&Array.isArray(_usuarios)?_usuarios:[];
+const f=lista.filter(ehRespMaker);
+return f.length?f:lista.filter(u=>u.perfil==="maker");
+}
+function aguardaMaker(r){return r?.aprovMaker==="pendente";}
+function precisaAprovMaker(espaco,data,horario,perfil){
+return ESPACOS_MAKER.includes(espaco)&&perfil!=="maker"&&!!data&&(isUrgente(data,horario||"07:10")||isFds(data));
+}
+function avisarMaker(r,titulo,corpo){
+try{
+if(!ehEspacoMaker(r))return;
+respMakerUsuarios().forEach(u=>{if(u.id!==_usuario?.uid)gravarNotif(u.id,titulo,corpo,"info");});
+}catch(e){console.warn("avisarMaker:",e);}
+}
 function precisaAdmin(r){
 if(soMarketing(r))return false;
+// Maker com aprovação do coordenador Maker (pendente, aprovada ou recusada): não é com o Admin
+if(ehEspacoMaker(r)&&r.aprovMaker)return false;
 if(isUrgente(r.data,r.horario)||isFds(r.data))return true;
 // Reserva pendente sem urgência/fim de semana, mas que NUNCA teve componente de T.I. nem de
 // Marketing associado (ex: bloqueio de espaço criado direto pelo Admin, sem equipamento/mídia) —
@@ -469,7 +494,12 @@ if(soMarketing(rAtual)&&rAtual.statusMarketing==="recusado"){
 await updateDoc(doc(db,"reservas",rAtual.id),{status:"recusado"});
 return"recusado";
 }
+if(rAtual.aprovMaker==="recusado"){
+await updateDoc(doc(db,"reservas",rAtual.id),{status:"recusado"});
+return"recusado";
+}
 if(precisaAdmin(rAtual))return"pendente";
+if(aguardaMaker(rAtual))return"pendente";
 const equipOk=rAtual.statusEquip===undefined||rAtual.statusEquip==null||rAtual.statusEquip!=="pendente";
 const midiaOk=rAtual.statusMarketing===undefined||rAtual.statusMarketing==null||rAtual.statusMarketing!=="pendente";
 if(equipOk&&midiaOk){
@@ -481,7 +511,8 @@ return"pendente";
 }
 // Frase clara sobre a situação do ESPAÇO, independente do que houve com equipamento/mídia —
 // usada nas notificações pro professor e pro admin.
-function fraseSituacaoEspaco(statusFinal){
+function fraseSituacaoEspaco(statusFinal,r){
+if(statusFinal!=="confirmado"&&aguardaMaker(r))return"A reserva do espaço ainda depende da aprovação do coordenador Maker (agendamento com menos de 24h).";
 return statusFinal==="confirmado"
 ?"A reserva do espaço está confirmada e disponível normalmente."
 :"A reserva do espaço ainda depende da aprovação do Admin (agendamento com menos de 24h ou em fim de semana).";
@@ -1239,7 +1270,9 @@ function renderMaker(){
 const c=C(),h=fmtHoje();
 const corSala=nome=>nome==="Maker 1"?"#7c3aed":"#0284c7";
 const makerCard=r=>{
-const statusBadge=r.status==="pendente"?`<span style="background:#f97316;color:#fff;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:20px">Pendente</span>`:r.status==="confirmado"?`<span style="background:#1a6b47;color:#fff;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:20px">Confirmado</span>`:"";
+const statusBadge=aguardaMaker(r)?`<span style="background:#7c3aed;color:#fff;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:20px">⏳ Aguarda aprovação</span>`:r.status==="pendente"?`<span style="background:#f97316;color:#fff;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:20px">Pendente</span>`:r.status==="confirmado"?`<span style="background:#1a6b47;color:#fff;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:20px">Confirmado</span>`:"";
+const podeAprovar=aguardaMaker(r)&&podeAprovarMaker();
+const passou=r.data<h;
 return`<div style="background:${c.surface};border:1.5px solid ${c.border};border-left:4px solid ${corSala(r.espaco)};border-radius:10px;padding:12px 14px;margin-bottom:8px">
    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:4px">
      <span style="font-family:'DM Mono',monospace;font-weight:800;color:${c.green}">${r.horario}${r.horarioFim&&r.horarioFim!==r.horario?" → "+r.horarioFim:""}</span>
@@ -1248,16 +1281,28 @@ return`<div style="background:${c.surface};border:1.5px solid ${c.border};border
    </div>
    <p style="font-size:13px;color:${c.textMid}">${r.professor} · ${turmasEmSequencia(r)||"—"}</p>
    ${r.conteudo?`<p style="font-size:12px;color:${c.textMuted};margin-top:3px">📝 ${r.conteudo}</p>`:""}
-   <div style="margin-top:10px;display:flex;gap:8px"><button onclick="abrirEdicao('${r.id}')" style="padding:7px 16px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.textMid};font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">✏️ Editar / Mover de sala</button><button onclick="makerExcluir('${r.id}')" style="padding:7px 12px;border-radius:8px;border:1.5px solid #fecaca;background:transparent;color:#dc2626;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🗑️ Excluir</button></div>
+   ${podeAprovar?`<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button onclick="makerAprovar('${r.id}')" style="padding:8px 18px;border-radius:8px;border:none;background:#1a6b47;color:#fff;font-size:12.5px;font-weight:800;cursor:pointer;font-family:inherit">✅ Aprovar</button><button onclick="makerRecusar('${r.id}')" style="padding:8px 18px;border-radius:8px;border:1.5px solid #fecaca;background:#fef2f2;color:#b91c1c;font-size:12.5px;font-weight:800;cursor:pointer;font-family:inherit">❌ Recusar</button></div>`:""}
+   ${passou?"":`<div style="margin-top:10px;display:flex;gap:8px"><button onclick="abrirEdicao('${r.id}')" style="padding:7px 16px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.textMid};font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">✏️ Editar / Mover de sala</button><button onclick="makerExcluir('${r.id}')" style="padding:7px 12px;border-radius:8px;border:1.5px solid #fecaca;background:transparent;color:#dc2626;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🗑️ Excluir</button></div>`}
  </div>`;
 };
 const todosOrdenados=[..._makerGlobal].sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
 const hojeList=todosOrdenados.filter(r=>r.data===h);
 const proximosList=todosOrdenados.filter(r=>r.data>h);
-if(!window._MAKER)window._MAKER={aba:"hoje"};
-const btnAba=(id,l)=>`<button onclick="window._MAKER.aba='${id}';re()" style="padding:7px 16px;font-size:12.5px;border-radius:8px;border:1.5px solid ${_MAKER.aba===id?'#7c3aed':c.border};background:${_MAKER.aba===id?'#7c3aed':'transparent'};color:${_MAKER.aba===id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">${l}</button>`;
+const aguardandoList=todosOrdenados.filter(r=>aguardaMaker(r)&&r.data>=h);
+const anterioresList=todosOrdenados.filter(r=>r.data<h).reverse();
+const blocoDias=(lista,destHoje)=>{const pd={};lista.forEach(r=>{if(!pd[r.data])pd[r.data]=[];pd[r.data].push(r);});return Object.entries(pd).map(([data,rs])=>{const[a2,m2,d2]=data.split("-");const isHoje=destHoje&&data===h;return`<div style="margin-bottom:16px"><p style="font-size:12px;font-weight:800;color:${isHoje?"#7c3aed":c.textMuted};text-transform:uppercase;margin-bottom:8px">${isHoje?"📌 Hoje · ":""}${hlNomeDia(data)} · ${d2}/${m2}/${a2}</p>${rs.map(makerCard).join("")}</div>`;}).join("");};
+if(!window._MAKER)window._MAKER={aba:"hoje",ant:30};
+// Abre em "Aguardando aprovação" quando há algo esperando, até a pessoa escolher outra aba
+if(!_MAKER.escolheu&&aguardandoList.length)_MAKER.aba="aguardando";
+const btnAba=(id,l)=>`<button onclick="window._MAKER.aba='${id}';window._MAKER.escolheu=true;re()" style="padding:7px 16px;font-size:12.5px;border-radius:8px;border:1.5px solid ${_MAKER.aba===id?'#7c3aed':c.border};background:${_MAKER.aba===id?'#7c3aed':'transparent'};color:${_MAKER.aba===id?'#fff':c.text};font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">${l}</button>`;
 let corpo="";
-if(_MAKER.aba==="hoje"){
+if(_MAKER.aba==="aguardando"){
+corpo+=`<p style="font-size:12.5px;color:${c.textMuted};margin:0 0 12px">Agendamentos e edições com menos de 24h. A sala e os materiais precisam ser preparados, por isso dependem da sua aprovação.</p>`;
+corpo+=aguardandoList.length?blocoDias(aguardandoList,true):`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">✅</p><p style="margin-top:12px">Nada aguardando aprovação.</p></div>`;
+} else if(_MAKER.aba==="anteriores"){
+const lim=_MAKER.ant||30;
+corpo+=anterioresList.length?blocoDias(anterioresList.slice(0,lim),false)+(anterioresList.length>lim?`<div style="text-align:center"><button onclick="window._MAKER.ant=(window._MAKER.ant||30)+30;re()" style="${btn("ghost")}">Ver mais antigos (${anterioresList.length-lim})</button></div>`:""):`<div style="text-align:center;padding:48px;color:${c.textMuted}"><p style="font-size:40px">🕘</p><p style="margin-top:12px">Nenhum agendamento anterior.</p></div>`;
+} else if(_MAKER.aba==="hoje"){
 if(hojeList.length)corpo+=hojeList.map(makerCard).join("");
 else corpo+=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 220px);color:${c.textMuted}"><p style="font-size:48px">🔨</p><p style="margin-top:12px;font-size:14px">Nenhum agendamento hoje.</p></div>`;
 } else if(_MAKER.aba==="proximos"){
@@ -1276,10 +1321,10 @@ Object.entries(pdTodos).forEach(([data,rs])=>{const[a2,m2,d2]=data.split("-");co
 $("app").innerHTML=`<div style="min-height:100vh;background:${c.bg}" translate="no">
    <header style="background:${_dark?c.headerBg:"linear-gradient(135deg,#4c1d95,#7c3aed)"};padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100">
      <div style="display:flex;align-items:center;gap:8px">${logoHTML(36)}<p style="font-size:13px;font-weight:800;color:#fff">🔨 Maker</p></div>
-     <div style="display:flex;align-items:center;gap:6px"><button onclick="pSetModoProf('agendar')" style="background:#fff;color:#7c3aed;border:none;border-radius:20px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:800;font-family:inherit">+ Agendar</button>${avatarHTML(_usuario?.nome,28,"purple")}<button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button><button onclick="doSignOut()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">Sair</button></div>
+     <div style="display:flex;align-items:center;gap:6px"><button onclick="pSetModoProf('agendar')" style="background:#fff;color:#7c3aed;border:none;border-radius:20px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:800;font-family:inherit">+ Agendar</button>${avatarHTML(_usuario?.nome,28,"purple")}<button id="sino-btn" onclick="abrirPainelNotif()" title="Notificações" style="display:flex;position:relative;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:50%;width:30px;height:30px;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;font-family:inherit">🔔<span id="sino-badge" style="display:${_notifNaoLidas>0?"flex":"none"};position:absolute;top:-4px;right:-4px;background:#dc2626;color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:99px;align-items:center;justify-content:center;padding:0 3px;font-family:inherit">${_notifNaoLidas>9?"9+":_notifNaoLidas}</span></button><button onclick="toggleDark()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">${_dark?"☀️":"🌙"}</button><button onclick="doSignOut()" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700">Sair</button></div>
    </header>
    <div class="desktop-zoom" style="max-width:1000px;margin:0 auto;padding:16px 14px">
-     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">${btnAba("hoje",`📅 Hoje · ${hojeList.length}`)}${btnAba("proximos","🔜 Próximos dias")}${btnAba("todos","📅 Todos agendamentos")}</div>
+     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">${btnAba("aguardando",`⏳ Aguardando aprovação · ${aguardandoList.length}`)}${btnAba("hoje",`📅 Hoje · ${hojeList.length}`)}${btnAba("proximos","🔜 Próximos dias")}${btnAba("anteriores","🕘 Anteriores")}${btnAba("todos","📅 Todos agendamentos")}</div>
      ${corpo}
    </div>
    ${modalEdicaoHTML()}
@@ -1983,6 +2028,7 @@ _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
 gravarNotif(u.id,"🗑️ Coordenador excluiu agendamento",`${_usuario?.nome||"Coordenador"} excluiu "${nomeExibicao(r.espaco)}" — ${dataFmt} às ${r.horario} (${r.professor})`,"info")
 );
 avisarMarketingSeEnvolvido(r,"🗑️ Agendamento com foto/vídeo foi excluído",`${nomeExibicao(r.espaco)} de ${r.professor} — ${dataFmt} às ${r.horario} foi excluído pelo Coordenador.`);
+avisarMaker(r,"🗑️ Agendamento do Maker foi excluído",`${nomeExibicao(r.espaco)} de ${r.professor} — ${dataFmt} às ${r.horario} foi excluído pelo Coordenador.`);
 re();
 }catch(e){alert("Erro ao excluir: "+e.message);}
 };
@@ -2077,6 +2123,7 @@ _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
 gravarNotif(u.id,novo?`🔁 ${quem} transferiu agendamento`:"✏️ Coordenador editou agendamento",novo?`${nomeExibicao(r.espaco)} — ${dataFmt} às ${r.horario}: de ${r.professor||"—"} para ${novo.nome}`:`${quem} editou "${nomeExibicao(r.espaco)}" de ${r.professor} — ${dataFmt} às ${r.horario}`,"info")
 );
 avisarMarketingSeEnvolvido(r,novo?"🔁 Agendamento com foto/vídeo mudou de professor":"✏️ Agendamento com foto/vídeo foi editado",`${nomeExibicao(r.espaco)} — ${dataFmt} às ${r.horario}${novo?": agora de "+novo.nome:""}.`);
+avisarMaker(r,novo?"🔁 Agendamento do Maker mudou de professor":"✏️ Agendamento do Maker foi editado",`${nomeExibicao(r.espaco)} — ${dataFmt} às ${r.horario}${novo?": agora de "+novo.nome:""}.`);
 _CE.salvando=false;coordEdFechar();re();
 }catch(e){
 _CE.salvando=false;
@@ -2535,6 +2582,7 @@ if(!confirm(`Cancelar ${ids.length} agendamento${ids.length>1?'s':''}? Esta aç�
 try{
 const{doc,updateDoc,collection,getDocs,query,where}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
 await Promise.all(ids.map(id=>updateDoc(doc(db,'reservas',id),{status:'recusado'})));
+try{ids.map(id=>buscarReservaGlobal(id)).filter(r=>r&&ehEspacoMaker(r)).forEach(r=>avisarMaker(r,"🗑️ Agendamento do Maker foi cancelado",`${r.professor||_usuario?.nome} cancelou ${nomeExibicao(r.espaco)} — ${r.data.split("-").reverse().join("/")} às ${r.horario}${r.horarioFim&&r.horarioFim!==r.horario?" → "+r.horarioFim:""}`));}catch{}
 _P.selecionados=new Set();_P.modoSelecao=false;
 alert(`${ids.length} agendamento${ids.length>1?'s':''} cancelado${ids.length>1?'s':''}!`);
 re();
@@ -2608,6 +2656,7 @@ _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
 gravarNotif(u.id,"🗑️ Professor cancelou agendamento",`${r.professor||_usuario?.nome||"Professor"} cancelou "${nomeExibicao(r.espaco)}" — ${dataFmt} às ${r.horario}${range}`,"info")
 );
 avisarMarketingSeEnvolvido(r,"🗑️ Agendamento com foto/vídeo foi cancelado",`${nomeExibicao(r.espaco)} de ${r.professor||_usuario?.nome} — ${dataFmt} às ${r.horario}${range} foi cancelado pelo professor.`);
+avisarMaker(r,"🗑️ Agendamento do Maker foi cancelado",`${nomeExibicao(r.espaco)} de ${r.professor||_usuario?.nome} — ${dataFmt} às ${r.horario}${range} foi cancelado pelo professor.`);
 }catch(e){console.warn("notif cancelarR:",e);}
 };
 
@@ -3096,6 +3145,7 @@ html+=`<div style="padding:20px 14px;text-align:center">
        <p style="font-size:12px;color:#0369a1;margin-bottom:2px">📅 De ${m.serieDataInicio.split("-").reverse().join("/")} até ${m.serieDataFim.split("-").reverse().join("/")}</p>
        <p style="font-size:12px;font-weight:700;color:#0369a1">📋 ${m.serieTotal||"20"} agendamentos criados</p>
      </div>`:""}
+     ${m.aprovMaker&&m.sucesso!=="confirmado"?`<div style="background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:10px;padding:12px 14px;margin-bottom:12px;text-align:left"><p style="font-size:12px;color:#5b21b6;font-weight:700;margin-bottom:4px">🔨 Aguardando o coordenador Maker</p><p style="font-size:12px;color:#5b21b6;line-height:1.5">Falta menos de 24h. A sala e os materiais precisam ser preparados, então o coordenador Maker precisa aprovar. Você recebe um aviso assim que ele responder.</p></div>`:""}
      ${(m.temMidia||m.tipoEspaco==="marketing")?`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:12px 14px;margin-bottom:12px;text-align:left"><p style="font-size:12px;color:#92400e;font-weight:700;margin-bottom:4px">⏳ O que acontece agora?</p><p style="font-size:12px;color:#92400e;line-height:1.5">A <strong>Equipe de Marketing</strong> vai analisar sua solicitação de foto/vídeo e confirmar ou recusar. Você receberá uma notificação assim que houver uma resposta.</p></div>`:m.sucesso==="pendente"?`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:12px 14px;margin-bottom:12px;text-align:left"><p style="font-size:12px;color:#92400e;font-weight:700;margin-bottom:4px">⏳ O que acontece agora?</p><p style="font-size:12px;color:#92400e;line-height:1.5">Este agendamento precisa de aprovação pois foi feito com menos de 24h de antecedência. Você receberá uma notificação assim que for aprovado.</p></div>`:""}
      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
        <button onclick="pSetModoProf('agendar')" style="${btn("success")};padding:10px 24px">＋ Novo agendamento</button>
@@ -4068,7 +4118,11 @@ const statusMarketing=temMidia?"pendente":null;
 // Coordenador é isento das regras de urgente/fim de semana (mas NÃO das de T.I./Marketing/T.E.,
 // que continuam valendo pra todo mundo igual — são regras de topo, não dependem de quem agenda).
 const souCoordenadorSalvar=isCoordenador(_usuario?.perfil);
-const st=((!souCoordenadorSalvar&&(algUrgente||dow===0||dow===6))||temMidia||temAV||temTabletsNotebooks)?"pendente":"confirmado";
+const makerAprov=precisaAprovMaker(espaco,data,rangeHors.find(h=>isUrgente(data,h))||b.horario,_usuario?.perfil);
+// Maker: o perfil Maker agenda direto mesmo com menos de 24h (é a sala dele)
+const makerDireto=ehEspacoMaker({espaco})&&_usuario?.perfil==="maker";
+const st=(makerAprov||(!souCoordenadorSalvar&&!makerDireto&&(algUrgente||dow===0||dow===6))||temMidia||temAV||temTabletsNotebooks)?"pendente":"confirmado";
+_MA.aprovMaker=makerAprov;
 
 const tph=b.turmasPorHorario||{};
 const isEquipSalvar=eo?.tipo==="equipamento"||eo?.tipo==="audiovisual";
@@ -4092,6 +4146,7 @@ microfones:Number(b.microfones)||0,caixasom:Number(b.caixasom)||0,projetor:Numbe
 status:st,criadoEm:ts,precisaFoto:b.precisaFoto||false,precisaVideo:b.precisaVideo||false,objetivoMidia:b.objetivoMidia||"",descritivo:b.descritivo||"",salaAtividade:b.salaAtividade||"",...(statusMarketing?{statusMarketing}:{}),...(temAV?{statusEquip:"pendente"}:{}),...(_MA.bibAV===true?{bibMic:_MA.bibMic||0,bibCaixa:_MA.bibCaixa||0,bibProj:_MA.bibProj||0}:{}),
 paginas:b.paginas||"",laboratorista:b.laboratorista||"",reservaAutomatica:false,
 qtdTablets:Number(b.qtdTablets)||0,qtdNotebooks:Number(b.qtdNotebooks)||0,
+...(makerAprov?{aprovMaker:"pendente"}:{}),
 };
 batch.set(doc(collection(db,"reservas")),dadosPrincipal);
 
@@ -4163,7 +4218,7 @@ if(isDiaLetivo(ds)){
 const tphRec={};
 rangeHors.forEach(h=>{tphRec[h]=tph[h]||Object.values(tph)[0]||""});
 // Ocorrências futuras sempre confirmadas — só a primeira segue regra de urgência
-const dadosRec={...dadosPrincipal,data:ds,status:"confirmado",
+const dadosRec={...dadosPrincipal,data:ds,status:"confirmado",aprovMaker:null,
 turmasPorHorario:tphRec,
 turma:Object.values(tphRec)[0]||"",
 turmaInicio:Object.values(tphRec)[0]||"",
@@ -4192,7 +4247,7 @@ try{
 const dataFmtNotif=data.split("-").reverse().join("/");
 const horFmtNotif=blocos[0]?.horario||"";
 const equipTxtNotif=equipResumoTexto(dadosPrincipal);
-const coordBypassUrgFds=souCoordenadorSalvar&&(algUrgente||dow===0||dow===6);
+const coordBypassUrgFds=souCoordenadorSalvar&&!makerAprov&&(algUrgente||dow===0||dow===6);
 _usuarios.filter(u=>u.perfil==="admin"&&u.id!==_usuario.uid).forEach(adm=>{
 batch.set(doc(collection(db,"notificacoes")),{
 userId:adm.id,
@@ -4204,6 +4259,24 @@ lida:false,
 criadoEm:ts
 });
 });
+}catch{}
+
+// 4c. Coordenador Maker: vê no sino todo agendamento novo do Maker 1/2
+try{
+if(ehEspacoMaker({espaco})){
+const dfM=data.split("-").reverse().join("/");
+const quemM=dadosPrincipal.professor||_usuario.nome;
+const turmaM=dadosPrincipal.turma?` (${dadosPrincipal.turma})`:"";
+const faixaM=b.horarioFim&&b.horarioFim!==b.horario?`${b.horario} → ${b.horarioFim}`:b.horario;
+respMakerUsuarios().filter(u=>u.id!==_usuario.uid).forEach(u=>{
+batch.set(doc(collection(db,"notificacoes")),{
+userId:u.id,
+titulo:makerAprov?"⏳ Maker: agendamento aguarda sua aprovação":"📅 Novo agendamento no Maker",
+corpo:`${quemM}${turmaM} agendou ${nomeExibicao(espaco)} para ${dfM}, ${faixaM}${_MA.recorrente?" (série semanal/quinzenal)":""}${makerAprov?" — menos de 24h, precisa da sua aprovação.":""}`,
+lida:false,criadoEm:ts
+});
+});
+}
 }catch{}
 
 // 5. Commit do batch — uma única operação de rede!
@@ -4646,10 +4719,47 @@ _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
 gravarNotif(u.id,`🗑️ ${_usuario?.nome||rotulo} excluiu agendamento`,`${nomeExibicao(r.espaco)} de ${r.professor} — ${dataFmt} às ${r.horario}${r.professorId===_usuario?.uid?" (o próprio "+rotulo.toLowerCase()+")":""}`,"info")
 );
 avisarMarketingSeEnvolvido(r,"🗑️ Agendamento com foto/vídeo foi excluído",`${nomeExibicao(r.espaco)} de ${r.professor} — ${dataFmt} às ${r.horario} foi excluído pelo ${rotulo}.`);
+avisarMaker(r,"🗑️ Agendamento do Maker foi excluído",`${nomeExibicao(r.espaco)} de ${r.professor} — ${dataFmt} às ${r.horario} foi excluído pelo ${rotulo}.`);
 re();
 }catch(e){alert("Erro ao excluir: "+e.message);}
 };
 window.makerExcluir=window.labExcluir;
+// Coordenador Maker (Frederico Muniz) aprova ou recusa o que caiu em menos de 24h no Maker 1/2.
+// Sem a conta dele no app, qualquer perfil Maker pode aprovar (para nada ficar travado).
+function podeAprovarMaker(){
+if(_usuario?.perfil==="admin")return true;
+if(_usuario?.perfil!=="maker")return false;
+return ehRespMaker(_usuario)||!(_usuarios||[]).some(ehRespMaker);
+}
+// Os horários seguidos ("filhos") acompanham o status da principal — recusado libera a sala
+async function atualizarFilhosReserva(r,campos){
+try{
+const snap=await getDocs(query(collection(db,"reservas"),where("espaco","==",r.espaco),where("data","==",r.data),where("professorId","==",r.professorId||""),where("reservaAutomatica","==",true)));
+const faixa=horariosRange(r.horario,r.horarioFim||r.horario);
+const filhos=snap.docs.filter(d=>faixa.includes(d.data().horario));
+if(filhos.length){const b=writeBatch(db);filhos.forEach(d=>b.update(d.ref,campos));await b.commit();}
+}catch(e){console.warn("atualizarFilhosReserva:",e);}
+}
+async function makerDecidir(id,aprovar){
+if(!podeAprovarMaker()){alert("Só o coordenador Maker pode aprovar.");return;}
+const r=buscarReservaGlobal(id);
+if(!r){alert("Agendamento não encontrado.");return;}
+const dataFmt=r.data.split("-").reverse().join("/");
+const faixa=r.horarioFim&&r.horarioFim!==r.horario?`${r.horario} → ${r.horarioFim}`:r.horario;
+if(!confirm(`${aprovar?"Aprovar":"Recusar"} ${nomeExibicao(r.espaco)} de ${r.professor} — ${dataFmt}, ${faixa}?`))return;
+try{
+await updateDoc(doc(db,"reservas",id),{aprovMaker:aprovar?"aprovado":"recusado",aprovMakerPor:_usuario?.uid||"",aprovMakerEm:Timestamp.now(),...(aprovar?{}:{status:"recusado"})});
+const statusFinal=aprovar?await tentarConfirmarAuto({...r,aprovMaker:"aprovado"}):"recusado";
+await atualizarFilhosReserva(r,{status:statusFinal,aprovMaker:aprovar?"aprovado":"recusado"});
+const quem=_usuario?.nome||"Coordenador Maker";
+if(r.professorId&&r.professorId!==_usuario?.uid)gravarNotif(r.professorId,aprovar?"✅ Maker aprovou seu agendamento":"❌ Maker recusou seu agendamento",`${nomeExibicao(r.espaco)} — ${dataFmt}, ${faixa}. ${aprovar?(statusFinal==="confirmado"?"Está confirmado.":"Ainda falta a aprovação de outra área (T.I. ou Marketing)."):"A sala não pôde ser preparada a tempo."} (${quem})`,aprovar?"aprovacao":"recusa");
+_usuarios.filter(u=>u.perfil==="admin"&&u.id!==_usuario?.uid).forEach(u=>gravarNotif(u.id,aprovar?"🔨 Maker aprovou agendamento":"🔨 Maker recusou agendamento",`${quem}: ${nomeExibicao(r.espaco)} de ${r.professor} — ${dataFmt}, ${faixa}`,"info"));
+if(!aprovar)avisarMarketingSeEnvolvido(r,"❌ Agendamento com foto/vídeo recusado pelo Maker",`${nomeExibicao(r.espaco)} de ${r.professor} — ${dataFmt} às ${r.horario} foi recusado.`);
+re();
+}catch(e){alert("Erro: "+e.message);}
+}
+window.makerAprovar=id=>makerDecidir(id,true);
+window.makerRecusar=id=>makerDecidir(id,false);
 window.abrirEdicao=id=>{
 const r=buscarReservaGlobal(id);
 if(!r)return;
@@ -4779,14 +4889,18 @@ const conflitoLabED=snapLabED[i].docs.map(d=>({id:d.id,...d.data()})).find(r=>r.
 if(conflitoLabED){render("ed-erro",alertHTML("error",`O laboratorista já está escalado às ${rangeHorsED[i]} no ${outroLab} (${conflitoLabED.professor}). Não é possível marcar "Sim" pro laboratorista nesse horário.`));return;}
 }
 }
-const novoSt=isUrgente(e.data,e.horario||"07:10")?"pendente":"confirmado";
+const makerAprovED=precisaAprovMaker(e.espaco,e.data,e.horario,_usuario?.perfil);
+const makerDiretoED=ehEspacoMaker(e)&&_usuario?.perfil==="maker";
+const novoSt=makerAprovED?"pendente":makerDiretoED?"confirmado":isUrgente(e.data,e.horario||"07:10")?"pendente":"confirmado";
+// aprovMaker: pendente quando a edição cai em menos de 24h no Maker; null limpa um pedido antigo
+const aprovMakerED=makerAprovED?"pendente":(ehEspacoMaker(e)||e.aprovMaker)?null:undefined;
 const trocaProf=isCoordenador(_usuario?.perfil)&&e.novoProf&&e.novoProf.uid&&e.novoProf.uid!==e.professorId?e.novoProf:null;
 try{
 // Guarda espaço/data ORIGINAIS antes de sobrescrever — os "filhos" (reservaAutomatica=true)
 // foram criados vinculados a esses valores antigos, não aos novos que a pessoa está salvando.
 const espacoOriginal=_ED._espacoOriginal||e.espaco;
 const dataOriginal=_ED._dataOriginal||e.data;
-await updateDoc(doc(db,"reservas",e._id),{...(trocaProf?{professorId:trocaProf.uid,professor:trocaProf.nome,professorEmail:trocaProf.email||"",transferidoDe:e.professorId||"",transferidoDeNome:e.professor||"",transferidoPor:_usuario?.uid||"",transferidoEm:Timestamp.now()}:{}),espaco:e.espaco,data:e.data,horario:e.horario,horarioFim:e.horarioFim||e.horario,turma:e.turma,conteudo:e.conteudo,laboratorista:e.laboratorista||"",quantidade:eo?.tipo==="equipamento"?Number(e.quantidade):null,status:novoSt,editadoEm:Timestamp.now()});
+await updateDoc(doc(db,"reservas",e._id),{...(trocaProf?{professorId:trocaProf.uid,professor:trocaProf.nome,professorEmail:trocaProf.email||"",transferidoDe:e.professorId||"",transferidoDeNome:e.professor||"",transferidoPor:_usuario?.uid||"",transferidoEm:Timestamp.now()}:{}),espaco:e.espaco,data:e.data,horario:e.horario,horarioFim:e.horarioFim||e.horario,turma:e.turma,conteudo:e.conteudo,laboratorista:e.laboratorista||"",quantidade:eo?.tipo==="equipamento"?Number(e.quantidade):null,status:novoSt,...(aprovMakerED!==undefined?{aprovMaker:aprovMakerED}:{}),editadoEm:Timestamp.now()});
 // Limpa os "filhos" automáticos que ficaram órfãos: se o horário foi encurtado (ou o
 // espaço/dia mudou), os documentos auto-gerados dos horários que saíram do novo intervalo
 // continuavam sobrando no banco pra sempre, bloqueando horários vazios pros outros.
@@ -4821,7 +4935,7 @@ const bC=writeBatch(db);let nC=0;
 const tph=principal.turmasPorHorario||{};
 meus.forEach(d=>{const h=d.data().horario;
 if(h===e.horario){bC.delete(d.ref);nC++;return;} // virou o horário da principal
-if(faixaNova.includes(h)){bC.update(d.ref,{status:novoSt,turma:tph[h]||e.turma,turmaInicio:tph[h]||e.turma,turmaFim:tph[h]||e.turma,conteudo:"[Auto] "+e.conteudo});nC++;}
+if(faixaNova.includes(h)){bC.update(d.ref,{status:novoSt,...(aprovMakerED!==undefined?{aprovMaker:aprovMakerED}:{}),turma:tph[h]||e.turma,turmaInicio:tph[h]||e.turma,turmaFim:tph[h]||e.turma,conteudo:"[Auto] "+e.conteudo});nC++;}
 });
 const{editadoEm:_x,...base}=principal;
 faixaNova.slice(1).forEach(h=>{if(temFilho.has(h))return;
@@ -4856,6 +4970,11 @@ _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
 gravarNotif(u.id,trocaProf?`🔁 ${_usuario?.nome||"Coordenador"} transferiu agendamento`:`✏️ ${_usuario?.nome||"Alguém"} editou agendamento`,trocaProf?`${nomeExibicao(e.espaco)} — ${dataFmt} às ${e.horario}: de ${e.professor||"—"} para ${trocaProf.nome}`:`${nomeExibicao(e.espaco)} de ${e.professor||"—"} — ${dataFmt} às ${e.horario}${naoEhDono?"":" (o próprio professor)"}`,"info")
 );
 avisarMarketingSeEnvolvido(e,"✏️ Agendamento com foto/vídeo foi editado",`${nomeExibicao(e.espaco)} de ${e.professor||"—"} — agora ${dataFmt} às ${e.horario}.`);
+// Coordenador Maker: avisado de toda edição que envolve Maker 1/2 (inclusive saindo ou entrando nelas)
+{const rM=ehEspacoMaker(e)?e:{espaco:espacoOriginal};
+const deOnde=espacoOriginal!==e.espaco?` (antes: ${nomeExibicao(espacoOriginal)})`:"";
+avisarMaker(rM,makerAprovED?"⏳ Maker: edição aguarda sua aprovação":"✏️ Agendamento do Maker editado",`${_usuario?.nome||"Alguém"} editou ${nomeExibicao(e.espaco)} de ${trocaProf?trocaProf.nome:(e.professor||"—")} — agora ${dataFmt}, ${e.horario}${e.horarioFim&&e.horarioFim!==e.horario?" → "+e.horarioFim:""}${deOnde}${makerAprovED?" — menos de 24h, precisa da sua aprovação.":""}`);}
+if(makerAprovED&&e.professorId&&e.professorId!==_usuario?.uid)gravarNotif(e.professorId,"⏳ Edição aguarda o coordenador Maker",`${nomeExibicao(e.espaco)} — ${dataFmt} às ${e.horario}: com menos de 24h, depende da aprovação do coordenador Maker.`,"info");
 fecharEdicao();
 }catch{render("ed-erro",alertHTML("error","Erro ao salvar."));}
 };
@@ -5148,7 +5267,7 @@ if(_A.fProf&&r.professor!==_A.fProf)return false;
 if(_A.fStatus&&r.status!==_A.fStatus)return false;
 return true;
 });
-const urgentes=_todas.filter(r=>r.status==="pendente"&&!r.reservaAutomatica&&!soMarketing(r)&&isUrgente(r.data,r.horario));
+const urgentes=_todas.filter(r=>r.status==="pendente"&&!r.reservaAutomatica&&!soMarketing(r)&&!aguardaMaker(r)&&isUrgente(r.data,r.horario));
 const pend=_todas.filter(r=>r.status==="pendente"&&!r.reservaAutomatica&&precisaAdmin(r)).length;
 const hoje_rs=_todas.filter(r=>r.data===h&&r.status!=="recusado"&&!r.reservaAutomatica).length;
 // Contadores de pendentes por área, usados nas abas Marketing/T.I./Tablets — mesma lógica dos filtros internos de cada aba
@@ -5241,8 +5360,8 @@ html+=`<div style="min-height:90px;border-right:1px solid ${c.borderLight};borde
 const ds=`${ano}-${String(mes+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
 const isPast=ds<h,isH=ds===h,isSel=ds===_A.diaSel;
 const rsdia=porData[ds]||[];
-const urg=rsdia.filter(r=>!soMarketing(r)&&isUrgente(r.data,r.horario));
-const pend=rsdia.filter(r=>r.status==="pendente"&&!soMarketing(r)&&!isUrgente(r.data,r.horario));
+const urg=rsdia.filter(r=>!soMarketing(r)&&!aguardaMaker(r)&&isUrgente(r.data,r.horario));
+const pend=rsdia.filter(r=>r.status==="pendente"&&!soMarketing(r)&&(aguardaMaker(r)||!isUrgente(r.data,r.horario)));
 const conf=rsdia.filter(r=>r.status==="confirmado");
 const dow=new Date(Date.UTC(ano,mes,d)).getUTCDay();
 if(calMobile&&(dow===0||dow===6))return;
@@ -5286,7 +5405,7 @@ html+=`<div class="fade-in" style="margin-top:14px;background:${c.surface};borde
 
 // ── AGENDA ──
 if(_A.modoVisu==="agenda"){
-const urg=filtradas.filter(r=>r.status==="pendente"&&!soMarketing(r)&&isUrgente(r.data,r.horario)&&(!_A.fData||r.data===_A.fData));
+const urg=filtradas.filter(r=>r.status==="pendente"&&!soMarketing(r)&&!aguardaMaker(r)&&isUrgente(r.data,r.horario)&&(!_A.fData||r.data===_A.fData));
 const pend=filtradas.filter(r=>r.status==="pendente"&&!isUrgente(r.data,r.horario)&&precisaAdmin(r)&&(!_A.fData||r.data===_A.fData));
 const aguardandoAreas=filtradas.filter(r=>r.status==="pendente"&&!soMarketing(r)&&!precisaAdmin(r)&&(!_A.fData||r.data===_A.fData));
 const conf=filtradas.filter(r=>r.status!=="pendente"&&(_A.historico||r.data>=h)&&(!_A.fData||r.data===_A.fData)&&(!_A.fDataAte||r.data<=_A.fDataAte));
@@ -5633,7 +5752,9 @@ window.aModerar=async(id,status)=>{
 if(!exigePermissao(['admin'])){alert('Acesso negado.');return;}
 if(!confirm(`${status==="confirmado"?"Aprovar":"Recusar"} esta reserva?`))return;
 const r=buscarReservaGlobal(id);
-await updateDoc(doc(db,"reservas",id),{status});
+await updateDoc(doc(db,"reservas",id),{status,...(r&&aguardaMaker(r)?{aprovMaker:status==="confirmado"?"aprovado":"recusado"}:{})});
+if(r)await atualizarFilhosReserva(r,{status});
+if(r&&ehEspacoMaker(r))avisarMaker(r,status==="confirmado"?"✅ Admin aprovou agendamento do Maker":"❌ Admin recusou agendamento do Maker",`${nomeExibicao(r.espaco)} de ${r.professor} — ${r.data.split("-").reverse().join("/")} às ${r.horario}`);
 if(r){
 const dataFmt=r.data.split("-").reverse().join("/");
 if(status==="confirmado"){
@@ -5664,6 +5785,7 @@ _usuarios.filter(u=>u.perfil==="admin").forEach(u=>
 gravarNotif(u.id,`🗑️ ${_usuario?.nome||"Admin"} excluiu agendamento`,`${nomeExibicao(r.espaco)} de ${r.professor} — ${dataFmt} às ${r.horario}`,"info")
 );
 avisarMarketingSeEnvolvido(r,"🗑️ Agendamento com foto/vídeo foi excluído",`${nomeExibicao(r.espaco)} de ${r.professor} — ${dataFmt} às ${r.horario} foi excluído pelo Admin.`);
+avisarMaker(r,"🗑️ Agendamento do Maker foi excluído",`${nomeExibicao(r.espaco)} de ${r.professor} — ${dataFmt} às ${r.horario} foi excluído pelo Admin.`);
 };
 
 // ════════════════════════════════════════════════════════════════════════════
