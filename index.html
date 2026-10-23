@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20261022090000"/>
+<meta name="app-build" content="20261023073000"/>
 <meta name="app-build-perfis" content="todos"/>
-<meta name="app-build-mensagem" content="Ao agendar, toque num horário riscado (ocupado) para ver quem já agendou."/>
+<meta name="app-build-mensagem" content="Ao agendar tablets, computadores ou som e microfones separados, a Biblioteca agora aparece como sala de início e de término."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -368,7 +368,7 @@ const TURMAS_EXTRAS = ["Extra Música","Olimpíadas Matemática","Olimpíadas Ci
 // Espaços (que não são turmas) aceitos como "sala de início/término" no agendamento avulso de
 // Tablets/Computadores. Ex: o professor agendou a Sala Multifuncional mas não pediu os computadores;
 // quem agenda os computadores depois precisa poder dizer que eles vão pra lá, e ali só havia turmas.
-const LOCAIS_EQUIP_ESPACOS = ["Sala Multifuncional"];
+const LOCAIS_EQUIP_ESPACOS = ["Biblioteca","Sala Multifuncional"];
 const TURMAS_INTEGRAL = ["Integral 3-4 anos","Integral 5 anos"];
 const TURMAS_INTEGRAL_FUND1 = ["1º ano Integral","2º e 3º Integral","4º e 5º Integral"];
 const TURMAS = [...TURMAS_EDUCACAO_INFANTIL, ...TURMAS_FUND1, ...TURMAS_FUND2, ...TURMAS_EXTRAS, ...TURMAS_INTEGRAL, ...TURMAS_INTEGRAL_FUND1];
@@ -3385,7 +3385,7 @@ const selTurmaEquip=(campo,val)=>`
 const mesmaT=b.horario===b.horarioFim;
 html+=`<div style="background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:10px;padding:14px;display:grid;gap:12px">
      <p style="font-size:13px;font-weight:800;color:#0369a1">🎒 Trajeto dos equipamentos</p>
-     <p style="font-size:11px;color:${c.textMuted}">Informe a turma (ou o espaço, como a Sala Multifuncional) onde os equipamentos serão entregues e recolhidos.</p>
+     <p style="font-size:11px;color:${c.textMuted}">Informe a turma (ou o espaço, como a Biblioteca ou a Sala Multifuncional) onde os equipamentos serão entregues e recolhidos.</p>
      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
        <div>
          <label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">🏫 Sala de início *</label>
