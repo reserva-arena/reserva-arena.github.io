@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20261023073000"/>
+<meta name="app-build" content="20261023093000"/>
 <meta name="app-build-perfis" content="todos"/>
 <meta name="app-build-mensagem" content="Ao agendar tablets, computadores ou som e microfones separados, a Biblioteca agora aparece como sala de início e de término."/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
@@ -4805,6 +4805,31 @@ orfaos.forEach(d=>bLimpa.delete(doc(db,"reservas",d.id)));
 await bLimpa.commit();
 }
 }catch(eOrfao){console.warn("Limpeza de órfãos na edição falhou (não bloqueia o salvamento):",eOrfao);}
+// Completa os "filhos" quando o intervalo foi ESTENDIDO (ex.: 08:00→12:00 virou 07:10→12:40).
+// Antes só se apagavam os que saíam; os horários novos ficavam sem documento próprio e a
+// checagem de conflito (que procura por horário) não os via — outra pessoa conseguia agendar
+// o mesmo espaço por cima. Também alinha status/turma dos filhos com a reserva principal.
+try{
+const faixaNova=horariosRange(e.horario,e.horarioFim||e.horario);
+if(faixaNova.length>1){
+const principal=(await getDoc(doc(db,"reservas",e._id))).data()||{};
+const snapF=await getDocs(query(collection(db,"reservas"),where("espaco","==",e.espaco),where("data","==",e.data),where("professorId","==",e.professorId||""),where("reservaAutomatica","==",true)));
+const rangeAntigoF=(e.espaco===espacoOriginal&&e.data===dataOriginal)?horariosRange(_ED._horarioOriginal||e.horario,_ED._horarioFimOriginal||e.horarioFim||e.horario):[];
+const meus=snapF.docs.filter(d=>rangeAntigoF.includes(d.data().horario));
+const temFilho=new Set(snapF.docs.map(d=>d.data().horario));
+const bC=writeBatch(db);let nC=0;
+const tph=principal.turmasPorHorario||{};
+meus.forEach(d=>{const h=d.data().horario;
+if(h===e.horario){bC.delete(d.ref);nC++;return;} // virou o horário da principal
+if(faixaNova.includes(h)){bC.update(d.ref,{status:novoSt,turma:tph[h]||e.turma,turmaInicio:tph[h]||e.turma,turmaFim:tph[h]||e.turma,conteudo:"[Auto] "+e.conteudo});nC++;}
+});
+const{editadoEm:_x,...base}=principal;
+faixaNova.slice(1).forEach(h=>{if(temFilho.has(h))return;
+const t=tph[h]||e.turma;
+bC.set(doc(collection(db,"reservas")),{...base,horario:h,horarioFim:h,turma:t,turmaInicio:t,turmaFim:t,reservaAutomatica:true,conteudo:"[Auto] "+e.conteudo,status:novoSt});nC++;});
+if(nC)await bC.commit();
+}
+}catch(eC){console.warn("Completar horários seguidos na edição falhou:",eC);}
 }
 if(trocaProf&&eo?.multiHorario){
 try{
