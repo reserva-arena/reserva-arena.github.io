@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20261027074000"/>
+<meta name="app-build" content="20261028120000"/>
 <meta name="app-build-perfis" content="todos"/>
 <meta name="app-build-mensagem" content=""/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
@@ -469,6 +469,24 @@ else{dt=Number(r.qtdTablets)||0;dn=Number(r.qtdNotebooks)||0;}
 if(dt||dn){t+=dt;n+=dn;quem.push({professor:r.professor||"",espaco:r.espaco,t:dt,n:dn});}
 });
 return{t,n,quem};
+}
+// Disponível por horário num dia (para os botões de horário do Passo 3). Busca o dia uma vez
+// e guarda; devolve null enquanto carrega (a tela redesenha quando chegar).
+const _equipDiaCache={};let _equipDiaCarregando=null;
+function equipDispDia(data,espaco){
+if(!data)return null;
+const docs=_equipDiaCache[data];
+if(!docs){
+if(_equipDiaCarregando!==data){
+_equipDiaCarregando=data;
+getDocs(query(collection(db,"reservas"),where("data","==",data))).then(sn=>{_equipDiaCache[data]=sn.docs.map(d=>({id:d.id,...d.data()}));}).catch(e=>console.warn("equipDispDia:",e)).finally(()=>{_equipDiaCarregando=null;re();});
+}
+return null;
+}
+const ehT=espaco.startsWith("Tablets"),est=ehT?ESTOQUE_TABLETS:ESTOQUE_COMPUTADORES;
+const porH={};docs.forEach(r=>{if(r.horario)(porH[r.horario]=porH[r.horario]||[]).push(r);});
+const out={};HORARIOS.forEach(h=>{const u=usoEquip(porH[h]||[]);out[h]=Math.max(0,est-(ehT?u.t:u.n));});
+return out;
 }
 // Pior horário do intervalo (o que tem mais equipamento em uso)
 async function usoEquipFaixa(data,horas){
@@ -3304,7 +3322,11 @@ const isEquip=tipo==="equipamento"||tipo==="audiovisual";
 const temEquipAuto=eo?.equipAuto&&eo.equipAuto.length>0;
 
 // Horários ocupados no espaço nesta data
-const ocpFire=_todas.filter(r=>r.espaco===m.espaco&&r.data===m.data&&r.status!=="recusado").flatMap(r=>{
+// Tablets/Computadores: horário só fica ocupado quando não sobra nenhuma unidade (vários
+// professores dividem o estoque); o botão mostra quantas ainda estão livres.
+const ehEstoqueEq=m.espaco==="Tablets (18 disp.)"||m.espaco==="Computadores (16 disp.)";
+const dispSlot=ehEstoqueEq?equipDispDia(m.data,m.espaco):null;
+const ocpFire=ehEstoqueEq?(dispSlot?HORARIOS.filter(h=>dispSlot[h]<=0):[]):_todas.filter(r=>r.espaco===m.espaco&&r.data===m.data&&r.status!=="recusado").flatMap(r=>{
 if(r.horarioFim&&r.horarioFim!==r.horario)return horariosRange(r.horario,r.horarioFim);
 return[r.horario];
 });
@@ -3420,7 +3442,7 @@ html+=`<div>
        const passado=_MA.data===hojeStr&&(hh<agoraRef.getHours()||(hh===agoraRef.getHours()&&mm<=agoraRef.getMinutes()));
        const soninho=isBloqueado(h)&&h!==b.horario;
        const bloq=ocp||passado||soninho;
-       return`<button onclick="maSetHorarioMulti(${i},'ini','${h}')" ${bloq?"disabled":""}\n          style="padding:8px 4px;border-radius:8px;border:${sel2?"2px solid "+c.blueMid:bloq?"1.5px solid "+c.redBorder:"1.5px solid "+c.greenBorder};background:${sel2?c.greenBg:bloq?c.redBg:c.surface};color:${sel2?c.blueMid:bloq?c.red:c.green};font-size:11px;font-weight:700;cursor:${bloq?"not-allowed":"pointer"};font-family:'DM Mono',monospace;display:flex;flex-direction:column;align-items:center;gap:2px">\n          ${h}<span style="font-size:8px">${ocp?"● Ocup":passado?"● Pass":soninho?"🌙 Son":isIntervalo?"⏸️ Int":sel2?"✓ Ini":"○"}</span>\n        </button>`;
+       return`<button onclick="maSetHorarioMulti(${i},'ini','${h}')" ${bloq?"disabled":""}\n          style="padding:8px 4px;border-radius:8px;border:${sel2?"2px solid "+c.blueMid:bloq?"1.5px solid "+c.redBorder:"1.5px solid "+c.greenBorder};background:${sel2?c.greenBg:bloq?c.redBg:c.surface};color:${sel2?c.blueMid:bloq?c.red:c.green};font-size:11px;font-weight:700;cursor:${bloq?"not-allowed":"pointer"};font-family:'DM Mono',monospace;display:flex;flex-direction:column;align-items:center;gap:2px">\n          ${h}<span style="font-size:8px">${ocp?(ehEstoqueEq?"● 0 livres":"● Ocup"):passado?"● Pass":soninho?"🌙 Son":isIntervalo?"⏸️ Int":sel2?"✓ Ini":(ehEstoqueEq&&dispSlot?`${dispSlot[h]} livres`:"○")}</span>\n        </button>`;
      }).join("")}
    </div>
  </div>`;
@@ -3857,6 +3879,7 @@ return html;
 // ─── HANDLERS DO FORMULÁRIO ───────────────────────────────────────────────
 window.maEspaco=v=>{
 _MA.espaco=(typeof v==="number"||(!isNaN(v)&&v!==""))?ESPACOS[parseInt(v)].nome:v;
+Object.keys(_equipDiaCache).forEach(k=>delete _equipDiaCache[k]); // disponibilidade sempre fresca
 _MA.avisoConflito="";
 _MA.step=2;re();
 };
@@ -4014,7 +4037,9 @@ const rangeHors=horariosRange(b.horario,b.horarioFim);
 const snapConflitos=await Promise.all(rangeHors.map(h=>
 getDocs(query(collection(db,"reservas"),where("espaco","==",espaco),where("data","==",data),where("horario","==",h)))
 ));
-for(let i=0;i<rangeHors.length;i++){
+// Tablets/Computadores avulsos são divididos por quantidade (conferida no passo 2), não são exclusivos
+const ehEstoqueSalvar=espaco==="Tablets (18 disp.)"||espaco==="Computadores (16 disp.)";
+for(let i=0;i<rangeHors.length&&!ehEstoqueSalvar;i++){
 const existe=snapConflitos[i].docs.map(d=>d.data()).find(r=>r?.status!=="recusado");
 if(existe){_MA.erro=`Horário ${rangeHors[i]} já reservado por ${existe.professor}.`;_MA.salvando=false;_MA.resumo=false;re();return;}
 }
@@ -4283,6 +4308,7 @@ batch.commit(),
 new Promise((_,rej)=>setTimeout(()=>rej(new Error("Timeout ao salvar")),15000))
 ]);
 _MA._escritaIniciada=false;
+delete _equipDiaCache[data];
 _MA.sucesso=st;_MA.temMidia=temMidia||false;_MA.tipoEspaco=eoSalvar?.tipo||"";_MA.salvando=false;limparRascunhoLocal();re();
 
 // 6. E-mail de confirmação para o professor (via email_queue → notify.js)
