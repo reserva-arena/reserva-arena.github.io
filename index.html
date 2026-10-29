@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20261028120000"/>
-<meta name="app-build-perfis" content="todos"/>
+<meta name="app-build" content="20261029073000"/>
+<meta name="app-build-perfis" content="admin"/>
 <meta name="app-build-mensagem" content=""/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -506,6 +506,8 @@ respMakerUsuarios().forEach(u=>{if(u.id!==_usuario?.uid)gravarNotif(u.id,titulo,
 }
 function precisaAdmin(r){
 if(soMarketing(r))return false;
+// Admin voltou para pendente de propósito: a decisão é dele, mesmo sem urgência
+if(r.pendenteAdmin&&r.status==="pendente"&&!aguardaMaker(r))return true;
 // Maker com aprovação do coordenador Maker (pendente, aprovada ou recusada): não é com o Admin
 if(ehEspacoMaker(r)&&r.aprovMaker)return false;
 if(isUrgente(r.data,r.horario)||isFds(r.data))return true;
@@ -5705,6 +5707,7 @@ return`<div class="row-hover" style="display:flex;align-items:center;gap:8px;pad
      <button onclick="abrirEdicao('${r.id}')" title="Editar agendamento" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:14px;padding:5px 6px;display:flex;align-items:center;font-family:inherit">✏️</button>
      ${((r.qtdTablets||0)>0||(r.qtdNotebooks||0)>0)?`<button onclick="trocarEquipamentoLigado('${r.id}')" title="Trocar Tablets ↔ Computadores" style="background:none;border:none;color:#0369a1;cursor:pointer;font-size:14px;padding:5px 6px;display:flex;align-items:center;font-family:inherit">🔁</button>`:""}
      ${podeAprovarEspaco?`<button onclick="aModerar('${r.id}','confirmado')" style="${btn("success","","sm")}">✓</button><button onclick="aModerar('${r.id}','recusado')" style="${btn("danger","","sm")}">✗</button>`:""}
+     ${mostrarBotoes&&(r.status==="confirmado"||r.status==="recusado")?`<button onclick="aVoltarPendente('${r.id}')" title="Voltar para pendente (desfazer aprovação ou recusa)" style="${btn("ghost","","sm")};white-space:nowrap">↩️ Pendente</button>`:""}
      ${mostrarBotoes&&r.status==="confirmado"?`<button onclick="aModerar('${r.id}','recusado')" style="${btn("danger","","sm")}">✕</button>`:""}
      ${mostrarBotoes&&r.status==="recusado"?`<button onclick="aModerar('${r.id}','confirmado')" title="Reverter recusa e aprovar" style="${btn("success","","sm")}">↩️ Aprovar</button>`:""}
      <button onclick="aExcluir('${r.id}')" title="Excluir agendamento" style="background:none;border:none;color:${c.textMuted};cursor:pointer;font-size:13px;padding:4px">🗑</button>
@@ -5775,7 +5778,7 @@ window.aModerar=async(id,status)=>{
 if(!exigePermissao(['admin'])){alert('Acesso negado.');return;}
 if(!confirm(`${status==="confirmado"?"Aprovar":"Recusar"} esta reserva?`))return;
 const r=buscarReservaGlobal(id);
-await updateDoc(doc(db,"reservas",id),{status,...(r&&aguardaMaker(r)?{aprovMaker:status==="confirmado"?"aprovado":"recusado"}:{})});
+await updateDoc(doc(db,"reservas",id),{status,pendenteAdmin:false,...(r&&aguardaMaker(r)?{aprovMaker:status==="confirmado"?"aprovado":"recusado"}:{})});
 if(r)await atualizarFilhosReserva(r,{status});
 if(r&&ehEspacoMaker(r))avisarMaker(r,status==="confirmado"?"✅ Admin aprovou agendamento do Maker":"❌ Admin recusou agendamento do Maker",`${nomeExibicao(r.espaco)} de ${r.professor} — ${r.data.split("-").reverse().join("/")} às ${r.horario}`);
 if(r){
@@ -5786,6 +5789,26 @@ await gravarNotif(r.professorId,"✅ Agendamento aprovado",`${nomeExibicao(r.esp
 await gravarNotif(r.professorId,"❌ Agendamento recusado",`${nomeExibicao(r.espaco)} — ${dataFmt} às ${r.horario}`,"recusa");
 }
 }
+};
+// Desfaz uma aprovação (ou recusa) feita sem querer: o agendamento volta para pendente, com os
+// botões ✓/✗ de novo. Os horários seguidos acompanham. No Maker, volta para a fila do coordenador
+// Maker quando era ele quem tinha decidido.
+window.aVoltarPendente=async id=>{
+if(!exigePermissao(['admin'])){alert('Acesso negado.');return;}
+const r=buscarReservaGlobal(id);
+if(!r){alert("Agendamento não encontrado.");return;}
+const dataFmt=r.data.split("-").reverse().join("/");
+const faixa=r.horarioFim&&r.horarioFim!==r.horario?`${r.horario} → ${r.horarioFim}`:r.horario;
+if(!confirm(`Voltar para PENDENTE?\n\n${nomeExibicao(r.espaco)} — ${r.professor}\n${dataFmt}, ${faixa}\n\nEle volta a aparecer com ✓ e ✗ para você decidir de novo.`))return;
+try{
+const campos={status:"pendente",pendenteAdmin:true,voltouPendenteEm:Timestamp.now(),voltouPendentePor:_usuario?.uid||""};
+if(ehEspacoMaker(r)&&r.aprovMaker&&r.aprovMaker!=="pendente")campos.aprovMaker="pendente";
+await updateDoc(doc(db,"reservas",id),campos);
+await atualizarFilhosReserva(r,{status:"pendente",...(campos.aprovMaker?{aprovMaker:"pendente"}:{})});
+if(r.professorId&&r.professorId!==_usuario?.uid)gravarNotif(r.professorId,"⏳ Agendamento voltou para análise",`${nomeExibicao(r.espaco)} — ${dataFmt}, ${faixa}. Você recebe um aviso quando for decidido.`,"info");
+if(campos.aprovMaker)avisarMaker(r,"⏳ Maker: agendamento voltou para sua aprovação",`${nomeExibicao(r.espaco)} de ${r.professor} — ${dataFmt}, ${faixa}`);
+re();
+}catch(e){alert("Erro: "+e.message);}
 };
 window.aExcluir=async id=>{
 if(!exigePermissao(['admin'])){alert('Acesso negado.');return;}
@@ -6648,7 +6671,7 @@ _unsubPend=onSnapshot(query(collection(db,"reservas"),where("status","==","pende
 const jaCarregado=_todasCarregadas;
 _pendentesGlobais=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r&&r.professor&&r.data&&r.horario);
 if(jaCarregado){
-const novos=snap.docChanges().filter(ch=>ch.type==="added").map(ch=>({id:ch.doc.id,...ch.doc.data()})).filter(r=>r&&r.professor&&!r.reservaAutomatica&&r.professorId!==_usuario?.uid);
+const novos=snap.docChanges().filter(ch=>ch.type==="added").map(ch=>({id:ch.doc.id,...ch.doc.data()})).filter(r=>r&&r.professor&&!r.reservaAutomatica&&r.professorId!==_usuario?.uid&&!r.pendenteAdmin);
 if(novos.length===1){
 mostrarToastNovoAgendamento(`${novos[0].professor} agendou ${novos[0].espaco} — ${novos[0].data.split("-").reverse().join("/")}${equipResumoTexto(novos[0])}`);
 }else if(novos.length>1){
