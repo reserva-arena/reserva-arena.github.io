@@ -81,7 +81,7 @@ gtag('config', 'G-80RD7HXHBT');
 
 <script type="module">
 import{initializeApp,getApps}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,onAuthStateChanged,sendPasswordResetEmail,updatePassword,confirmPasswordReset,verifyPasswordResetCode}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,onAuthStateChanged,sendPasswordResetEmail,updatePassword,confirmPasswordReset,verifyPasswordResetCode,reauthenticateWithCredential,EmailAuthProvider}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import{getFirestore,collection,addDoc,onSnapshot,doc,updateDoc,query,where,orderBy,getDocs,Timestamp,setDoc,getDoc,deleteDoc,writeBatch,arrayUnion,getCountFromServer}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import{getMessaging,getToken,onMessage}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
 
@@ -1076,8 +1076,35 @@ var err=document.getElementById("tv-err");
 if(!n||n.length<6){if(err){err.textContent="Mínimo 6 caracteres.";err.style.display="block";}return;}
 if(n!==cf){if(err){err.textContent="Senhas não coincidem.";err.style.display="block";}return;}
 if(n==="123456"){if(err){err.textContent="Escolha uma senha diferente.";err.style.display="block";}return;}
-try{await updatePassword(auth.currentUser,n);_trocandoSenha=false;re();}
-catch(ex){if(err){err.textContent="Erro ao salvar.";err.style.display="block";}}
+// Troca da senha 123456 pela pessoal. Se a sessão ficou "velha" (ex.: a senha foi resetada de novo
+// enquanto a tela estava aberta), entra de novo com 123456 e tenta outra vez, sem a pessoa perceber.
+// Qualquer outra recusa mostra o motivo de verdade (antes era só "Erro ao salvar.").
+const btnSv=document.querySelector('[onclick="salvarNovaSenha()"]');if(btnSv){btnSv.disabled=true;btnSv.style.opacity=".6";}
+const motivo=ex=>{
+const c=ex?.code||"",m=String(ex?.message||"");
+if(c==="auth/password-does-not-meet-requirements"||/PASSWORD_DOES_NOT_MEET_REQUIREMENTS/.test(m)){
+const req=[];if(/upper/i.test(m))req.push("uma letra MAIÚSCULA");if(/lower/i.test(m))req.push("uma letra minúscula");if(/numeric/i.test(m))req.push("um número");if(/non-alphanumeric|special/i.test(m))req.push("um símbolo (ex.: @ # !)");const t=m.match(/at least (\d+)/i);if(t)req.push(`no mínimo ${t[1]} caracteres`);
+return"A senha não segue as regras de segurança. Ela precisa ter "+(req.length?req.join(", "):"letras maiúsculas, minúsculas, números e símbolo")+". Ex.: Arena@2026";}
+if(c==="auth/weak-password")return"Senha fraca. Use pelo menos 6 caracteres, misturando letras e números.";
+if(c==="auth/network-request-failed")return"Sem conexão com a internet. Confira a rede e tente de novo.";
+if(c==="auth/requires-recent-login"||c==="auth/user-token-expired"||c==="auth/invalid-user-token")return"Sua sessão expirou. Saia, entre de novo com a senha 123456 e defina a nova senha em seguida.";
+return"Não foi possível salvar ("+(c||"erro desconhecido")+"). Tire um print e envie para a equipe de T.E.";
+};
+try{
+try{await updatePassword(auth.currentUser,n);}
+catch(ex1){
+const c1=ex1?.code||"";
+if(c1==="auth/requires-recent-login"||c1==="auth/user-token-expired"||c1==="auth/invalid-user-token"){
+await reauthenticateWithCredential(auth.currentUser,EmailAuthProvider.credential(auth.currentUser.email,"123456"));
+await updatePassword(auth.currentUser,n);
+}else throw ex1;
+}
+_trocandoSenha=false;re();
+}catch(ex){
+console.warn("salvarNovaSenha:",ex?.code,ex?.message);
+if(err){err.textContent=motivo(ex);err.style.display="block";}
+if(btnSv){btnSv.disabled=false;btnSv.style.opacity="1";}
+}
 };
 function renderPublica(){
 const c=C(),h=fmtHoje();
