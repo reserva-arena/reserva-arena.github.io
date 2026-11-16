@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20261029080000"/>
+<meta name="app-build" content="20261116093800"/>
 <meta name="app-build-perfis" content="todos"/>
 <meta name="app-build-mensagem" content=""/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
@@ -450,11 +450,25 @@ const lista=typeof _usuarios!=="undefined"&&Array.isArray(_usuarios)?_usuarios:[
 const f=lista.filter(ehRespMaker);
 return f.length?f:lista.filter(u=>u.perfil==="maker");
 }
+// ── Biblioteca: todo agendamento ou edição de professor passa pela bibliotecária (16/11/2026) ──
+// Mesmo modelo do Maker (usa os mesmos campos aprovMaker/aprovMakerPor/aprovMakerEm). A bibliotecária
+// é reconhecida pelo e-mail, aprova/recusa/edita pelo botão "✅ Aprovações" e o pedido sai da
+// pendência do Admin.
+const ESPACO_BIBLIO="Biblioteca";
+const EMAIL_RESP_BIBLIO="biblioteca.fundamental@";
+function ehEspacoBiblio(r){return r?.espaco===ESPACO_BIBLIO;}
+function ehRespBiblio(u){return String(u?.email||"").toLowerCase().startsWith(EMAIL_RESP_BIBLIO);}
+function respBiblioUsuarios(){const l=typeof _usuarios!=="undefined"&&Array.isArray(_usuarios)?_usuarios:[];return l.filter(u=>ehRespBiblio(u)&&u.ativo!==false);}
+function quemAprovaTxt(espaco){return espaco===ESPACO_BIBLIO?"da Bibliotecária":"do coordenador Maker";}
+function aguardandoTxt(r){return"Aguardando aprovação "+quemAprovaTxt(r?.espaco);}
+function avisarBiblio(r,titulo,corpo){
+try{if(!ehEspacoBiblio(r))return;respBiblioUsuarios().forEach(u=>{if(u.id!==_usuario?.uid)gravarNotif(u.id,titulo,corpo,"info");});}catch(e){console.warn("avisarBiblio:",e);}
+}
 // Pendente do coordenador Maker. Inclui agendamentos antigos do Maker que ficaram pendentes antes da
 // regra (sem o campo aprovMaker). T.I./Marketing, se houver, seguem em paralelo.
 function aguardaMaker(r){
 if(r?.aprovMaker==="pendente")return true;
-return !!r&&ehEspacoMaker(r)&&r.status==="pendente"&&r.aprovMaker===undefined&&!r.reservaAutomatica;
+return !!r&&(ehEspacoMaker(r)||ehEspacoBiblio(r))&&r.status==="pendente"&&r.aprovMaker===undefined&&!r.reservaAutomatica;
 }
 // ── Tablets e computadores em uso num horário ──
 // Avulso (o espaço É "Tablets"/"Computadores") conta pela "quantidade". Sala que pediu
@@ -502,7 +516,7 @@ return{t,n,quemT,quemN};
 }
 function precisaAprovMaker(espaco,data,horario,perfil){
 // Maker 1 e 2: todo agendamento ou edição de quem não é do perfil Maker passa pelo coordenador Maker
-return ESPACOS_MAKER.includes(espaco)&&perfil!=="maker"&&!!data;
+return !!data&&((ESPACOS_MAKER.includes(espaco)&&perfil!=="maker")||(espaco===ESPACO_BIBLIO&&!ehRespBiblio(_usuario)));
 }
 function avisarMaker(r,titulo,corpo){
 try{
@@ -513,7 +527,7 @@ respMakerUsuarios().forEach(u=>{if(u.id!==_usuario?.uid)gravarNotif(u.id,titulo,
 function precisaAdmin(r){
 if(soMarketing(r))return false;
 // Maker 1 e 2: a aprovação é sempre do coordenador Maker; o Admin só acompanha
-if(ehEspacoMaker(r))return false;
+if(ehEspacoMaker(r)||ehEspacoBiblio(r))return false;
 // Admin voltou para pendente de propósito: a decisão é dele, mesmo sem urgência
 if(r.pendenteAdmin&&r.status==="pendente")return true;
 if(isUrgente(r.data,r.horario)||isFds(r.data))return true;
@@ -564,7 +578,7 @@ return"pendente";
 // Frase clara sobre a situação do ESPAÇO, independente do que houve com equipamento/mídia —
 // usada nas notificações pro professor e pro admin.
 function fraseSituacaoEspaco(statusFinal,r){
-if(statusFinal!=="confirmado"&&aguardaMaker(r))return"A reserva do espaço ainda depende da aprovação do coordenador Maker.";
+if(statusFinal!=="confirmado"&&aguardaMaker(r))return"A reserva do espaço ainda depende da aprovação "+quemAprovaTxt(r.espaco)+".";
 return statusFinal==="confirmado"
 ?"A reserva do espaço está confirmada e disponível normalmente."
 :"A reserva do espaço ainda depende da aprovação do Admin (agendamento com menos de 24h ou em fim de semana).";
@@ -813,7 +827,7 @@ return h;
 // Busca uma reserva em todas as fontes conhecidas — necessário porque as filas de aprovação
 // de T.I./Marketing/Tablets agora enxergam itens fora do mês carregado em _todas.
 function buscarReservaGlobal(id){
-return _minhas.find(r=>r.id===id)||_todas.find(r=>r.id===id)||_tiGlobal.find(r=>r.id===id)||_mktGlobal.find(r=>r.id===id)||_tbGlobal.find(r=>r.id===id)||_makerGlobal.find(r=>r.id===id)||_labGlobal.find(r=>r.id===id)||null;
+return _minhas.find(r=>r.id===id)||_todas.find(r=>r.id===id)||_tiGlobal.find(r=>r.id===id)||_mktGlobal.find(r=>r.id===id)||_tbGlobal.find(r=>r.id===id)||_makerGlobal.find(r=>r.id===id)||_labGlobal.find(r=>r.id===id)||_aprovGlobal.find(r=>r.id===id)||null;
 }
 // Alerta sonoro do T.E. (Tablets/Notebooks): bipe periódico enquanto houver pendência
 // e o admin não estiver na aba, gerado via Web Audio API (sem depender de arquivo externo).
@@ -873,7 +887,7 @@ return true;
 function isCoordenador(perfil){
 return perfil==="coord_inf"||perfil==="coord_fund1"||perfil==="coord_fund2"||perfil==="coordenador";
 }
-function re(){if(_trocandoSenha)return;
+function re(){if(_trocandoSenha)return;try{iniciarAprovacoes();atualizarBotaoAprov();}catch(e){}
 const c=C();
 document.body.style.background=c.bg;
 document.body.style.color=c.text;
@@ -896,6 +910,97 @@ window.re=re;
 // ════════════════════════════════════════════════════════════════════════════
 let _pubCal={a:new Date().getFullYear(),m:new Date().getMonth()},_pubDiaSel=null;
 
+// ── Painel "✅ Aprovações" da bibliotecária (16/11/2026) ──
+// Botão flutuante com o número de pedidos aguardando; no painel: aprovar, recusar, editar e agenda
+// dos próximos 30 dias da Biblioteca. Uma consulta só (espaco == Biblioteca), filtrada aqui.
+let _aprovGlobal=[],_aprovUnsub=null,_aprovChave="";
+const APROV_ESC=s=>String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+const hojeSP=()=>new Date().toLocaleDateString("sv-SE",{timeZone:"America/Sao_Paulo"});
+function souBibliotecaria(){return !!_usuario&&_usuario.perfil!=="sem_acesso"&&_usuario.ativo!==false&&ehRespBiblio(_usuario);}
+function iniciarAprovacoes(){
+const chave=souBibliotecaria()?(_usuario.uid||""):"";
+if(chave===_aprovChave)return;
+_aprovChave=chave;
+if(_aprovUnsub){try{_aprovUnsub();}catch{}_aprovUnsub=null;}
+_aprovGlobal=[];
+if(!chave){atualizarBotaoAprov();return;}
+_aprovUnsub=onSnapshot(query(collection(db,"reservas"),where("espaco","==",ESPACO_BIBLIO)),snap=>{
+const hj=hojeSP();
+_aprovGlobal=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>!r.reservaAutomatica&&r.data>=hj);
+atualizarBotaoAprov();
+if(document.getElementById("aprov-modal"))renderAprov();
+},err=>console.warn("aprovações:",err));
+}
+function pendentesAprov(){return _aprovGlobal.filter(r=>aguardaMaker(r)).sort((a,b)=>(a.data+a.horario).localeCompare(b.data+b.horario));}
+function atualizarBotaoAprov(){
+let b=document.getElementById("aprov-fab");
+if(!souBibliotecaria()){b?.remove();return;}
+const n=pendentesAprov().length;
+if(!b){b=document.createElement("button");b.id="aprov-fab";b.onclick=()=>renderAprov();document.body.appendChild(b);}
+b.setAttribute("style",`position:fixed;right:16px;bottom:16px;z-index:9000;border:0;border-radius:999px;padding:12px 18px;font-size:14px;font-weight:800;font-family:inherit;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.18);background:${n?"#7c3aed":"#1a6b4a"};color:#fff`);
+b.textContent=`✅ Aprovações · Biblioteca${n?` (${n})`:""}`;
+}
+window.aprovFechar=()=>{document.getElementById("aprov-modal")?.remove();};
+window.aprovEditar=id=>{aprovFechar();
+if(!document.getElementById("mod-ed"))document.body.insertAdjacentHTML("beforeend",modalEdicaoHTML());
+abrirEdicao(id);};
+function renderAprov(){
+const c=C();
+document.getElementById("aprov-modal")?.remove();
+const fmtData=d=>d.split("-").reverse().join("/");
+const faixa=r=>r.horarioFim&&r.horarioFim!==r.horario?`${r.horario} → ${r.horarioFim}`:r.horario;
+const pend=pendentesAprov();
+const limite=new Date(Date.now()+31*864e5).toISOString().slice(0,10);
+const prox=_aprovGlobal.filter(r=>!aguardaMaker(r)&&r.status!=="recusado"&&r.data<=limite).sort((a,b)=>(a.data+a.horario).localeCompare(b.data+b.horario));
+const bt=(cor)=>`font-size:12.5px;font-weight:700;padding:7px 12px;border-radius:8px;cursor:pointer;font-family:inherit;border:1.5px solid ${cor==="navy"?c.navy:c.border};background:${cor==="navy"?c.navy:c.surface};color:${cor==="navy"?"#fff":cor==="red"?"#b91c1c":c.text}`;
+const card=(r,decidir)=>`<div style="border:1.5px solid ${decidir?"#ddd6fe":c.border};background:${decidir?"#faf5ff":c.surface};border-radius:12px;padding:10px 12px;margin-bottom:8px">
+<div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:flex-start">
+<div><div style="font-size:13.5px;font-weight:800;color:${c.navy}">${fmtData(r.data)} · ${APROV_ESC(faixa(r))}</div>
+<div style="font-size:12.5px;color:${c.text};margin-top:2px">${APROV_ESC(r.professor||"—")}${r.turma?` · ${APROV_ESC(r.turma)}`:""}${r.serieId?` · <span title="Faz parte de uma série">🔁</span>`:""}${r.editadoEm&&decidir?` · <b>edição</b>`:""}</div>
+${r.conteudo?`<div style="font-size:12px;color:${c.textMuted};margin-top:3px">📝 ${APROV_ESC(r.conteudo)}</div>`:""}
+${decidir?"":`<div style="font-size:11.5px;margin-top:3px;color:${r.status==="confirmado"?"#15803d":"#b45309"};font-weight:700">${r.status==="confirmado"?"Confirmado":"Pendente"}</div>`}</div>
+<div style="display:flex;gap:6px;flex-wrap:wrap">
+${decidir?`<button onclick="aprovDecidir('${r.id}',true)" style="${bt("navy")}">✅ Aprovar</button><button onclick="aprovDecidir('${r.id}',false)" style="${bt("red")}">❌ Recusar</button>`:""}
+<button onclick="aprovEditar('${r.id}')" style="${bt("")}" title="Editar: dia, horário, turma, descrição">✏️ Editar</button>
+</div></div></div>`;
+document.body.insertAdjacentHTML("beforeend",`<div id="aprov-modal" style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9500;display:flex;align-items:flex-start;justify-content:center;padding:24px 12px;overflow:auto" onclick="if(event.target===this)aprovFechar()">
+<div style="background:${c.bg};border-radius:16px;max-width:760px;width:100%;padding:18px 20px;box-shadow:0 20px 50px rgba(0,0,0,.25)">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><h2 style="margin:0;font-size:18px;font-weight:800;color:${c.navy}">✅ Aprovações — 📚 Biblioteca</h2><button onclick="aprovFechar()" style="${bt("")}">✕ Fechar</button></div>
+<p style="font-size:12px;color:${c.textMuted};margin:6px 0 12px">Você decide os agendamentos da Biblioteca. Pode aprovar, recusar ou editar (mudar dia e horário) combinando com o professor — ele recebe um aviso a cada decisão.</p>
+<h3 style="font-size:14px;font-weight:800;color:#6d28d9;margin:8px 0">⏳ Aguardando você (${pend.length})</h3>
+${pend.map(r=>card(r,true)).join("")||`<div style="font-size:12.5px;color:${c.textMuted};margin-bottom:8px">Nenhum pedido aguardando. 🎉</div>`}
+<h3 style="font-size:14px;font-weight:800;color:${c.navy};margin:16px 0 8px">📅 Próximos 30 dias (${prox.length})</h3>
+${prox.map(r=>card(r,false)).join("")||`<div style="font-size:12.5px;color:${c.textMuted}">Nada agendado.</div>`}
+</div></div>`);
+}
+window.aprovDecidir=async(id,aprovar)=>{
+const r=_aprovGlobal.find(x=>x.id===id);
+if(!r){alert("Agendamento não encontrado.");return;}
+if(!souBibliotecaria()){alert("Só a bibliotecária pode decidir os agendamentos da Biblioteca.");return;}
+const dataFmt=r.data.split("-").reverse().join("/");
+const faixa=r.horarioFim&&r.horarioFim!==r.horario?`${r.horario} → ${r.horarioFim}`:r.horario;
+if(!confirm(`${aprovar?"Aprovar":"Recusar"} a Biblioteca de ${r.professor} — ${dataFmt}, ${faixa}?`))return;
+let serie=[];
+if(r.serieId){
+try{const sn=await getDocs(query(collection(db,"reservas"),where("serieId","==",r.serieId)));
+serie=sn.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.id!==id&&!x.reservaAutomatica&&aguardaMaker(x));}catch(e){}
+if(serie.length&&!confirm(`Esse agendamento faz parte de uma série com mais ${serie.length} data(s) aguardando. ${aprovar?"Aprovar":"Recusar"} todas juntas?\n\nOK = todas · Cancelar = só esta`))serie=[];
+}
+try{
+const campos={aprovMaker:aprovar?"aprovado":"recusado",aprovMakerPor:_usuario?.uid||"",aprovMakerEm:Timestamp.now(),...(aprovar?{}:{status:"recusado"})};
+for(const x of serie){
+await updateDoc(doc(db,"reservas",x.id),campos);
+const stX=aprovar?await tentarConfirmarAuto({...x,aprovMaker:"aprovado"}):"recusado";
+await atualizarFilhosReserva(x,{status:stX,aprovMaker:aprovar?"aprovado":"recusado"});
+}
+await updateDoc(doc(db,"reservas",id),campos);
+const statusFinal=aprovar?await tentarConfirmarAuto({...r,aprovMaker:"aprovado"}):"recusado";
+await atualizarFilhosReserva(r,{status:statusFinal,aprovMaker:aprovar?"aprovado":"recusado"});
+if(r.professorId&&r.professorId!==_usuario?.uid)gravarNotif(r.professorId,aprovar?"✅ Biblioteca: agendamento aprovado":"❌ Biblioteca: agendamento recusado",`Biblioteca — ${dataFmt}, ${faixa}${serie.length?` e mais ${serie.length} data(s) da série`:""}. ${aprovar?(statusFinal==="confirmado"?"Está confirmado.":"Ainda depende de outra aprovação (equipamento ou mídia)."):"Procure a bibliotecária para combinar outro horário."}`,aprovar?"aprovado":"recusado");
+if(!aprovar)avisarMarketingSeEnvolvido(r,"❌ Agendamento com foto/vídeo recusado",`Biblioteca de ${r.professor} — ${dataFmt} às ${r.horario} foi recusado.`);
+re();
+}catch(e){alert("Erro: "+e.message);}
+};
 function renderLogin(){
 var c=C();
 var h="<div style='min-height:100vh;background:"+c.bg+";display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px'><div style='width:100%;max-width:400px'>";
@@ -3198,8 +3303,8 @@ html+=`<div style="padding:20px 14px;text-align:center">
        <p style="font-size:12px;color:#0369a1;margin-bottom:2px">📅 De ${m.serieDataInicio.split("-").reverse().join("/")} até ${m.serieDataFim.split("-").reverse().join("/")}</p>
        <p style="font-size:12px;font-weight:700;color:#0369a1">📋 ${m.serieTotal||"20"} agendamentos criados</p>
      </div>`:""}
-     ${m.aprovMaker&&m.sucesso!=="confirmado"?`<div style="background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:10px;padding:12px 14px;margin-bottom:12px;text-align:left"><p style="font-size:12px;color:#5b21b6;font-weight:700;margin-bottom:4px">🔨 Aguardando o coordenador Maker</p><p style="font-size:12px;color:#5b21b6;line-height:1.5">No Maker 1 e 2, todo agendamento é aprovado pelo coordenador Maker, que prepara a sala e os materiais. Você recebe um aviso assim que ele responder.</p></div>`:""}
-     ${(m.temMidia||m.tipoEspaco==="marketing")?`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:12px 14px;margin-bottom:12px;text-align:left"><p style="font-size:12px;color:#92400e;font-weight:700;margin-bottom:4px">⏳ O que acontece agora?</p><p style="font-size:12px;color:#92400e;line-height:1.5">A <strong>Equipe de Marketing</strong> vai analisar sua solicitação de foto/vídeo e confirmar ou recusar. Você receberá uma notificação assim que houver uma resposta.</p></div>`:m.sucesso==="pendente"?`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:12px 14px;margin-bottom:12px;text-align:left"><p style="font-size:12px;color:#92400e;font-weight:700;margin-bottom:4px">⏳ O que acontece agora?</p><p style="font-size:12px;color:#92400e;line-height:1.5">Este agendamento precisa de aprovação pois foi feito com menos de 24h de antecedência. Você receberá uma notificação assim que for aprovado.</p></div>`:""}
+     ${m.aprovMaker&&m.sucesso!=="confirmado"?`<div style="background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:10px;padding:12px 14px;margin-bottom:12px;text-align:left"><p style="font-size:12px;color:#5b21b6;font-weight:700;margin-bottom:4px">${ehEspacoBiblio(m)?"⏳ "+aguardandoTxt(m):"🔨 Aguardando o coordenador Maker"}</p><p style="font-size:12px;color:#5b21b6;line-height:1.5">${ehEspacoBiblio(m)?"Na Biblioteca, todo agendamento é aprovado pela bibliotecária, que organiza os horários com você. Você recebe um aviso assim que ela responder.":"No Maker 1 e 2, todo agendamento é aprovado pelo coordenador Maker, que prepara a sala e os materiais. Você recebe um aviso assim que ele responder."}</p></div>`:""}
+     ${(m.temMidia||m.tipoEspaco==="marketing")?`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:12px 14px;margin-bottom:12px;text-align:left"><p style="font-size:12px;color:#92400e;font-weight:700;margin-bottom:4px">⏳ O que acontece agora?</p><p style="font-size:12px;color:#92400e;line-height:1.5">A <strong>Equipe de Marketing</strong> vai analisar sua solicitação de foto/vídeo e confirmar ou recusar. Você receberá uma notificação assim que houver uma resposta.</p></div>`:m.sucesso==="pendente"&&!m.aprovMaker?`<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:12px 14px;margin-bottom:12px;text-align:left"><p style="font-size:12px;color:#92400e;font-weight:700;margin-bottom:4px">⏳ O que acontece agora?</p><p style="font-size:12px;color:#92400e;line-height:1.5">Este agendamento precisa de aprovação pois foi feito com menos de 24h de antecedência. Você receberá uma notificação assim que for aprovado.</p></div>`:""}
      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
        <button onclick="pSetModoProf('agendar')" style="${btn("success")};padding:10px 24px">＋ Novo agendamento</button>
        <button onclick="pSetModoProf('ver')" style="${btn("ghost")};padding:10px 24px">Ver agendamentos</button>
@@ -4291,6 +4396,19 @@ criadoEm:ts
 });
 }catch{}
 
+// 4d. Bibliotecária: vê no sino todo pedido novo da Biblioteca que precisa da aprovação dela
+try{
+if(ehEspacoBiblio({espaco})&&makerAprov){
+const dfB=data.split("-").reverse().join("/");
+const quemB=dadosPrincipal.professor||_usuario.nome;
+const turmaB=dadosPrincipal.turma?` (${dadosPrincipal.turma})`:"";
+const faixaB=b.horarioFim&&b.horarioFim!==b.horario?`${b.horario} → ${b.horarioFim}`:b.horario;
+respBiblioUsuarios().filter(u=>u.id!==_usuario.uid).forEach(u=>{
+batch.set(doc(collection(db,"notificacoes")),{userId:u.id,titulo:"⏳ Biblioteca: agendamento aguarda sua aprovação",
+corpo:`${quemB}${turmaB} pediu a Biblioteca para ${dfB}, ${faixaB}${_MA.recorrente?" (série semanal/quinzenal)":""}.`,lida:false,criadoEm:ts});
+});
+}
+}catch{}
 // 4c. Coordenador Maker: vê no sino todo agendamento novo do Maker 1/2
 try{
 if(ehEspacoMaker({espaco})){
@@ -5014,8 +5132,9 @@ avisarMarketingSeEnvolvido(e,"✏️ Agendamento com foto/vídeo foi editado",`$
 // Coordenador Maker: avisado de toda edição que envolve Maker 1/2 (inclusive saindo ou entrando nelas)
 {const rM=ehEspacoMaker(e)?e:{espaco:espacoOriginal};
 const deOnde=espacoOriginal!==e.espaco?` (antes: ${nomeExibicao(espacoOriginal)})`:"";
+if(makerAprovED)avisarBiblio(rM,"⏳ Biblioteca: edição aguarda sua aprovação",`${_usuario?.nome||"Alguém"} editou a Biblioteca — agora ${dataFmt}, ${e.horario}${e.horarioFim&&e.horarioFim!==e.horario?" → "+e.horarioFim:""}. Precisa da sua aprovação.`);
 avisarMaker(rM,makerAprovED?"⏳ Maker: edição aguarda sua aprovação":"✏️ Agendamento do Maker editado",`${_usuario?.nome||"Alguém"} editou ${nomeExibicao(e.espaco)} de ${trocaProf?trocaProf.nome:(e.professor||"—")} — agora ${dataFmt}, ${e.horario}${e.horarioFim&&e.horarioFim!==e.horario?" → "+e.horarioFim:""}${deOnde}${makerAprovED?" — precisa da sua aprovação.":""}`);}
-if(makerAprovED&&e.professorId&&e.professorId!==_usuario?.uid)gravarNotif(e.professorId,"⏳ Edição aguarda o coordenador Maker",`${nomeExibicao(e.espaco)} — ${dataFmt} às ${e.horario}: a mudança depende da aprovação do coordenador Maker.`,"info");
+if(makerAprovED&&e.professorId&&e.professorId!==_usuario?.uid)gravarNotif(e.professorId,"⏳ Edição: "+aguardandoTxt(e),`${nomeExibicao(e.espaco)} — ${dataFmt} às ${e.horario}: a mudança depende da aprovação ${quemAprovaTxt(e.espaco)}.`,"info");
 fecharEdicao();
 }catch{render("ed-erro",alertHTML("error","Erro ao salvar."));}
 };
@@ -5706,7 +5825,7 @@ return`<div class="row-hover" style="display:flex;align-items:center;gap:8px;pad
        ${urg&&r.status==="pendente"?`<span style="font-size:10.5px;font-weight:800;background:#fff7ed;color:#c2410c;border:1.5px solid #f97316;padding:1px 8px;border-radius:10px;white-space:nowrap">⚡ URGENTE</span>`:""}
        ${precisaTagTI?`<span style="font-size:10.5px;font-weight:800;background:#e0f2fe;color:#0369a1;border:1.5px solid #7dd3fc;padding:1px 8px;border-radius:10px;white-space:nowrap">🔧 Pendente T.I.</span>`:""}
        ${r.statusEquip==="recusado"?`<span style="font-size:10.5px;font-weight:800;background:#fef2f2;color:#b91c1c;border:1.5px solid #fca5a5;padding:1px 8px;border-radius:10px;white-space:nowrap">❌ T.I. recusou</span>`:""}
-       ${aguardaMaker(r)?`<span style="font-size:10.5px;font-weight:800;background:#f5f3ff;color:#6d28d9;border:1.5px solid #ddd6fe;padding:1px 8px;border-radius:10px;white-space:nowrap">🔨 Pendente Maker</span>`:""}
+       ${aguardaMaker(r)?`<span style="font-size:10.5px;font-weight:800;background:#f5f3ff;color:#6d28d9;border:1.5px solid #ddd6fe;padding:1px 8px;border-radius:10px;white-space:nowrap">${ehEspacoBiblio(r)?"⏳ "+aguardandoTxt(r):"🔨 Pendente Maker"}</span>`:""}
        ${r.statusMarketing==="pendente"?`<span style="font-size:10.5px;font-weight:800;background:#fff7ed;color:#c2410c;border:1.5px solid #fdba74;padding:1px 8px;border-radius:10px;white-space:nowrap">📸 Pendente Mkt</span>`:""}
        ${r.statusMarketing==="recusado"?`<span style="font-size:10.5px;font-weight:800;background:#fef2f2;color:#b91c1c;border:1.5px solid #fca5a5;padding:1px 8px;border-radius:10px;white-space:nowrap">❌ Mkt recusou</span>`:""}
        ${r.statusMarketing==="aprovado"&&r.fotografoHorario?`<span style="font-size:10.5px;font-weight:800;background:#e2f4ea;color:#166534;border:1.5px solid #a7f3d0;padding:1px 8px;border-radius:10px;white-space:nowrap">📸 Mkt vai às ${r.fotografoHorario}</span>`:""}
