@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20261116093800"/>
+<meta name="app-build" content="20261118080000"/>
 <meta name="app-build-perfis" content="todos"/>
 <meta name="app-build-mensagem" content=""/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
@@ -530,7 +530,10 @@ if(soMarketing(r))return false;
 if(ehEspacoMaker(r)||ehEspacoBiblio(r))return false;
 // Admin voltou para pendente de propósito: a decisão é dele, mesmo sem urgência
 if(r.pendenteAdmin&&r.status==="pendente")return true;
-if(isUrgente(r.data,r.horario)||isFds(r.data))return true;
+// Menos de 24h só precisa do Admin quando tem equipamento (computadores, tablets, som/projetor),
+// porque a T.I./T.E. precisa separar e montar. Sem equipamento, o espaço confirma direto (18/11/2026).
+if(isFds(r.data))return true;
+if(isUrgente(r.data,r.horario)&&temEquipamento(r))return true;
 // Reserva pendente sem urgência/fim de semana, mas que NUNCA teve componente de T.I. nem de
 // Marketing associado (ex: bloqueio de espaço criado direto pelo Admin, sem equipamento/mídia) —
 // ninguém mais vai confirmar isso sozinho, então precisa do Admin mesmo.
@@ -543,6 +546,15 @@ function temComponenteTI(r){
 if(r.statusEquip!==undefined)return true;
 const eo=ESPACOS.find(e=>e.nome===r.espaco);
 return eo?.tipo==="audiovisual";
+}
+// Tem equipamento para a T.I./T.E. separar: som/projetor (statusEquip ou espaço audiovisual),
+// tablets/computadores avulsos ou pedidos junto com a sala, e o kit de som da Biblioteca.
+function temEquipamento(r){
+if(!r)return false;
+if(temComponenteTI(r))return true;
+if(r.espaco==="Tablets (18 disp.)"||r.espaco==="Computadores (16 disp.)")return true;
+if((Number(r.qtdTablets)||0)>0||(Number(r.qtdNotebooks)||0)>0)return true;
+return (Number(r.bibMic)||0)>0||(Number(r.bibCaixa)||0)>0||(Number(r.bibProj)||0)>0;
 }
 function temComponenteMkt(r){
 return r.statusMarketing!==undefined;
@@ -3407,7 +3419,7 @@ html+=`<div style="background:linear-gradient(135deg,#1a6b47,#0f4c2b);padding:10
 
    </div>`;
 
-if(isDiaUrgente(m.data))html+=alertHTML("warning","⚠️ Menos de 24h de antecedência. Contate o T.E. para garantir disponibilidade.");
+if(isDiaUrgente(m.data))html+=alertHTML("warning","⚠️ Menos de 24h de antecedência. Sem equipamento, o espaço confirma na hora. Com computadores, tablets ou som/projetor, o pedido fica pendente até o T.E. aprovar.");
 
 if(isCoordenador(_usuario?.perfil)){
 const profNomeAtual=m.profEscolhido?.nome||"";
@@ -3905,12 +3917,15 @@ const rangeHors=isMulti?horariosRange(b.horario,b.horarioFim):[];
 const urgentes=isMulti
 ?rangeHors.filter(h=>isUrgente(m.data,h))
 :m.blocos.filter(b=>isUrgente(m.data,b.horario));
-const precisaCiencia=!isCoordenador(_usuario?.perfil)&&(urgentes.length>0||fimSem);
-const avisoCoordUrgFds=isCoordenador(_usuario?.perfil)&&(urgentes.length>0||fimSem);
+// Menos de 24h só pesa quando há equipamento para a T.I./T.E. separar
+const temEquipResumo=eo?.tipo==="audiovisual"||m.espaco==="Tablets (18 disp.)"||m.espaco==="Computadores (16 disp.)"||(Number(b?.qtdTablets)||0)>0||(Number(b?.qtdNotebooks)||0)>0||(m.bibAV===true&&(m.bibMic>0||m.bibCaixa>0||m.bibProj>0));
+const urgEquip=urgentes.length>0&&temEquipResumo;
+const precisaCiencia=!isCoordenador(_usuario?.perfil)&&(urgEquip||fimSem);
+const avisoCoordUrgFds=isCoordenador(_usuario?.perfil)&&(urgEquip||fimSem);
 
 let html=`<div style="padding:28px 20px">
    <div style="text-align:center;margin-bottom:20px"><div style="width:52px;height:52px;border-radius:50%;background:${precisaCiencia?"#fff7ed":"#e2f4ea"};display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 12px">${precisaCiencia?"⚠️":"📋"}</div><h3 style="font-size:17px;font-weight:800;color:${c.navy}">Revisar agendamento</h3></div>`;
-if(precisaCiencia)html+=alertHTML("warning",fimSem?"⚠️ Agendamento fora do horário do T.E. — ficará pendente até aprovação.":"⚠️ Menos de 24h de antecedência. Contate o T.E. para garantir disponibilidade.");
+if(precisaCiencia)html+=alertHTML("warning",fimSem?"⚠️ Agendamento fora do horário do T.E. — ficará pendente até aprovação.":"⚠️ Menos de 24h de antecedência com equipamento — fica pendente até o T.E. aprovar.");
 if(avisoCoordUrgFds)html+=alertHTML("success",fimSem?"ℹ️ Agendamento em fim de semana — como coordenador, confirma automaticamente. Se essa sala precisar de algo específico, fale direto com a T.E.":"ℹ️ Menos de 24h de antecedência — como coordenador, confirma automaticamente. Se essa sala precisar de algo específico por causa do prazo curto, fale direto com a T.E.");
 html+=`<div style="background:${c.bg};border-radius:10px;padding:12px 16px;margin-bottom:12px">
    <p style="font-size:11px;font-weight:700;color:${c.textMuted};text-transform:uppercase;margin-bottom:6px">Local e data</p>
@@ -4256,7 +4271,8 @@ const souCoordenadorSalvar=isCoordenador(_usuario?.perfil);
 const makerAprov=precisaAprovMaker(espaco,data,rangeHors.find(h=>isUrgente(data,h))||b.horario,_usuario?.perfil);
 // Maker: o perfil Maker agenda direto mesmo com menos de 24h (é a sala dele)
 const makerDireto=ehEspacoMaker({espaco})&&_usuario?.perfil==="maker";
-const st=(makerAprov||(!souCoordenadorSalvar&&!makerDireto&&(algUrgente||dow===0||dow===6))||temMidia||temAV||temTabletsNotebooks)?"pendente":"confirmado";
+// Menos de 24h sem equipamento não fica mais pendente; com equipamento já fica pendente pela T.I.
+const st=(makerAprov||(!souCoordenadorSalvar&&!makerDireto&&(dow===0||dow===6))||temMidia||temAV||temTabletsNotebooks)?"pendente":"confirmado";
 _MA.aprovMaker=makerAprov;
 
 const tph=b.turmasPorHorario||{};
@@ -4382,7 +4398,7 @@ try{
 const dataFmtNotif=data.split("-").reverse().join("/");
 const horFmtNotif=blocos[0]?.horario||"";
 const equipTxtNotif=equipResumoTexto(dadosPrincipal);
-const coordBypassUrgFds=souCoordenadorSalvar&&!makerAprov&&(algUrgente||dow===0||dow===6);
+const coordBypassUrgFds=souCoordenadorSalvar&&!makerAprov&&((algUrgente&&(temAV||temTabletsNotebooks))||dow===0||dow===6);
 _usuarios.filter(u=>u.perfil==="admin"&&u.id!==_usuario.uid).forEach(adm=>{
 batch.set(doc(collection(db,"notificacoes")),{
 userId:adm.id,
@@ -5050,7 +5066,7 @@ if(conflitoLabED){render("ed-erro",alertHTML("error",`O laboratorista já está 
 }
 const makerAprovED=precisaAprovMaker(e.espaco,e.data,e.horario,_usuario?.perfil);
 const makerDiretoED=ehEspacoMaker(e)&&_usuario?.perfil==="maker";
-const novoSt=makerAprovED?"pendente":makerDiretoED?"confirmado":isUrgente(e.data,e.horario||"07:10")?"pendente":"confirmado";
+const novoSt=makerAprovED?"pendente":makerDiretoED?"confirmado":(isUrgente(e.data,e.horario||"07:10")&&temEquipamento(e))?"pendente":"confirmado";
 // aprovMaker: pendente quando a edição cai em menos de 24h no Maker; null limpa um pedido antigo
 const aprovMakerED=makerAprovED?"pendente":(ehEspacoMaker(e)||e.aprovMaker)?null:undefined;
 const trocaProf=isCoordenador(_usuario?.perfil)&&e.novoProf&&e.novoProf.uid&&e.novoProf.uid!==e.professorId?e.novoProf:null;
@@ -5415,8 +5431,24 @@ function corrigirSoMarketingParados(){
 _todas.filter(r=>soMarketing(r)&&r.status==="pendente"&&!r.reservaAutomatica&&(r.statusMarketing==="aprovado"||r.statusMarketing==="recusado")&&!_soMktCorrigidos.has(r.id))
 .forEach(r=>{_soMktCorrigidos.add(r.id);tentarConfirmarAuto(r).catch(e=>console.warn("corrigir Equipe de Marketing:",e));});
 }
+// Regra de 18/11/2026: menos de 24h sem equipamento não fica pendente. Os que já estavam parados
+// por isso são confirmados (ou seguem o fluxo do Marketing, se tiverem foto/vídeo).
+const _urgSemEquipCorrigidos=new Set();
+function corrigirUrgentesSemEquip(){
+_todas.filter(r=>r.status==="pendente"&&!r.reservaAutomatica&&!r.pendenteAdmin&&!soMarketing(r)&&!ehEspacoMaker(r)&&!ehEspacoBiblio(r)&&!aguardaMaker(r)
+&&isUrgente(r.data,r.horario)&&!isFds(r.data)&&!temEquipamento(r)&&r.data>=fmtHoje()&&!_urgSemEquipCorrigidos.has(r.id))
+.forEach(async r=>{
+_urgSemEquipCorrigidos.add(r.id);
+try{
+if(temComponenteMkt(r)){await tentarConfirmarAuto(r);return;}
+await updateDoc(doc(db,"reservas",r.id),{status:"confirmado",confirmadoAuto:"menos de 24h sem equipamento"});
+await atualizarFilhosReserva(r,{status:"confirmado"});
+if(r.professorId)gravarNotif(r.professorId,"✅ Agendamento confirmado",`${nomeExibicao(r.espaco)} — ${r.data.split("-").reverse().join("/")} às ${r.horario}.`,"aprovacao");
+}catch(e){console.warn("corrigirUrgentesSemEquip:",e);}
+});
+}
 function renderAdminView(){
-if(exigePermissao(['admin']))corrigirSoMarketingParados();
+if(exigePermissao(['admin'])){corrigirSoMarketingParados();corrigirUrgentesSemEquip();}
 const c=C(),h=fmtHoje();
 if(!_A.mesCal){const d=new Date();_A.mesCal={a:d.getFullYear(),m:d.getMonth()};}
 carregarMetricaUso();
@@ -5427,7 +5459,7 @@ if(_A.fProf&&r.professor!==_A.fProf)return false;
 if(_A.fStatus&&r.status!==_A.fStatus)return false;
 return true;
 });
-const urgentes=_todas.filter(r=>r.status==="pendente"&&!r.reservaAutomatica&&!soMarketing(r)&&!aguardaMaker(r)&&isUrgente(r.data,r.horario));
+const urgentes=_todas.filter(r=>r.status==="pendente"&&!r.reservaAutomatica&&!soMarketing(r)&&!aguardaMaker(r)&&isUrgente(r.data,r.horario)&&precisaAdmin(r));
 const pend=_todas.filter(r=>r.status==="pendente"&&!r.reservaAutomatica&&precisaAdmin(r)).length;
 const hoje_rs=_todas.filter(r=>r.data===h&&r.status!=="recusado"&&!r.reservaAutomatica).length;
 // Contadores de pendentes por área, usados nas abas Marketing/T.I./Tablets — mesma lógica dos filtros internos de cada aba
@@ -5520,8 +5552,8 @@ html+=`<div style="min-height:90px;border-right:1px solid ${c.borderLight};borde
 const ds=`${ano}-${String(mes+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
 const isPast=ds<h,isH=ds===h,isSel=ds===_A.diaSel;
 const rsdia=porData[ds]||[];
-const urg=rsdia.filter(r=>!soMarketing(r)&&!aguardaMaker(r)&&isUrgente(r.data,r.horario));
-const pend=rsdia.filter(r=>r.status==="pendente"&&!soMarketing(r)&&(aguardaMaker(r)||!isUrgente(r.data,r.horario)));
+const urg=rsdia.filter(r=>!soMarketing(r)&&!aguardaMaker(r)&&isUrgente(r.data,r.horario)&&precisaAdmin(r));
+const pend=rsdia.filter(r=>r.status==="pendente"&&!soMarketing(r)&&!urg.includes(r));
 const conf=rsdia.filter(r=>r.status==="confirmado");
 const dow=new Date(Date.UTC(ano,mes,d)).getUTCDay();
 if(calMobile&&(dow===0||dow===6))return;
@@ -5565,7 +5597,7 @@ html+=`<div class="fade-in" style="margin-top:14px;background:${c.surface};borde
 
 // ── AGENDA ──
 if(_A.modoVisu==="agenda"){
-const urg=filtradas.filter(r=>r.status==="pendente"&&!soMarketing(r)&&!aguardaMaker(r)&&isUrgente(r.data,r.horario)&&(!_A.fData||r.data===_A.fData));
+const urg=filtradas.filter(r=>r.status==="pendente"&&!soMarketing(r)&&!aguardaMaker(r)&&isUrgente(r.data,r.horario)&&precisaAdmin(r)&&(!_A.fData||r.data===_A.fData));
 const pend=filtradas.filter(r=>r.status==="pendente"&&!isUrgente(r.data,r.horario)&&precisaAdmin(r)&&(!_A.fData||r.data===_A.fData));
 const aguardandoAreas=filtradas.filter(r=>r.status==="pendente"&&!soMarketing(r)&&!precisaAdmin(r)&&(!_A.fData||r.data===_A.fData));
 const conf=filtradas.filter(r=>r.status!=="pendente"&&(_A.historico||r.data>=h)&&(!_A.fData||r.data===_A.fData)&&(!_A.fDataAte||r.data<=_A.fDataAte));
@@ -5800,7 +5832,7 @@ function gerarRankingProfessores(todas,modo,ini,fim){const c={};const hoje=fmtHo
 
 function admRow(r,showDate=false,mostrarBotoes=true){
 const c=C(),h=fmtHoje();
-const urg=isUrgente(r.data,r.horario);
+const urg=isUrgente(r.data,r.horario)&&precisaAdmin(r);
 const bc=r.status==="confirmado"?"#1a6b47":r.status==="pendente"?"#d97706":"#dc2626";
 const[a2,m2,d2]=r.data.split("-");
 const range=r.horarioFim&&r.horarioFim!==r.horario?` → ${r.horarioFim}`:"";
