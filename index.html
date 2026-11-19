@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20261119090800"/>
+<meta name="app-build" content="20261119104000"/>
 <meta name="app-build-perfis" content="admin"/>
 <meta name="app-build-mensagem" content=""/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
@@ -480,6 +480,11 @@ return !!r&&(ehEspacoMaker(r)||ehEspacoBiblio(r))&&r.status==="pendente"&&r.apro
 // Os documentos "Vinculado à <sala>" repetem o que já está na sala e não entram, senão o mesmo
 // pedido contaria duas vezes. Recebe os documentos de UM horário.
 const ESTOQUE_TABLETS=18,ESTOQUE_COMPUTADORES=16;
+// Som/Microfone/Projetor: a escola tem 2 projetores, então até 2 agendamentos A/V podem
+// acontecer no mesmo horário (antes era 1 só). Cada horário de um agendamento tem um documento
+// próprio (o principal + os "[Auto]" dos horários seguintes), então contar documentos com
+// horario===h dá quantos agendamentos A/V ocupam aquele horário.
+const ESPACO_AV="Som, Microfone e Projetor",ESTOQUE_PROJETORES=2;
 function usoEquip(docs){
 let t=0,n=0;const quem=[];
 (docs||[]).forEach(r=>{
@@ -3492,7 +3497,8 @@ const temEquipAuto=eo?.equipAuto&&eo.equipAuto.length>0;
 // professores dividem o estoque); o botão mostra quantas ainda estão livres.
 const ehEstoqueEq=m.espaco==="Tablets (18 disp.)"||m.espaco==="Computadores (16 disp.)";
 const dispSlot=ehEstoqueEq?equipDispDia(m.data,m.espaco):null;
-const ocpFire=ehEstoqueEq?(dispSlot?HORARIOS.filter(h=>dispSlot[h]<=0):[]):_todas.filter(r=>r.espaco===m.espaco&&r.data===m.data&&r.status!=="recusado").flatMap(r=>{
+const ehAV=m.espaco===ESPACO_AV;
+const ocpFire=ehEstoqueEq?(dispSlot?HORARIOS.filter(h=>dispSlot[h]<=0):[]):ehAV?HORARIOS.filter(h=>_todas.filter(r=>r.espaco===ESPACO_AV&&r.data===m.data&&r.horario===h&&r.status!=="recusado").length>=ESTOQUE_PROJETORES):_todas.filter(r=>r.espaco===m.espaco&&r.data===m.data&&r.status!=="recusado").flatMap(r=>{
 if(r.horarioFim&&r.horarioFim!==r.horario)return horariosRange(r.horario,r.horarioFim);
 return[r.horario];
 });
@@ -3670,7 +3676,7 @@ html+=`<div style="background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:1
      ${tipo==="audiovisual"?`<div>
        <label style="font-size:12px;font-weight:700;color:${c.textMuted};text-transform:uppercase">🎙️ Equipamentos necessários</label>
        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px">
-         ${[{k:"microfones",l:"🎤 Microfones"},{k:"caixasom",l:"🔊 Caixas"},{k:"projetor",l:"📽️ Projetores"}].map(eq=>`<div style="text-align:center"><label style="font-size:10px;font-weight:700;color:${c.textMuted};text-transform:uppercase;display:block;margin-bottom:6px">${eq.l}</label><div style="display:flex;align-items:center;justify-content:center;border:1.5px solid #bae6fd;border-radius:10px;overflow:hidden"><button onclick="avDec(${i},'${eq.k}')" style="width:36px;height:40px;border:none;background:#e0f2fe;color:#0369a1;font-size:18px;font-weight:700;cursor:pointer">−</button><span style="flex:1;font-size:18px;font-weight:800;color:#0369a1;text-align:center">${b[eq.k]||0}</span><button onclick="avInc(${i},'${eq.k}',10)" style="width:36px;height:40px;border:none;background:#e0f2fe;color:#0369a1;font-size:18px;font-weight:700;cursor:pointer">+</button></div></div>`).join("")}
+         ${[{k:"microfones",l:"🎤 Microfones"},{k:"caixasom",l:"🔊 Caixas"},{k:"projetor",l:"📽️ Projetores"}].map(eq=>`<div style="text-align:center"><label style="font-size:10px;font-weight:700;color:${c.textMuted};text-transform:uppercase;display:block;margin-bottom:6px">${eq.l}</label><div style="display:flex;align-items:center;justify-content:center;border:1.5px solid #bae6fd;border-radius:10px;overflow:hidden"><button onclick="avDec(${i},'${eq.k}')" style="width:36px;height:40px;border:none;background:#e0f2fe;color:#0369a1;font-size:18px;font-weight:700;cursor:pointer">−</button><span style="flex:1;font-size:18px;font-weight:800;color:#0369a1;text-align:center">${b[eq.k]||0}</span><button onclick="avInc(${i},'${eq.k}',${eq.k==="projetor"?ESTOQUE_PROJETORES:10})" style="width:36px;height:40px;border:none;background:#e0f2fe;color:#0369a1;font-size:18px;font-weight:700;cursor:pointer">+</button></div></div>`).join("")}
        </div>
      </div>`:""}
    </div>`;
@@ -3826,7 +3832,7 @@ html+=`<div style="background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:1
          <div style="display:flex;align-items:center;border:1.5px solid #bae6fd;border-radius:10px;overflow:hidden">
            <button onclick="bibDec('bibProj')" style="width:36px;height:44px;border:none;background:#e0f2fe;color:#0369a1;font-size:22px;font-weight:700;cursor:pointer">−</button>
            <span style="flex:1;font-size:18px;font-weight:800;color:#0369a1;text-align:center">${_MA.bibProj||0}</span>
-           <button onclick="bibInc('bibProj',5)" style="width:36px;height:44px;border:none;background:#e0f2fe;color:#0369a1;font-size:22px;font-weight:700;cursor:pointer">+</button>
+           <button onclick="bibInc('bibProj',${ESTOQUE_PROJETORES})" style="width:36px;height:44px;border:none;background:#e0f2fe;color:#0369a1;font-size:22px;font-weight:700;cursor:pointer">+</button>
          </div>
        </div>
      </div>`:""}
@@ -4208,7 +4214,20 @@ getDocs(query(collection(db,"reservas"),where("espaco","==",espaco),where("data"
 ));
 // Tablets/Computadores avulsos são divididos por quantidade (conferida no passo 2), não são exclusivos
 const ehEstoqueSalvar=espaco==="Tablets (18 disp.)"||espaco==="Computadores (16 disp.)";
-for(let i=0;i<rangeHors.length&&!ehEstoqueSalvar;i++){
+// Som/Microfone/Projetor: até ESTOQUE_PROJETORES agendamentos no mesmo horário, e a soma de
+// projetores pedidos não pode passar do que a escola tem.
+const ehAVSalvar=espaco===ESPACO_AV;
+if(ehAVSalvar){
+const pedeProj=Number(b.projetor)||0;
+if(pedeProj>ESTOQUE_PROJETORES){_MA.erro=`A escola tem só ${ESTOQUE_PROJETORES} projetores.`;_MA.salvando=false;_MA.resumo=false;re();return;}
+for(let i=0;i<rangeHors.length;i++){
+const ativos=snapConflitos[i].docs.map(d=>d.data()).filter(r=>r?.status!=="recusado");
+if(ativos.length>=ESTOQUE_PROJETORES){_MA.erro=`Horário ${rangeHors[i]} já tem ${ativos.length} agendamentos de Som/Projetor (${ativos.map(r=>r.professor).join(" e ")}).`;_MA.salvando=false;_MA.resumo=false;re();return;}
+const projUsados=ativos.reduce((t,r)=>t+(Number(r.projetor)||0),0);
+if(pedeProj>0&&projUsados+pedeProj>ESTOQUE_PROJETORES){_MA.erro=`Projetores insuficientes às ${rangeHors[i]}. Pedido: ${pedeProj}, disponível: ${Math.max(0,ESTOQUE_PROJETORES-projUsados)} (em uso por ${ativos.filter(r=>Number(r.projetor)>0).map(r=>r.professor).join(" e ")}).`;_MA.salvando=false;_MA.resumo=false;re();return;}
+}
+}
+for(let i=0;i<rangeHors.length&&!ehEstoqueSalvar&&!ehAVSalvar;i++){
 const existe=snapConflitos[i].docs.map(d=>d.data()).find(r=>r?.status!=="recusado");
 if(existe){_MA.erro=`Horário ${rangeHors[i]} já reservado por ${existe.professor}.`;_MA.salvando=false;_MA.resumo=false;re();return;}
 }
@@ -4376,7 +4395,7 @@ const avSnaps=await Promise.all(rangeHors.map(h=>
 getDocs(query(collection(db,"reservas"),where("espaco","==","Som, Microfone e Projetor"),where("data","==",data),where("horario","==",h)))
 ));
 rangeHors.forEach((h,idx)=>{
-if(!avSnaps[idx].docs.find(d=>d.data()?.status!=="recusado")){
+if(avSnaps[idx].docs.filter(d=>d.data()?.status!=="recusado").length<ESTOQUE_PROJETORES){
 batch.set(doc(collection(db,"reservas")),{
 professor:dadosPrincipal.professor,professorId:dadosPrincipal.professorId,professorEmail:dadosPrincipal.professorEmail,
 turma:tph[h]||"",espaco:"Som, Microfone e Projetor",data,horario:h,horarioFim:h,
