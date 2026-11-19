@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20261118080000"/>
-<meta name="app-build-perfis" content="todos"/>
+<meta name="app-build" content="20261119084600"/>
+<meta name="app-build-perfis" content="admin,coordenador"/>
 <meta name="app-build-mensagem" content=""/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -665,6 +665,15 @@ const NOME_CURTO={
 const espacoCurto=nome=>NOME_CURTO[nome]||(nome?nome.split(" ")[0]:"");
 
 // Badges de equipamento solicitado (tablets, computadores, microfone, caixa, projetor)
+// Filtro de espaço: "Tablets"/"Computadores" também trazem as reservas de outros espaços
+// que pediram esse equipamento junto (qtdTablets/qtdNotebooks), não só as avulsas.
+function bateFiltroEspaco(r,esp){
+if(!esp)return true;
+if(r.espaco===esp)return true;
+if(String(esp).startsWith("Tablets"))return (r.qtdTablets||0)>0;
+if(String(esp).startsWith("Computadores"))return (r.qtdNotebooks||0)>0;
+return false;
+}
 function equipBadgesHTML(r){
 const itens=[];
 if((r.quantidade||0)>0){const ehComp=String(r.espaco||"").startsWith("Computadores"),ehTab=String(r.espaco||"").startsWith("Tablets");
@@ -1967,7 +1976,7 @@ let fonte=_todas.filter(r=>!r.reservaAutomatica);
 if(!_CO.historico)fonte=fonte.filter(r=>r.data>=h);
 if(_CO.fProf)fonte=fonte.filter(r=>r.professor===_CO.fProf||r.professorId===_CO.fProf);
 if(_CO.fTurma)fonte=fonte.filter(r=>turmasListaDe(r).includes(_CO.fTurma));
-if(_CO.fEspaco)fonte=fonte.filter(r=>r.espaco===_CO.fEspaco);
+if(_CO.fEspaco)fonte=fonte.filter(r=>bateFiltroEspaco(r,_CO.fEspaco));
 fonte=fonte.sort((a,b)=>a.data>b.data?1:a.data<b.data?-1:a.horario>b.horario?1:-1);
 
 // Professores do segmento (para filtro)
@@ -2197,6 +2206,7 @@ return`<div style="background:${evento?"#fdf4e3":c.surface};border-radius:10px;b
        </div>
        <p style="font-size:12px;color:${c.textMid};margin-bottom:2px">👤 ${r.professor} · ${turmasEmSequencia(r)||"—"}</p>
        <p style="font-size:12px;color:${c.textMuted}">${r.conteudo||""}</p>
+       ${equipBadgesHTML(r)}
      </div>
      <div style="display:flex;gap:6px;flex-shrink:0">
        ${!isRec?`<button onclick="coordEditar('${r.id}')" style="padding:6px 12px;border-radius:8px;border:1.5px solid ${c.border};background:transparent;color:${c.textMid};font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit">✏️ Editar</button>`:""}
@@ -5481,7 +5491,7 @@ if(!_A.mesCal){const d=new Date();_A.mesCal={a:d.getFullYear(),m:d.getMonth()};}
 carregarMetricaUso();
 const filtradas=_todas.filter(r=>{
 if(r.reservaAutomatica)return false;
-if(_A.fEspaco&&r.espaco!==_A.fEspaco)return false;
+if(_A.fEspaco&&!bateFiltroEspaco(r,_A.fEspaco))return false;
 if(_A.fProf&&r.professor!==_A.fProf)return false;
 if(_A.fStatus&&r.status!==_A.fStatus)return false;
 return true;
