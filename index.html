@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="app-build" content="20261119084600"/>
-<meta name="app-build-perfis" content="admin,coordenador"/>
+<meta name="app-build" content="20261119090800"/>
+<meta name="app-build-perfis" content="admin"/>
 <meta name="app-build-mensagem" content=""/>
 <title>Reserva de Espaços e Equipamentos – Colégio Arena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -383,6 +383,10 @@ const NAO_LETIVOS = new Set([
 "2026-11-02","2026-11-15","2026-11-20","2026-11-27","2026-11-28","2026-12-25"
 ]);
 NAO_LETIVOS.delete("2026-07-31"); // dia de reuniões — liberado para agendamento de salas
+NAO_LETIVOS.delete("2026-11-27"); // liberado a pedido (mesmo fora do calendário letivo)
+NAO_LETIVOS.delete("2026-11-28"); // sábado — liberado a pedido (mesmo fora do calendário letivo)
+// Fins de semana que excepcionalmente aceitam agendamento — SÓ para o perfil admin (o resto dos sábados/domingos segue bloqueado).
+const FDS_LIBERADOS = new Set(["2026-11-28"]);
 const NAO_LETIVOS_INICIAIS = new Set(["2026-06-19"]);
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
@@ -391,7 +395,7 @@ function isDiaLetivo(data){
 if(!data)return false;
 const[a,m,d]=data.split("-").map(Number);
 const dt=new Date(a,m-1,d),dow=dt.getDay();
-if(dow===0||dow===6)return false;
+if((dow===0||dow===6)&&!(FDS_LIBERADOS.has(data)&&_usuario?.perfil==="admin"))return false;
 if(NAO_LETIVOS.has(data))return false;
 if(data<"2026-01-19"||data>"2026-12-10")return false;
 return true;
